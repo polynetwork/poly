@@ -23,7 +23,7 @@ import (
 	"encoding/binary"
 	"testing"
 
-	"github.com/ontio/ontology/vm/neovm/utils"
+	"github.com/ontio/multi-chain/vm/neovm/utils"
 )
 
 func TestGetPushData(t *testing.T) {

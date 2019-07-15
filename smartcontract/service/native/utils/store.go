@@ -21,10 +21,10 @@ package utils
 import (
 	"bytes"
 
-	"github.com/ontio/ontology/common/serialization"
-	cstates "github.com/ontio/ontology/core/states"
-	"github.com/ontio/ontology/errors"
-	"github.com/ontio/ontology/smartcontract/service/native"
+	"github.com/ontio/multi-chain/common/serialization"
+	cstates "github.com/ontio/multi-chain/core/states"
+	"github.com/ontio/multi-chain/errors"
+	"github.com/ontio/multi-chain/smartcontract/service/native"
 )
 
 func GetStorageItem(native *native.NativeService, key []byte) (*cstates.StorageItem, error) {

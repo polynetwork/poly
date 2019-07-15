@@ -23,13 +23,13 @@ import (
 	"time"
 
 	"github.com/ontio/ontology-eventbus/actor"
-	"github.com/ontio/ontology/common/log"
-	"github.com/ontio/ontology/core/payload"
-	"github.com/ontio/ontology/core/types"
-	"github.com/ontio/ontology/errors"
-	tc "github.com/ontio/ontology/txnpool/common"
-	"github.com/ontio/ontology/validator/stateless"
-	vt "github.com/ontio/ontology/validator/types"
+	"github.com/ontio/multi-chain/common/log"
+	"github.com/ontio/multi-chain/core/payload"
+	"github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/multi-chain/errors"
+	tc "github.com/ontio/multi-chain/txnpool/common"
+	"github.com/ontio/multi-chain/validator/stateless"
+	vt "github.com/ontio/multi-chain/validator/types"
 	"github.com/stretchr/testify/assert"
 )
 

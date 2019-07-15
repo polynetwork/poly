@@ -20,11 +20,11 @@ package common
 
 import (
 	"fmt"
-	"github.com/ontio/ontology/account"
-	"github.com/ontio/ontology/cmd/utils"
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/common/config"
-	"github.com/ontio/ontology/common/password"
+	"github.com/ontio/multi-chain/account"
+	"github.com/ontio/multi-chain/cmd/utils"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/config"
+	"github.com/ontio/multi-chain/common/password"
 	"github.com/urfave/cli"
 	"strconv"
 )

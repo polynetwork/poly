@@ -23,7 +23,7 @@ import (
 	"math/big"
 	"reflect"
 
-	"github.com/ontio/ontology/vm/neovm/interfaces"
+	"github.com/ontio/multi-chain/vm/neovm/interfaces"
 )
 
 const (

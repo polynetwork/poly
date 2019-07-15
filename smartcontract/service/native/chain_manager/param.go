@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/smartcontract/service/native/utils"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 )
 
 type RegisterSideChainParam struct {

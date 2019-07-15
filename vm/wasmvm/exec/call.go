@@ -24,7 +24,7 @@ package exec
 
 import (
 	"errors"
-	"github.com/ontio/ontology/common/log"
+	"github.com/ontio/multi-chain/common/log"
 )
 
 func (vm *VM) doCall(compiled compiledFunction, index int64) {

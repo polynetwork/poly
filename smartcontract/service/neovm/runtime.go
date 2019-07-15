@@ -25,14 +25,14 @@ import (
 	"sort"
 
 	"github.com/ontio/ontology-crypto/keypair"
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/common/serialization"
-	"github.com/ontio/ontology/core/types"
-	"github.com/ontio/ontology/errors"
-	scommon "github.com/ontio/ontology/smartcontract/common"
-	"github.com/ontio/ontology/smartcontract/event"
-	vm "github.com/ontio/ontology/vm/neovm"
-	vmtypes "github.com/ontio/ontology/vm/neovm/types"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/serialization"
+	"github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/multi-chain/errors"
+	scommon "github.com/ontio/multi-chain/smartcontract/common"
+	"github.com/ontio/multi-chain/smartcontract/event"
+	vm "github.com/ontio/multi-chain/vm/neovm"
+	vmtypes "github.com/ontio/multi-chain/vm/neovm/types"
 )
 
 // HeaderGetNextConsensus put current block time to vm stack

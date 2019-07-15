@@ -22,9 +22,9 @@ import (
 	"errors"
 
 	"github.com/ontio/ontology-crypto/keypair"
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/common/constants"
-	"github.com/ontio/ontology/core/program"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/constants"
+	"github.com/ontio/multi-chain/core/program"
 )
 
 func AddressFromPubKey(pubkey keypair.PublicKey) common.Address {

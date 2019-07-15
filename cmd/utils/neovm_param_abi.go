@@ -21,7 +21,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/ontio/ontology/cmd/abi"
+	"github.com/ontio/multi-chain/cmd/abi"
 	"strconv"
 	"strings"
 )

@@ -19,10 +19,10 @@
 package neovm
 
 import (
-	"github.com/ontio/ontology/core/payload"
-	"github.com/ontio/ontology/core/types"
-	"github.com/ontio/ontology/errors"
-	vm "github.com/ontio/ontology/vm/neovm"
+	"github.com/ontio/multi-chain/core/payload"
+	"github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/multi-chain/errors"
+	vm "github.com/ontio/multi-chain/vm/neovm"
 )
 
 func validatorAttribute(engine *vm.ExecutionEngine) error {

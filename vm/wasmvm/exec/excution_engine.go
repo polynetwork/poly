@@ -26,13 +26,13 @@ import (
 	"os"
 	"reflect"
 
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/errors"
-	"github.com/ontio/ontology/vm/neovm/interfaces"
-	"github.com/ontio/ontology/vm/wasmvm/memory"
-	"github.com/ontio/ontology/vm/wasmvm/util"
-	"github.com/ontio/ontology/vm/wasmvm/validate"
-	"github.com/ontio/ontology/vm/wasmvm/wasm"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/errors"
+	"github.com/ontio/multi-chain/vm/neovm/interfaces"
+	"github.com/ontio/multi-chain/vm/wasmvm/memory"
+	"github.com/ontio/multi-chain/vm/wasmvm/util"
+	"github.com/ontio/multi-chain/vm/wasmvm/validate"
+	"github.com/ontio/multi-chain/vm/wasmvm/wasm"
 )
 
 const (

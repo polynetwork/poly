@@ -21,9 +21,9 @@ package account
 import (
 	"github.com/ontio/ontology-crypto/keypair"
 	s "github.com/ontio/ontology-crypto/signature"
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/common/log"
-	"github.com/ontio/ontology/core/types"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/log"
+	"github.com/ontio/multi-chain/core/types"
 )
 
 /* crypto object */

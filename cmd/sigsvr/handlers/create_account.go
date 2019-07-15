@@ -21,8 +21,8 @@ import (
 	"encoding/json"
 	"github.com/ontio/ontology-crypto/keypair"
 	s "github.com/ontio/ontology-crypto/signature"
-	clisvrcom "github.com/ontio/ontology/cmd/sigsvr/common"
-	"github.com/ontio/ontology/common/log"
+	clisvrcom "github.com/ontio/multi-chain/cmd/sigsvr/common"
+	"github.com/ontio/multi-chain/common/log"
 )
 
 type CreateAccountReq struct {

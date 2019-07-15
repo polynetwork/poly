@@ -24,7 +24,7 @@ The Ontology core tech team, the community, and the ecosystem can all support yo
 Ontology makes getting started easier!
 
 Ontology MainNet has been launched on Jun 30, 2018. <br>
-And new features are still rapidly under development. The master branch may be unstable, but stable versions can be found under the [release page](https://github.com/ontio/ontology/releases).
+And new features are still rapidly under development. The master branch may be unstable, but stable versions can be found under the [release page](https://github.com/ontio/multi-chain/releases).
 
 We openly welcome developers to Ontology.
 
@@ -74,7 +74,7 @@ The requirements to build Ontology are:
 ### Get from release
 - You can download the latest Ontology binary file with ` curl https://dev.ont.io/ontology_install | sh `.
 
-- You can download other versions at [release page](https://github.com/ontio/ontology/releases).
+- You can download other versions at [release page](https://github.com/ontio/multi-chain/releases).
 
 ### Get from source code
 

@@ -24,12 +24,12 @@ import (
 	"time"
 
 	"github.com/ontio/ontology-crypto/keypair"
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/common/log"
-	"github.com/ontio/ontology/consensus/vbft/config"
-	"github.com/ontio/ontology/core/ledger"
-	"github.com/ontio/ontology/core/signature"
-	"github.com/ontio/ontology/core/types"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/log"
+	"github.com/ontio/multi-chain/consensus/vbft/config"
+	"github.com/ontio/multi-chain/core/ledger"
+	"github.com/ontio/multi-chain/core/signature"
+	"github.com/ontio/multi-chain/core/types"
 )
 
 type ConsensusMsgPayload struct {

@@ -22,13 +22,13 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/consensus/vbft/config"
-	"github.com/ontio/ontology/core/signature"
-	cstates "github.com/ontio/ontology/core/states"
-	"github.com/ontio/ontology/core/types"
-	"github.com/ontio/ontology/smartcontract/service/native"
-	"github.com/ontio/ontology/smartcontract/service/native/utils"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/consensus/vbft/config"
+	"github.com/ontio/multi-chain/core/signature"
+	cstates "github.com/ontio/multi-chain/core/states"
+	"github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/multi-chain/smartcontract/service/native"
+	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 )
 
 func PutBlockHeader(native *native.NativeService, blockHeader *types.Header) error {

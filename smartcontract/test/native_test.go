@@ -19,8 +19,8 @@
 package test
 
 import (
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/smartcontract"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/smartcontract"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

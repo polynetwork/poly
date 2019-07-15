@@ -19,9 +19,9 @@ package wasmvm
 
 import (
 	"bytes"
-	"github.com/ontio/ontology/core/types"
-	"github.com/ontio/ontology/errors"
-	"github.com/ontio/ontology/vm/wasmvm/exec"
+	"github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/multi-chain/errors"
+	"github.com/ontio/multi-chain/vm/wasmvm/exec"
 )
 
 func (this *WasmVmService) attributeGetUsage(engine *exec.ExecutionEngine) (bool, error) {

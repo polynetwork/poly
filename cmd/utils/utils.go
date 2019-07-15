@@ -22,7 +22,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/ontio/ontology/common/constants"
+	"github.com/ontio/multi-chain/common/constants"
 	"io/ioutil"
 	"math"
 	"math/big"

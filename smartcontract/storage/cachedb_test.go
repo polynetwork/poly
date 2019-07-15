@@ -18,9 +18,9 @@
 package storage
 
 import (
-	"github.com/ontio/ontology/core/store/common"
-	"github.com/ontio/ontology/core/store/leveldbstore"
-	"github.com/ontio/ontology/core/store/overlaydb"
+	"github.com/ontio/multi-chain/core/store/common"
+	"github.com/ontio/multi-chain/core/store/leveldbstore"
+	"github.com/ontio/multi-chain/core/store/overlaydb"
 	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"testing"

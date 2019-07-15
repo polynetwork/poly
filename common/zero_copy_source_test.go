@@ -20,7 +20,7 @@ package common
 import (
 	"bytes"
 	"crypto/rand"
-	"github.com/ontio/ontology/common/serialization"
+	"github.com/ontio/multi-chain/common/serialization"
 	"testing"
 )
 

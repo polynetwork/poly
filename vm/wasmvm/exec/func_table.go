@@ -23,7 +23,7 @@
 package exec
 
 import (
-	ops "github.com/ontio/ontology/vm/wasmvm/wasm/operators"
+	ops "github.com/ontio/multi-chain/vm/wasmvm/wasm/operators"
 )
 
 func (vm *VM) newFuncTable() {

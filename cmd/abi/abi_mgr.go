@@ -21,7 +21,7 @@ package abi
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ontio/ontology/common/log"
+	"github.com/ontio/multi-chain/common/log"
 	"io/ioutil"
 	"strings"
 )

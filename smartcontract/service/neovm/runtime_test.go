@@ -24,9 +24,9 @@ import (
 	"testing"
 
 	"errors"
-	"github.com/ontio/ontology/account"
-	"github.com/ontio/ontology/vm/neovm"
-	"github.com/ontio/ontology/vm/neovm/types"
+	"github.com/ontio/multi-chain/account"
+	"github.com/ontio/multi-chain/vm/neovm"
+	"github.com/ontio/multi-chain/vm/neovm/types"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -26,14 +26,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ontio/ontology/common/config"
-	"github.com/ontio/ontology/common/log"
-	"github.com/ontio/ontology/core/ledger"
-	"github.com/ontio/ontology/p2pserver/common"
-	"github.com/ontio/ontology/p2pserver/message/msg_pack"
-	"github.com/ontio/ontology/p2pserver/message/types"
-	"github.com/ontio/ontology/p2pserver/net/protocol"
-	"github.com/ontio/ontology/p2pserver/peer"
+	"github.com/ontio/multi-chain/common/config"
+	"github.com/ontio/multi-chain/common/log"
+	"github.com/ontio/multi-chain/core/ledger"
+	"github.com/ontio/multi-chain/p2pserver/common"
+	"github.com/ontio/multi-chain/p2pserver/message/msg_pack"
+	"github.com/ontio/multi-chain/p2pserver/message/types"
+	"github.com/ontio/multi-chain/p2pserver/net/protocol"
+	"github.com/ontio/multi-chain/p2pserver/peer"
 )
 
 //NewNetServer return the net object in p2p

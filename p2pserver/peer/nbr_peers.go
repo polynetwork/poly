@@ -22,10 +22,10 @@ import (
 	"fmt"
 	"sync"
 
-	comm "github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/common/log"
-	"github.com/ontio/ontology/p2pserver/common"
-	"github.com/ontio/ontology/p2pserver/message/types"
+	comm "github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/log"
+	"github.com/ontio/multi-chain/p2pserver/common"
+	"github.com/ontio/multi-chain/p2pserver/message/types"
 )
 
 //NbrPeers: The neigbor list

@@ -18,8 +18,8 @@
 package exec
 
 import (
-	"github.com/ontio/ontology/errors"
-	"github.com/ontio/ontology/vm/wasmvm/util"
+	"github.com/ontio/multi-chain/errors"
+	"github.com/ontio/multi-chain/vm/wasmvm/util"
 	"strconv"
 )
 

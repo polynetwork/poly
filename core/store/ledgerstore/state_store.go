@@ -25,17 +25,17 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/common/log"
-	"github.com/ontio/ontology/common/serialization"
-	"github.com/ontio/ontology/core/payload"
-	"github.com/ontio/ontology/core/states"
-	scom "github.com/ontio/ontology/core/store/common"
-	"github.com/ontio/ontology/core/store/leveldbstore"
-	"github.com/ontio/ontology/core/store/overlaydb"
-	"github.com/ontio/ontology/merkle"
-	"github.com/ontio/ontology/smartcontract/service/native/ontid"
-	"github.com/ontio/ontology/smartcontract/service/native/utils"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/log"
+	"github.com/ontio/multi-chain/common/serialization"
+	"github.com/ontio/multi-chain/core/payload"
+	"github.com/ontio/multi-chain/core/states"
+	scom "github.com/ontio/multi-chain/core/store/common"
+	"github.com/ontio/multi-chain/core/store/leveldbstore"
+	"github.com/ontio/multi-chain/core/store/overlaydb"
+	"github.com/ontio/multi-chain/merkle"
+	"github.com/ontio/multi-chain/smartcontract/service/native/ontid"
+	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 )
 
 var (

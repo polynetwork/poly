@@ -18,14 +18,14 @@
 package main
 
 import (
-	"github.com/ontio/ontology/cmd"
-	"github.com/ontio/ontology/cmd/abi"
-	cmdsvr "github.com/ontio/ontology/cmd/sigsvr"
-	clisvrcom "github.com/ontio/ontology/cmd/sigsvr/common"
-	"github.com/ontio/ontology/cmd/sigsvr/store"
-	"github.com/ontio/ontology/cmd/utils"
-	"github.com/ontio/ontology/common/config"
-	"github.com/ontio/ontology/common/log"
+	"github.com/ontio/multi-chain/cmd"
+	"github.com/ontio/multi-chain/cmd/abi"
+	cmdsvr "github.com/ontio/multi-chain/cmd/sigsvr"
+	clisvrcom "github.com/ontio/multi-chain/cmd/sigsvr/common"
+	"github.com/ontio/multi-chain/cmd/sigsvr/store"
+	"github.com/ontio/multi-chain/cmd/utils"
+	"github.com/ontio/multi-chain/common/config"
+	"github.com/ontio/multi-chain/common/log"
 	"github.com/urfave/cli"
 	"os"
 	"os/signal"

@@ -23,13 +23,13 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/common/constants"
-	"github.com/ontio/ontology/common/log"
-	"github.com/ontio/ontology/errors"
-	"github.com/ontio/ontology/smartcontract/service/native"
-	"github.com/ontio/ontology/smartcontract/service/native/utils"
-	"github.com/ontio/ontology/vm/neovm/types"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/constants"
+	"github.com/ontio/multi-chain/common/log"
+	"github.com/ontio/multi-chain/errors"
+	"github.com/ontio/multi-chain/smartcontract/service/native"
+	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
+	"github.com/ontio/multi-chain/vm/neovm/types"
 )
 
 const (

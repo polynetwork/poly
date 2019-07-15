@@ -20,13 +20,13 @@ package store
 
 import (
 	"github.com/ontio/ontology-crypto/keypair"
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/core/payload"
-	"github.com/ontio/ontology/core/states"
-	"github.com/ontio/ontology/core/store/overlaydb"
-	"github.com/ontio/ontology/core/types"
-	"github.com/ontio/ontology/smartcontract/event"
-	cstates "github.com/ontio/ontology/smartcontract/states"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/core/payload"
+	"github.com/ontio/multi-chain/core/states"
+	"github.com/ontio/multi-chain/core/store/overlaydb"
+	"github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/multi-chain/smartcontract/event"
+	cstates "github.com/ontio/multi-chain/smartcontract/states"
 )
 
 type ExecuteResult struct {

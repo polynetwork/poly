@@ -24,12 +24,12 @@ import (
 	"time"
 
 	"github.com/ontio/ontology-crypto/keypair"
-	"github.com/ontio/ontology/account"
-	comm "github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/common/log"
-	ct "github.com/ontio/ontology/core/types"
-	"github.com/ontio/ontology/p2pserver/common"
-	mt "github.com/ontio/ontology/p2pserver/message/types"
+	"github.com/ontio/multi-chain/account"
+	comm "github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/log"
+	ct "github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/multi-chain/p2pserver/common"
+	mt "github.com/ontio/multi-chain/p2pserver/message/types"
 	"github.com/stretchr/testify/assert"
 )
 

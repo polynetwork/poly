@@ -22,12 +22,12 @@ import (
 	"time"
 
 	"github.com/ontio/ontology-eventbus/actor"
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/common/log"
-	"github.com/ontio/ontology/core/types"
-	"github.com/ontio/ontology/errors"
-	p2pcommon "github.com/ontio/ontology/p2pserver/common"
-	tc "github.com/ontio/ontology/txnpool/common"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/log"
+	"github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/multi-chain/errors"
+	p2pcommon "github.com/ontio/multi-chain/p2pserver/common"
+	tc "github.com/ontio/multi-chain/txnpool/common"
 )
 
 const txnPoolReqTimeout = p2pcommon.ACTOR_TIMEOUT * time.Second

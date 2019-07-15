@@ -19,7 +19,7 @@
 package neovm
 
 import (
-	"github.com/ontio/ontology/vm/neovm/errors"
+	"github.com/ontio/multi-chain/vm/neovm/errors"
 )
 
 func opNop(e *ExecutionEngine) (VMState, error) {

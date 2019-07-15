@@ -18,10 +18,10 @@
 package wasmvm
 
 import (
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/errors"
-	"github.com/ontio/ontology/vm/wasmvm/exec"
-	"github.com/ontio/ontology/vm/wasmvm/util"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/errors"
+	"github.com/ontio/multi-chain/vm/wasmvm/exec"
+	"github.com/ontio/multi-chain/vm/wasmvm/util"
 )
 
 func (this *WasmVmService) blockChainGetHeight(engine *exec.ExecutionEngine) (bool, error) {

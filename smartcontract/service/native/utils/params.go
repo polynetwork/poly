@@ -17,7 +17,7 @@
  */
 package utils
 
-import "github.com/ontio/ontology/common"
+import "github.com/ontio/multi-chain/common"
 
 var (
 	BYTE_FALSE = []byte{0}

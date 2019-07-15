@@ -20,12 +20,12 @@ package stateful
 
 import (
 	"github.com/ontio/ontology-eventbus/actor"
-	"github.com/ontio/ontology/common/log"
-	"github.com/ontio/ontology/core/ledger"
-	"github.com/ontio/ontology/core/types"
-	"github.com/ontio/ontology/errors"
-	"github.com/ontio/ontology/validator/db"
-	vatypes "github.com/ontio/ontology/validator/types"
+	"github.com/ontio/multi-chain/common/log"
+	"github.com/ontio/multi-chain/core/ledger"
+	"github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/multi-chain/errors"
+	"github.com/ontio/multi-chain/validator/db"
+	vatypes "github.com/ontio/multi-chain/validator/types"
 	"reflect"
 )
 

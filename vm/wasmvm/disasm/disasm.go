@@ -30,10 +30,10 @@ import (
 	"io"
 	"math"
 
-	"github.com/ontio/ontology/vm/wasmvm/internal/stack"
-	"github.com/ontio/ontology/vm/wasmvm/wasm"
-	"github.com/ontio/ontology/vm/wasmvm/wasm/leb128"
-	ops "github.com/ontio/ontology/vm/wasmvm/wasm/operators"
+	"github.com/ontio/multi-chain/vm/wasmvm/internal/stack"
+	"github.com/ontio/multi-chain/vm/wasmvm/wasm"
+	"github.com/ontio/multi-chain/vm/wasmvm/wasm/leb128"
+	ops "github.com/ontio/multi-chain/vm/wasmvm/wasm/operators"
 )
 
 // Instr describes an instruction, consisting of an operator, with its

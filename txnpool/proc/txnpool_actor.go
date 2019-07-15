@@ -24,18 +24,18 @@ import (
 
 	"github.com/ontio/ontology-eventbus/actor"
 
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/common/config"
-	"github.com/ontio/ontology/common/log"
-	"github.com/ontio/ontology/core/ledger"
-	tx "github.com/ontio/ontology/core/types"
-	"github.com/ontio/ontology/errors"
-	"github.com/ontio/ontology/events/message"
-	hComm "github.com/ontio/ontology/http/base/common"
-	"github.com/ontio/ontology/smartcontract/service/native/utils"
-	"github.com/ontio/ontology/smartcontract/service/neovm"
-	tc "github.com/ontio/ontology/txnpool/common"
-	"github.com/ontio/ontology/validator/types"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/config"
+	"github.com/ontio/multi-chain/common/log"
+	"github.com/ontio/multi-chain/core/ledger"
+	tx "github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/multi-chain/errors"
+	"github.com/ontio/multi-chain/events/message"
+	hComm "github.com/ontio/multi-chain/http/base/common"
+	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
+	"github.com/ontio/multi-chain/smartcontract/service/neovm"
+	tc "github.com/ontio/multi-chain/txnpool/common"
+	"github.com/ontio/multi-chain/validator/types"
 )
 
 // NewTxActor creates an actor to handle the transaction-based messages from

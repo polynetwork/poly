@@ -24,14 +24,14 @@ import (
 
 	"encoding/hex"
 	"github.com/ontio/ontology-crypto/keypair"
-	"github.com/ontio/ontology/common"
-	cstates "github.com/ontio/ontology/core/states"
-	"github.com/ontio/ontology/core/types"
-	"github.com/ontio/ontology/smartcontract/service/native"
-	"github.com/ontio/ontology/smartcontract/service/native/auth"
-	"github.com/ontio/ontology/smartcontract/service/native/header_sync"
-	"github.com/ontio/ontology/smartcontract/service/native/ont"
-	"github.com/ontio/ontology/smartcontract/service/native/utils"
+	"github.com/ontio/multi-chain/common"
+	cstates "github.com/ontio/multi-chain/core/states"
+	"github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/multi-chain/smartcontract/service/native"
+	"github.com/ontio/multi-chain/smartcontract/service/native/auth"
+	"github.com/ontio/multi-chain/smartcontract/service/native/header_sync"
+	"github.com/ontio/multi-chain/smartcontract/service/native/ont"
+	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 )
 
 func appCallInitContractAdmin(native *native.NativeService, adminOntID []byte) error {

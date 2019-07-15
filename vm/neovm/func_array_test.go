@@ -24,7 +24,7 @@ import (
 	"bytes"
 	"math/big"
 
-	vtypes "github.com/ontio/ontology/vm/neovm/types"
+	vtypes "github.com/ontio/multi-chain/vm/neovm/types"
 )
 
 func TestOpArraySize(t *testing.T) {

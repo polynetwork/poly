@@ -23,7 +23,7 @@ import (
 	"errors"
 	"reflect"
 
-	"github.com/ontio/ontology/vm/wasmvm/util"
+	"github.com/ontio/multi-chain/vm/wasmvm/util"
 )
 
 type PType int

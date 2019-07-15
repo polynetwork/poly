@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ontio/ontology/common/log"
+	"github.com/ontio/multi-chain/common/log"
 )
 
 func Test_isReady(t *testing.T) {

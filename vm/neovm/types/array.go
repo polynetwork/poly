@@ -22,7 +22,7 @@ import (
 	"math/big"
 
 	"fmt"
-	"github.com/ontio/ontology/vm/neovm/interfaces"
+	"github.com/ontio/multi-chain/vm/neovm/interfaces"
 )
 
 type Array struct {

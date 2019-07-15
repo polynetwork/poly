@@ -25,12 +25,12 @@ import (
 	"math/big"
 	"reflect"
 
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/common/serialization"
-	"github.com/ontio/ontology/smartcontract/service/native"
-	"github.com/ontio/ontology/smartcontract/states"
-	vm "github.com/ontio/ontology/vm/neovm"
-	"github.com/ontio/ontology/vm/neovm/types"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/serialization"
+	"github.com/ontio/multi-chain/smartcontract/service/native"
+	"github.com/ontio/multi-chain/smartcontract/states"
+	vm "github.com/ontio/multi-chain/vm/neovm"
+	"github.com/ontio/multi-chain/vm/neovm/types"
 )
 
 func NativeInvoke(service *NeoVmService, engine *vm.ExecutionEngine) error {

@@ -19,7 +19,7 @@
 package event
 
 import (
-	"github.com/ontio/ontology/common"
+	"github.com/ontio/multi-chain/common"
 )
 
 // LogEventArgs describe smart contract event log struct

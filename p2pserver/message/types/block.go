@@ -20,10 +20,10 @@ package types
 
 import (
 	"fmt"
-	"github.com/ontio/ontology/common"
-	ct "github.com/ontio/ontology/core/types"
-	"github.com/ontio/ontology/errors"
-	comm "github.com/ontio/ontology/p2pserver/common"
+	"github.com/ontio/multi-chain/common"
+	ct "github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/multi-chain/errors"
+	comm "github.com/ontio/multi-chain/p2pserver/common"
 )
 
 type Block struct {

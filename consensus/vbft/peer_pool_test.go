@@ -22,8 +22,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ontio/ontology/common"
-	vconfig "github.com/ontio/ontology/consensus/vbft/config"
+	"github.com/ontio/multi-chain/common"
+	vconfig "github.com/ontio/multi-chain/consensus/vbft/config"
 )
 
 func constructPeerPool(connect bool) *PeerPool {

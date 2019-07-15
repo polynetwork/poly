@@ -18,12 +18,12 @@
 package wasmvm
 
 import (
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/core/signature"
-	"github.com/ontio/ontology/errors"
-	"github.com/ontio/ontology/smartcontract/event"
-	"github.com/ontio/ontology/vm/wasmvm/exec"
-	"github.com/ontio/ontology/vm/wasmvm/util"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/core/signature"
+	"github.com/ontio/multi-chain/errors"
+	"github.com/ontio/multi-chain/smartcontract/event"
+	"github.com/ontio/multi-chain/vm/wasmvm/exec"
+	"github.com/ontio/multi-chain/vm/wasmvm/util"
 )
 
 func (this *WasmVmService) runtimeGetTime(engine *exec.ExecutionEngine) (bool, error) {

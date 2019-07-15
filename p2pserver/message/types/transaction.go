@@ -19,9 +19,9 @@
 package types
 
 import (
-	comm "github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/core/types"
-	"github.com/ontio/ontology/p2pserver/common"
+	comm "github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/multi-chain/p2pserver/common"
 )
 
 // Transaction message

@@ -23,7 +23,7 @@ import (
 	"math/big"
 	"testing"
 
-	vtypes "github.com/ontio/ontology/vm/neovm/types"
+	vtypes "github.com/ontio/multi-chain/vm/neovm/types"
 )
 
 func TestOpCat(t *testing.T) {

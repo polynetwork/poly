@@ -19,7 +19,7 @@
 package types
 
 import (
-	"github.com/ontio/ontology/common"
+	"github.com/ontio/multi-chain/common"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"

@@ -19,8 +19,8 @@
 package event
 
 import (
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/vm/neovm/types"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/vm/neovm/types"
 )
 
 const (

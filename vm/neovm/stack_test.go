@@ -22,7 +22,7 @@ import (
 	"math/big"
 	"testing"
 
-	"github.com/ontio/ontology/vm/neovm/types"
+	"github.com/ontio/multi-chain/vm/neovm/types"
 )
 
 func TestRandomAccessStack_Count(t *testing.T) {

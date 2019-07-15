@@ -22,15 +22,15 @@ import (
 	"math/big"
 
 	"fmt"
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/common/constants"
-	"github.com/ontio/ontology/errors"
-	"github.com/ontio/ontology/smartcontract/service/native"
-	"github.com/ontio/ontology/smartcontract/service/native/chain_manager"
-	"github.com/ontio/ontology/smartcontract/service/native/cross_chain"
-	"github.com/ontio/ontology/smartcontract/service/native/ont"
-	"github.com/ontio/ontology/smartcontract/service/native/utils"
-	"github.com/ontio/ontology/vm/neovm/types"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/constants"
+	"github.com/ontio/multi-chain/errors"
+	"github.com/ontio/multi-chain/smartcontract/service/native"
+	"github.com/ontio/multi-chain/smartcontract/service/native/chain_manager"
+	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain"
+	"github.com/ontio/multi-chain/smartcontract/service/native/ont"
+	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
+	"github.com/ontio/multi-chain/vm/neovm/types"
 )
 
 const (

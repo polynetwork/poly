@@ -21,7 +21,7 @@ package dbft
 import (
 	"io"
 
-	"github.com/ontio/ontology/common"
+	"github.com/ontio/multi-chain/common"
 )
 
 type PrepareResponse struct {

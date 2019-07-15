@@ -22,9 +22,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ontio/ontology/common"
-	vconfig "github.com/ontio/ontology/consensus/vbft/config"
-	"github.com/ontio/ontology/core/types"
+	"github.com/ontio/multi-chain/common"
+	vconfig "github.com/ontio/multi-chain/consensus/vbft/config"
+	"github.com/ontio/multi-chain/core/types"
 )
 
 func TestBlock_getProposer(t *testing.T) {

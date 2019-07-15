@@ -19,8 +19,8 @@
 package neovm
 
 import (
-	"github.com/ontio/ontology/core/types"
-	vm "github.com/ontio/ontology/vm/neovm"
+	"github.com/ontio/multi-chain/core/types"
+	vm "github.com/ontio/multi-chain/vm/neovm"
 )
 
 // AttributeGetUsage put attribute's usage to vm stack

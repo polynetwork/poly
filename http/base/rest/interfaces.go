@@ -20,16 +20,16 @@ package rest
 
 import (
 	"bytes"
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/common/config"
-	"github.com/ontio/ontology/common/log"
-	scom "github.com/ontio/ontology/core/store/common"
-	"github.com/ontio/ontology/core/types"
-	ontErrors "github.com/ontio/ontology/errors"
-	bactor "github.com/ontio/ontology/http/base/actor"
-	bcomn "github.com/ontio/ontology/http/base/common"
-	berr "github.com/ontio/ontology/http/base/error"
-	"github.com/ontio/ontology/smartcontract/service/native/utils"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/config"
+	"github.com/ontio/multi-chain/common/log"
+	scom "github.com/ontio/multi-chain/core/store/common"
+	"github.com/ontio/multi-chain/core/types"
+	ontErrors "github.com/ontio/multi-chain/errors"
+	bactor "github.com/ontio/multi-chain/http/base/actor"
+	bcomn "github.com/ontio/multi-chain/http/base/common"
+	berr "github.com/ontio/multi-chain/http/base/error"
+	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 	"strconv"
 )
 

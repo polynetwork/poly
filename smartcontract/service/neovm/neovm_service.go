@@ -23,17 +23,17 @@ import (
 	"fmt"
 
 	"github.com/ontio/ontology-crypto/keypair"
-	scommon "github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/common/log"
-	"github.com/ontio/ontology/core/signature"
-	"github.com/ontio/ontology/core/store"
-	"github.com/ontio/ontology/core/types"
-	"github.com/ontio/ontology/errors"
-	"github.com/ontio/ontology/smartcontract/context"
-	"github.com/ontio/ontology/smartcontract/event"
-	"github.com/ontio/ontology/smartcontract/storage"
-	vm "github.com/ontio/ontology/vm/neovm"
-	ntypes "github.com/ontio/ontology/vm/neovm/types"
+	scommon "github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/log"
+	"github.com/ontio/multi-chain/core/signature"
+	"github.com/ontio/multi-chain/core/store"
+	"github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/multi-chain/errors"
+	"github.com/ontio/multi-chain/smartcontract/context"
+	"github.com/ontio/multi-chain/smartcontract/event"
+	"github.com/ontio/multi-chain/smartcontract/storage"
+	vm "github.com/ontio/multi-chain/vm/neovm"
+	ntypes "github.com/ontio/multi-chain/vm/neovm/types"
 )
 
 var (

@@ -22,11 +22,11 @@ import (
 	"fmt"
 
 	"encoding/hex"
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/core/types"
-	"github.com/ontio/ontology/merkle"
-	"github.com/ontio/ontology/smartcontract/service/native"
-	"github.com/ontio/ontology/smartcontract/service/native/utils"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/multi-chain/merkle"
+	"github.com/ontio/multi-chain/smartcontract/service/native"
+	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 )
 
 const (

@@ -23,7 +23,7 @@ import (
 	"io"
 
 	"github.com/ontio/ontology-crypto/keypair"
-	"github.com/ontio/ontology/common/serialization"
+	"github.com/ontio/multi-chain/common/serialization"
 )
 
 type BookkeeperState struct {

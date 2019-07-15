@@ -19,9 +19,9 @@
 package context
 
 import (
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/smartcontract/event"
-	"github.com/ontio/ontology/vm/neovm/types"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/smartcontract/event"
+	"github.com/ontio/multi-chain/vm/neovm/types"
 )
 
 // ContextRef is a interface of smart context

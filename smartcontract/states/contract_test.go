@@ -21,7 +21,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/ontio/ontology/common"
+	"github.com/ontio/multi-chain/common"
 )
 
 func TestContract_Serialize_Deserialize(t *testing.T) {

@@ -29,12 +29,12 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/vm/wasmvm/disasm"
-	"github.com/ontio/ontology/vm/wasmvm/exec/internal/compile"
-	"github.com/ontio/ontology/vm/wasmvm/memory"
-	"github.com/ontio/ontology/vm/wasmvm/wasm"
-	ops "github.com/ontio/ontology/vm/wasmvm/wasm/operators"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/vm/wasmvm/disasm"
+	"github.com/ontio/multi-chain/vm/wasmvm/exec/internal/compile"
+	"github.com/ontio/multi-chain/vm/wasmvm/memory"
+	"github.com/ontio/multi-chain/vm/wasmvm/wasm"
+	ops "github.com/ontio/multi-chain/vm/wasmvm/wasm/operators"
 )
 
 var (

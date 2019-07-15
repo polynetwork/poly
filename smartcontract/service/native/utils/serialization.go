@@ -23,9 +23,9 @@ import (
 	"io"
 	"math/big"
 
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/common/serialization"
-	"github.com/ontio/ontology/vm/neovm/types"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/serialization"
+	"github.com/ontio/multi-chain/vm/neovm/types"
 )
 
 func WriteVarUint(w io.Writer, value uint64) error {

@@ -20,18 +20,18 @@ package smartcontract
 import (
 	"fmt"
 
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/common/log"
-	"github.com/ontio/ontology/core/store"
-	ctypes "github.com/ontio/ontology/core/types"
-	"github.com/ontio/ontology/merkle"
-	"github.com/ontio/ontology/smartcontract/context"
-	"github.com/ontio/ontology/smartcontract/event"
-	"github.com/ontio/ontology/smartcontract/service/native"
-	"github.com/ontio/ontology/smartcontract/service/neovm"
-	"github.com/ontio/ontology/smartcontract/storage"
-	vm "github.com/ontio/ontology/vm/neovm"
-	"github.com/ontio/ontology/vm/neovm/types"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/log"
+	"github.com/ontio/multi-chain/core/store"
+	ctypes "github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/multi-chain/merkle"
+	"github.com/ontio/multi-chain/smartcontract/context"
+	"github.com/ontio/multi-chain/smartcontract/event"
+	"github.com/ontio/multi-chain/smartcontract/service/native"
+	"github.com/ontio/multi-chain/smartcontract/service/neovm"
+	"github.com/ontio/multi-chain/smartcontract/storage"
+	vm "github.com/ontio/multi-chain/vm/neovm"
+	"github.com/ontio/multi-chain/vm/neovm/types"
 )
 
 const (

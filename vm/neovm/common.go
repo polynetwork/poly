@@ -24,8 +24,8 @@ import (
 	"hash"
 	"math/big"
 
-	"github.com/ontio/ontology/vm/neovm/interfaces"
-	"github.com/ontio/ontology/vm/neovm/types"
+	"github.com/ontio/multi-chain/vm/neovm/interfaces"
+	"github.com/ontio/multi-chain/vm/neovm/types"
 	"golang.org/x/crypto/ripemd160"
 )
 

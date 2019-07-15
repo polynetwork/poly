@@ -19,8 +19,8 @@
 package wasmvm
 
 import (
-	"github.com/ontio/ontology/errors"
-	"github.com/ontio/ontology/vm/wasmvm/exec"
+	"github.com/ontio/multi-chain/errors"
+	"github.com/ontio/multi-chain/vm/wasmvm/exec"
 )
 
 type WasmStateReader struct {

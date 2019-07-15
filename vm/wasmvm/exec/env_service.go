@@ -28,9 +28,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/ontio/ontology/common/serialization"
-	"github.com/ontio/ontology/vm/wasmvm/memory"
-	"github.com/ontio/ontology/vm/wasmvm/util"
+	"github.com/ontio/multi-chain/common/serialization"
+	"github.com/ontio/multi-chain/vm/wasmvm/memory"
+	"github.com/ontio/multi-chain/vm/wasmvm/util"
 )
 
 type Args struct {

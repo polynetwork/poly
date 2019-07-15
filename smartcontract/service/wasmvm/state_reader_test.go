@@ -18,7 +18,7 @@
 package wasmvm
 
 import (
-	"github.com/ontio/ontology/vm/wasmvm/exec"
+	"github.com/ontio/multi-chain/vm/wasmvm/exec"
 	"testing"
 )
 

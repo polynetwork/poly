@@ -22,9 +22,9 @@ import (
 	"encoding/json"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/ontology-crypto/signature"
-	"github.com/ontio/ontology/cmd/abi"
-	clisvrcom "github.com/ontio/ontology/cmd/sigsvr/common"
-	nutils "github.com/ontio/ontology/smartcontract/service/native/utils"
+	"github.com/ontio/multi-chain/cmd/abi"
+	clisvrcom "github.com/ontio/multi-chain/cmd/sigsvr/common"
+	nutils "github.com/ontio/multi-chain/smartcontract/service/native/utils"
 	"testing"
 )
 

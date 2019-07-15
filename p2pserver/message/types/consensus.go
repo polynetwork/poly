@@ -19,8 +19,8 @@
 package types
 
 import (
-	comm "github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/p2pserver/common"
+	comm "github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/p2pserver/common"
 )
 
 type Consensus struct {

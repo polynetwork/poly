@@ -27,14 +27,14 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/common/config"
-	"github.com/ontio/ontology/common/constants"
-	"github.com/ontio/ontology/common/serialization"
-	cstates "github.com/ontio/ontology/core/states"
-	"github.com/ontio/ontology/smartcontract/service/native"
-	"github.com/ontio/ontology/smartcontract/service/native/global_params"
-	"github.com/ontio/ontology/smartcontract/service/native/utils"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/config"
+	"github.com/ontio/multi-chain/common/constants"
+	"github.com/ontio/multi-chain/common/serialization"
+	cstates "github.com/ontio/multi-chain/core/states"
+	"github.com/ontio/multi-chain/smartcontract/service/native"
+	"github.com/ontio/multi-chain/smartcontract/service/native/global_params"
+	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 )
 
 const (

@@ -18,7 +18,7 @@
 
 package utils
 
-import "github.com/ontio/ontology/common/constants"
+import "github.com/ontio/multi-chain/common/constants"
 
 var (
 	TIME_INTERVAL     = constants.UNBOUND_TIME_INTERVAL

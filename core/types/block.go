@@ -22,7 +22,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/ontio/ontology/common"
+	"github.com/ontio/multi-chain/common"
 )
 
 type Block struct {

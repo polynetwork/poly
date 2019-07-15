@@ -2,7 +2,7 @@ package test
 
 import (
 	"fmt"
-	"github.com/ontio/ontology/common"
+	"github.com/ontio/multi-chain/common"
 	"testing"
 )
 

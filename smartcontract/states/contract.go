@@ -21,10 +21,10 @@ package states
 import (
 	"io"
 
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/common/serialization"
-	"github.com/ontio/ontology/errors"
-	"github.com/ontio/ontology/smartcontract/event"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/serialization"
+	"github.com/ontio/multi-chain/errors"
+	"github.com/ontio/multi-chain/smartcontract/event"
 )
 
 // Invoke smart contract struct

@@ -22,8 +22,8 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/golang-lru"
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/core/types"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/core/types"
 )
 
 const (

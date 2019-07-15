@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/common/serialization"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/serialization"
 )
 
 // InvokeCode is an implementation of transaction payload for invoke smartcontract

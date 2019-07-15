@@ -20,7 +20,7 @@ package handlers
 import (
 	"encoding/hex"
 	"encoding/json"
-	clisvrcom "github.com/ontio/ontology/cmd/sigsvr/common"
+	clisvrcom "github.com/ontio/multi-chain/cmd/sigsvr/common"
 	"testing"
 )
 

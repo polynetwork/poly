@@ -20,8 +20,8 @@ package handlers
 
 import (
 	"encoding/json"
-	"github.com/ontio/ontology/account"
-	clisvrcom "github.com/ontio/ontology/cmd/sigsvr/common"
+	"github.com/ontio/multi-chain/account"
+	clisvrcom "github.com/ontio/multi-chain/cmd/sigsvr/common"
 	"testing"
 )
 

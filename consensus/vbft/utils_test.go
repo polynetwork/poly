@@ -21,8 +21,8 @@ package vbft
 import (
 	"testing"
 
-	"github.com/ontio/ontology/account"
-	"github.com/ontio/ontology/common"
+	"github.com/ontio/multi-chain/account"
+	"github.com/ontio/multi-chain/common"
 )
 
 func HashBlock(blk *Block) (common.Uint256, error) {

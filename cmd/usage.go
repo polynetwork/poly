@@ -22,7 +22,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/ontio/ontology/cmd/utils"
+	"github.com/ontio/multi-chain/cmd/utils"
 	"github.com/urfave/cli"
 	"io"
 	"sort"

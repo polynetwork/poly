@@ -23,7 +23,7 @@ import (
 
 	"math/big"
 
-	"github.com/ontio/ontology/vm/neovm/types"
+	"github.com/ontio/multi-chain/vm/neovm/types"
 )
 
 func TestOpBigInt(t *testing.T) {

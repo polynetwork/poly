@@ -21,10 +21,10 @@ package neovm
 import (
 	"fmt"
 
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/core/payload"
-	"github.com/ontio/ontology/errors"
-	vm "github.com/ontio/ontology/vm/neovm"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/core/payload"
+	"github.com/ontio/multi-chain/errors"
+	vm "github.com/ontio/multi-chain/vm/neovm"
 )
 
 // ContractCreate create a new smart contract on blockchain, and put it to vm stack

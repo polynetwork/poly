@@ -20,9 +20,9 @@ package test
 
 import (
 	"fmt"
-	"github.com/ontio/ontology/core/types"
-	"github.com/ontio/ontology/smartcontract"
-	"github.com/ontio/ontology/vm/neovm"
+	"github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/multi-chain/smartcontract"
+	"github.com/ontio/multi-chain/vm/neovm"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

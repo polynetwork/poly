@@ -19,8 +19,8 @@
 package test
 
 import (
-	"github.com/ontio/ontology/core/types"
-	. "github.com/ontio/ontology/smartcontract"
+	"github.com/ontio/multi-chain/core/types"
+	. "github.com/ontio/multi-chain/smartcontract"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"

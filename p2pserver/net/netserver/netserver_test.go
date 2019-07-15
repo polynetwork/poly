@@ -23,9 +23,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ontio/ontology/common/log"
-	"github.com/ontio/ontology/p2pserver/common"
-	"github.com/ontio/ontology/p2pserver/peer"
+	"github.com/ontio/multi-chain/common/log"
+	"github.com/ontio/multi-chain/p2pserver/common"
+	"github.com/ontio/multi-chain/p2pserver/peer"
 )
 
 func init() {

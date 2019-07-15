@@ -27,7 +27,7 @@ package operators
 import (
 	"fmt"
 
-	"github.com/ontio/ontology/vm/wasmvm/wasm"
+	"github.com/ontio/multi-chain/vm/wasmvm/wasm"
 )
 
 var (

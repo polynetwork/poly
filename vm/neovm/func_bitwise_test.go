@@ -22,7 +22,7 @@ import (
 	"math/big"
 	"testing"
 
-	vtypes "github.com/ontio/ontology/vm/neovm/types"
+	vtypes "github.com/ontio/multi-chain/vm/neovm/types"
 )
 
 func TestOpInvert(t *testing.T) {

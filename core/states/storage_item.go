@@ -22,8 +22,8 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/ontio/ontology/common/serialization"
-	"github.com/ontio/ontology/errors"
+	"github.com/ontio/multi-chain/common/serialization"
+	"github.com/ontio/multi-chain/errors"
 )
 
 type StorageItem struct {

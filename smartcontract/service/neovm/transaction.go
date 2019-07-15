@@ -19,9 +19,9 @@
 package neovm
 
 import (
-	"github.com/ontio/ontology/core/types"
-	vm "github.com/ontio/ontology/vm/neovm"
-	vmtypes "github.com/ontio/ontology/vm/neovm/types"
+	"github.com/ontio/multi-chain/core/types"
+	vm "github.com/ontio/multi-chain/vm/neovm"
+	vmtypes "github.com/ontio/multi-chain/vm/neovm/types"
 )
 
 // GetExecutingAddress push transaction's hash to vm stack

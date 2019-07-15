@@ -19,10 +19,10 @@
 package event
 
 import (
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/core/types"
-	"github.com/ontio/ontology/events"
-	"github.com/ontio/ontology/events/message"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/multi-chain/events"
+	"github.com/ontio/multi-chain/events/message"
 )
 
 const (

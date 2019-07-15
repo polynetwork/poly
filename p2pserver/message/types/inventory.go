@@ -21,8 +21,8 @@ package types
 import (
 	"io"
 
-	"github.com/ontio/ontology/common"
-	p2pCommon "github.com/ontio/ontology/p2pserver/common"
+	"github.com/ontio/multi-chain/common"
+	p2pCommon "github.com/ontio/multi-chain/p2pserver/common"
 )
 
 var LastInvHash common.Uint256

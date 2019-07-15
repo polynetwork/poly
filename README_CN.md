@@ -14,7 +14,7 @@
 Ontology致力于创建一个组件化、可自由配置、跨链支持、高性能、横向可扩展的区块链底层基础设施。 让部署及调用去中心化应用变得更加非常简单。
 
 Ontology MainNet 已经在2018年6月30日成功上线。<br>
-但很多新的功能还处于快速的开发过程中，master分支的代码可能是不稳定的，稳定的版本可以在[releases](https://github.com/ontio/ontology/releases)中下载。
+但很多新的功能还处于快速的开发过程中，master分支的代码可能是不稳定的，稳定的版本可以在[releases](https://github.com/ontio/multi-chain/releases)中下载。
 
 公开的主网和测试网都可以在下面找到，也非常欢迎及希望能有更多的开发者加入到Ontology中来。
 
@@ -62,7 +62,7 @@ Ontology MainNet 已经在2018年6月30日成功上线。<br>
 
 ### 从release获取
 - 你可以通过命令 ` curl https://dev.ont.io/ontology_install | sh ` 获取最新的ontology版本
-- 你也可以从[下载页面](https://github.com/ontio/ontology/releases)获取.
+- 你也可以从[下载页面](https://github.com/ontio/multi-chain/releases)获取.
 
 ### 从源码获取
 克隆ontology仓库到 **$GOPATH/src/github.com/ontio** 目录

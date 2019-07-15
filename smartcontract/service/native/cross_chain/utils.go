@@ -21,14 +21,14 @@ package cross_chain
 import (
 	"fmt"
 
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/common/config"
-	cstates "github.com/ontio/ontology/core/states"
-	"github.com/ontio/ontology/smartcontract/event"
-	"github.com/ontio/ontology/smartcontract/service/native"
-	"github.com/ontio/ontology/smartcontract/service/native/chain_manager"
-	"github.com/ontio/ontology/smartcontract/service/native/ont"
-	"github.com/ontio/ontology/smartcontract/service/native/utils"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/config"
+	cstates "github.com/ontio/multi-chain/core/states"
+	"github.com/ontio/multi-chain/smartcontract/event"
+	"github.com/ontio/multi-chain/smartcontract/service/native"
+	"github.com/ontio/multi-chain/smartcontract/service/native/chain_manager"
+	"github.com/ontio/multi-chain/smartcontract/service/native/ont"
+	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 )
 
 func putSideChain(native *native.NativeService, sideChain *chain_manager.SideChain) error {

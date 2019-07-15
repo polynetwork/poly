@@ -22,12 +22,12 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"github.com/ontio/ontology-crypto/keypair"
-	clisvrcom "github.com/ontio/ontology/cmd/sigsvr/common"
-	cliutil "github.com/ontio/ontology/cmd/utils"
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/common/constants"
-	"github.com/ontio/ontology/common/log"
-	"github.com/ontio/ontology/core/types"
+	clisvrcom "github.com/ontio/multi-chain/cmd/sigsvr/common"
+	cliutil "github.com/ontio/multi-chain/cmd/utils"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/constants"
+	"github.com/ontio/multi-chain/common/log"
+	"github.com/ontio/multi-chain/core/types"
 )
 
 type SigMutilRawTransactionReq struct {

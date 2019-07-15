@@ -21,8 +21,8 @@ package types
 import (
 	"errors"
 	"fmt"
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/core/payload"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/core/payload"
 )
 
 type MutableTransaction struct {

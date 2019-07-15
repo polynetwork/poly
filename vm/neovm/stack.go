@@ -19,7 +19,7 @@
 package neovm
 
 import (
-	"github.com/ontio/ontology/vm/neovm/types"
+	"github.com/ontio/multi-chain/vm/neovm/types"
 )
 
 const initStackCap = 16 // to avoid reallocation

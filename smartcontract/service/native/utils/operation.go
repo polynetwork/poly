@@ -21,10 +21,10 @@ package utils
 import (
 	"bytes"
 	"fmt"
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/common/serialization"
-	"github.com/ontio/ontology/errors"
-	"github.com/ontio/ontology/smartcontract/service/native"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/serialization"
+	"github.com/ontio/multi-chain/errors"
+	"github.com/ontio/multi-chain/smartcontract/service/native"
 )
 
 func ConcatKey(contract common.Address, args ...[]byte) []byte {

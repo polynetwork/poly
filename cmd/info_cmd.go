@@ -21,9 +21,9 @@ package cmd
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/ontio/ontology/cmd/utils"
-	"github.com/ontio/ontology/core/types"
-	httpcom "github.com/ontio/ontology/http/base/common"
+	"github.com/ontio/multi-chain/cmd/utils"
+	"github.com/ontio/multi-chain/core/types"
+	httpcom "github.com/ontio/multi-chain/http/base/common"
 	"github.com/urfave/cli"
 	"strconv"
 )

@@ -22,8 +22,8 @@ package rpc
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ontio/ontology/common/log"
-	berr "github.com/ontio/ontology/http/base/error"
+	"github.com/ontio/multi-chain/common/log"
+	berr "github.com/ontio/multi-chain/http/base/error"
 	"io/ioutil"
 	"net/http"
 	"os"

@@ -23,8 +23,8 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/vm/neovm/interfaces"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/vm/neovm/interfaces"
 )
 
 type ByteArray struct {

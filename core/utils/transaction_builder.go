@@ -25,11 +25,11 @@ import (
 	"math/big"
 	"reflect"
 
-	"github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/core/payload"
-	"github.com/ontio/ontology/core/types"
-	neovm "github.com/ontio/ontology/smartcontract/service/neovm"
-	vm "github.com/ontio/ontology/vm/neovm"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/core/payload"
+	"github.com/ontio/multi-chain/core/types"
+	neovm "github.com/ontio/multi-chain/smartcontract/service/neovm"
+	vm "github.com/ontio/multi-chain/vm/neovm"
 )
 
 // NewDeployTransaction returns a deploy Transaction
