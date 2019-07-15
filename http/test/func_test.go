@@ -21,11 +21,11 @@ package test
 import (
 	"bytes"
 	"fmt"
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/merkle"
 	"github.com/ontio/multi-chain/vm/neovm"
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"

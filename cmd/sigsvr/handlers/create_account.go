@@ -19,10 +19,10 @@ package handlers
 
 import (
 	"encoding/json"
-	"github.com/ontio/ontology-crypto/keypair"
-	s "github.com/ontio/ontology-crypto/signature"
 	clisvrcom "github.com/ontio/multi-chain/cmd/sigsvr/common"
 	"github.com/ontio/multi-chain/common/log"
+	"github.com/ontio/ontology-crypto/keypair"
+	s "github.com/ontio/ontology-crypto/signature"
 )
 
 type CreateAccountReq struct {

@@ -23,12 +23,12 @@ import (
 	"errors"
 	"time"
 
-	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/core/types"
 	ontErrors "github.com/ontio/multi-chain/errors"
 	tcomn "github.com/ontio/multi-chain/txnpool/common"
+	"github.com/ontio/ontology-eventbus/actor"
 )
 
 var txnPid *actor.PID

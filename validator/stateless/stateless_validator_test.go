@@ -20,8 +20,6 @@ package stateless
 import (
 	"testing"
 
-	"github.com/ontio/ontology-crypto/keypair"
-	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/ontio/multi-chain/account"
 	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/core/signature"
@@ -29,6 +27,8 @@ import (
 	"github.com/ontio/multi-chain/core/utils"
 	"github.com/ontio/multi-chain/errors"
 	types2 "github.com/ontio/multi-chain/validator/types"
+	"github.com/ontio/ontology-crypto/keypair"
+	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/stretchr/testify/assert"
 	"time"
 )

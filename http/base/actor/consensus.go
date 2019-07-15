@@ -19,8 +19,8 @@
 package actor
 
 import (
-	"github.com/ontio/ontology-eventbus/actor"
 	cactor "github.com/ontio/multi-chain/consensus/actor"
+	"github.com/ontio/ontology-eventbus/actor"
 )
 
 var consensusSrvPid *actor.PID

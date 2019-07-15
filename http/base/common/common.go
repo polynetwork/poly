@@ -23,7 +23,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/constants"
 	"github.com/ontio/multi-chain/common/log"
@@ -39,6 +38,7 @@ import (
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 	cstate "github.com/ontio/multi-chain/smartcontract/states"
 	"github.com/ontio/multi-chain/vm/neovm"
+	"github.com/ontio/ontology-crypto/keypair"
 	"strings"
 	"time"
 )

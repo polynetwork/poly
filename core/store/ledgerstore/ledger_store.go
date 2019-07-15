@@ -31,7 +31,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/common/log"
@@ -56,6 +55,7 @@ import (
 	"github.com/ontio/multi-chain/smartcontract/service/neovm"
 	sstate "github.com/ontio/multi-chain/smartcontract/states"
 	"github.com/ontio/multi-chain/smartcontract/storage"
+	"github.com/ontio/ontology-crypto/keypair"
 )
 
 const (

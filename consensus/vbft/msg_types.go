@@ -24,11 +24,11 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ontio/ontology-crypto/keypair"
-	"github.com/ontio/ontology-crypto/signature"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/serialization"
 	vconfig "github.com/ontio/multi-chain/consensus/vbft/config"
+	"github.com/ontio/ontology-crypto/keypair"
+	"github.com/ontio/ontology-crypto/signature"
 )
 
 type MsgType uint8

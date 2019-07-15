@@ -29,9 +29,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/fdlimit"
-	"github.com/ontio/ontology-crypto/keypair"
-	"github.com/ontio/ontology-eventbus/actor"
-	alog "github.com/ontio/ontology-eventbus/log"
 	"github.com/ontio/multi-chain/account"
 	"github.com/ontio/multi-chain/cmd"
 	cmdcom "github.com/ontio/multi-chain/cmd/common"
@@ -58,6 +55,9 @@ import (
 	"github.com/ontio/multi-chain/txnpool/proc"
 	"github.com/ontio/multi-chain/validator/stateful"
 	"github.com/ontio/multi-chain/validator/stateless"
+	"github.com/ontio/ontology-crypto/keypair"
+	"github.com/ontio/ontology-eventbus/actor"
+	alog "github.com/ontio/ontology-eventbus/log"
 	"github.com/urfave/cli"
 )
 

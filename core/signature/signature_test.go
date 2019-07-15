@@ -20,8 +20,8 @@ package signature
 import (
 	"testing"
 
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/multi-chain/account"
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -21,10 +21,10 @@ package program
 import (
 	"errors"
 	"fmt"
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/constants"
 	"github.com/ontio/multi-chain/vm/neovm"
+	"github.com/ontio/ontology-crypto/keypair"
 	"io"
 	"math"
 	"math/big"

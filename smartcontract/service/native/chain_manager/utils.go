@@ -23,7 +23,6 @@ import (
 	"fmt"
 
 	"encoding/hex"
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/multi-chain/common"
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/core/types"
@@ -32,6 +31,7 @@ import (
 	"github.com/ontio/multi-chain/smartcontract/service/native/header_sync"
 	"github.com/ontio/multi-chain/smartcontract/service/native/ont"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
+	"github.com/ontio/ontology-crypto/keypair"
 )
 
 func appCallInitContractAdmin(native *native.NativeService, adminOntID []byte) error {

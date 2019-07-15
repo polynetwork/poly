@@ -23,8 +23,6 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/ontio/ontology-crypto/keypair"
-	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/ontio/multi-chain/account"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
@@ -36,6 +34,8 @@ import (
 	"github.com/ontio/multi-chain/events"
 	"github.com/ontio/multi-chain/events/message"
 	"github.com/ontio/multi-chain/validator/increment"
+	"github.com/ontio/ontology-crypto/keypair"
+	"github.com/ontio/ontology-eventbus/actor"
 )
 
 /*

@@ -23,8 +23,8 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/stretchr/testify/assert"
 )
 

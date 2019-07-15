@@ -23,7 +23,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/core/genesis"
@@ -34,6 +33,7 @@ import (
 	tp "github.com/ontio/multi-chain/txnpool/proc"
 	"github.com/ontio/multi-chain/validator/stateful"
 	"github.com/ontio/multi-chain/validator/stateless"
+	"github.com/ontio/ontology-eventbus/actor"
 )
 
 var (

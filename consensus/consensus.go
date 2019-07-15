@@ -19,12 +19,12 @@
 package consensus
 
 import (
-	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/ontio/multi-chain/account"
 	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/consensus/dbft"
 	"github.com/ontio/multi-chain/consensus/solo"
 	"github.com/ontio/multi-chain/consensus/vbft"
+	"github.com/ontio/ontology-eventbus/actor"
 )
 
 type ConsensusService interface {

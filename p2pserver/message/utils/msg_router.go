@@ -19,11 +19,11 @@
 package utils
 
 import (
-	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/ontio/multi-chain/common/log"
 	msgCommon "github.com/ontio/multi-chain/p2pserver/common"
 	"github.com/ontio/multi-chain/p2pserver/message/types"
 	"github.com/ontio/multi-chain/p2pserver/net/protocol"
+	"github.com/ontio/ontology-eventbus/actor"
 )
 
 // MessageHandler defines the unified api for each net message

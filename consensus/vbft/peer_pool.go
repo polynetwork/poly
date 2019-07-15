@@ -23,8 +23,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/multi-chain/consensus/vbft/config"
+	"github.com/ontio/ontology-crypto/keypair"
 )
 
 type Peer struct {
@@ -51,12 +51,12 @@ type PeerPool struct {
 
 func NewPeerPool(maxSize int, server *Server) *PeerPool {
 	return &PeerPool{
-		maxSize: maxSize,
-		server:  server,
-		configs: make(map[uint32]*vconfig.PeerConfig),
-		IDMap:   make(map[string]uint32),
-		P2pMap:  make(map[uint32]uint64),
-		peers:   make(map[uint32]*Peer),
+		maxSize:                maxSize,
+		server:                 server,
+		configs:                make(map[uint32]*vconfig.PeerConfig),
+		IDMap:                  make(map[string]uint32),
+		P2pMap:                 make(map[uint32]uint64),
+		peers:                  make(map[uint32]*Peer),
 		peerConnectionWaitings: make(map[uint32]chan struct{}),
 	}
 }

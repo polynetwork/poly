@@ -22,7 +22,6 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"fmt"
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/multi-chain/account"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/core/payload"
@@ -30,6 +29,7 @@ import (
 	"github.com/ontio/multi-chain/core/utils"
 	"github.com/ontio/multi-chain/smartcontract/service/native/ont"
 	nutils "github.com/ontio/multi-chain/smartcontract/service/native/utils"
+	"github.com/ontio/ontology-crypto/keypair"
 	"testing"
 	"time"
 )

@@ -22,7 +22,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/core/payload"
 	"github.com/ontio/multi-chain/core/types"
@@ -30,6 +29,7 @@ import (
 	tc "github.com/ontio/multi-chain/txnpool/common"
 	"github.com/ontio/multi-chain/validator/stateless"
 	vt "github.com/ontio/multi-chain/validator/types"
+	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/stretchr/testify/assert"
 )
 

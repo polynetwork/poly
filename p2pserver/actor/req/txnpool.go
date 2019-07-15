@@ -21,13 +21,13 @@ package req
 import (
 	"time"
 
-	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/errors"
 	p2pcommon "github.com/ontio/multi-chain/p2pserver/common"
 	tc "github.com/ontio/multi-chain/txnpool/common"
+	"github.com/ontio/ontology-eventbus/actor"
 )
 
 const txnPoolReqTimeout = p2pcommon.ACTOR_TIMEOUT * time.Second

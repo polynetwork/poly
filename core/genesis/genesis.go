@@ -25,7 +25,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/common/constants"
@@ -38,6 +37,7 @@ import (
 	"github.com/ontio/multi-chain/smartcontract/service/native/ont"
 	nutils "github.com/ontio/multi-chain/smartcontract/service/native/utils"
 	"github.com/ontio/multi-chain/smartcontract/service/neovm"
+	"github.com/ontio/ontology-crypto/keypair"
 )
 
 const (

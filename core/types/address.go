@@ -21,10 +21,10 @@ package types
 import (
 	"errors"
 
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/constants"
 	"github.com/ontio/multi-chain/core/program"
+	"github.com/ontio/ontology-crypto/keypair"
 )
 
 func AddressFromPubKey(pubkey keypair.PublicKey) common.Address {

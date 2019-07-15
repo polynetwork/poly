@@ -25,9 +25,9 @@ import (
 	"math"
 	"sync"
 
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/log"
+	"github.com/ontio/ontology-crypto/keypair"
 )
 
 type BlockList []*Block

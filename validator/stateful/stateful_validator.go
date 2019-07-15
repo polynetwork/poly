@@ -19,13 +19,13 @@
 package stateful
 
 import (
-	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/core/ledger"
 	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/errors"
 	"github.com/ontio/multi-chain/validator/db"
 	vatypes "github.com/ontio/multi-chain/validator/types"
+	"github.com/ontio/ontology-eventbus/actor"
 	"reflect"
 )
 

@@ -21,7 +21,6 @@ package dbft
 import (
 	"fmt"
 
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/multi-chain/account"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/log"
@@ -29,6 +28,7 @@ import (
 	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/core/vote"
 	msg "github.com/ontio/multi-chain/p2pserver/message/types"
+	"github.com/ontio/ontology-crypto/keypair"
 )
 
 const ContextVersion uint32 = 0

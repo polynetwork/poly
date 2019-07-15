@@ -20,7 +20,6 @@ package ledger
 
 import (
 	"fmt"
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/core/payload"
@@ -30,6 +29,7 @@ import (
 	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/smartcontract/event"
 	cstate "github.com/ontio/multi-chain/smartcontract/states"
+	"github.com/ontio/ontology-crypto/keypair"
 )
 
 var DefLedger *Ledger

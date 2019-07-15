@@ -22,7 +22,6 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/ontio/ontology-crypto/keypair"
 	scommon "github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/core/signature"
@@ -34,6 +33,7 @@ import (
 	"github.com/ontio/multi-chain/smartcontract/storage"
 	vm "github.com/ontio/multi-chain/vm/neovm"
 	ntypes "github.com/ontio/multi-chain/vm/neovm/types"
+	"github.com/ontio/ontology-crypto/keypair"
 )
 
 var (

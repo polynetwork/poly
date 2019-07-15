@@ -23,7 +23,6 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/ontio/ontology-crypto/vrf"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/common/serialization"
@@ -34,6 +33,7 @@ import (
 	"github.com/ontio/multi-chain/smartcontract/service/native/ont"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 	"github.com/ontio/multi-chain/vm/neovm/types"
+	"github.com/ontio/ontology-crypto/vrf"
 )
 
 func GetPeerPoolMap(native *native.NativeService, contract common.Address, view uint32) (*PeerPoolMap, error) {

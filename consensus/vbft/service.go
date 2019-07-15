@@ -26,9 +26,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ontio/ontology-crypto/keypair"
-	"github.com/ontio/ontology-crypto/vrf"
-	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/ontio/multi-chain/account"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/log"
@@ -45,6 +42,9 @@ import (
 	ninit "github.com/ontio/multi-chain/smartcontract/service/native/init"
 	nutils "github.com/ontio/multi-chain/smartcontract/service/native/utils"
 	"github.com/ontio/multi-chain/validator/increment"
+	"github.com/ontio/ontology-crypto/keypair"
+	"github.com/ontio/ontology-crypto/vrf"
+	"github.com/ontio/ontology-eventbus/actor"
 )
 
 type BftActionType uint8

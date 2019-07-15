@@ -27,7 +27,6 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
-	evtActor "github.com/ontio/ontology-eventbus/actor"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/common/log"
@@ -38,6 +37,7 @@ import (
 	"github.com/ontio/multi-chain/p2pserver/message/msg_pack"
 	msgTypes "github.com/ontio/multi-chain/p2pserver/message/types"
 	"github.com/ontio/multi-chain/p2pserver/net/protocol"
+	evtActor "github.com/ontio/ontology-eventbus/actor"
 )
 
 //respCache cache for some response data

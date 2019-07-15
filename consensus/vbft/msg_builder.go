@@ -23,13 +23,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/consensus/vbft/config"
 	"github.com/ontio/multi-chain/core/ledger"
 	"github.com/ontio/multi-chain/core/signature"
 	"github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/ontology-crypto/keypair"
 )
 
 type ConsensusMsgPayload struct {

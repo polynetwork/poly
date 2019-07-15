@@ -20,12 +20,12 @@ package handlers
 import (
 	"encoding/hex"
 	"encoding/json"
-	"github.com/ontio/ontology-crypto/keypair"
-	"github.com/ontio/ontology-crypto/signature"
 	clisvrcom "github.com/ontio/multi-chain/cmd/sigsvr/common"
 	"github.com/ontio/multi-chain/cmd/utils"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/ontology-crypto/keypair"
+	"github.com/ontio/ontology-crypto/signature"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

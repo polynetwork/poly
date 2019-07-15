@@ -25,8 +25,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/ontio/ontology-crypto/keypair"
-	"github.com/ontio/ontology-crypto/vrf"
 	"github.com/ontio/multi-chain/account"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
@@ -38,6 +36,8 @@ import (
 	"github.com/ontio/multi-chain/core/store/overlaydb"
 	gov "github.com/ontio/multi-chain/smartcontract/service/native/governance"
 	nutils "github.com/ontio/multi-chain/smartcontract/service/native/utils"
+	"github.com/ontio/ontology-crypto/keypair"
+	"github.com/ontio/ontology-crypto/vrf"
 )
 
 func SignMsg(account *account.Account, msg ConsensusMsg) ([]byte, error) {

@@ -25,7 +25,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/common/log"
@@ -40,6 +39,7 @@ import (
 	"github.com/ontio/multi-chain/p2pserver/net/netserver"
 	"github.com/ontio/multi-chain/p2pserver/net/protocol"
 	"github.com/ontio/multi-chain/p2pserver/peer"
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/stretchr/testify/assert"
 )
 

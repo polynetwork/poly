@@ -20,12 +20,12 @@ package cmd
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/ontio/ontology-crypto/keypair"
 	cmdcom "github.com/ontio/multi-chain/cmd/common"
 	"github.com/ontio/multi-chain/cmd/utils"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/constants"
 	"github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/urfave/cli"
 	"strings"
 )

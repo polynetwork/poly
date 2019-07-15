@@ -31,7 +31,6 @@ import (
 	"sync"
 	"time"
 
-	evtActor "github.com/ontio/ontology-eventbus/actor"
 	comm "github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/common/log"
@@ -44,6 +43,7 @@ import (
 	"github.com/ontio/multi-chain/p2pserver/net/netserver"
 	p2pnet "github.com/ontio/multi-chain/p2pserver/net/protocol"
 	"github.com/ontio/multi-chain/p2pserver/peer"
+	evtActor "github.com/ontio/ontology-eventbus/actor"
 )
 
 //P2PServer control all network activities

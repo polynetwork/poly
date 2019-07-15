@@ -21,9 +21,9 @@ package states
 import (
 	"io"
 
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/serialization"
+	"github.com/ontio/ontology-crypto/keypair"
 )
 
 type VoteState struct {

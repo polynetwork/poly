@@ -19,7 +19,6 @@
 package store
 
 import (
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/core/payload"
 	"github.com/ontio/multi-chain/core/states"
@@ -27,6 +26,7 @@ import (
 	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/smartcontract/event"
 	cstates "github.com/ontio/multi-chain/smartcontract/states"
+	"github.com/ontio/ontology-crypto/keypair"
 )
 
 type ExecuteResult struct {

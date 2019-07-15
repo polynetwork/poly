@@ -21,13 +21,13 @@ package handlers
 import (
 	"encoding/hex"
 	"encoding/json"
-	"github.com/ontio/ontology-crypto/keypair"
 	clisvrcom "github.com/ontio/multi-chain/cmd/sigsvr/common"
 	cliutil "github.com/ontio/multi-chain/cmd/utils"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/constants"
 	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/ontology-crypto/keypair"
 )
 
 type SigMutilRawTransactionReq struct {

@@ -24,7 +24,6 @@ import (
 
 	"encoding/hex"
 	"encoding/json"
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/common/serialization"
@@ -34,6 +33,7 @@ import (
 	"github.com/ontio/multi-chain/smartcontract/service/native/global_params"
 	"github.com/ontio/multi-chain/smartcontract/service/native/header_sync"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
+	"github.com/ontio/ontology-crypto/keypair"
 )
 
 const (

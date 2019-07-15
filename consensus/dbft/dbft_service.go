@@ -24,7 +24,6 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/ontio/multi-chain/account"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
@@ -39,6 +38,7 @@ import (
 	"github.com/ontio/multi-chain/events/message"
 	p2pmsg "github.com/ontio/multi-chain/p2pserver/message/types"
 	"github.com/ontio/multi-chain/validator/increment"
+	"github.com/ontio/ontology-eventbus/actor"
 )
 
 type DbftService struct {

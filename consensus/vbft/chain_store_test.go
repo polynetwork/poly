@@ -23,12 +23,12 @@ import (
 	"os"
 	"testing"
 
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/multi-chain/account"
 	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/core/genesis"
 	"github.com/ontio/multi-chain/core/ledger"
+	"github.com/ontio/ontology-crypto/keypair"
 )
 
 func newChainStore() *ChainStore {

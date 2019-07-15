@@ -23,8 +23,8 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/ontology-crypto/keypair"
 )
 
 type Header struct {

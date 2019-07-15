@@ -23,13 +23,13 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/multi-chain/account"
 	comm "github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/log"
 	ct "github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/p2pserver/common"
 	mt "github.com/ontio/multi-chain/p2pserver/message/types"
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/stretchr/testify/assert"
 )
 
