@@ -20,6 +20,7 @@ package init
 
 import (
 	"bytes"
+	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
 	"math/big"
 
 	"github.com/ontio/multi-chain/common"
@@ -51,6 +52,7 @@ func init() {
 	chain_manager.InitChainManager()
 	cross_chain.InitCrossChain()
 	header_sync.InitHeaderSync()
+	side_chain_manager.InitSideChainManager()
 }
 
 func InitBytes(addr common.Address, method string) []byte {
