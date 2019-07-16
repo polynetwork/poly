@@ -32,8 +32,10 @@ const (
 	//key prefix
 	REGISTER_SIDE_CHAIN_REQUEST = "registerSideChainRequest"
 	UPDATE_SIDE_CHAIN_REQUEST   = "updateSideChainRequest"
-	QUIT_SIDE_CHAIN_REQUEST     = "quitSideChainRequest"
 	SIDE_CHAIN                  = "sideChain"
+
+	//constant
+	ONG = 500000000000
 )
 
 //Init contract address
@@ -52,7 +54,35 @@ func RegisterSideChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, contract params deserialize error: %v", err)
 	}
 
+	registerSideChain, err := getRegisterSideChain(native, params.Chainid)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, getRegisterSideChainRequest error: %v", err)
+	}
+	if registerSideChain != new(SideChain) {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, chainid already requested")
+	}
+	sideChain, err := getSideChain(native, params.Chainid)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, getRegisterSideChainRequest error: %v", err)
+	}
+	if sideChain != new(SideChain) {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, chainid already registered")
+	}
+	sideChain = &SideChain{
+		Chainid:      params.Chainid,
+		Name:         params.Name,
+		BlocksToWait: params.BlocksToWait,
+	}
+	err = putRegisterSideChain(native, sideChain)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, putRegisterSideChain error: %v", err)
+	}
 
+	//ong transfer
+	err = appCallTransferOng(native, params.Address, utils.GovernanceContractAddress, ONG)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("appCallTransferOng, ong transfer error: %v", err)
+	}
 
 	return utils.BYTE_TRUE, nil
 }

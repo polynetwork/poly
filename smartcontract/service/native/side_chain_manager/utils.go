@@ -20,38 +20,160 @@ package side_chain_manager
 
 import (
 	"fmt"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/smartcontract/service/native/ont"
 
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 )
 
-func GetMainChain(native *native.NativeService) (uint64, error) {
-	contract := utils.ChainManagerContractAddress
-	mainChainStore, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(MAIN_CHAIN)))
+func appCallTransferOng(native *native.NativeService, from common.Address, to common.Address, amount uint64) error {
+	err := appCallTransfer(native, utils.OngContractAddress, from, to, amount)
 	if err != nil {
-		return 0, fmt.Errorf("get mainChainStore error: %v", err)
+		return fmt.Errorf("appCallTransferOng, appCallTransfer error: %v", err)
 	}
-	if mainChainStore == nil {
-		return 0, fmt.Errorf("GetMainChain, can not find any record")
-	}
-	mainChainBytes, err := cstates.GetValueFromRawStorageItem(mainChainStore)
-	if err != nil {
-		return 0, fmt.Errorf("GetMainChain, deserialize from raw storage item err:%v", err)
-	}
-	mainChainID, err := utils.GetBytesUint64(mainChainBytes)
-	if err != nil {
-		return 0, fmt.Errorf("GetMainChain, utils.GetBytesUint64 err:%v", err)
-	}
-	return mainChainID, nil
+	return nil
 }
 
-func putRegisterSideChainRequest(native *native.NativeService, chainID uint64) error {
-	contract := utils.ChainManagerContractAddress
-	mainChainIDBytes, err := utils.GetUint64Bytes(chainID)
-	if err != nil {
-		return fmt.Errorf("getUint64Bytes error: %v", err)
+func appCallTransfer(native *native.NativeService, contract common.Address, from common.Address, to common.Address, amount uint64) error {
+	var sts []ont.State
+	sts = append(sts, ont.State{
+		From:  from,
+		To:    to,
+		Value: amount,
+	})
+	transfers := ont.Transfers{
+		States: sts,
 	}
-	native.CacheDB.Put(utils.ConcatKey(contract, []byte(MAIN_CHAIN)), cstates.GenRawStorageItem(mainChainIDBytes))
+	sink := common.NewZeroCopySink(nil)
+	transfers.Serialization(sink)
+
+	if _, err := native.NativeCall(contract, "transfer", sink.Bytes()); err != nil {
+		return fmt.Errorf("appCallTransfer, appCall error: %v", err)
+	}
+	return nil
+}
+
+func getRegisterSideChain(native *native.NativeService, chanid uint32) (*SideChain, error) {
+	contract := utils.SideChainManagerContractAddress
+	chainidByte, err := utils.GetUint32Bytes(chanid)
+	if err != nil {
+		return nil, fmt.Errorf("getRegisterSideChain, utils.GetUint32Bytes error: %v", err)
+	}
+	sideChainStore, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(REGISTER_SIDE_CHAIN_REQUEST),
+		chainidByte))
+	if err != nil {
+		return nil, fmt.Errorf("getRegisterSideChain,get registerSideChainRequestStore error: %v", err)
+	}
+	sideChain := new(SideChain)
+	if sideChainStore != nil {
+		sideChainBytes, err := cstates.GetValueFromRawStorageItem(sideChainStore)
+		if err != nil {
+			return nil, fmt.Errorf("getRegisterSideChain, deserialize from raw storage item err:%v", err)
+		}
+		if err := sideChain.Deserialization(common.NewZeroCopySource(sideChainBytes)); err != nil {
+			return nil, fmt.Errorf("getRegisterSideChain, deserialize sideChain error: %v", err)
+		}
+	}
+	return sideChain, nil
+}
+
+func putRegisterSideChain(native *native.NativeService, sideChain *SideChain) error {
+	contract := utils.SideChainManagerContractAddress
+	chainidByte, err := utils.GetUint32Bytes(sideChain.Chainid)
+	if err != nil {
+		return fmt.Errorf("putRegisterSideChain, utils.GetUint32Bytes error: %v", err)
+	}
+	sink := common.NewZeroCopySink(nil)
+	err = sideChain.Serialization(sink)
+	if err != nil {
+		return fmt.Errorf("putRegisterSideChain, sideChain.Serialization error: %v", err)
+	}
+
+	native.CacheDB.Put(utils.ConcatKey(contract, []byte(REGISTER_SIDE_CHAIN_REQUEST), chainidByte),
+		cstates.GenRawStorageItem(sink.Bytes()))
+	return nil
+}
+
+func getSideChain(native *native.NativeService, chanid uint32) (*SideChain, error) {
+	contract := utils.SideChainManagerContractAddress
+	chainidByte, err := utils.GetUint32Bytes(chanid)
+	if err != nil {
+		return nil, fmt.Errorf("getSideChain, utils.GetUint32Bytes error: %v", err)
+	}
+	sideChainStore, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(SIDE_CHAIN),
+		chainidByte))
+	if err != nil {
+		return nil, fmt.Errorf("getSideChain,get registerSideChainRequestStore error: %v", err)
+	}
+	sideChain := new(SideChain)
+	if sideChainStore != nil {
+		sideChainBytes, err := cstates.GetValueFromRawStorageItem(sideChainStore)
+		if err != nil {
+			return nil, fmt.Errorf("getSideChain, deserialize from raw storage item err:%v", err)
+		}
+		if err := sideChain.Deserialization(common.NewZeroCopySource(sideChainBytes)); err != nil {
+			return nil, fmt.Errorf("getSideChain, deserialize sideChain error: %v", err)
+		}
+	}
+	return sideChain, nil
+}
+
+func putSideChain(native *native.NativeService, sideChain *SideChain) error {
+	contract := utils.SideChainManagerContractAddress
+	chainidByte, err := utils.GetUint32Bytes(sideChain.Chainid)
+	if err != nil {
+		return fmt.Errorf("putSideChain, utils.GetUint32Bytes error: %v", err)
+	}
+	sink := common.NewZeroCopySink(nil)
+	err = sideChain.Serialization(sink)
+	if err != nil {
+		return fmt.Errorf("putSideChain, sideChain.Serialization error: %v", err)
+	}
+
+	native.CacheDB.Put(utils.ConcatKey(contract, []byte(SIDE_CHAIN), chainidByte),
+		cstates.GenRawStorageItem(sink.Bytes()))
+	return nil
+}
+
+func getUpdateSideChain(native *native.NativeService, chanid uint32) (*SideChain, error) {
+	contract := utils.SideChainManagerContractAddress
+	chainidByte, err := utils.GetUint32Bytes(chanid)
+	if err != nil {
+		return nil, fmt.Errorf("getUpdateSideChain, utils.GetUint32Bytes error: %v", err)
+	}
+	sideChainStore, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(UPDATE_SIDE_CHAIN_REQUEST),
+		chainidByte))
+	if err != nil {
+		return nil, fmt.Errorf("getUpdateSideChain,get registerSideChainRequestStore error: %v", err)
+	}
+	sideChain := new(SideChain)
+	if sideChainStore != nil {
+		sideChainBytes, err := cstates.GetValueFromRawStorageItem(sideChainStore)
+		if err != nil {
+			return nil, fmt.Errorf("getUpdateSideChain, deserialize from raw storage item err:%v", err)
+		}
+		if err := sideChain.Deserialization(common.NewZeroCopySource(sideChainBytes)); err != nil {
+			return nil, fmt.Errorf("getUpdateSideChain, deserialize sideChain error: %v", err)
+		}
+	}
+	return sideChain, nil
+}
+
+func putUpdateSideChain(native *native.NativeService, sideChain *SideChain) error {
+	contract := utils.SideChainManagerContractAddress
+	chainidByte, err := utils.GetUint32Bytes(sideChain.Chainid)
+	if err != nil {
+		return fmt.Errorf("putUpdateSideChain, utils.GetUint32Bytes error: %v", err)
+	}
+	sink := common.NewZeroCopySink(nil)
+	err = sideChain.Serialization(sink)
+	if err != nil {
+		return fmt.Errorf("putUpdateSideChain, sideChain.Serialization error: %v", err)
+	}
+
+	native.CacheDB.Put(utils.ConcatKey(contract, []byte(UPDATE_SIDE_CHAIN_REQUEST), chainidByte),
+		cstates.GenRawStorageItem(sink.Bytes()))
 	return nil
 }

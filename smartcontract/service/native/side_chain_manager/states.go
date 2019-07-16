@@ -26,15 +26,13 @@ import (
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 )
 
-type RegisterSideChainParam struct {
-	Address      common.Address
+type SideChain struct {
 	Chainid      uint32
 	Name         string
 	BlocksToWait uint64
 }
 
-func (this *RegisterSideChainParam) Serialization(sink *common.ZeroCopySink) error {
-	utils.EncodeAddress(sink, this.Address)
+func (this *SideChain) Serialization(sink *common.ZeroCopySink) error {
 	if this.Chainid > math.MaxUint32 {
 		return fmt.Errorf("chainid larger than max of uint32")
 	}
@@ -44,11 +42,7 @@ func (this *RegisterSideChainParam) Serialization(sink *common.ZeroCopySink) err
 	return nil
 }
 
-func (this *RegisterSideChainParam) Deserialization(source *common.ZeroCopySource) error {
-	address, err := utils.DecodeAddress(source)
-	if err != nil {
-		return fmt.Errorf("utils.DecodeString, deserialize address error: %v", err)
-	}
+func (this *SideChain) Deserialization(source *common.ZeroCopySource) error {
 	chainid, err := utils.DecodeVarUint(source)
 	if err != nil {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize chainid error: %v", err)
@@ -64,7 +58,7 @@ func (this *RegisterSideChainParam) Deserialization(source *common.ZeroCopySourc
 	if err != nil {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize blocksToWait error: %v", err)
 	}
-	this.Address = address
+
 	this.Chainid = uint32(chainid)
 	this.Name = name
 	this.BlocksToWait = blocksToWait
