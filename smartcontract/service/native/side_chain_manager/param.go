@@ -70,3 +70,27 @@ func (this *RegisterSideChainParam) Deserialization(source *common.ZeroCopySourc
 	this.BlocksToWait = blocksToWait
 	return nil
 }
+
+type ChainidParam struct {
+	Chainid uint32
+}
+
+func (this *ChainidParam) Serialization(sink *common.ZeroCopySink) error {
+	if this.Chainid > math.MaxUint32 {
+		return fmt.Errorf("chainid larger than max of uint32")
+	}
+	utils.EncodeVarUint(sink, uint64(this.Chainid))
+	return nil
+}
+
+func (this *ChainidParam) Deserialization(source *common.ZeroCopySource) error {
+	chainid, err := utils.DecodeVarUint(source)
+	if err != nil {
+		return fmt.Errorf("utils.DecodeVarUint, deserialize chainid error: %v", err)
+	}
+	if chainid > math.MaxUint32 {
+		return fmt.Errorf("chainid larger than max of uint32")
+	}
+	this.Chainid = uint32(chainid)
+	return nil
+}

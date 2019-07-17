@@ -27,7 +27,11 @@ import (
 
 const (
 	//function name
-	REGISTER_SIDE_CHAIN = "registerSideChain"
+	REGISTER_SIDE_CHAIN         = "registerSideChain"
+	APPROVE_REGISTER_SIDE_CHAIN = "approveRegisterSideChain"
+	UPDATE_SIDE_CHAIN           = "updateSideChain"
+	APPROVE_UPDATE_SIDE_CHAIN   = "approveUpdateSideChain"
+	REMOVE_SIDE_CHAIN           = "removeSideChain"
 
 	//key prefix
 	REGISTER_SIDE_CHAIN_REQUEST = "registerSideChainRequest"
@@ -46,6 +50,10 @@ func InitSideChainManager() {
 //Register methods of governance contract
 func RegisterSideChainManagerContract(native *native.NativeService) {
 	native.Register(REGISTER_SIDE_CHAIN, RegisterSideChain)
+	native.Register(APPROVE_REGISTER_SIDE_CHAIN, ApproveRegisterSideChain)
+	native.Register(UPDATE_SIDE_CHAIN, UpdateSideChain)
+	native.Register(APPROVE_UPDATE_SIDE_CHAIN, ApproveUpdateSideChain)
+	native.Register(REMOVE_SIDE_CHAIN, RemoveSideChain)
 }
 
 func RegisterSideChain(native *native.NativeService) ([]byte, error) {
@@ -56,14 +64,14 @@ func RegisterSideChain(native *native.NativeService) ([]byte, error) {
 
 	registerSideChain, err := getRegisterSideChain(native, params.Chainid)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, getRegisterSideChainRequest error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, getRegisterSideChain error: %v", err)
 	}
 	if registerSideChain != new(SideChain) {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, chainid already requested")
 	}
 	sideChain, err := getSideChain(native, params.Chainid)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, getRegisterSideChainRequest error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, getSideChain error: %v", err)
 	}
 	if sideChain != new(SideChain) {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, chainid already registered")
@@ -83,6 +91,112 @@ func RegisterSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("appCallTransferOng, ong transfer error: %v", err)
 	}
+
+	return utils.BYTE_TRUE, nil
+}
+
+func ApproveRegisterSideChain(native *native.NativeService) ([]byte, error) {
+	params := new(ChainidParam)
+	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, contract params deserialize error: %v", err)
+	}
+
+	registerSideChain, err := getRegisterSideChain(native, params.Chainid)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, getRegisterSideChain error: %v", err)
+	}
+	if registerSideChain == new(SideChain) {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, chainid is not requested")
+	}
+	err = putSideChain(native, registerSideChain)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, putSideChain error: %v", err)
+	}
+	chainidByte, err := utils.GetUint32Bytes(params.Chainid)
+	if err != nil {
+		return nil, fmt.Errorf("ApproveRegisterSideChain, utils.GetUint32Bytes error: %v", err)
+	}
+	native.CacheDB.Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(REGISTER_SIDE_CHAIN_REQUEST), chainidByte))
+
+	return utils.BYTE_TRUE, nil
+}
+
+func UpdateSideChain(native *native.NativeService) ([]byte, error) {
+	params := new(RegisterSideChainParam)
+	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, contract params deserialize error: %v", err)
+	}
+
+	sideChain, err := getSideChain(native, params.Chainid)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, getSideChain error: %v", err)
+	}
+	if sideChain == new(SideChain) {
+		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, chainid is not registered")
+	}
+	updateSideChain := &SideChain{
+		Chainid:      params.Chainid,
+		Name:         params.Name,
+		BlocksToWait: params.BlocksToWait,
+	}
+	err = putUpdateSideChain(native, updateSideChain)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, putUpdateSideChain error: %v", err)
+	}
+
+	//ong transfer
+	err = appCallTransferOng(native, params.Address, utils.GovernanceContractAddress, ONG)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("appCallTransferOng, ong transfer error: %v", err)
+	}
+
+	return utils.BYTE_TRUE, nil
+}
+
+func ApproveUpdateSideChain(native *native.NativeService) ([]byte, error) {
+	params := new(ChainidParam)
+	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, contract params deserialize error: %v", err)
+	}
+
+	sideChain, err := getUpdateSideChain(native, params.Chainid)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, getUpdateSideChain error: %v", err)
+	}
+	if sideChain == new(SideChain) {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, chainid is not requested update")
+	}
+	err = putSideChain(native, sideChain)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, putSideChain error: %v", err)
+	}
+	chainidByte, err := utils.GetUint32Bytes(params.Chainid)
+	if err != nil {
+		return nil, fmt.Errorf("ApproveUpdateSideChain, utils.GetUint32Bytes error: %v", err)
+	}
+	native.CacheDB.Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(UPDATE_SIDE_CHAIN_REQUEST), chainidByte))
+
+	return utils.BYTE_TRUE, nil
+}
+
+func RemoveSideChain(native *native.NativeService) ([]byte, error) {
+	params := new(ChainidParam)
+	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, contract params deserialize error: %v", err)
+	}
+
+	sideChain, err := getSideChain(native, params.Chainid)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, getUpdateSideChain error: %v", err)
+	}
+	if sideChain == new(SideChain) {
+		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, chainid is not registered")
+	}
+	chainidByte, err := utils.GetUint32Bytes(params.Chainid)
+	if err != nil {
+		return nil, fmt.Errorf("RemoveSideChain, utils.GetUint32Bytes error: %v", err)
+	}
+	native.CacheDB.Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(SIDE_CHAIN), chainidByte))
 
 	return utils.BYTE_TRUE, nil
 }
