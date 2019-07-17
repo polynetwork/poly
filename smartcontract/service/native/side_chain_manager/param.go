@@ -21,6 +21,7 @@ package side_chain_manager
 import (
 	"fmt"
 	"math"
+	"sort"
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
@@ -84,6 +85,41 @@ func (this *ChainidParam) Serialization(sink *common.ZeroCopySink) error {
 }
 
 func (this *ChainidParam) Deserialization(source *common.ZeroCopySource) error {
+	chainid, err := utils.DecodeVarUint(source)
+	if err != nil {
+		return fmt.Errorf("utils.DecodeVarUint, deserialize chainid error: %v", err)
+	}
+	if chainid > math.MaxUint32 {
+		return fmt.Errorf("chainid larger than max of uint32")
+	}
+	this.Chainid = uint32(chainid)
+	return nil
+}
+
+
+
+type AssetMappingParam struct {
+	AssetList  []*AssetMap
+}
+
+func (this *AssetMappingParam) Serialization(sink *common.ZeroCopySink) error {
+	utils.EncodeVarUint(sink, uint64(len(this.AssetMap)))
+
+	for k, v := range this.AssetMap {
+		assetList = append(assetList, v)
+	}
+	sort.SliceStable(peerPoolItemList, func(i, j int) bool {
+		return peerPoolItemList[i].PeerPubkey > peerPoolItemList[j].PeerPubkey
+	})
+	for _, v := range peerPoolItemList {
+		if err := v.Serialize(w); err != nil {
+			return fmt.Errorf("serialize peerPool error: %v", err)
+		}
+	}
+	return nil
+}
+
+func (this *AssetMappingParam) Deserialization(source *common.ZeroCopySource) error {
 	chainid, err := utils.DecodeVarUint(source)
 	if err != nil {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize chainid error: %v", err)
