@@ -22,6 +22,8 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/Zou-XueYan/spvwallet"
+	"github.com/Zou-XueYan/spvwallet/db"
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -38,22 +40,23 @@ const (
 )
 
 // Verify merkle proof in bytes, and return the result in true or false
-// Firstly, calculate the merkleRoot from input proof; Then get header.MerkleRoot
-// by Neutrino and check if they are equal.
-func VerifyBtc(native *native.NativeService, proof []byte, tx []byte, height int) (bool, error) {
+// Firstly, calculate the merkleRoot from input `proof`; Then get header.MerkleRoot
+// by a spv client and check if they are equal.
+func VerifyBtc(proof []byte, tx []byte, height uint32) (bool, error) {
 	mb := wire_bch.MsgMerkleBlock{}
 	err := mb.BchDecode(bytes.NewReader(proof), wire_bch.ProtocolVersion, wire_bch.LatestEncoding)
 	if err != nil {
 		return false, err
 	}
+
 	mtx := wire.NewMsgTx(wire.TxVersion)
 	reader := bytes.NewReader(tx)
 	err = mtx.BtcDecode(reader, wire.ProtocolVersion, wire.LatestEncoding)
 	if err != nil {
-		return false, errors.New("transaction decode fail")
+		return false, errors.New("Failed to decode the transaction")
 	}
 	txid := mtx.TxHash()
-	if !bytes.Equal(mb.Hashes[0][:], txid[:]) {
+	if !bytes.Equal(mb.Hashes[0][:], txid[:]) && !bytes.Equal(mb.Hashes[1][:], txid[:]) {
 		return false, fmt.Errorf("wrong transaction hash: %x in proof are not equal with %x", mb.Hashes[0], txid)
 	}
 
@@ -63,20 +66,50 @@ func VerifyBtc(native *native.NativeService, proof []byte, tx []byte, height int
 		return false, errors.New("bad merkle tree")
 	}
 
-	// get header -> get merkleRoot
+	// use as a spv client
+	wallet, err := newSpvWallet()
+	if err != nil {
+		return false, fmt.Errorf("Failed to new spv client instance: %v", err)
+	}
 
-	//if !bytes.Equal(merkleRootCalc[:], merkleRootFromHeader[:]) {
-	//	return false, errors.New("merkle root not equal")
-	//}
+	header, err := wallet.Blockchain.GetHeaderByHeight(height)
+	if err != nil {
+		return false, fmt.Errorf("Failed to get header from spv client: %v", err)
+	}
+
+	if !bytes.Equal(merkleRootCalc[:], header.Header.MerkleRoot[:]) {
+		return false, errors.New("merkle root not equal")
+	}
 
 	return true, nil
 }
 
+// Using spvwallet as a light node, this function creates a light node instance using its
+// default configuration. When we use it on linux, db files would store in current folder
+func newSpvWallet() (*spvwallet.SPVWallet, error) {
+	config := spvwallet.NewDefaultConfig()
+	config.Params = &chaincfg.MainNetParams
+	//config.RepoPath =  "/Users/zou/go/src/pracGo/main"
+
+	sqliteDatastore, err := db.Create(config.RepoPath)
+	if err != nil {
+		return nil, err
+	}
+	config.DB = sqliteDatastore
+	// Create the wallet
+	wallet, err := spvwallet.NewSPVWallet(config)
+	if err != nil {
+		return nil, err
+	}
+	return wallet, nil
+}
+
 // Create a raw transaction that returns the BTC that once locked the multi-sign account
-// to the original account and this transacion is not signed. Parameter `prevTxids`
-// is the txid of the previous output of the transaction input reference, `prevIndexes`
-// contain the indexes of the output in the transaction, `amounts` is the mapping of accounts
-// and amounts in transaction's output. Return true if building transacion success.
+// to the original account and this transacion is not signed. In the end of this function,
+// serialized raw transaction would be put into native.CacheDB.
+// Parameter `prevTxids` is the txid of the previous output of the transaction input reference,
+// `prevIndexes` contain the indexes of the output in the transaction, `amounts` is the mapping
+// of accounts and amounts in transaction's output. Return true if building transacion success.
 func MakeBtcTx(native *native.NativeService, prevTxids []string, prevIndexes []uint32, amounts map[string]float64) (bool, error) {
 	if len(prevIndexes) != len(prevTxids) || len(prevTxids) == 0 {
 		return false, fmt.Errorf("wrong num of transaction's inputs")

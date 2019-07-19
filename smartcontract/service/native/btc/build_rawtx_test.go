@@ -36,7 +36,7 @@ var amounts = map[string]float64{
 func TestGetRawTx(t *testing.T) {
 	mtx, err := getRawTx(inputs, amounts, nil)
 	if err != nil {
-		t.Fatalf("get rawtx fail: %v\n", err)
+		t.Fatalf("Failed to get raw transaction: %v\n", err)
 	}
 
 	pubRipe := base58.Decode(addrToPay)
@@ -44,51 +44,51 @@ func TestGetRawTx(t *testing.T) {
 
 	pkScript, err := txscript.ParsePkScript(mtx.TxOut[0].PkScript)
 	if err != nil {
-		t.Fatalf("parse pkScript fail: %v\n", err)
+		t.Fatalf("Failed to parse pkScript: %v\n", err)
 	}
 
 	if int64(value * 1e8) != mtx.TxOut[0].Value {
-		t.Fatalf("value in tx's output are not equal: right value is %d, not %d", 
+		t.Fatalf("Value in tx's output are not equal: right value is %d, not %d",
 			int64(value * 1e8), mtx.TxOut[0].Value)
 	}
-	fmt.Printf("pkScript is : %s\n", pkScript.String())
+	fmt.Printf("PkScript is : %s\n", pkScript.String())
 	if hex.EncodeToString(pubRipe) != pkScript.String()[18:58] {
-		t.Fatalf("pubkey not equal: right key is %s, not %s",
+		t.Fatalf("Pubkey not equal: right key is %s, not %s",
 			hex.EncodeToString(pubRipe), pkScript.String()[18:58])
 	}
 	if inputs[0].Txid + ":" + strconv.Itoa(int(inputs[0].Vout)) != mtx.TxIn[0].PreviousOutPoint.String() {
-		t.Fatalf("check input fail: %s is correct, not %s",
+		t.Fatalf("Check input fail: %s is correct, not %s",
 			inputs[0].Txid + ":" + strconv.Itoa(int(inputs[0].Vout)), mtx.TxIn[0].PreviousOutPoint.String())
 	}
-	fmt.Printf("tx Input[0]: %s\n", mtx.TxIn[0].PreviousOutPoint.String())
-	fmt.Printf("tx Output[0]: %d\n", mtx.TxOut[0].Value)
-	fmt.Printf("res of ripe160 is %x, it should equal with the pubkey in pkScript\n", pubRipe)
+	fmt.Printf("Tx Input[0]: %s\n", mtx.TxIn[0].PreviousOutPoint.String())
+	fmt.Printf("Tx Output[0]: %d\n", mtx.TxOut[0].Value)
+	fmt.Printf("Result of ripe160 is %x, it should equal with the pubkey in pkScript\n", pubRipe)
 
-	t.Log("build raw transaction test pass")
+	t.Log("Build raw transaction test pass")
 }
 
 func TestDeserializeRawTx(t *testing.T) {
 	mtx, err := getRawTx(inputs, amounts, nil)
 	if err != nil {
-		t.Fatalf("get rawtx fail: %v\n", err)
+		t.Fatalf("Failed to get rawtransaction: %v\n", err)
 	}
 
 	var mtxInBytes bytes.Buffer
 	err = mtx.BtcEncode(&mtxInBytes, wire.ProtocolVersion, wire.LatestEncoding)
 	if err != nil {
-		t.Fatalf("encode rawtx fail: %v", err)
+		t.Fatalf("Failed to encode rawtx: %v", err)
 	}
 
 	newMtx := wire.NewMsgTx(wire.TxVersion)
 	err = newMtx.BtcDecode(&mtxInBytes, wire.ProtocolVersion, wire.LatestEncoding)
 	if err != nil {
-		t.Fatalf("decode bytes fail: %v\n", err)
+		t.Fatalf("Failed to decode bytes: %v\n", err)
 	}
 
 	pkScript, err := txscript.ParsePkScript(newMtx.TxOut[0].PkScript)
 	if err != nil {
-		t.Fatalf("parse pkScript fail: %v\n", err)
+		t.Fatalf("Failed to parse pkScript: %v\n", err)
 	}
 
-	fmt.Printf("pkScript is %s\n", pkScript.String())
+	fmt.Printf("PkScript is %s\n", pkScript.String())
 }
