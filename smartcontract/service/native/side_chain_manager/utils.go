@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/smartcontract/service/native/ont"
+	"strconv"
 
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
@@ -176,4 +177,66 @@ func putUpdateSideChain(native *native.NativeService, sideChain *SideChain) erro
 	native.CacheDB.Put(utils.ConcatKey(contract, []byte(UPDATE_SIDE_CHAIN_REQUEST), chainidByte),
 		cstates.GenRawStorageItem(sink.Bytes()))
 	return nil
+}
+
+func getAssetMapRequest(native *native.NativeService, assetName string) (*AssetMappingParam, error) {
+	contract := utils.SideChainManagerContractAddress
+	assetMapRequestStore, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(ASSET_MAP_REQUEST),
+		[]byte(assetName)))
+	if err != nil {
+		return nil, fmt.Errorf("getAssetMapRequest, get assetMapRequestStore error: %v", err)
+	}
+	assetMappingParam := new(AssetMappingParam)
+	if assetMapRequestStore != nil {
+		assetMapRequestBytes, err := cstates.GetValueFromRawStorageItem(assetMapRequestStore)
+		if err != nil {
+			return nil, fmt.Errorf("getAssetMapRequest, deserialize from raw storage item err:%v", err)
+		}
+		if err := assetMappingParam.Deserialization(common.NewZeroCopySource(assetMapRequestBytes)); err != nil {
+			return nil, fmt.Errorf("getAssetMapRequest, deserialize sideChain error: %v", err)
+		}
+	}
+	return assetMappingParam, nil
+}
+
+func putAssetMapRequest(native *native.NativeService, assetMappingParam *AssetMappingParam) error {
+	contract := utils.SideChainManagerContractAddress
+	sink := common.NewZeroCopySink(nil)
+	assetMappingParam.Serialization(sink)
+	native.CacheDB.Put(utils.ConcatKey(contract, []byte(ASSET_MAP_REQUEST), []byte(assetMappingParam.AssetName)),
+		cstates.GenRawStorageItem(sink.Bytes()))
+	return nil
+}
+
+func putAssetMap(native *native.NativeService, assetMap *AssetMap) error {
+	contract := utils.SideChainManagerContractAddress
+	sink := common.NewZeroCopySink(nil)
+	assetMap.Serialization(sink)
+	for _, v := range assetMap.AssetMap {
+		prefix := strconv.Itoa(int(v.Chainid)) + v.ContractAddress
+		native.CacheDB.Put(utils.ConcatKey(contract, []byte(ASSET_MAP), []byte(prefix)),
+			cstates.GenRawStorageItem(sink.Bytes()))
+	}
+	return nil
+}
+
+func getAssetContractAddress(native *native.NativeService, fromChainid, toChainid uint32, contractAddress string) (string, error) {
+	contract := utils.SideChainManagerContractAddress
+	prefix := strconv.Itoa(int(fromChainid)) + contractAddress
+	assetMapStore, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(ASSET_MAP), []byte(prefix)))
+	if err != nil {
+		return "", fmt.Errorf("getAssetMap,get assetMapStore error: %v", err)
+	}
+	if assetMapStore == nil {
+		return "", fmt.Errorf("getAssetMap, can't find any record")
+	}
+	assetMapBytes, err := cstates.GetValueFromRawStorageItem(assetMapStore)
+	if err != nil {
+		return "", fmt.Errorf("getAssetMap, deserialize from raw storage item err:%v", err)
+	}
+	assetMap := new(AssetMap)
+	if err := assetMap.Deserialization(common.NewZeroCopySource(assetMapBytes)); err != nil {
+		return "", fmt.Errorf("getAssetMap, deserialize assetMap error: %v", err)
+	}
+	return assetMap.AssetMap[toChainid].ContractAddress, nil
 }

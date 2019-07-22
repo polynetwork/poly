@@ -21,6 +21,7 @@ package side_chain_manager
 import (
 	"fmt"
 	"math"
+	"sort"
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
@@ -62,5 +63,43 @@ func (this *SideChain) Deserialization(source *common.ZeroCopySource) error {
 	this.Chainid = uint32(chainid)
 	this.Name = name
 	this.BlocksToWait = blocksToWait
+	return nil
+}
+
+type AssetMap struct {
+	AssetMap map[uint32]*Asset
+}
+
+func (this *AssetMap) Serialization(sink *common.ZeroCopySink) error {
+	utils.EncodeVarUint(sink, uint64(len(this.AssetMap)))
+	var assetList []*Asset
+	for _, v := range this.AssetMap {
+		assetList = append(assetList, v)
+	}
+	sort.SliceStable(assetList, func(i, j int) bool {
+		return assetList[i].ContractAddress > assetList[j].ContractAddress
+	})
+	for _, v := range assetList {
+		if err := v.Serialization(sink); err != nil {
+			return fmt.Errorf("serialize asset error: %v", err)
+		}
+	}
+	return nil
+}
+
+func (this *AssetMap) Deserialization(source *common.ZeroCopySource) error {
+	n, err := utils.DecodeVarUint(source)
+	if err != nil {
+		return fmt.Errorf("utils.DecodeVarUint, deserialize length error: %v", err)
+	}
+	assetMap := make(map[uint32]*Asset)
+	for i := 0; uint64(i) < n; i++ {
+		asset := new(Asset)
+		if err := asset.Deserialization(source); err != nil {
+			return fmt.Errorf("deserialize asset error: %v", err)
+		}
+		assetMap[asset.Chainid] = asset
+	}
+	this.AssetMap = assetMap
 	return nil
 }

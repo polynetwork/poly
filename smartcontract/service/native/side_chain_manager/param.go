@@ -20,11 +20,9 @@ package side_chain_manager
 
 import (
 	"fmt"
-	"math"
-	"sort"
-
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
+	"math"
 )
 
 type RegisterSideChainParam struct {
@@ -96,30 +94,21 @@ func (this *ChainidParam) Deserialization(source *common.ZeroCopySource) error {
 	return nil
 }
 
-
-
-type AssetMappingParam struct {
-	AssetList  []*AssetMap
+type Asset struct {
+	Chainid         uint32
+	ContractAddress string
 }
 
-func (this *AssetMappingParam) Serialization(sink *common.ZeroCopySink) error {
-	utils.EncodeVarUint(sink, uint64(len(this.AssetMap)))
-
-	for k, v := range this.AssetMap {
-		assetList = append(assetList, v)
+func (this *Asset) Serialization(sink *common.ZeroCopySink) error {
+	if this.Chainid > math.MaxUint32 {
+		return fmt.Errorf("chainid larger than max of uint32")
 	}
-	sort.SliceStable(peerPoolItemList, func(i, j int) bool {
-		return peerPoolItemList[i].PeerPubkey > peerPoolItemList[j].PeerPubkey
-	})
-	for _, v := range peerPoolItemList {
-		if err := v.Serialize(w); err != nil {
-			return fmt.Errorf("serialize peerPool error: %v", err)
-		}
-	}
+	utils.EncodeVarUint(sink, uint64(this.Chainid))
+	utils.EncodeString(sink, this.ContractAddress)
 	return nil
 }
 
-func (this *AssetMappingParam) Deserialization(source *common.ZeroCopySource) error {
+func (this *Asset) Deserialization(source *common.ZeroCopySource) error {
 	chainid, err := utils.DecodeVarUint(source)
 	if err != nil {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize chainid error: %v", err)
@@ -127,6 +116,76 @@ func (this *AssetMappingParam) Deserialization(source *common.ZeroCopySource) er
 	if chainid > math.MaxUint32 {
 		return fmt.Errorf("chainid larger than max of uint32")
 	}
+	contractAddress, err := utils.DecodeString(source)
+	if err != nil {
+		return fmt.Errorf("utils.DecodeString, deserialize contractAddress error: %v", err)
+	}
 	this.Chainid = uint32(chainid)
+	this.ContractAddress = contractAddress
+	return nil
+}
+
+type AssetMappingParam struct {
+	Address   common.Address
+	AssetName string
+	AssetList []*Asset
+}
+
+func (this *AssetMappingParam) Serialization(sink *common.ZeroCopySink) error {
+	utils.EncodeAddress(sink, this.Address)
+	utils.EncodeString(sink, this.AssetName)
+	utils.EncodeVarUint(sink, uint64(len(this.AssetList)))
+	for _, v := range this.AssetList {
+		err := v.Serialization(sink)
+		if err != nil {
+			return fmt.Errorf("v.Serialization, serialize asset map error: %v", err)
+		}
+	}
+	return nil
+}
+
+func (this *AssetMappingParam) Deserialization(source *common.ZeroCopySource) error {
+	address, err := utils.DecodeAddress(source)
+	if err != nil {
+		return fmt.Errorf("utils.DecodeAddress, deserialize address error: %v", err)
+	}
+	assetName, err := utils.DecodeString(source)
+	if err != nil {
+		return fmt.Errorf("utils.DecodeString, deserialize assetName error: %v", err)
+	}
+	n, err := utils.DecodeVarUint(source)
+	if err != nil {
+		return fmt.Errorf("utils.DecodeVarUint, deserialize lenght error: %v", err)
+	}
+	assetList := make([]*Asset, 0)
+	for i := 0; uint64(i) < n; i++ {
+		asset := new(Asset)
+		err := asset.Deserialization(source)
+		if err != nil {
+			return fmt.Errorf("assetMap.Deserialization, deserialize asset map error: %v", err)
+		}
+		assetList = append(assetList, asset)
+	}
+	this.Address = address
+	this.AssetName = assetName
+	this.AssetList = assetList
+	return nil
+}
+
+type ApproveAssetMappingParam struct {
+	AssetName string
+}
+
+func (this *ApproveAssetMappingParam) Serialization(sink *common.ZeroCopySink) error {
+	utils.EncodeString(sink, this.AssetName)
+	return nil
+}
+
+func (this *ApproveAssetMappingParam) Deserialization(source *common.ZeroCopySource) error {
+	assetName, err := utils.DecodeString(source)
+	if err != nil {
+		return fmt.Errorf("utils.DecodeString, deserialize assetName error: %v", err)
+	}
+	this.AssetName = assetName
 	return nil
 }

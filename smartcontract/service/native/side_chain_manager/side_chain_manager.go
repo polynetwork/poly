@@ -33,11 +33,14 @@ const (
 	APPROVE_UPDATE_SIDE_CHAIN   = "approveUpdateSideChain"
 	REMOVE_SIDE_CHAIN           = "removeSideChain"
 	ASSET_MAPPING               = "assetMapping"
+	APPROVE_ASSET_MAPPING       = "approveAssetMapping"
 
 	//key prefix
 	REGISTER_SIDE_CHAIN_REQUEST = "registerSideChainRequest"
 	UPDATE_SIDE_CHAIN_REQUEST   = "updateSideChainRequest"
 	SIDE_CHAIN                  = "sideChain"
+	ASSET_MAP                   = "assetMap"
+	ASSET_MAP_REQUEST           = "assetMapRequest"
 
 	//constant
 	ONG = 500000000000
@@ -57,6 +60,7 @@ func RegisterSideChainManagerContract(native *native.NativeService) {
 	native.Register(REMOVE_SIDE_CHAIN, RemoveSideChain)
 
 	native.Register(ASSET_MAPPING, AssetMapping)
+	native.Register(APPROVE_ASSET_MAPPING, ApproveAssetMapping)
 }
 
 func RegisterSideChain(native *native.NativeService) ([]byte, error) {
@@ -108,7 +112,7 @@ func ApproveRegisterSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, getRegisterSideChain error: %v", err)
 	}
-	if registerSideChain == new(SideChain) {
+	if registerSideChain.Chainid == 0 {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, chainid is not requested")
 	}
 	err = putSideChain(native, registerSideChain)
@@ -134,7 +138,7 @@ func UpdateSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, getSideChain error: %v", err)
 	}
-	if sideChain == new(SideChain) {
+	if sideChain.Chainid == 0 {
 		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, chainid is not registered")
 	}
 	updateSideChain := &SideChain{
@@ -166,7 +170,7 @@ func ApproveUpdateSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, getUpdateSideChain error: %v", err)
 	}
-	if sideChain == new(SideChain) {
+	if sideChain.Chainid == 0 {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, chainid is not requested update")
 	}
 	err = putSideChain(native, sideChain)
@@ -192,7 +196,7 @@ func RemoveSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, getUpdateSideChain error: %v", err)
 	}
-	if sideChain == new(SideChain) {
+	if sideChain.Chainid == 0 {
 		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, chainid is not registered")
 	}
 	chainidByte, err := utils.GetUint32Bytes(params.Chainid)
@@ -207,31 +211,18 @@ func RemoveSideChain(native *native.NativeService) ([]byte, error) {
 func AssetMapping(native *native.NativeService) ([]byte, error) {
 	params := new(AssetMappingParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, contract params deserialize error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("AssetMapping, contract params deserialize error: %v", err)
 	}
-
-	registerSideChain, err := getRegisterSideChain(native, params.Chainid)
+	assetMapRequest, err := getAssetMapRequest(native, params.AssetName)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, getRegisterSideChain error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("AssetMapping, getAssetMapRequest error: %v", err)
 	}
-	if registerSideChain != new(SideChain) {
-		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, chainid already requested")
+	if assetMapRequest.AssetName != "" {
+		return utils.BYTE_FALSE, fmt.Errorf("AssetMapping, asset name is already used")
 	}
-	sideChain, err := getSideChain(native, params.Chainid)
+	err = putAssetMapRequest(native, params)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, getSideChain error: %v", err)
-	}
-	if sideChain != new(SideChain) {
-		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, chainid already registered")
-	}
-	sideChain = &SideChain{
-		Chainid:      params.Chainid,
-		Name:         params.Name,
-		BlocksToWait: params.BlocksToWait,
-	}
-	err = putRegisterSideChain(native, sideChain)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, putRegisterSideChain error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("AssetMapping, putAssetMapRequest error: %v", err)
 	}
 
 	//ong transfer
@@ -239,6 +230,38 @@ func AssetMapping(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("appCallTransferOng, ong transfer error: %v", err)
 	}
+	return utils.BYTE_TRUE, nil
+}
 
+func ApproveAssetMapping(native *native.NativeService) ([]byte, error) {
+	params := new(ApproveAssetMappingParam)
+	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveAssetMapping, contract params deserialize error: %v", err)
+	}
+	assetMapRequest, err := getAssetMapRequest(native, params.AssetName)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveAssetMapping, getAssetMapRequest error: %v", err)
+	}
+	if assetMapRequest.AssetName == "" {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveAssetMapping, asset name is not requested")
+	}
+	assetMap := make(map[uint32]*Asset)
+	for _, v := range assetMapRequest.AssetList {
+		assetMap[v.Chainid] = v
+	}
+	value := &AssetMap{
+		AssetMap: assetMap,
+	}
+	sink := common.NewZeroCopySink(nil)
+	err = value.Serialization(sink)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("AssetMapping, value.Serialization error: %v", err)
+	}
+	err = putAssetMap(native, value)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("AssetMapping, putAssetMap error: %v", err)
+	}
+
+	native.CacheDB.Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(ASSET_MAP_REQUEST), []byte(params.AssetName)))
 	return utils.BYTE_TRUE, nil
 }
