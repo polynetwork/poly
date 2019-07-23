@@ -22,9 +22,9 @@ type QueryHeaderByHeightResp struct {
 }
 
 type Response struct {
-	Action string      `json:"action"`
-	Desc   string      `json:"desc"`
-	Error  uint32      `json:"error"`
+	Action string                  `json:"action"`
+	Desc   string                  `json:"desc"`
+	Error  uint32                  `json:"error"`
 	Result QueryHeaderByHeightResp `json:"result"`
 }
 
@@ -73,7 +73,7 @@ func (self *RestClient) SendRestRequest(addr string, data []byte) ([]byte, error
 }
 
 func (self *RestClient) GetHeaderFromSpv(height uint32) (*wire.BlockHeader, error) {
-	query, err := json.Marshal(queryHeaderByHeightParam {
+	query, err := json.Marshal(queryHeaderByHeightParam{
 		Height: height,
 	})
 	if err != nil {
@@ -106,4 +106,3 @@ func (self *RestClient) GetHeaderFromSpv(height uint32) (*wire.BlockHeader, erro
 	}
 	return &header, nil
 }
-

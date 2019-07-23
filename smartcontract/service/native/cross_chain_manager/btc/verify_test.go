@@ -23,7 +23,7 @@ func TestVerifyBtc(t *testing.T) {
 		t.Fatalf("Failed to decode string to hex: %v", err)
 	}
 
-	res, err := VerifyBtc(proof, txInBytes, Height)
+	res, err := VerifyBtcTx(proof, txInBytes, Height)
 	if err != nil || res != true {
 		t.Fatalf("Failed to verify: %v", err)
 	}
@@ -42,5 +42,3 @@ func TestRestClient_GetHeaderFromSpv(t *testing.T) {
 	}
 	t.Log("get header from spv passed")
 }
-
-

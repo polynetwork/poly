@@ -12,7 +12,6 @@ import (
 	"testing"
 )
 
-
 var inputs = []btcjson.TransactionInput{
 	btcjson.TransactionInput{
 		Txid: "50a882877b3336dd45f5558308f865745de4f0b836b2fdd1956e4c8e1e54cf92",
@@ -40,25 +39,25 @@ func TestGetRawTx(t *testing.T) {
 	}
 
 	pubRipe := base58.Decode(addrToPay)
-	pubRipe = pubRipe[1:len(pubRipe) - 4]
+	pubRipe = pubRipe[1 : len(pubRipe)-4]
 
 	pkScript, err := txscript.ParsePkScript(mtx.TxOut[0].PkScript)
 	if err != nil {
 		t.Fatalf("Failed to parse pkScript: %v\n", err)
 	}
 
-	if int64(value * 1e8) != mtx.TxOut[0].Value {
+	if int64(value*1e8) != mtx.TxOut[0].Value {
 		t.Fatalf("Value in tx's output are not equal: right value is %d, not %d",
-			int64(value * 1e8), mtx.TxOut[0].Value)
+			int64(value*1e8), mtx.TxOut[0].Value)
 	}
 	fmt.Printf("PkScript is : %s\n", pkScript.String())
 	if hex.EncodeToString(pubRipe) != pkScript.String()[18:58] {
 		t.Fatalf("Pubkey not equal: right key is %s, not %s",
 			hex.EncodeToString(pubRipe), pkScript.String()[18:58])
 	}
-	if inputs[0].Txid + ":" + strconv.Itoa(int(inputs[0].Vout)) != mtx.TxIn[0].PreviousOutPoint.String() {
+	if inputs[0].Txid+":"+strconv.Itoa(int(inputs[0].Vout)) != mtx.TxIn[0].PreviousOutPoint.String() {
 		t.Fatalf("Check input fail: %s is correct, not %s",
-			inputs[0].Txid + ":" + strconv.Itoa(int(inputs[0].Vout)), mtx.TxIn[0].PreviousOutPoint.String())
+			inputs[0].Txid+":"+strconv.Itoa(int(inputs[0].Vout)), mtx.TxIn[0].PreviousOutPoint.String())
 	}
 	fmt.Printf("Tx Input[0]: %s\n", mtx.TxIn[0].PreviousOutPoint.String())
 	fmt.Printf("Tx Output[0]: %d\n", mtx.TxOut[0].Value)
