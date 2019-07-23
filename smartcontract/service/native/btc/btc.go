@@ -22,8 +22,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/Zou-XueYan/spvwallet"
-	"github.com/Zou-XueYan/spvwallet/db"
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -38,6 +36,8 @@ import (
 const (
 	BTC_TX_PREFIX string = "btctx"
 )
+
+
 
 // Verify merkle proof in bytes, and return the result in true or false
 // Firstly, calculate the merkleRoot from input `proof`; Then get header.MerkleRoot
@@ -66,42 +66,16 @@ func VerifyBtc(proof []byte, tx []byte, height uint32) (bool, error) {
 		return false, errors.New("bad merkle tree")
 	}
 
-	// use as a spv client
-	wallet, err := newSpvWallet()
-	if err != nil {
-		return false, fmt.Errorf("Failed to new spv client instance: %v", err)
-	}
-
-	header, err := wallet.Blockchain.GetHeaderByHeight(height)
+	header, err := NewRestClient().GetHeaderFromSpv(height)
 	if err != nil {
 		return false, fmt.Errorf("Failed to get header from spv client: %v", err)
 	}
 
-	if !bytes.Equal(merkleRootCalc[:], header.Header.MerkleRoot[:]) {
+	if !bytes.Equal(merkleRootCalc[:], header.MerkleRoot[:]) {
 		return false, errors.New("merkle root not equal")
 	}
 
 	return true, nil
-}
-
-// Using spvwallet as a light node, this function creates a light node instance using its
-// default configuration. When we use it on linux, db files would store in current folder
-func newSpvWallet() (*spvwallet.SPVWallet, error) {
-	config := spvwallet.NewDefaultConfig()
-	config.Params = &chaincfg.MainNetParams
-	//config.RepoPath =  "/Users/zou/go/src/pracGo/main"
-
-	sqliteDatastore, err := db.Create(config.RepoPath)
-	if err != nil {
-		return nil, err
-	}
-	config.DB = sqliteDatastore
-	// Create the wallet
-	wallet, err := spvwallet.NewSPVWallet(config)
-	if err != nil {
-		return nil, err
-	}
-	return wallet, nil
 }
 
 // Create a raw transaction that returns the BTC that once locked the multi-sign account
