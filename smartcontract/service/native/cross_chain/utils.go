@@ -20,13 +20,14 @@ package cross_chain
 
 import (
 	"fmt"
-
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
 	cstates "github.com/ontio/multi-chain/core/states"
+	"github.com/ontio/multi-chain/merkle"
 	"github.com/ontio/multi-chain/smartcontract/event"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
 	"github.com/ontio/multi-chain/smartcontract/service/native/chain_manager"
+	"github.com/ontio/multi-chain/smartcontract/service/native/header_sync"
 	"github.com/ontio/multi-chain/smartcontract/service/native/ont"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 )
@@ -235,4 +236,80 @@ func notifyProcessCrossChainTx(native *native.NativeService, chainID uint64, req
 			ContractAddress: contract,
 			States:          []interface{}{PROCESS_CROSS_CHAIN_TX, chainID, requestID, height, ongFee},
 		})
+}
+
+func VerifyOntTx(native *native.NativeService, proof []byte, fromChainid uint64, height uint32) (*MerkleValue, error) {
+	//get block header
+	header, err := header_sync.GetHeaderByHeight(native, fromChainid, height)
+	if err != nil {
+		return nil, fmt.Errorf("VerifyOntTx, get header by height error: %v", err)
+	}
+
+	v := merkle.MerkleProve(proof, header.CrossStatesRoot)
+	if v == nil {
+		return nil, fmt.Errorf("VerifyOntTx, merkle.MerkleProve verify merkle proof error")
+	}
+
+	s := common.NewZeroCopySource(v)
+	merkleValue := new(MerkleValue)
+	if err := merkleValue.Deserialization(s); err != nil {
+		return nil, fmt.Errorf("VerifyOntTx, deserialize merkleValue error:%s", err)
+	}
+
+	//record done cross chain tx
+	oldCurrentID, err := getCurrentID(native, fromChainid)
+	if err != nil {
+		return nil, fmt.Errorf("ProcessCrossChainTx, getCurrentID error: %v", err)
+	}
+	if merkleValue.RequestID > oldCurrentID {
+		err = putRemainedIDs(native, merkleValue.RequestID, oldCurrentID, fromChainid)
+		if err != nil {
+			return nil, fmt.Errorf("ProcessCrossChainTx, putRemainedIDs error: %v", err)
+		}
+		err = putCurrentID(native, merkleValue.RequestID, fromChainid)
+		if err != nil {
+			return nil, fmt.Errorf("ProcessCrossChainTx, putCurrentID error: %v", err)
+		}
+	} else {
+		ok, err := checkIfRemained(native, merkleValue.RequestID, fromChainid)
+		if err != nil {
+			return nil, fmt.Errorf("ProcessCrossChainTx, checkIfRemained error: %v", err)
+		}
+		if !ok {
+			return nil, fmt.Errorf("ProcessCrossChainTx, tx already done")
+		} else {
+			err = removeRemained(native, merkleValue.RequestID, fromChainid)
+			if err != nil {
+				return nil, fmt.Errorf("ProcessCrossChainTx, removeRemained error: %v", err)
+			}
+		}
+	}
+	notifyProcessCrossChainTx(native, fromChainid, merkleValue.RequestID, height, merkleValue.CreateCrossChainTxParam.Fee)
+	return merkleValue, nil
+}
+
+func MakeOntProof(native *native.NativeService, params *CreateCrossChainTxParam) error {
+	//record cross chain tx
+	requestID, err := getRequestID(native, params.ToChainID)
+	if err != nil {
+		return fmt.Errorf("CreateCrossChainTx, getRequestID error:%s", err)
+	}
+	newID := requestID + 1
+	merkleValue := &MerkleValue{
+		RequestID:               newID,
+		CreateCrossChainTxParam: params,
+	}
+	sink := common.NewZeroCopySink(nil)
+	merkleValue.Serialization(sink)
+	err = putRequest(native, newID, params.ToChainID, sink.Bytes())
+	if err != nil {
+		return fmt.Errorf("CreateCrossChainTx, putRequest error:%s", err)
+	}
+	native.ContextRef.PutMerkleVal(sink.Bytes())
+	err = putRequestID(native, newID, params.ToChainID)
+	if err != nil {
+		return fmt.Errorf("CreateCrossChainTx, putRequestID error:%s", err)
+	}
+	notifyCreateCrossChainTx(native, params.ToChainID, newID, native.Height, params.Fee)
+	return nil
 }

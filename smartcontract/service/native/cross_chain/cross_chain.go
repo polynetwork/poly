@@ -24,7 +24,6 @@ import (
 	"math/big"
 
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/merkle"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
 	"github.com/ontio/multi-chain/smartcontract/service/native/chain_manager"
 	"github.com/ontio/multi-chain/smartcontract/service/native/header_sync"
@@ -60,26 +59,9 @@ func CreateCrossChainTx(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("CreateCrossChainTx, contract params deserialize error: %v", err)
 	}
 
-	//record cross chain tx
-	requestID, err := getRequestID(native, params.ToChainID)
+	err := MakeOntProof(native, params)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("CreateCrossChainTx, getRequestID error:%s", err)
-	}
-	newID := requestID + 1
-	merkleValue := &MerkleValue{
-		RequestID:               newID,
-		CreateCrossChainTxParam: params,
-	}
-	sink := common.NewZeroCopySink(nil)
-	merkleValue.Serialization(sink)
-	err = putRequest(native, newID, params.ToChainID, sink.Bytes())
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("CreateCrossChainTx, putRequest error:%s", err)
-	}
-	native.ContextRef.PutMerkleVal(sink.Bytes())
-	err = putRequestID(native, newID, params.ToChainID)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("CreateCrossChainTx, putRequestID error:%s", err)
+		return utils.BYTE_FALSE, fmt.Errorf("CreateCrossChainTx, MakeOntProof error: %v", err)
 	}
 
 	//process main chain ongx fee
@@ -109,7 +91,6 @@ func CreateCrossChainTx(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("OngLock, ong transfer error: %v", err)
 	}
 
-	notifyCreateCrossChainTx(native, params.ToChainID, newID, native.Height, ongFee)
 	return utils.BYTE_TRUE, nil
 }
 
@@ -119,53 +100,13 @@ func ProcessCrossChainTx(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, contract params deserialize error: %v", err)
 	}
 
-	//get block header
-	header, err := header_sync.GetHeaderByHeight(native, params.FromChainID, params.Height)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, get header by height error: %v", err)
-	}
-
-	path, err := hex.DecodeString(params.Proof)
+	proof, err := hex.DecodeString(params.Proof)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, proof hex.DecodeString error: %v", err)
 	}
-	v := merkle.MerkleProve(path, header.CrossStatesRoot)
-	if v == nil {
-		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, merkle.MerkleProve verify merkle proof error")
-	}
-	s := common.NewZeroCopySource(v)
-	merkleValue := new(MerkleValue)
-	if err := merkleValue.Deserialization(s); err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, deserialize merkleValue error:%s", err)
-	}
-
-	//record done cross chain tx
-	oldCurrentID, err := getCurrentID(native, params.FromChainID)
+	merkleValue, err := VerifyOntTx(native, proof, params.FromChainID, params.Height)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, getCurrentID error: %v", err)
-	}
-	if merkleValue.RequestID > oldCurrentID {
-		err = putRemainedIDs(native, merkleValue.RequestID, oldCurrentID, params.FromChainID)
-		if err != nil {
-			return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, putRemainedIDs error: %v", err)
-		}
-		err = putCurrentID(native, merkleValue.RequestID, params.FromChainID)
-		if err != nil {
-			return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, putCurrentID error: %v", err)
-		}
-	} else {
-		ok, err := checkIfRemained(native, merkleValue.RequestID, params.FromChainID)
-		if err != nil {
-			return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, checkIfRemained error: %v", err)
-		}
-		if !ok {
-			return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, tx already done")
-		} else {
-			err = removeRemained(native, merkleValue.RequestID, params.FromChainID)
-			if err != nil {
-				return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, removeRemained error: %v", err)
-			}
-		}
+		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, VerifyOntTx error: %v", err)
 	}
 
 	//process main chain ongx fee
@@ -228,6 +169,6 @@ func ProcessCrossChainTx(native *native.NativeService) ([]byte, error) {
 			return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, res of neo vm call is false")
 		}
 	}
-	notifyProcessCrossChainTx(native, params.FromChainID, merkleValue.RequestID, params.Height, ongFee)
+
 	return utils.BYTE_TRUE, nil
 }
