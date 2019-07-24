@@ -20,7 +20,6 @@ package side_chain_manager
 
 import (
 	"fmt"
-	"math"
 	"sort"
 
 	"github.com/ontio/multi-chain/common"
@@ -28,16 +27,13 @@ import (
 )
 
 type SideChain struct {
-	Chainid      uint32
+	Chainid      uint64
 	Name         string
 	BlocksToWait uint64
 }
 
 func (this *SideChain) Serialization(sink *common.ZeroCopySink) error {
-	if this.Chainid > math.MaxUint32 {
-		return fmt.Errorf("chainid larger than max of uint32")
-	}
-	utils.EncodeVarUint(sink, uint64(this.Chainid))
+	utils.EncodeVarUint(sink, this.Chainid)
 	utils.EncodeString(sink, this.Name)
 	utils.EncodeVarUint(sink, this.BlocksToWait)
 	return nil
@@ -48,9 +44,6 @@ func (this *SideChain) Deserialization(source *common.ZeroCopySource) error {
 	if err != nil {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize chainid error: %v", err)
 	}
-	if chainid > math.MaxUint32 {
-		return fmt.Errorf("chainid larger than max of uint32")
-	}
 	name, err := utils.DecodeString(source)
 	if err != nil {
 		return fmt.Errorf("utils.DecodeString, deserialize name error: %v", err)
@@ -60,14 +53,14 @@ func (this *SideChain) Deserialization(source *common.ZeroCopySource) error {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize blocksToWait error: %v", err)
 	}
 
-	this.Chainid = uint32(chainid)
+	this.Chainid = chainid
 	this.Name = name
 	this.BlocksToWait = blocksToWait
 	return nil
 }
 
 type AssetMap struct {
-	AssetMap map[uint32]*Asset
+	AssetMap map[uint64]*Asset
 }
 
 func (this *AssetMap) Serialization(sink *common.ZeroCopySink) error {
@@ -92,7 +85,7 @@ func (this *AssetMap) Deserialization(source *common.ZeroCopySource) error {
 	if err != nil {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize length error: %v", err)
 	}
-	assetMap := make(map[uint32]*Asset)
+	assetMap := make(map[uint64]*Asset)
 	for i := 0; uint64(i) < n; i++ {
 		asset := new(Asset)
 		if err := asset.Deserialization(source); err != nil {

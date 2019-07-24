@@ -119,9 +119,9 @@ func ApproveRegisterSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, putSideChain error: %v", err)
 	}
-	chainidByte, err := utils.GetUint32Bytes(params.Chainid)
+	chainidByte, err := utils.GetUint64Bytes(params.Chainid)
 	if err != nil {
-		return nil, fmt.Errorf("ApproveRegisterSideChain, utils.GetUint32Bytes error: %v", err)
+		return nil, fmt.Errorf("ApproveRegisterSideChain, utils.GetUint64Bytes error: %v", err)
 	}
 	native.CacheDB.Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(REGISTER_SIDE_CHAIN_REQUEST), chainidByte))
 
@@ -177,9 +177,9 @@ func ApproveUpdateSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, putSideChain error: %v", err)
 	}
-	chainidByte, err := utils.GetUint32Bytes(params.Chainid)
+	chainidByte, err := utils.GetUint64Bytes(params.Chainid)
 	if err != nil {
-		return nil, fmt.Errorf("ApproveUpdateSideChain, utils.GetUint32Bytes error: %v", err)
+		return nil, fmt.Errorf("ApproveUpdateSideChain, utils.GetUint64Bytes error: %v", err)
 	}
 	native.CacheDB.Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(UPDATE_SIDE_CHAIN_REQUEST), chainidByte))
 
@@ -199,9 +199,9 @@ func RemoveSideChain(native *native.NativeService) ([]byte, error) {
 	if sideChain.Chainid == 0 {
 		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, chainid is not registered")
 	}
-	chainidByte, err := utils.GetUint32Bytes(params.Chainid)
+	chainidByte, err := utils.GetUint64Bytes(params.Chainid)
 	if err != nil {
-		return nil, fmt.Errorf("RemoveSideChain, utils.GetUint32Bytes error: %v", err)
+		return nil, fmt.Errorf("RemoveSideChain, utils.GetUint64Bytes error: %v", err)
 	}
 	native.CacheDB.Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(SIDE_CHAIN), chainidByte))
 
@@ -245,7 +245,7 @@ func ApproveAssetMapping(native *native.NativeService) ([]byte, error) {
 	if assetMapRequest.AssetName == "" {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveAssetMapping, asset name is not requested")
 	}
-	assetMap := make(map[uint32]*Asset)
+	assetMap := make(map[uint64]*Asset)
 	for _, v := range assetMapRequest.AssetList {
 		assetMap[v.Chainid] = v
 	}

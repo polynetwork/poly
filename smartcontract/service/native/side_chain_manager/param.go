@@ -22,22 +22,18 @@ import (
 	"fmt"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
-	"math"
 )
 
 type RegisterSideChainParam struct {
 	Address      common.Address
-	Chainid      uint32
+	Chainid      uint64
 	Name         string
 	BlocksToWait uint64
 }
 
 func (this *RegisterSideChainParam) Serialization(sink *common.ZeroCopySink) error {
 	utils.EncodeAddress(sink, this.Address)
-	if this.Chainid > math.MaxUint32 {
-		return fmt.Errorf("chainid larger than max of uint32")
-	}
-	utils.EncodeVarUint(sink, uint64(this.Chainid))
+	utils.EncodeVarUint(sink, this.Chainid)
 	utils.EncodeString(sink, this.Name)
 	utils.EncodeVarUint(sink, this.BlocksToWait)
 	return nil
@@ -52,9 +48,6 @@ func (this *RegisterSideChainParam) Deserialization(source *common.ZeroCopySourc
 	if err != nil {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize chainid error: %v", err)
 	}
-	if chainid > math.MaxUint32 {
-		return fmt.Errorf("chainid larger than max of uint32")
-	}
 	name, err := utils.DecodeString(source)
 	if err != nil {
 		return fmt.Errorf("utils.DecodeString, deserialize name error: %v", err)
@@ -64,21 +57,18 @@ func (this *RegisterSideChainParam) Deserialization(source *common.ZeroCopySourc
 		return fmt.Errorf("utils.DecodeVarUint, deserialize blocksToWait error: %v", err)
 	}
 	this.Address = address
-	this.Chainid = uint32(chainid)
+	this.Chainid = chainid
 	this.Name = name
 	this.BlocksToWait = blocksToWait
 	return nil
 }
 
 type ChainidParam struct {
-	Chainid uint32
+	Chainid uint64
 }
 
 func (this *ChainidParam) Serialization(sink *common.ZeroCopySink) error {
-	if this.Chainid > math.MaxUint32 {
-		return fmt.Errorf("chainid larger than max of uint32")
-	}
-	utils.EncodeVarUint(sink, uint64(this.Chainid))
+	utils.EncodeVarUint(sink, this.Chainid)
 	return nil
 }
 
@@ -87,23 +77,17 @@ func (this *ChainidParam) Deserialization(source *common.ZeroCopySource) error {
 	if err != nil {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize chainid error: %v", err)
 	}
-	if chainid > math.MaxUint32 {
-		return fmt.Errorf("chainid larger than max of uint32")
-	}
-	this.Chainid = uint32(chainid)
+	this.Chainid = chainid
 	return nil
 }
 
 type Asset struct {
-	Chainid         uint32
+	Chainid         uint64
 	ContractAddress string
 }
 
 func (this *Asset) Serialization(sink *common.ZeroCopySink) error {
-	if this.Chainid > math.MaxUint32 {
-		return fmt.Errorf("chainid larger than max of uint32")
-	}
-	utils.EncodeVarUint(sink, uint64(this.Chainid))
+	utils.EncodeVarUint(sink, this.Chainid)
 	utils.EncodeString(sink, this.ContractAddress)
 	return nil
 }
@@ -113,14 +97,11 @@ func (this *Asset) Deserialization(source *common.ZeroCopySource) error {
 	if err != nil {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize chainid error: %v", err)
 	}
-	if chainid > math.MaxUint32 {
-		return fmt.Errorf("chainid larger than max of uint32")
-	}
 	contractAddress, err := utils.DecodeString(source)
 	if err != nil {
 		return fmt.Errorf("utils.DecodeString, deserialize contractAddress error: %v", err)
 	}
-	this.Chainid = uint32(chainid)
+	this.Chainid = chainid
 	this.ContractAddress = contractAddress
 	return nil
 }
