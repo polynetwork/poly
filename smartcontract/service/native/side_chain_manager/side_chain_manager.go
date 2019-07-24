@@ -76,7 +76,7 @@ func RegisterSideChain(native *native.NativeService) ([]byte, error) {
 	if registerSideChain != new(SideChain) {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, chainid already requested")
 	}
-	sideChain, err := getSideChain(native, params.Chainid)
+	sideChain, err := GetSideChain(native, params.Chainid)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, getSideChain error: %v", err)
 	}
@@ -134,7 +134,7 @@ func UpdateSideChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, contract params deserialize error: %v", err)
 	}
 
-	sideChain, err := getSideChain(native, params.Chainid)
+	sideChain, err := GetSideChain(native, params.Chainid)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, getSideChain error: %v", err)
 	}
@@ -192,7 +192,7 @@ func RemoveSideChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, contract params deserialize error: %v", err)
 	}
 
-	sideChain, err := getSideChain(native, params.Chainid)
+	sideChain, err := GetSideChain(native, params.Chainid)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, getUpdateSideChain error: %v", err)
 	}

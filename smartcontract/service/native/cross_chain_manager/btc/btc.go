@@ -31,6 +31,7 @@ import (
 	wire_bch "github.com/gcash/bchd/wire"
 	"github.com/gcash/bchutil/merkleblock"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
+	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
 )
 
 const (
@@ -40,7 +41,7 @@ const (
 // Verify merkle proof in bytes, and return the result in true or false
 // Firstly, calculate the merkleRoot from input `proof`; Then get header.MerkleRoot
 // by a spv client and check if they are equal.
-func VerifyBtcTx(proof []byte, tx []byte, height uint32) (bool, error) {
+func VerifyBtcTx(native *native.NativeService, proof []byte, tx []byte, height uint32) (bool, error) {
 	mb := wire_bch.MsgMerkleBlock{}
 	err := mb.BchDecode(bytes.NewReader(proof), wire_bch.ProtocolVersion, wire_bch.LatestEncoding)
 	if err != nil {
@@ -51,40 +52,49 @@ func VerifyBtcTx(proof []byte, tx []byte, height uint32) (bool, error) {
 	reader := bytes.NewReader(tx)
 	err = mtx.BtcDecode(reader, wire.ProtocolVersion, wire.LatestEncoding)
 	if err != nil {
-		return false, fmt.Errorf("VerifyBtc, failed to decode the transaction")
+		return false, fmt.Errorf("VerifyBtcTx, failed to decode the transaction")
 	}
 
 	// check the number of tx's outputs and their types
 	ret, err := checkTxOutputs(mtx)
 	if ret != true || err != nil {
-		return false, fmt.Errorf("VerifyBtc, wrong outputs: %v", err)
+		return false, fmt.Errorf("VerifyBtcTx, wrong outputs: %v", err)
 	}
-	//TODO: How to deal with param? We need to check this param, including chain_id, address..
 	var param targetChainParam
 	err = param.resolve(mtx.TxOut[0].Value, mtx.TxOut[1])
 	if err != nil {
-		return false, fmt.Errorf("VerifyBtc, failed to resolve parameter: %v", err)
+		return false, fmt.Errorf("VerifyBtcTx, failed to resolve parameter: %v", err)
+	}
+
+	//TODO: How to deal with param? We need to check this param, including chain_id, address..
+	//check if chainid exist
+	sideChain, err := side_chain_manager.GetSideChain(native, param.ChainId)
+	if err != nil {
+		return false, fmt.Errorf("VerifyBtcTx, side_chain_manager.GetSideChain error: %v", err)
+	}
+	if sideChain.Chainid != param.ChainId {
+		return false, fmt.Errorf("VerifyBtcTx, side chain is not registered")
 	}
 
 	txid := mtx.TxHash()
 	if !bytes.Equal(mb.Hashes[0][:], txid[:]) && !bytes.Equal(mb.Hashes[1][:], txid[:]) {
-		return false, fmt.Errorf("VerifyBtc, wrong transaction hash: %s in proof are not equal with %s",
+		return false, fmt.Errorf("VerifyBtcTx, wrong transaction hash: %s in proof are not equal with %s",
 			mb.Hashes[0].String(), txid.String())
 	}
 
 	mBlock := merkleblock.NewMerkleBlockFromMsg(mb)
 	merkleRootCalc := mBlock.ExtractMatches()
 	if merkleRootCalc == nil || mBlock.BadTree() || len(mBlock.GetMatches()) == 0 {
-		return false, fmt.Errorf("VerifyBtc, bad merkle tree")
+		return false, fmt.Errorf("VerifyBtcTx, bad merkle tree")
 	}
 
 	header, err := NewRestClient().GetHeaderFromSpv(height)
 	if err != nil {
-		return false, fmt.Errorf("VerifyBtc, failed to get header from spv client: %v", err)
+		return false, fmt.Errorf("VerifyBtcTx, failed to get header from spv client: %v", err)
 	}
 
 	if !bytes.Equal(merkleRootCalc[:], header.MerkleRoot[:]) {
-		return false, fmt.Errorf("VerifyBtc, merkle root not equal")
+		return false, fmt.Errorf("VerifyBtcTx, merkle root not equal")
 	}
 
 	return true, nil

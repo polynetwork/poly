@@ -18,9 +18,6 @@ const (
 	// TODO: Temporary setting
 	OP_RETURN_DATA_LEN = 42
 	OP_RETURN_SCRIPT_FLAG = byte(0x66)
-	CHAIN_ID_ONT = uint64(1)
-	CHAIN_ID_ETH = uint64(2)
-	CHAIN_ID_NEO = uint64(3)
 )
 
 type queryHeaderByHeightParam struct {

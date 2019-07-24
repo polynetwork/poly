@@ -97,7 +97,7 @@ func putRegisterSideChain(native *native.NativeService, sideChain *SideChain) er
 	return nil
 }
 
-func getSideChain(native *native.NativeService, chanid uint64) (*SideChain, error) {
+func GetSideChain(native *native.NativeService, chanid uint64) (*SideChain, error) {
 	contract := utils.SideChainManagerContractAddress
 	chainidByte, err := utils.GetUint64Bytes(chanid)
 	if err != nil {

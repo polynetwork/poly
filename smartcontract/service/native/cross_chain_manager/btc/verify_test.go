@@ -3,7 +3,6 @@ package btc
 import (
 	"bytes"
 	"encoding/binary"
-	"encoding/hex"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil/base58"
@@ -16,26 +15,26 @@ var Mr = "18854cac36126d3143ea4fe15f980b9bfb2fed6b5535bb8c282b19c237ac0925"
 var TxStr = "010000000122c28e72ecb31b948a2e4fd8fd9ef46c7d8fc391d2c05521b6cc87fb06c4c45a010000006b483045022100b0c4102e4b52556926df870c0a060b1fdf3259a6c4b8bffc2ecf33af334da837022042649c2b1c0bcc3143c8c6913220f8602fc67f136dbc9b2f37b6682e79175ef5012102098bf881769260de6ff5d62a2ea83fc7749c94ceca3538fe12854891d9a7ba50ffffffff02305f2bf9000000001976a914ca5317b7e57d325a620338f247af334f0a85ab2d88ac0000000000000000536a4c500001b86900011c55553eb858abc1c54f7e624cc852f40bb6f11ac0ea9576f03899f6046f2c3a8cfdbe5e8fefcd5858c677ab7ff65b7d95e1060547cd32138db801a9b5dee1a5be8c3f0207f30eee6ce000000000"
 
 // This test's data is from TestNet, So it's not a good case
-func TestVerifyBtc(t *testing.T) {
-	//Successful situation
-	proof, err := hex.DecodeString(Proof)
-	if err != nil {
-		t.Fatalf("Failed to decode proof: %v", err)
-	}
-
-	txInBytes, err := hex.DecodeString(TxStr)
-	if err != nil {
-		t.Fatalf("Failed to decode string to hex: %v", err)
-	}
-
-	res, err := VerifyBtcTx(proof, txInBytes, Height)
-	if err != nil || res != true {
-		t.Fatalf("Failed to verify: %v", err)
-	}
-	t.Log("Successful situation pass")
-	//Failure situation
-
-}
+//func TestVerifyBtc(t *testing.T) {
+//	//Successful situation
+//	proof, err := hex.DecodeString(Proof)
+//	if err != nil {
+//		t.Fatalf("Failed to decode proof: %v", err)
+//	}
+//
+//	txInBytes, err := hex.DecodeString(TxStr)
+//	if err != nil {
+//		t.Fatalf("Failed to decode string to hex: %v", err)
+//	}
+//
+//	res, err := VerifyBtcTx(proof, txInBytes, Height)
+//	if err != nil || res != true {
+//		t.Fatalf("Failed to verify: %v", err)
+//	}
+//	t.Log("Successful situation pass")
+//	//Failure situation
+//
+//}
 
 func TestRestClient_GetHeaderFromSpv(t *testing.T) {
 	h, err := NewRestClient().GetHeaderFromSpv(Height)
