@@ -3,6 +3,7 @@ package btc
 import (
 	"bytes"
 	"crypto/tls"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -11,6 +12,15 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
+)
+
+const (
+	// TODO: Temporary setting
+	OP_RETURN_DATA_LEN = 42
+	OP_RETURN_SCRIPT_FLAG = byte(0x66)
+	CHAIN_ID_ONT = uint64(1)
+	CHAIN_ID_ETH = uint64(2)
+	CHAIN_ID_NEO = uint64(3)
 )
 
 type queryHeaderByHeightParam struct {
@@ -105,4 +115,33 @@ func (self *RestClient) GetHeaderFromSpv(height uint32) (*wire.BlockHeader, erro
 		return nil, fmt.Errorf("Failed to decode header: %v", err)
 	}
 	return &header, nil
+}
+
+// not sure now
+type targetChainParam struct {
+	ChainId uint64
+	Fee int64
+	Addr []byte // 25 bytes
+	Value int64
+}
+
+// func about OP_RETURN
+func (p *targetChainParam) resolve(amount int64, paramOutput *wire.TxOut) error {
+	script := paramOutput.PkScript
+	if int(script[1]) != OP_RETURN_DATA_LEN {
+		return errors.New("Length of script is wrong")
+	}
+
+	if script[2] != OP_RETURN_SCRIPT_FLAG {
+		return errors.New("Wrong flag")
+	}
+	p.ChainId = binary.BigEndian.Uint64(script[3:11])
+	p.Fee = int64(binary.BigEndian.Uint64(script[11:19]))
+	// TODO:need to check the addr format?
+	p.Addr = script[19:]
+	p.Value = amount
+	if p.Value < p.Fee {
+		return errors.New("The transfer amount cannot be less than the transaction fee")
+	}
+	return nil
 }

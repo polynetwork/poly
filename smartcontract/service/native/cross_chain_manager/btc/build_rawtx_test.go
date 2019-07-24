@@ -37,7 +37,7 @@ func TestGetRawTx(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get raw transaction: %v\n", err)
 	}
-
+	fmt.Printf("raw tx hash: %x\n", mtx.TxHash())
 	pubRipe := base58.Decode(addrToPay)
 	pubRipe = pubRipe[1 : len(pubRipe)-4]
 

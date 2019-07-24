@@ -1,7 +1,12 @@
 package btc
 
 import (
+	"bytes"
+	"encoding/binary"
 	"encoding/hex"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/wire"
+	"github.com/btcsuite/btcutil/base58"
 	"testing"
 )
 
@@ -42,3 +47,35 @@ func TestRestClient_GetHeaderFromSpv(t *testing.T) {
 	}
 	t.Log("get header from spv passed")
 }
+
+func TestTargetChainParam(t *testing.T) {
+	flag := []byte{OP_RETURN_SCRIPT_FLAG}
+	chainId := make([]byte, 8)
+	binary.BigEndian.PutUint64(chainId, uint64(1))
+	fee := make([]byte, 8)
+	binary.BigEndian.PutUint64(fee, 100000)
+	addrStr := "AXEJrpNMUhAvRo9ETbzWqAVUBpXXeAFY9u"
+	addr := base58.Decode(addrStr)
+
+	data := append(append(append(flag, chainId...), fee...), addr...)
+	s, err := txscript.NullDataScript(data)
+	if err != nil {
+		t.Fatalf("Failed to build script: %v", err)
+	}
+
+	var param targetChainParam
+	out := &wire.TxOut{
+		Value: 0,
+		PkScript: s,
+	}
+	err = param.resolve(1e10, out)
+	if err != nil {
+		t.Fatalf("Failed to resolve param: %v", err)
+	}
+
+	if param.ChainId != 1 || param.Fee != 100000 || !bytes.Equal(param.Addr, addr) {
+		t.Fatal("wrong param")
+	}
+}
+
+

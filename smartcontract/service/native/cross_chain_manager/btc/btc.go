@@ -20,6 +20,7 @@ package btc
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -52,6 +53,19 @@ func VerifyBtcTx(proof []byte, tx []byte, height uint32) (bool, error) {
 	if err != nil {
 		return false, fmt.Errorf("VerifyBtc, failed to decode the transaction")
 	}
+
+	// check the number of tx's outputs and their types
+	ret, err := checkTxOutputs(mtx)
+	if ret != true || err != nil {
+		return false, fmt.Errorf("VerifyBtc, wrong outputs: %v", err)
+	}
+	//TODO: How to deal with param? We need to check this param, including chain_id, address..
+	var param targetChainParam
+	err = param.resolve(mtx.TxOut[0].Value, mtx.TxOut[1])
+	if err != nil {
+		return false, fmt.Errorf("VerifyBtc, failed to resolve parameter: %v", err)
+	}
+
 	txid := mtx.TxHash()
 	if !bytes.Equal(mb.Hashes[0][:], txid[:]) && !bytes.Equal(mb.Hashes[1][:], txid[:]) {
 		return false, fmt.Errorf("VerifyBtc, wrong transaction hash: %s in proof are not equal with %s",
@@ -71,6 +85,25 @@ func VerifyBtcTx(proof []byte, tx []byte, height uint32) (bool, error) {
 
 	if !bytes.Equal(merkleRootCalc[:], header.MerkleRoot[:]) {
 		return false, fmt.Errorf("VerifyBtc, merkle root not equal")
+	}
+
+	return true, nil
+}
+
+func checkTxOutputs(tx *wire.MsgTx) (ret bool, err error){
+	// has to be 2?
+	if len(tx.TxOut) >= 2 {
+		return false, errors.New("Number of transaction's outputs is at least greater than 2")
+	}
+
+	c1 := txscript.GetScriptClass(tx.TxOut[0].PkScript)
+	if c1 != txscript.MultiSigTy {
+		return false, errors.New("PkScript is not MultiSig type")
+	}
+
+	c2 := txscript.GetScriptClass(tx.TxOut[1].PkScript)
+	if c2 != txscript.NullDataTy {
+		return false, errors.New("PkScript is not NullData type")
 	}
 
 	return true, nil
@@ -104,7 +137,8 @@ func MakeBtcTx(native *native.NativeService, prevTxids []string, prevIndexes []u
 		return false, fmt.Errorf("MakeBtcTx, serialize rawtransaction fail: %v", err)
 	}
 
-	native.CacheDB.Put([]byte(BTC_TX_PREFIX+"btctx??"), buf.Bytes())
+	// TODO: Define a key
+	native.CacheDB.Put(append([]byte(BTC_TX_PREFIX), ), buf.Bytes())
 	return true, nil
 }
 
