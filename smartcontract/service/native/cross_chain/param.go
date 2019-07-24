@@ -28,10 +28,8 @@ type CreateCrossChainTxParam struct {
 	Fee     uint64
 	Address common.Address
 
-	ToChainID       uint64
-	ContractAddress common.Address
-	FunctionName    string
-	Args            []byte
+	ToChainID uint64
+	Args      []byte
 }
 
 func (this *CreateCrossChainTxParam) Serialization(sink *common.ZeroCopySink) {
@@ -39,8 +37,6 @@ func (this *CreateCrossChainTxParam) Serialization(sink *common.ZeroCopySink) {
 	utils.EncodeAddress(sink, this.Address)
 
 	utils.EncodeVarUint(sink, this.ToChainID)
-	utils.EncodeAddress(sink, this.ContractAddress)
-	utils.EncodeString(sink, this.FunctionName)
 	utils.EncodeVarBytes(sink, this.Args)
 }
 
@@ -58,14 +54,6 @@ func (this *CreateCrossChainTxParam) Deserialization(source *common.ZeroCopySour
 	if err != nil {
 		return fmt.Errorf("CreateCrossChainTxParam deserialize toChainID error:%s", err)
 	}
-	contractAddress, err := utils.DecodeAddress(source)
-	if err != nil {
-		return fmt.Errorf("CreateCrossChainTxParam deserialize contractAddress error:%s", err)
-	}
-	functionName, err := utils.DecodeString(source)
-	if err != nil {
-		return fmt.Errorf("CreateCrossChainTxParam deserialize functionName error:%s", err)
-	}
 	args, err := utils.DecodeVarBytes(source)
 	if err != nil {
 		return fmt.Errorf("CreateCrossChainTxParam deserialize args error:%s", err)
@@ -74,15 +62,14 @@ func (this *CreateCrossChainTxParam) Deserialization(source *common.ZeroCopySour
 	this.Address = address
 
 	this.ToChainID = toChainID
-	this.ContractAddress = contractAddress
-	this.FunctionName = functionName
 	this.Args = args
 	return nil
 }
 
 type ProcessCrossChainTxParam struct {
-	Address     common.Address
-	FromChainID uint64
+	Address      common.Address
+	FromChainID  uint64
+	FromContract string
 
 	Height uint32
 	Proof  string
@@ -91,6 +78,7 @@ type ProcessCrossChainTxParam struct {
 func (this *ProcessCrossChainTxParam) Serialization(sink *common.ZeroCopySink) {
 	utils.EncodeAddress(sink, this.Address)
 	utils.EncodeVarUint(sink, this.FromChainID)
+	utils.EncodeString(sink, this.FromContract)
 	utils.EncodeVarUint(sink, uint64(this.Height))
 	utils.EncodeString(sink, this.Proof)
 }
@@ -104,6 +92,10 @@ func (this *ProcessCrossChainTxParam) Deserialization(source *common.ZeroCopySou
 	if err != nil {
 		return fmt.Errorf("ProcessCrossChainTxParam deserialize fromChainID error:%s", err)
 	}
+	fromContract, err := utils.DecodeString(source)
+	if err != nil {
+		return fmt.Errorf("ProcessCrossChainTxParam deserialize fromContract error:%s", err)
+	}
 	height, err := utils.DecodeVarUint(source)
 	if err != nil {
 		return fmt.Errorf("ProcessCrossChainTxParam deserialize height error:%s", err)
@@ -114,6 +106,7 @@ func (this *ProcessCrossChainTxParam) Deserialization(source *common.ZeroCopySou
 	}
 	this.Address = address
 	this.FromChainID = fromChainID
+	this.FromContract = fromContract
 	this.Height = uint32(height)
 	this.Proof = proof
 	return nil

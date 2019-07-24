@@ -220,7 +220,7 @@ func putAssetMap(native *native.NativeService, assetMap *AssetMap) error {
 	return nil
 }
 
-func getAssetContractAddress(native *native.NativeService, fromChainid, toChainid uint64, contractAddress string) (string, error) {
+func GetAssetContractAddress(native *native.NativeService, fromChainid, toChainid uint64, contractAddress string) (string, error) {
 	contract := utils.SideChainManagerContractAddress
 	prefix := strconv.Itoa(int(fromChainid)) + contractAddress
 	assetMapStore, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(ASSET_MAP), []byte(prefix)))

@@ -79,7 +79,7 @@ func notifyOngLock(native *native.NativeService, contract common.Address, chainI
 	native.Notifications = append(native.Notifications,
 		&event.NotifyEventInfo{
 			ContractAddress: contract,
-			States:          []interface{}{ONG_LOCK, chainID, address.ToBase58(), ongxAmount},
+			States:          []interface{}{LOCK, chainID, address.ToBase58(), ongxAmount},
 		})
 }
 
@@ -91,6 +91,6 @@ func notifyOngUnlock(native *native.NativeService, contract common.Address, chai
 	native.Notifications = append(native.Notifications,
 		&event.NotifyEventInfo{
 			ContractAddress: contract,
-			States:          []interface{}{ONG_UNLOCK, chainID, address.ToBase58(), ongAmount},
+			States:          []interface{}{UNLOCK, chainID, address.ToBase58(), ongAmount},
 		})
 }

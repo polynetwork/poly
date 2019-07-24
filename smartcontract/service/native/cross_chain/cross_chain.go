@@ -21,6 +21,7 @@ package cross_chain
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
 	"math/big"
 
 	"github.com/ontio/multi-chain/common"
@@ -83,15 +84,24 @@ func ProcessCrossChainTx(native *native.NativeService) ([]byte, error) {
 	}
 
 	//call cross chain function
-	destContractAddr := merkleValue.CreateCrossChainTxParam.ContractAddress
-	functionName := merkleValue.CreateCrossChainTxParam.FunctionName
+	destContractAddr, err := side_chain_manager.GetAssetContractAddress(native, params.FromChainID,
+		native.ShardID.ToUint64(), params.FromContract)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, side_chain_manager.GetAssetContractAddress error: %v", err)
+	}
+	dest, err := common.AddressFromHexString(destContractAddr)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, common.AddressFromHexString error: %v", err)
+	}
+	functionName := "unlock"
 	args := merkleValue.CreateCrossChainTxParam.Args
-	if destContractAddr == utils.OngContractAddress {
-		if _, err := native.NativeCall(destContractAddr, functionName, args); err != nil {
+
+	if dest == utils.OngContractAddress {
+		if _, err := native.NativeCall(dest, functionName, args); err != nil {
 			return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, native.NativeCall error: %v", err)
 		}
 	} else {
-		res, err := native.NeoVMCall(destContractAddr, functionName, args)
+		res, err := native.NeoVMCall(dest, functionName, args)
 		if err != nil {
 			return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, native.NeoVMCall error: %v", err)
 		}
