@@ -16,7 +16,7 @@ import (
 
 const (
 	// TODO: Temporary setting
-	OP_RETURN_DATA_LEN = 42
+	OP_RETURN_DATA_LEN    = 42
 	OP_RETURN_SCRIPT_FLAG = byte(0x66)
 )
 
@@ -117,9 +117,9 @@ func (self *RestClient) GetHeaderFromSpv(height uint32) (*wire.BlockHeader, erro
 // not sure now
 type targetChainParam struct {
 	ChainId uint64
-	Fee int64
-	Addr []byte // 25 bytes
-	Value int64
+	Fee     int64
+	Addr    []byte // 25 bytes
+	Value   int64
 }
 
 // func about OP_RETURN

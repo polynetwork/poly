@@ -100,7 +100,7 @@ func VerifyBtcTx(native *native.NativeService, proof []byte, tx []byte, height u
 	return true, nil
 }
 
-func checkTxOutputs(tx *wire.MsgTx) (ret bool, err error){
+func checkTxOutputs(tx *wire.MsgTx) (ret bool, err error) {
 	// has to be 2?
 	if len(tx.TxOut) >= 2 {
 		return false, errors.New("Number of transaction's outputs is at least greater than 2")
@@ -148,7 +148,7 @@ func MakeBtcTx(native *native.NativeService, prevTxids []string, prevIndexes []u
 	}
 
 	// TODO: Define a key
-	native.CacheDB.Put(append([]byte(BTC_TX_PREFIX), ), buf.Bytes())
+	native.CacheDB.Put(append([]byte(BTC_TX_PREFIX)), buf.Bytes())
 	return true, nil
 }
 

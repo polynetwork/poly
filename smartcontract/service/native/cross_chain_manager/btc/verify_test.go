@@ -64,7 +64,7 @@ func TestTargetChainParam(t *testing.T) {
 
 	var param targetChainParam
 	out := &wire.TxOut{
-		Value: 0,
+		Value:    0,
 		PkScript: s,
 	}
 	err = param.resolve(1e10, out)
@@ -76,5 +76,3 @@ func TestTargetChainParam(t *testing.T) {
 		t.Fatal("wrong param")
 	}
 }
-
-
