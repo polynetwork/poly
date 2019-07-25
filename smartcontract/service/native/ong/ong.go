@@ -26,7 +26,7 @@ import (
 	"github.com/ontio/multi-chain/common/constants"
 	"github.com/ontio/multi-chain/errors"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
-	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain"
+	cont "github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/ont"
 	"github.com/ontio/multi-chain/smartcontract/service/native/ont"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 	"github.com/ontio/multi-chain/vm/neovm/types"
@@ -193,7 +193,7 @@ func Lock(native *native.NativeService) ([]byte, error) {
 	}
 	args := common.NewZeroCopySink(nil)
 	ongUnlockParam.Serialization(args)
-	crossChainParam := cross_chain.CreateCrossChainTxParam{
+	crossChainParam := cont.CreateCrossChainTxParam{
 		Fee:       params.Fee,
 		Address:   params.Address,
 		ToChainID: params.ToChainID,
@@ -201,7 +201,7 @@ func Lock(native *native.NativeService) ([]byte, error) {
 	}
 	sink := common.NewZeroCopySink(nil)
 	crossChainParam.Serialization(sink)
-	if _, err := native.NativeCall(utils.CrossChainContractAddress, cross_chain.CREATE_CROSS_CHAIN_TX, sink.Bytes()); err != nil {
+	if _, err := native.NativeCall(utils.CrossChainContractAddress, cont.CREATE_CROSS_CHAIN_TX, sink.Bytes()); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("appCallTransfer, appCall error: %v", err)
 	}
 

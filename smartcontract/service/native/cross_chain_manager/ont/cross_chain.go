@@ -16,14 +16,14 @@
  * along with The ontology.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package cross_chain
+package ont
 
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
 	"math/big"
 
+	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"

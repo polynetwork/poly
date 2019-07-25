@@ -125,20 +125,6 @@ func verifyHeader(native *native.NativeService, header *types.Header) error {
 		return fmt.Errorf("verifyHeader, findKeyHeight error:%v", err)
 	}
 
-	//check epoch
-	chainIBytes, err := utils.GetUint64Bytes(header.ShardID)
-	if err != nil {
-		return fmt.Errorf("verifyHeader, utils.GetUint64Bytes error:%v", err)
-	}
-	r, err := native.NativeCall(utils.ChainManagerContractAddress, "getEpoch", chainIBytes)
-	if err != nil {
-		return fmt.Errorf("verifyHeader, appCall getEpoch error: %v", err)
-	}
-	epoch, err := utils.GetBytesUint32(r.([]byte))
-	if header.Height > epoch+keyHeight {
-		return fmt.Errorf("verifyHeader, height gap is more than epoch")
-	}
-
 	consensusPeer, err := getConsensusPeersByHeight(native, header.ShardID, keyHeight)
 	if err != nil {
 		return fmt.Errorf("verifyHeader, get ConsensusPeer error:%v", err)
@@ -327,12 +313,6 @@ func UpdateConsensusPeer(native *native.NativeService, header *types.Header, add
 		return fmt.Errorf("updateConsensusPeer, unmarshal blockInfo error: %s", err)
 	}
 	if blkInfo.NewChainConfig != nil {
-		if header.ShardID != 0 {
-			if _, err := native.NativeCall(utils.ChainManagerContractAddress, "ifStaked", header.ToArray()); err != nil {
-				return fmt.Errorf("UpdateConsensusPeer, appCall ifStaked error: %v", err)
-			}
-		}
-
 		consensusPeers := &ConsensusPeers{
 			ChainID: header.ShardID,
 			Height:  header.Height,
