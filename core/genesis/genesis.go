@@ -31,7 +31,6 @@ import (
 	"github.com/ontio/multi-chain/consensus/vbft/config"
 	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/core/utils"
-	"github.com/ontio/multi-chain/smartcontract/service/native/chain_manager"
 	"github.com/ontio/multi-chain/smartcontract/service/native/global_params"
 	"github.com/ontio/multi-chain/smartcontract/service/native/governance"
 	"github.com/ontio/multi-chain/smartcontract/service/native/ont"
@@ -73,7 +72,6 @@ func BuildGenesisBlock(defaultBookkeeper []keypair.PublicKey, genesisConfig *con
 		genesisConfig.VBFT.Serialize(conf)
 	}
 	govConfig := newGoverConfigInit(conf.Bytes())
-	sideChainGovConfig := newSideChainGoverConfigInit(conf.Bytes())
 	consensusPayload, err := vconfig.GenesisConsensusPayload(govConfig.Hash(), 0)
 	if err != nil {
 		return nil, fmt.Errorf("consensus genesis init failed: %s", err)
@@ -115,7 +113,6 @@ func BuildGenesisBlock(defaultBookkeeper []keypair.PublicKey, genesisConfig *con
 			newUtilityInit(),
 			newParamInit(),
 			govConfig,
-			sideChainGovConfig,
 		},
 	}
 	genesisBlock.RebuildMerkleRoot()
@@ -274,15 +271,6 @@ func newGoverConfigInit(config []byte) *types.Transaction {
 	tx, err := mutable.IntoImmutable()
 	if err != nil {
 		panic("construct genesis governing token transaction error ")
-	}
-	return tx
-}
-
-func newSideChainGoverConfigInit(config []byte) *types.Transaction {
-	mutable := utils.BuildNativeTransaction(nutils.ChainManagerContractAddress, chain_manager.INIT_CONFIG, config)
-	tx, err := mutable.IntoImmutable()
-	if err != nil {
-		panic("constract genesis side chain governing transaction error ")
 	}
 	return tx
 }

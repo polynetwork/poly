@@ -26,24 +26,10 @@ import (
 	"github.com/ontio/multi-chain/merkle"
 	"github.com/ontio/multi-chain/smartcontract/event"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
-	"github.com/ontio/multi-chain/smartcontract/service/native/chain_manager"
 	"github.com/ontio/multi-chain/smartcontract/service/native/header_sync"
 	"github.com/ontio/multi-chain/smartcontract/service/native/ont"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 )
-
-func putSideChain(native *native.NativeService, sideChain *chain_manager.SideChain) error {
-	contract := utils.ChainManagerContractAddress
-	sink := common.NewZeroCopySink(nil)
-	sideChain.Serialize(sink)
-	chainIDBytes, err := utils.GetUint64Bytes(sideChain.ChainID)
-	if err != nil {
-		return fmt.Errorf("getUint64Bytes error: %v", err)
-	}
-	native.CacheDB.Put(utils.ConcatKey(contract, []byte(chain_manager.SIDE_CHAIN), chainIDBytes),
-		cstates.GenRawStorageItem(sink.Bytes()))
-	return nil
-}
 
 func appCallTransferOng(native *native.NativeService, from common.Address, to common.Address, amount uint64) error {
 	err := appCallTransfer(native, utils.OngContractAddress, from, to, amount)
