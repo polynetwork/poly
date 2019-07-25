@@ -20,14 +20,9 @@ package btc
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"github.com/btcsuite/btcd/btcjson"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
-	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcutil"
 	wire_bch "github.com/gcash/bchd/wire"
 	"github.com/gcash/bchutil/merkleblock"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
@@ -41,7 +36,8 @@ const (
 // Verify merkle proof in bytes, and return the result in true or false
 // Firstly, calculate the merkleRoot from input `proof`; Then get header.MerkleRoot
 // by a spv client and check if they are equal.
-func VerifyBtcTx(native *native.NativeService, proof []byte, tx []byte, height uint32) (bool, error) {
+func VerifyBtcTx(native *native.NativeService, proof []byte, tx []byte, height uint32,
+	pubKeys [][]byte, require int) (bool, error) {
 	mb := wire_bch.MsgMerkleBlock{}
 	err := mb.BchDecode(bytes.NewReader(proof), wire_bch.ProtocolVersion, wire_bch.LatestEncoding)
 	if err != nil {
@@ -56,7 +52,7 @@ func VerifyBtcTx(native *native.NativeService, proof []byte, tx []byte, height u
 	}
 
 	// check the number of tx's outputs and their types
-	ret, err := checkTxOutputs(mtx)
+	ret, err := checkTxOutputs(mtx, pubKeys, require)
 	if ret != true || err != nil {
 		return false, fmt.Errorf("VerifyBtcTx, wrong outputs: %v", err)
 	}
@@ -100,24 +96,6 @@ func VerifyBtcTx(native *native.NativeService, proof []byte, tx []byte, height u
 	return true, nil
 }
 
-func checkTxOutputs(tx *wire.MsgTx) (ret bool, err error) {
-	// has to be 2?
-	if len(tx.TxOut) >= 2 {
-		return false, errors.New("Number of transaction's outputs is at least greater than 2")
-	}
-
-	c1 := txscript.GetScriptClass(tx.TxOut[0].PkScript)
-	if c1 != txscript.MultiSigTy {
-		return false, errors.New("PkScript is not MultiSig type")
-	}
-
-	c2 := txscript.GetScriptClass(tx.TxOut[1].PkScript)
-	if c2 != txscript.NullDataTy {
-		return false, errors.New("PkScript is not NullData type")
-	}
-
-	return true, nil
-}
 
 // Create a raw transaction that returns the BTC that once locked the multi-sign account
 // to the original account and this transacion is not signed. In the end of this function,
@@ -137,7 +115,7 @@ func MakeBtcTx(native *native.NativeService, prevTxids []string, prevIndexes []u
 		})
 	}
 
-	mtx, err := getRawTx(txIns, amounts, nil)
+	mtx, err := getUnsignedTx(txIns, amounts, nil)
 	if err != nil {
 		return false, fmt.Errorf("MakeBtcTx, get rawtransaction fail: %v", err)
 	}
@@ -148,84 +126,8 @@ func MakeBtcTx(native *native.NativeService, prevTxids []string, prevIndexes []u
 	}
 
 	// TODO: Define a key
-	native.CacheDB.Put(append([]byte(BTC_TX_PREFIX)), buf.Bytes())
+	native.CacheDB.Put(append([]byte(BTC_TX_PREFIX), ), buf.Bytes())
 	return true, nil
 }
 
-// This function needs to input the input and output information of the transaction
-// and the lock time. Function build a raw transaction without signature and return it.
-// This function uses the partial logic and code of btcd to finally return the
-// reference of the transaction object.
-func getRawTx(txIns []btcjson.TransactionInput, amounts map[string]float64, locktime *int64) (*wire.MsgTx, error) {
-	if locktime != nil &&
-		(*locktime < 0 || *locktime > int64(wire.MaxTxInSequenceNum)) {
-		return nil, fmt.Errorf("getRawTx, locktime %d out of range", *locktime)
-	}
 
-	// Add all transaction inputs to a new transaction after performing
-	// some validity checks.
-	mtx := wire.NewMsgTx(wire.TxVersion)
-	for _, input := range txIns {
-		txHash, err := chainhash.NewHashFromStr(input.Txid)
-		if err != nil {
-			return nil, fmt.Errorf("getRawTx, decode txid fail: %v", err)
-		}
-
-		prevOut := wire.NewOutPoint(txHash, input.Vout)
-		txIn := wire.NewTxIn(prevOut, []byte{}, nil)
-		if locktime != nil && *locktime != 0 {
-			txIn.Sequence = wire.MaxTxInSequenceNum - 1
-		}
-		mtx.AddTxIn(txIn)
-	}
-
-	// Add all transaction outputs to the transaction after performing
-	// some validity checks.
-	params := &chaincfg.MainNetParams
-	for encodedAddr, amount := range amounts {
-		// Ensure amount is in the valid range for monetary amounts.
-		if amount <= 0 || amount > btcutil.MaxSatoshi {
-			return nil, fmt.Errorf("getRawTx, wrong amount: %f", amount)
-		}
-
-		// Decode the provided address.
-		addr, err := btcutil.DecodeAddress(encodedAddr, params)
-		if err != nil {
-			return nil, fmt.Errorf("getRawTx, decode addr fail: %v", err)
-		}
-
-		// Ensure the address is one of the supported types and that
-		// the network encoded with the address matches the network the
-		// server is currently on.
-		switch addr.(type) {
-		case *btcutil.AddressPubKeyHash:
-		default:
-			return nil, fmt.Errorf("getRawTx, type of addr is not found")
-		}
-		if !addr.IsForNet(params) {
-			return nil, fmt.Errorf("getRawTx, addr is not for mainnet")
-		}
-
-		// Create a new script which pays to the provided address.
-		pkScript, err := txscript.PayToAddrScript(addr)
-		if err != nil {
-			return nil, fmt.Errorf("getRawTx, failed to generate pay-to-address script: %v", err)
-		}
-
-		// Convert the amount to satoshi.
-		satoshi, err := btcutil.NewAmount(amount)
-		if err != nil {
-			return nil, fmt.Errorf("getRawTx, failed to convert amount: %v", err)
-		}
-
-		txOut := wire.NewTxOut(int64(satoshi), pkScript)
-		mtx.AddTxOut(txOut)
-	}
-
-	// Set the Locktime, if given.
-	if locktime != nil {
-		mtx.LockTime = uint32(*locktime)
-	}
-
-	return mtx, nil
-}
