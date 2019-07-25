@@ -193,7 +193,7 @@ func checkTxOutputs(tx *wire.MsgTx, pubKeys [][]byte, require int) (ret bool, er
 		if err != nil {
 			return false, err
 		}
-		h, err := txscript.PayToAddrScript(addr);
+		h, err := txscript.PayToAddrScript(addr)
 		if err != nil {
 			return false, err
 		}

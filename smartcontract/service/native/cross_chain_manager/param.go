@@ -5,34 +5,33 @@ import (
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 )
 
-type EntranceParam struct{
+type EntranceParam struct {
 	SourceChainID  uint32
 	TxData         string
 	Height         uint32
 	Proof          string
 	RelayerAddress string
-
 }
 
-func (this *EntranceParam)Deserialization(source *common.ZeroCopySource) error {
-	sourcechainid,err := utils.DecodeVarUint(source)
-	if err != nil{
+func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error {
+	sourcechainid, err := utils.DecodeVarUint(source)
+	if err != nil {
 		return err
 	}
-	txdata ,err := utils.DecodeString(source)
-	if err != nil{
+	txdata, err := utils.DecodeString(source)
+	if err != nil {
 		return err
 	}
 	height, err := utils.DecodeVarUint(source)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	proof, err := utils.DecodeString(source)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	relayerAddr, err := utils.DecodeString(source)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	this.SourceChainID = uint32(sourcechainid)
@@ -44,10 +43,10 @@ func (this *EntranceParam)Deserialization(source *common.ZeroCopySource) error {
 	return nil
 }
 
-func (this *EntranceParam)Serialization(sink *common.ZeroCopySink) {
+func (this *EntranceParam) Serialization(sink *common.ZeroCopySink) {
 	utils.EncodeVarUint(sink, uint64(this.SourceChainID))
-	utils.EncodeString(sink,this.TxData)
-	utils.EncodeVarUint(sink,uint64(this.Height))
-	utils.EncodeString(sink,this.Proof)
-	utils.EncodeString(sink,this.RelayerAddress)
+	utils.EncodeString(sink, this.TxData)
+	utils.EncodeVarUint(sink, uint64(this.Height))
+	utils.EncodeString(sink, this.Proof)
+	utils.EncodeString(sink, this.RelayerAddress)
 }

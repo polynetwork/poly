@@ -96,7 +96,6 @@ func VerifyBtcTx(native *native.NativeService, proof []byte, tx []byte, height u
 	return true, nil
 }
 
-
 // Create a raw transaction that returns the BTC that once locked the multi-sign account
 // to the original account and this transacion is not signed. In the end of this function,
 // serialized raw transaction would be put into native.CacheDB.
@@ -126,8 +125,6 @@ func MakeBtcTx(native *native.NativeService, prevTxids []string, prevIndexes []u
 	}
 
 	// TODO: Define a key
-	native.CacheDB.Put(append([]byte(BTC_TX_PREFIX), ), buf.Bytes())
+	native.CacheDB.Put(append([]byte(BTC_TX_PREFIX)), buf.Bytes())
 	return true, nil
 }
-
-
