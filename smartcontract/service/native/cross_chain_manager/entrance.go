@@ -19,7 +19,7 @@ const (
 
 type CrossChainHandler func(native *native.NativeService) ([]byte, error)
 
-var mapping = make(map[uint32]CrossChainHandler)
+//var mapping = make(map[uint64]CrossChainHandler)
 
 func InitEntrance() {
 	native.Contracts[utils.CrossChainManagerContractAddress] = RegisterCrossChianManagerContract
@@ -31,11 +31,11 @@ func RegisterCrossChianManagerContract(native *native.NativeService) {
 	native.Register(ImportExTransfer_Name, ImportExTransfer)
 }
 
-func RegisterChainHandler(chainid uint32, handler CrossChainHandler) {
-	mapping[chainid] = handler
-}
+//func RegisterChainHandler(chainid uint64, handler CrossChainHandler) {
+//	mapping[chainid] = handler
+//}
 
-func GetChainHandler(chainid uint32) (inf.ChainHandler, error) {
+func GetChainHandler(chainid uint64) (inf.ChainHandler, error) {
 	//handler, ok := mapping[chainid]
 	//if !ok {
 	//	return nil, fmt.Errorf("no handler for chainID:%d", chainid)

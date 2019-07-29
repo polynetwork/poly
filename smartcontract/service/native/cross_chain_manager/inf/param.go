@@ -12,12 +12,12 @@ type ChainHandler interface {
 }
 
 type EntranceParam struct {
-	SourceChainID  uint32
+	SourceChainID  uint64
 	TxData         string
 	Height         uint32
 	Proof          string
 	RelayerAddress string
-	TargetChainID  uint32
+	TargetChainID  uint64
 }
 
 func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error {
@@ -41,19 +41,26 @@ func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error 
 	if err != nil {
 		return err
 	}
-	this.SourceChainID = uint32(sourcechainid)
+	targetchainid, err := utils.DecodeVarUint(source)
+	if err != nil {
+		return err
+	}
+
+	this.SourceChainID = sourcechainid
 	this.TxData = txdata
 	this.Height = uint32(height)
 	this.Proof = proof
 	this.RelayerAddress = relayerAddr
+	this.TargetChainID = targetchainid
 
 	return nil
 }
 
 func (this *EntranceParam) Serialization(sink *common.ZeroCopySink) {
-	utils.EncodeVarUint(sink, uint64(this.SourceChainID))
+	utils.EncodeVarUint(sink, this.SourceChainID)
 	utils.EncodeString(sink, this.TxData)
 	utils.EncodeVarUint(sink, uint64(this.Height))
 	utils.EncodeString(sink, this.Proof)
 	utils.EncodeString(sink, this.RelayerAddress)
+	utils.EncodeVarUint(sink, this.TargetChainID)
 }
