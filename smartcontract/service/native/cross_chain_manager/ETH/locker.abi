@@ -1,0 +1,5 @@
+pragma solidity ^0.5.7;
+
+contract Locker {
+    event Cross(address indexed tokenAddress, address indexed from, address indexed to, uint tokens, uint decimal);
+}
