@@ -25,6 +25,7 @@ import (
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/smartcontract/service/native/auth"
+	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager"
 	cont "github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/ont"
 	params "github.com/ontio/multi-chain/smartcontract/service/native/global_params"
 	"github.com/ontio/multi-chain/smartcontract/service/native/governance"
@@ -51,6 +52,7 @@ func init() {
 	cont.InitCrossChain()
 	header_sync.InitHeaderSync()
 	side_chain_manager.InitSideChainManager()
+	cross_chain_manager.InitEntrance()
 }
 
 func InitBytes(addr common.Address, method string) []byte {
