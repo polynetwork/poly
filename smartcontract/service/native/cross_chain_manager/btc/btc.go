@@ -26,12 +26,30 @@ import (
 	wire_bch "github.com/gcash/bchd/wire"
 	"github.com/gcash/bchutil/merkleblock"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
+	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/inf"
 	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
 )
 
 const (
 	BTC_TX_PREFIX string = "btctx"
 )
+
+type BTCHandler struct {
+}
+
+func NewBTCHandler() *BTCHandler {
+	return &BTCHandler{}
+}
+
+func (this *BTCHandler) Verify(service *native.NativeService) (*inf.EntranceParam, error) {
+	//todo add logic
+	return nil, nil
+}
+
+func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *inf.EntranceParam) error {
+	//todo add logic
+	return nil
+}
 
 // Verify merkle proof in bytes, and return the result in true or false
 // Firstly, calculate the merkleRoot from input `proof`; Then get header.MerkleRoot

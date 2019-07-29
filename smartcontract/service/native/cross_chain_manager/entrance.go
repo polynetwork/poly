@@ -5,6 +5,10 @@ import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
+
+	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/btc"
+	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/eth"
+	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/ont"
 )
 
 const (
@@ -30,12 +34,22 @@ func RegisterChainHandler(chainid uint32, handler CrossChainHandler) {
 	mapping[chainid] = handler
 }
 
-func GetChainHandler(chainid uint32) (CrossChainHandler, error) {
-	handler, ok := mapping[chainid]
-	if !ok {
-		return nil, fmt.Errorf("no handler for chainID:%d", chainid)
+func GetChainHandler(chainid uint32) (ChainHandler, error) {
+	//handler, ok := mapping[chainid]
+	//if !ok {
+	//	return nil, fmt.Errorf("no handler for chainID:%d", chainid)
+	//}
+
+	switch chainid {
+	case 0:
+		return btc.NewBTCHandler(), nil
+	case 1:
+		return eth.NewETHHandler(), nil
+	case 2:
+		return ont.NewONTHandler(), nil
+	default:
+		return nil, fmt.Errorf("not a supported chainid:%d", chainid)
 	}
-	return handler, nil
 }
 
 func ImportExTransfer(native *native.NativeService) ([]byte, error) {
@@ -47,7 +61,24 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	chainid := params.SourceChainID
 	handler, err := GetChainHandler(chainid)
 	if err != nil {
-		return nil, err
+		return utils.BYTE_FALSE, err
 	}
-	return handler(native)
+	//1. verify tx
+	txParam, err := handler.Verify(native)
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
+
+	//2. make target chain tx
+	targetid := txParam.TargetChainID
+	targetHandler, err := GetChainHandler(targetid)
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
+	//NOTE, you need to store the tx in this
+	err = targetHandler.MakeTransaction(native, txParam)
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
+	return utils.BYTE_TRUE, nil
 }

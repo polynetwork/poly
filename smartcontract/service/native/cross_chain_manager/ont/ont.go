@@ -25,6 +25,7 @@ import (
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
+	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/inf"
 	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 	"github.com/ontio/multi-chain/vm/neovm/types"
@@ -40,6 +41,23 @@ const (
 	CURRENT_ID  = "currentID"
 	REMAINED_ID = "remainedID"
 )
+
+type ONTHandler struct {
+}
+
+func NewONTHandler() *ONTHandler {
+	return &ONTHandler{}
+}
+
+func (this *ONTHandler) Verify(service *native.NativeService) (*inf.EntranceParam, error) {
+	//todo add logic
+	return nil, nil
+}
+
+func (this *ONTHandler) MakeTransaction(service *native.NativeService, param *inf.EntranceParam) error {
+	//todo add logic
+	return nil
+}
 
 //Init governance contract address
 func InitCrossChain() {

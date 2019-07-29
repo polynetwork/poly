@@ -1,9 +1,15 @@
-package cross_chain_manager
+package inf
 
 import (
 	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/smartcontract/service/native"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 )
+
+type ChainHandler interface {
+	Verify(service *native.NativeService) (*EntranceParam, error)
+	MakeTransaction(service *native.NativeService, param *EntranceParam) error
+}
 
 type EntranceParam struct {
 	SourceChainID  uint32
@@ -11,6 +17,7 @@ type EntranceParam struct {
 	Height         uint32
 	Proof          string
 	RelayerAddress string
+	TargetChainID  uint32
 }
 
 func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error {
