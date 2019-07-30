@@ -25,6 +25,7 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	wire_bch "github.com/gcash/bchd/wire"
 	"github.com/gcash/bchutil/merkleblock"
+	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/inf"
 	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
@@ -42,6 +43,11 @@ func NewBTCHandler() *BTCHandler {
 }
 
 func (this *BTCHandler) Verify(service *native.NativeService) (*inf.MakeTxParam, error) {
+	params := new(inf.EntranceParam)
+	if err := params.Deserialization(common.NewZeroCopySource(service.Input)); err != nil {
+		return nil, fmt.Errorf("btc Verify, contract params deserialize error: %v", err)
+	}
+
 	//todo add logic
 	return nil, nil
 }
