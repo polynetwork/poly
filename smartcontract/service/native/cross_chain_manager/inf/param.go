@@ -7,8 +7,8 @@ import (
 )
 
 type ChainHandler interface {
-	Verify(service *native.NativeService) (*EntranceParam, error)
-	MakeTransaction(service *native.NativeService, param *EntranceParam) error
+	Verify(service *native.NativeService) (*MakeTxParam, error)
+	MakeTransaction(service *native.NativeService, param *MakeTxParam) error
 }
 
 type EntranceParam struct {
@@ -63,4 +63,36 @@ func (this *EntranceParam) Serialization(sink *common.ZeroCopySink) {
 	utils.EncodeString(sink, this.Proof)
 	utils.EncodeString(sink, this.RelayerAddress)
 	utils.EncodeVarUint(sink, this.TargetChainID)
+}
+
+type MakeTxParam struct {
+	FromChainID uint64
+	Address     string
+	Amount      uint64
+}
+
+func (this *MakeTxParam) Serialization(sink *common.ZeroCopySink) {
+	utils.EncodeVarUint(sink, this.FromChainID)
+	utils.EncodeString(sink, this.Address)
+	utils.EncodeVarUint(sink, this.Amount)
+}
+
+func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
+	fromChainID, err := utils.DecodeVarUint(source)
+	if err != nil {
+		return err
+	}
+	address, err := utils.DecodeString(source)
+	if err != nil {
+		return err
+	}
+	amount, err := utils.DecodeVarUint(source)
+	if err != nil {
+		return err
+	}
+
+	this.FromChainID = fromChainID
+	this.Address = address
+	this.Amount = amount
+	return nil
 }

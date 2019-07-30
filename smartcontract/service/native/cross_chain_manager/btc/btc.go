@@ -41,12 +41,12 @@ func NewBTCHandler() *BTCHandler {
 	return &BTCHandler{}
 }
 
-func (this *BTCHandler) Verify(service *native.NativeService) (*inf.EntranceParam, error) {
+func (this *BTCHandler) Verify(service *native.NativeService) (*inf.MakeTxParam, error) {
 	//todo add logic
 	return nil, nil
 }
 
-func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *inf.EntranceParam) error {
+func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *inf.MakeTxParam) error {
 	//todo add logic
 	return nil
 }

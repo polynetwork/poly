@@ -21,20 +21,21 @@ package ont
 import (
 	"fmt"
 	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/inf"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 )
 
-type MerkleValue struct {
+type FromMerkleValue struct {
 	RequestID               uint64
 	CreateCrossChainTxParam *CreateCrossChainTxParam
 }
 
-func (this *MerkleValue) Serialization(sink *common.ZeroCopySink) {
+func (this *FromMerkleValue) Serialization(sink *common.ZeroCopySink) {
 	utils.EncodeVarUint(sink, this.RequestID)
 	this.CreateCrossChainTxParam.Serialization(sink)
 }
 
-func (this *MerkleValue) Deserialization(source *common.ZeroCopySource) error {
+func (this *FromMerkleValue) Deserialization(source *common.ZeroCopySource) error {
 	requestID, err := utils.DecodeVarUint(source)
 	if err != nil {
 		return fmt.Errorf("MerkleValue deserialize requestID error:%s", err)
@@ -47,5 +48,31 @@ func (this *MerkleValue) Deserialization(source *common.ZeroCopySource) error {
 
 	this.RequestID = requestID
 	this.CreateCrossChainTxParam = createCrossChainTxParam
+	return nil
+}
+
+type ToMerkleValue struct {
+	RequestID   uint64
+	MakeTxParam *inf.MakeTxParam
+}
+
+func (this *ToMerkleValue) Serialization(sink *common.ZeroCopySink) {
+	utils.EncodeVarUint(sink, this.RequestID)
+	this.MakeTxParam.Serialization(sink)
+}
+
+func (this *ToMerkleValue) Deserialization(source *common.ZeroCopySource) error {
+	requestID, err := utils.DecodeVarUint(source)
+	if err != nil {
+		return fmt.Errorf("MerkleValue deserialize requestID error:%s", err)
+	}
+	makeTxParam := new(inf.MakeTxParam)
+	err = makeTxParam.Deserialization(source)
+	if err != nil {
+		return fmt.Errorf("MerkleValue deserialize makeTxParam error:%s", err)
+	}
+
+	this.RequestID = requestID
+	this.MakeTxParam = makeTxParam
 	return nil
 }

@@ -49,13 +49,35 @@ func NewONTHandler() *ONTHandler {
 	return &ONTHandler{}
 }
 
-func (this *ONTHandler) Verify(service *native.NativeService) (*inf.EntranceParam, error) {
-	//todo add logic
-	return nil, nil
+func (this *ONTHandler) Verify(service *native.NativeService) (*inf.MakeTxParam, error) {
+	params := new(inf.EntranceParam)
+	if err := params.Deserialization(common.NewZeroCopySource(service.Input)); err != nil {
+		return nil, fmt.Errorf("ont Verify, contract params deserialize error: %v", err)
+	}
+
+	proof, err := hex.DecodeString(params.Proof)
+	if err != nil {
+		return nil, fmt.Errorf("ont Verify, hex.DecodeString proof error: %v", err)
+	}
+	merkleValue, err := VerifyFromOntTx(service, proof, params.SourceChainID, params.Height)
+	if err != nil {
+		return nil, fmt.Errorf("ont Verify, VerifyOntTx error: %v", err)
+	}
+
+	makeTxParam := &inf.MakeTxParam{
+		FromChainID: merkleValue.CreateCrossChainTxParam.FromChainID,
+		Address:     merkleValue.CreateCrossChainTxParam.Address.ToBase58(),
+		Amount:      merkleValue.CreateCrossChainTxParam.Amount,
+	}
+	return makeTxParam, nil
 }
 
-func (this *ONTHandler) MakeTransaction(service *native.NativeService, param *inf.EntranceParam) error {
-	//todo add logic
+func (this *ONTHandler) MakeTransaction(service *native.NativeService, param *inf.MakeTxParam) error {
+	err := MakeToOntProof(service, param)
+	if err != nil {
+		return fmt.Errorf("ont MakeTransaction, MakeToOntProof error: %v", err)
+	}
+
 	return nil
 }
 
@@ -76,7 +98,7 @@ func CreateCrossChainTx(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("CreateCrossChainTx, contract params deserialize error: %v", err)
 	}
 
-	err := MakeOntProof(native, params)
+	err := MakeFromOntProof(native, params)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("CreateCrossChainTx, MakeOntProof error: %v", err)
 	}
@@ -96,7 +118,7 @@ func ProcessCrossChainTx(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, proof hex.DecodeString error: %v", err)
 	}
-	merkleValue, err := VerifyOntTx(native, proof, params.FromChainID, params.Height)
+	merkleValue, err := VerifyToOntTx(native, proof, params.FromChainID, params.Height)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, VerifyOntTx error: %v", err)
 	}
@@ -112,14 +134,24 @@ func ProcessCrossChainTx(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, common.AddressFromHexString error: %v", err)
 	}
 	functionName := "unlock"
-	args := merkleValue.CreateCrossChainTxParam.Args
+	addr, err := common.AddressFromBase58(merkleValue.MakeTxParam.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, common.AddressFromBase58 error: %v", err)
+	}
+	args := &OngUnlockParam{
+		FromChainID: merkleValue.MakeTxParam.FromChainID,
+		Address:     addr,
+		Amount:      merkleValue.MakeTxParam.Amount,
+	}
+	sink := common.NewZeroCopySink(nil)
+	args.Serialization(sink)
 
 	if dest == utils.OngContractAddress {
-		if _, err := native.NativeCall(dest, functionName, args); err != nil {
+		if _, err := native.NativeCall(dest, functionName, sink.Bytes()); err != nil {
 			return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, native.NativeCall error: %v", err)
 		}
 	} else {
-		res, err := native.NeoVMCall(dest, functionName, args)
+		res, err := native.NeoVMCall(dest, functionName, sink.Bytes())
 		if err != nil {
 			return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, native.NeoVMCall error: %v", err)
 		}

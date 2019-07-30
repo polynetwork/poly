@@ -17,12 +17,12 @@ func NewETHHandler() *ETHHandler {
 	return &ETHHandler{}
 }
 
-func (this *ETHHandler) Verify(service *native.NativeService) (*inf.EntranceParam, error) {
+func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam, error) {
 	//todo add logic
 	return nil, nil
 }
 
-func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *inf.EntranceParam) error {
+func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *inf.MakeTxParam) error {
 	//todo add logic
 	return nil
 }
