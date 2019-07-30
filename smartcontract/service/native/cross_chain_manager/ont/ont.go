@@ -65,9 +65,10 @@ func (this *ONTHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 	}
 
 	makeTxParam := &inf.MakeTxParam{
-		FromChainID: merkleValue.CreateCrossChainTxParam.FromChainID,
-		Address:     merkleValue.CreateCrossChainTxParam.Address.ToBase58(),
-		Amount:      merkleValue.CreateCrossChainTxParam.Amount,
+		FromChainID:         merkleValue.CreateCrossChainTxParam.FromChainID,
+		FromContractAddress: merkleValue.CreateCrossChainTxParam.FromContractAddress,
+		Address:             merkleValue.CreateCrossChainTxParam.Address.ToBase58(),
+		Amount:              merkleValue.CreateCrossChainTxParam.Amount,
 	}
 	return makeTxParam, nil
 }
@@ -125,7 +126,7 @@ func ProcessCrossChainTx(native *native.NativeService) ([]byte, error) {
 
 	//call cross chain function
 	destContractAddr, err := side_chain_manager.GetAssetContractAddress(native, params.FromChainID,
-		native.ShardID.ToUint64(), params.FromContract)
+		native.ShardID.ToUint64(), merkleValue.MakeTxParam.FromContractAddress)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, side_chain_manager.GetAssetContractAddress error: %v", err)
 	}

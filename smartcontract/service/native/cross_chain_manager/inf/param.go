@@ -66,19 +66,25 @@ func (this *EntranceParam) Serialization(sink *common.ZeroCopySink) {
 }
 
 type MakeTxParam struct {
-	FromChainID uint64
-	Address     string
-	Amount      uint64
+	FromChainID         uint64
+	FromContractAddress string
+	Address             string
+	Amount              uint64
 }
 
 func (this *MakeTxParam) Serialization(sink *common.ZeroCopySink) {
 	utils.EncodeVarUint(sink, this.FromChainID)
+	utils.EncodeString(sink, this.FromContractAddress)
 	utils.EncodeString(sink, this.Address)
 	utils.EncodeVarUint(sink, this.Amount)
 }
 
 func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 	fromChainID, err := utils.DecodeVarUint(source)
+	if err != nil {
+		return err
+	}
+	fromContractAddress, err := utils.DecodeString(source)
 	if err != nil {
 		return err
 	}
@@ -92,6 +98,7 @@ func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 	}
 
 	this.FromChainID = fromChainID
+	this.FromContractAddress = fromContractAddress
 	this.Address = address
 	this.Amount = amount
 	return nil
