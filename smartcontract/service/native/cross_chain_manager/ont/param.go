@@ -80,8 +80,8 @@ func (this *CreateCrossChainTxParam) Deserialization(source *common.ZeroCopySour
 type ProcessCrossChainTxParam struct {
 	Address     common.Address
 	FromChainID uint64
-	Height uint32
-	Proof  string
+	Height      uint32
+	Proof       string
 }
 
 func (this *ProcessCrossChainTxParam) Serialization(sink *common.ZeroCopySink) {
