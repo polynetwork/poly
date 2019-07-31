@@ -71,7 +71,7 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	}
 
 	//2. make target chain tx
-	targetid := txParam.TargetChainID
+	targetid := txParam.ToChainID
 	targetHandler, err := GetChainHandler(targetid)
 	if err != nil {
 		return utils.BYTE_FALSE, err

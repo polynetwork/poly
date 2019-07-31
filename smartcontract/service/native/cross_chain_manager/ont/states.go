@@ -26,13 +26,13 @@ import (
 )
 
 type FromMerkleValue struct {
-	RequestID               uint64
-	CreateCrossChainTxParam *CreateCrossChainTxParam
+	RequestID                uint64
+	CreateCrossChainTxMerkle *CreateCrossChainTxMerkle
 }
 
 func (this *FromMerkleValue) Serialization(sink *common.ZeroCopySink) {
 	utils.EncodeVarUint(sink, this.RequestID)
-	this.CreateCrossChainTxParam.Serialization(sink)
+	this.CreateCrossChainTxMerkle.Serialization(sink)
 }
 
 func (this *FromMerkleValue) Deserialization(source *common.ZeroCopySource) error {
@@ -40,14 +40,14 @@ func (this *FromMerkleValue) Deserialization(source *common.ZeroCopySource) erro
 	if err != nil {
 		return fmt.Errorf("MerkleValue deserialize requestID error:%s", err)
 	}
-	createCrossChainTxParam := new(CreateCrossChainTxParam)
-	err = createCrossChainTxParam.Deserialization(source)
+	createCrossChainTxMerkle := new(CreateCrossChainTxMerkle)
+	err = createCrossChainTxMerkle.Deserialization(source)
 	if err != nil {
-		return fmt.Errorf("MerkleValue deserialize createCrossChainTxParam error:%s", err)
+		return fmt.Errorf("MerkleValue deserialize createCrossChainTxMerkle error:%s", err)
 	}
 
 	this.RequestID = requestID
-	this.CreateCrossChainTxParam = createCrossChainTxParam
+	this.CreateCrossChainTxMerkle = createCrossChainTxMerkle
 	return nil
 }
 
@@ -74,5 +74,58 @@ func (this *ToMerkleValue) Deserialization(source *common.ZeroCopySource) error 
 
 	this.RequestID = requestID
 	this.MakeTxParam = makeTxParam
+	return nil
+}
+
+type CreateCrossChainTxMerkle struct {
+	FromChainID         uint64
+	FromContractAddress string
+	ToChainID           uint64
+	Fee                 uint64
+	Address             common.Address
+	Amount              uint64
+}
+
+func (this *CreateCrossChainTxMerkle) Serialization(sink *common.ZeroCopySink) {
+	utils.EncodeVarUint(sink, this.FromChainID)
+	utils.EncodeString(sink, this.FromContractAddress)
+	utils.EncodeVarUint(sink, this.ToChainID)
+	utils.EncodeVarUint(sink, this.Fee)
+	utils.EncodeAddress(sink, this.Address)
+	utils.EncodeVarUint(sink, this.Amount)
+}
+
+func (this *CreateCrossChainTxMerkle) Deserialization(source *common.ZeroCopySource) error {
+	fromChainID, err := utils.DecodeVarUint(source)
+	if err != nil {
+		return fmt.Errorf("CreateCrossChainTxMerkle deserialize fromChainID error:%s", err)
+	}
+	fromContractAddress, err := utils.DecodeString(source)
+	if err != nil {
+		return fmt.Errorf("CreateCrossChainTxMerkle deserialize fromContractAddress error:%s", err)
+	}
+	toChainID, err := utils.DecodeVarUint(source)
+	if err != nil {
+		return fmt.Errorf("CreateCrossChainTxMerkle deserialize toChainID error:%s", err)
+	}
+	fee, err := utils.DecodeVarUint(source)
+	if err != nil {
+		return fmt.Errorf("CreateCrossChainTxMerkle deserialize fee error:%s", err)
+	}
+	address, err := utils.DecodeAddress(source)
+	if err != nil {
+		return fmt.Errorf("CreateCrossChainTxMerkle deserialize address error:%s", err)
+	}
+	amount, err := utils.DecodeVarUint(source)
+	if err != nil {
+		return fmt.Errorf("CreateCrossChainTxMerkle deserialize amount error:%s", err)
+	}
+
+	this.FromChainID = fromChainID
+	this.FromContractAddress = fromContractAddress
+	this.ToChainID = toChainID
+	this.Fee = fee
+	this.Address = address
+	this.Amount = amount
 	return nil
 }

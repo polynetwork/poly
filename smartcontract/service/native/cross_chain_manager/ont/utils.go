@@ -256,8 +256,15 @@ func MakeFromOntProof(native *native.NativeService, params *CreateCrossChainTxPa
 	}
 	newID := requestID + 1
 	merkleValue := &FromMerkleValue{
-		RequestID:               newID,
-		CreateCrossChainTxParam: params,
+		RequestID: newID,
+		CreateCrossChainTxMerkle: &CreateCrossChainTxMerkle{
+			FromChainID:         native.ShardID.ToUint64(),
+			FromContractAddress: native.ContextRef.CallingContext().ContractAddress.ToHexString(),
+			ToChainID:           params.ToChainID,
+			Fee:                 params.Fee,
+			Address:             params.Address,
+			Amount:              params.Amount,
+		},
 	}
 	sink := common.NewZeroCopySink(nil)
 	merkleValue.Serialization(sink)

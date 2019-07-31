@@ -65,11 +65,11 @@ func (this *ONTHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 	}
 
 	makeTxParam := &inf.MakeTxParam{
-		FromChainID:         merkleValue.CreateCrossChainTxParam.FromChainID,
-		FromContractAddress: merkleValue.CreateCrossChainTxParam.FromContractAddress,
-		ToChainID:           merkleValue.CreateCrossChainTxParam.ToChainID,
-		Address:             merkleValue.CreateCrossChainTxParam.Address.ToBase58(),
-		Amount:              merkleValue.CreateCrossChainTxParam.Amount,
+		FromChainID:         merkleValue.CreateCrossChainTxMerkle.FromChainID,
+		FromContractAddress: merkleValue.CreateCrossChainTxMerkle.FromContractAddress,
+		ToChainID:           merkleValue.CreateCrossChainTxMerkle.ToChainID,
+		Address:             merkleValue.CreateCrossChainTxMerkle.Address.ToBase58(),
+		Amount:              merkleValue.CreateCrossChainTxMerkle.Amount,
 	}
 	return makeTxParam, nil
 }

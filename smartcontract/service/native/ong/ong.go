@@ -186,12 +186,10 @@ func Lock(native *native.NativeService) ([]byte, error) {
 	notifyOngLock(native, contract, params.ToChainID, params.Address, params.Amount)
 
 	crossChainParam := cont.CreateCrossChainTxParam{
-		FromChainID:         native.ShardID.ToUint64(),
-		FromContractAddress: utils.OngContractAddress.ToBase58(),
-		ToChainID:           params.ToChainID,
-		Fee:                 params.Fee,
-		Address:             params.Address,
-		Amount:              params.Amount,
+		ToChainID: params.ToChainID,
+		Fee:       params.Fee,
+		Address:   params.Address,
+		Amount:    params.Amount,
 	}
 	sink := common.NewZeroCopySink(nil)
 	crossChainParam.Serialization(sink)
