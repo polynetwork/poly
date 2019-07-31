@@ -31,17 +31,17 @@ func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 		return nil, fmt.Errorf("Verify, eth proof deserialize error: %v", err)
 	}
 
-	blockdata,err := GetEthBlockByNumber(params.Height)
-	if err != nil{
-		return nil,fmt.Errorf("Verify, GetEthBlockByNumber error:%v",err)
+	blockdata, err := GetEthBlockByNumber(params.Height)
+	if err != nil {
+		return nil, fmt.Errorf("Verify, GetEthBlockByNumber error:%v", err)
 	}
 	//todo 1. verify the proof with header
-	proofresult ,err :=verifyMerkleProof(params.Proof,blockdata)
-	if err != nil{
-		return nil,fmt.Errorf("Verify, verifyMerkleProof error:%v",err)
+	proofresult, err := verifyMerkleProof(params.Proof, blockdata)
+	if err != nil {
+		return nil, fmt.Errorf("Verify, verifyMerkleProof error:%v", err)
 	}
-	if !proofresult{
-		return nil,fmt.Errorf("Verify, verifyMerkleProof failed!")
+	if !proofresult {
+		return nil, fmt.Errorf("Verify, verifyMerkleProof failed!")
 	}
 	ret := &inf.MakeTxParam{}
 	ret.ToChainID = proof.ToChainID
@@ -83,7 +83,7 @@ func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *in
 	return nil
 }
 
-func verifyMerkleProof(proof string, blockdata *EthBlock)(bool, error){
+func verifyMerkleProof(proof string, blockdata *EthBlock) (bool, error) {
 	//todo add verify logic here
-	return true,nil
+	return true, nil
 }

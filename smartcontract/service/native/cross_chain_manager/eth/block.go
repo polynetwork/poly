@@ -2,11 +2,11 @@ package eth
 
 import (
 	"encoding/json"
+	"fmt"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"io/ioutil"
 	"net/http"
 	"strings"
-	"io/ioutil"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"fmt"
 )
 
 type EthBlock struct {
@@ -34,50 +34,48 @@ type EthBlock struct {
 }
 
 type Response struct {
-	JsonRpc string   `json:"jsonrpc"`
+	JsonRpc string    `json:"jsonrpc"`
 	Result  *EthBlock `json:"result"`
-	id      int      `json:"id"`
+	id      int       `json:"id"`
 }
 
 type Request struct {
-	Method string `json:"method"`
-	Params []interface{} `json:"params"`
-	Id      int      `json:"id"`
-	JsonRpc string   `json:"jsonrpc"`
+	Method  string        `json:"method"`
+	Params  []interface{} `json:"params"`
+	Id      int           `json:"id"`
+	JsonRpc string        `json:"jsonrpc"`
 }
 
 func GetEthBlockByNumber(num uint32) (*EthBlock, error) {
 
 	hexnum := hexutil.EncodeUint64(uint64(num))
-	fmt.Printf("hexnum:%s\n",hexnum)
+	fmt.Printf("hexnum:%s\n", hexnum)
 	req := &Request{
-		JsonRpc:"2.0",
-		Id : 1,
-		Method:"eth_getBlockByNumber",
-		Params:[]interface{}{hexnum,true},
+		JsonRpc: "2.0",
+		Id:      1,
+		Method:  "eth_getBlockByNumber",
+		Params:  []interface{}{hexnum, true},
 	}
 
 	reqbs, err := json.Marshal(req)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("reqbs :%s\n",reqbs)
 
-	resp ,err := http.Post("http://127.0.0.1:8545","application/json",strings.NewReader(string(reqbs)))
-	if err != nil{
+	resp, err := http.Post("http://127.0.0.1:8545", "application/json", strings.NewReader(string(reqbs)))
+	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("resp:%v\n",resp)
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
 	response := &Response{}
-	err = json.Unmarshal(body,response)
-	if err != nil{
+	err = json.Unmarshal(body, response)
+	if err != nil {
 		return nil, err
 	}
-	return response.Result,nil
+	return response.Result, nil
 }
