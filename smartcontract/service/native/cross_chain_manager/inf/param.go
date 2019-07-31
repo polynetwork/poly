@@ -4,6 +4,7 @@ import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
+	"math/big"
 )
 
 type ChainHandler interface {
@@ -70,7 +71,7 @@ type MakeTxParam struct {
 	FromContractAddress string
 	ToChainID           uint64
 	Address             string
-	Amount              uint64
+	Amount              *big.Int
 }
 
 func (this *MakeTxParam) Serialization(sink *common.ZeroCopySink) {
@@ -78,7 +79,7 @@ func (this *MakeTxParam) Serialization(sink *common.ZeroCopySink) {
 	utils.EncodeString(sink, this.FromContractAddress)
 	utils.EncodeVarUint(sink, this.ToChainID)
 	utils.EncodeString(sink, this.Address)
-	utils.EncodeVarUint(sink, this.Amount)
+	utils.EncodeVarBytes(sink, this.Amount.Bytes())
 }
 
 func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
@@ -98,7 +99,7 @@ func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 	if err != nil {
 		return err
 	}
-	amount, err := utils.DecodeVarUint(source)
+	amount, err := utils.DecodeVarBytes(source)
 	if err != nil {
 		return err
 	}
@@ -107,6 +108,6 @@ func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 	this.FromContractAddress = fromContractAddress
 	this.ToChainID = toChainID
 	this.Address = address
-	this.Amount = amount
+	this.Amount = new(big.Int).SetBytes(amount)
 	return nil
 }

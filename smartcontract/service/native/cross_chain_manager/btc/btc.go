@@ -30,6 +30,7 @@ import (
 	"github.com/ontio/multi-chain/smartcontract/service/native"
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/inf"
 	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
+	"math/big"
 )
 
 type BTCHandler struct {
@@ -61,18 +62,18 @@ func (this *BTCHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 	} else if ok != true {
 		return nil, fmt.Errorf("btc Verify, verify not passed")
 	}
-	
+
 	return &inf.MakeTxParam{
 		FromChainID: params.SourceChainID,
-		ToChainID:   p.ChainId, 
+		ToChainID:   p.ChainId,
 		Address:     hex.EncodeToString(p.Addr),
-		Amount:      uint64(p.Value),
+		Amount:      new(big.Int).SetInt64(p.Value),
 	}, nil
 }
 
 func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *inf.MakeTxParam) error {
 	amounts := make(map[string]int64)
-	amounts[param.Address] = int64(param.Amount) // ??
+	amounts[param.Address] = param.Amount.Int64() // ??
 	err := makeBtcTx(service, amounts)
 	if err != nil {
 		return fmt.Errorf("btc MakeTransaction, failed to make transaction: %v", err)
@@ -89,8 +90,8 @@ func verifyBtcTx(native *native.NativeService, proof []byte, tx []byte, height u
 	if err != nil {
 		return false, nil, fmt.Errorf("verifyBtcTx, failed to get current height from spv: %v", err)
 	}
-	if besth - height < CONFRIMATION {
-		return false, nil, fmt.Errorf("verifyBtcTx, transaction is not confirmed, current height: %d, " +
+	if besth-height < CONFRIMATION {
+		return false, nil, fmt.Errorf("verifyBtcTx, transaction is not confirmed, current height: %d, "+
 			"input height: %d", besth, height)
 	}
 
@@ -195,11 +196,11 @@ func makeBtcTx(native *native.NativeService, amounts map[string]int64) error {
 
 	change := sum - amountSum
 	if change < 0 {
-		return fmt.Errorf("makeBtcTx, not enough utxos: the change amount cannot be less than 0, change " +
+		return fmt.Errorf("makeBtcTx, not enough utxos: the change amount cannot be less than 0, change "+
 			"is %d satoshi", change)
 	}
 
-	mtx, err := getUnsignedTx(txIns, amounts, change, script,nil)
+	mtx, err := getUnsignedTx(txIns, amounts, change, script, nil)
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, get rawtransaction fail: %v", err)
 	}

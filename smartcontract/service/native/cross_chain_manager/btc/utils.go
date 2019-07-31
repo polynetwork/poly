@@ -23,16 +23,16 @@ import (
 
 const (
 	// TODO: Temporary setting
-	OP_RETURN_DATA_LEN    = 42
-	OP_RETURN_SCRIPT_FLAG = byte(0x66)
-	FEE = int64(2e3)
-	REQUIRE = 4
-	CONFRIMATION = 6
-	BTC_TX_PREFIX string = "btctx"
-	VERIFIED_TX string = "verified"
+	OP_RETURN_DATA_LEN           = 42
+	OP_RETURN_SCRIPT_FLAG        = byte(0x66)
+	FEE                          = int64(2e3)
+	REQUIRE                      = 4
+	CONFRIMATION                 = 6
+	BTC_TX_PREFIX         string = "btctx"
+	VERIFIED_TX           string = "verified"
 )
 
-var	netParam = &chaincfg.TestNet3Params
+var netParam = &chaincfg.TestNet3Params
 var addr1 = "mj3LUsSvk9ZQH1pSHvC8LBtsYXsZvbky8H"
 var priv1 = "cTqbqa1YqCf4BaQTwYDGsPAB4VmWKUU67G5S1EtrHSWNRwY6QSag"
 var addr2 = "mtNiC48WWbGRk2zLqiTMwKLhrCk6rBqBen"
@@ -58,13 +58,13 @@ type QueryHeaderByHeightResp struct {
 
 type QueryUtxosReq struct {
 	Script string `json:"script"`
-	Amount int64 `json:"amount"`
-	Fee int64 `json:"fee"`
+	Amount int64  `json:"amount"`
+	Fee    int64  `json:"fee"`
 }
 
 type QueryUtxosResp struct {
 	Inputs []btcjson.TransactionInput `json:"inputs"`
-	Sum int64 `json:"sum"`
+	Sum    int64                      `json:"sum"`
 }
 
 type GetCurrentHeightResp struct {
@@ -73,7 +73,7 @@ type GetCurrentHeightResp struct {
 
 type ChangeAddressReq struct {
 	Aciton string `json:"aciton"`
-	Addr string `json:"addr"`
+	Addr   string `json:"addr"`
 }
 
 type ChangeAddressResp struct {
@@ -88,23 +88,23 @@ type ResponseWithHeader struct {
 }
 
 type ResponseWithUtxos struct {
-	Action string                  `json:"action"`
-	Desc   string                  `json:"desc"`
-	Error  uint32                  `json:"error"`
+	Action string         `json:"action"`
+	Desc   string         `json:"desc"`
+	Error  uint32         `json:"error"`
 	Result QueryUtxosResp `json:"result"`
 }
 
 type ResponseWithHeight struct {
-	Action string                  `json:"action"`
-	Desc   string                  `json:"desc"`
-	Error  uint32                  `json:"error"`
+	Action string               `json:"action"`
+	Desc   string               `json:"desc"`
+	Error  uint32               `json:"error"`
 	Result GetCurrentHeightResp `json:"result"`
 }
 
 type ResponseWithChangeAddr struct {
-	Action string                  `json:"action"`
-	Desc   string                  `json:"desc"`
-	Error  uint32                  `json:"error"`
+	Action string            `json:"action"`
+	Desc   string            `json:"desc"`
+	Error  uint32            `json:"error"`
 	Result ChangeAddressResp `json:"result"`
 }
 
@@ -193,7 +193,7 @@ func (self *RestClient) GetUtxosFromSpv(script []byte, amount int64, fee int64) 
 	query, err := json.Marshal(QueryUtxosReq{
 		Script: hex.EncodeToString(script),
 		Amount: amount,
-		Fee: fee,
+		Fee:    fee,
 	})
 	if err != nil {
 		return nil, 0, fmt.Errorf("Failed to parse parameter: %v", err)
@@ -235,7 +235,7 @@ func (self *RestClient) GetCurrentHeightFromSpv() (uint32, error) {
 
 func (self *RestClient) ChangeSpvWatchedScript(script []byte, action string) error {
 	req, err := json.Marshal(ChangeAddressReq{
-		Addr: hex.EncodeToString(script),
+		Addr:   hex.EncodeToString(script),
 		Aciton: action,
 	})
 	if err != nil {
@@ -445,4 +445,3 @@ func getUnsignedTx(txIns []btcjson.TransactionInput, amounts map[string]int64, c
 
 	return mtx, nil
 }
-

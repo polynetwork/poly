@@ -43,21 +43,21 @@ func TestVerifyBtcTx(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name string
-		proof []byte
-		height uint32
-		tx []byte
-		pks [][]byte
-		req int
+		name       string
+		proof      []byte
+		height     uint32
+		tx         []byte
+		pks        [][]byte
+		req        int
 		isPositive bool
-		service *native.NativeService
-	} {
+		service    *native.NativeService
+	}{
 		{
-			name: "positive case",
-			proof: hexToBytes(Proof),
+			name:   "positive case",
+			proof:  hexToBytes(Proof),
 			height: Height,
-			tx: hexToBytes(RawTxStr),
-			pks: func() ([][]byte) {
+			tx:     hexToBytes(RawTxStr),
+			pks: func() [][]byte {
 				_, pubk1 := btcec.PrivKeyFromBytes(btcec.S256(), base58.Decode(priv1))
 				_, pubk2 := btcec.PrivKeyFromBytes(btcec.S256(), base58.Decode(priv2))
 				_, pubk3 := btcec.PrivKeyFromBytes(btcec.S256(), base58.Decode(priv3))
@@ -76,9 +76,9 @@ func TestVerifyBtcTx(t *testing.T) {
 
 				return pubks
 			}(),
-			req: 4,
+			req:        4,
 			isPositive: true,
-			service: func() (*native.NativeService) {
+			service: func() *native.NativeService {
 				return nil
 			}(),
 		},

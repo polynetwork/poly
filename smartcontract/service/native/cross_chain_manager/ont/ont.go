@@ -69,7 +69,7 @@ func (this *ONTHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 		FromContractAddress: merkleValue.CreateCrossChainTxMerkle.FromContractAddress,
 		ToChainID:           merkleValue.CreateCrossChainTxMerkle.ToChainID,
 		Address:             merkleValue.CreateCrossChainTxMerkle.Address.ToBase58(),
-		Amount:              merkleValue.CreateCrossChainTxMerkle.Amount,
+		Amount:              new(big.Int).SetUint64(merkleValue.CreateCrossChainTxMerkle.Amount),
 	}
 	return makeTxParam, nil
 }
@@ -143,7 +143,7 @@ func ProcessCrossChainTx(native *native.NativeService) ([]byte, error) {
 	args := &OngUnlockParam{
 		FromChainID: merkleValue.MakeTxParam.FromChainID,
 		Address:     addr,
-		Amount:      merkleValue.MakeTxParam.Amount,
+		Amount:      merkleValue.MakeTxParam.Amount.Uint64(),
 	}
 	sink := common.NewZeroCopySink(nil)
 	args.Serialization(sink)
