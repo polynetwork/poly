@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"strings"
 	"io/ioutil"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"fmt"
 )
 
 type EthBlock struct {
@@ -45,22 +47,27 @@ type Request struct {
 }
 
 func GetEthBlockByNumber(num uint32) (*EthBlock, error) {
+
+	hexnum := hexutil.EncodeUint64(uint64(num))
+	fmt.Printf("hexnum:%s\n",hexnum)
 	req := &Request{
 		JsonRpc:"2.0",
 		Id : 1,
 		Method:"eth_getBlockByNumber",
-		Params:[]interface{}{num,true},
+		Params:[]interface{}{hexnum,true},
 	}
 
 	reqbs, err := json.Marshal(req)
 	if err != nil{
 		return nil, err
 	}
+	fmt.Printf("reqbs :%s\n",reqbs)
 
-	resp ,err := http.Post("http://127.0.0.1:8545","Content-Type: application/json",strings.NewReader(string(reqbs)))
+	resp ,err := http.Post("http://127.0.0.1:8545","application/json",strings.NewReader(string(reqbs)))
 	if err != nil{
 		return nil, err
 	}
+	fmt.Printf("resp:%v\n",resp)
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil{

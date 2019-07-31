@@ -15,5 +15,5 @@ type Proof struct {
 
 func (this *Proof) Deserialize(raw string) error {
 	//todo add deserialize logic
-
+	return nil
 }
