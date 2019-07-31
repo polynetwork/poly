@@ -8,12 +8,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
+	"github.com/btcsuite/btcutil/base58"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -23,7 +25,28 @@ const (
 	// TODO: Temporary setting
 	OP_RETURN_DATA_LEN    = 42
 	OP_RETURN_SCRIPT_FLAG = byte(0x66)
+	FEE = int64(2e3)
+	REQUIRE = 4
+	CONFRIMATION = 6
+	BTC_TX_PREFIX string = "btctx"
+	VERIFIED_TX string = "verified"
 )
+
+var	netParam = &chaincfg.TestNet3Params
+var addr1 = "mj3LUsSvk9ZQH1pSHvC8LBtsYXsZvbky8H"
+var priv1 = "cTqbqa1YqCf4BaQTwYDGsPAB4VmWKUU67G5S1EtrHSWNRwY6QSag"
+var addr2 = "mtNiC48WWbGRk2zLqiTMwKLhrCk6rBqBen"
+var priv2 = "cT2HP4QvL8c6otn4LrzUWzgMBfTo1gzV2aobN1cTiuHPXH9Jk2ua"
+var addr3 = "mi1bYK8SR3Qsf2cdrxgak3spzFx4EVH1pf"
+var priv3 = "cSQmGg6spbhd23jHQ9HAtz3XU7GYJjYaBmFLWHbyKa9mWzTxEY5A"
+var addr4 = "mz3bTZaQ2tNzsn4szNE8R6gp5zyHuqN29V"
+var priv4 = "cPYAx61EjwshK5SQ6fqH7QGjc8L48xiJV7VRGpYzPSbkkZqrzQ5b"
+var addr5 = "mfzbFf6njbEuyvZGDiAdfKamxWfAMv47NG"
+var priv5 = "cVV9UmtnnhebmSQgHhbDZWCb7zBHbiAGDB9a5M2ffe1WpqvwD5zg"
+var addr6 = "n4ESieuFJq5HCvE5GU8B35YTfShZmFrCKM"
+var priv6 = "cNK7BwHmi8rZiqD2QfwJB1R6bF6qc7iVTMBNjTr2ACbsoq1vWau8"
+var addr7 = "msK9xpuXn5xqr4UK7KyWi9VCaFhiwCqqq6"
+var priv7 = "cUZdDF9sL11ya5civzMRYVYojoojjHbmWWm1yC5uRzfBRePVbQTZ"
 
 type queryHeaderByHeightParam struct {
 	Height uint32 `json:"height"`
@@ -33,11 +56,56 @@ type QueryHeaderByHeightResp struct {
 	Header string `json:"header"`
 }
 
-type Response struct {
+type QueryUtxosReq struct {
+	Script string `json:"script"`
+	Amount int64 `json:"amount"`
+	Fee int64 `json:"fee"`
+}
+
+type QueryUtxosResp struct {
+	Inputs []btcjson.TransactionInput `json:"inputs"`
+	Sum int64 `json:"sum"`
+}
+
+type GetCurrentHeightResp struct {
+	Height uint32 `json:"height"`
+}
+
+type ChangeAddressReq struct {
+	Aciton string `json:"aciton"`
+	Addr string `json:"addr"`
+}
+
+type ChangeAddressResp struct {
+	Result string `json:"result"`
+}
+
+type ResponseWithHeader struct {
 	Action string                  `json:"action"`
 	Desc   string                  `json:"desc"`
 	Error  uint32                  `json:"error"`
 	Result QueryHeaderByHeightResp `json:"result"`
+}
+
+type ResponseWithUtxos struct {
+	Action string                  `json:"action"`
+	Desc   string                  `json:"desc"`
+	Error  uint32                  `json:"error"`
+	Result QueryUtxosResp `json:"result"`
+}
+
+type ResponseWithHeight struct {
+	Action string                  `json:"action"`
+	Desc   string                  `json:"desc"`
+	Error  uint32                  `json:"error"`
+	Result GetCurrentHeightResp `json:"result"`
+}
+
+type ResponseWithChangeAddr struct {
+	Action string                  `json:"action"`
+	Desc   string                  `json:"desc"`
+	Error  uint32                  `json:"error"`
+	Result ChangeAddressResp `json:"result"`
 }
 
 type RestClient struct {
@@ -94,8 +162,10 @@ func (self *RestClient) GetHeaderFromSpv(height uint32) (*wire.BlockHeader, erro
 
 	// how to config it???
 	data, err := self.SendRestRequest("http://0.0.0.0:20335/api/v1/queryheaderbyheight", query)
-
-	var resp Response
+	if err != nil {
+		return nil, fmt.Errorf("Failed to send request: %v", err)
+	}
+	var resp ResponseWithHeader
 	err = json.Unmarshal(data, &resp)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to unmarshal resp to json: %v", err)
@@ -117,6 +187,75 @@ func (self *RestClient) GetHeaderFromSpv(height uint32) (*wire.BlockHeader, erro
 		return nil, fmt.Errorf("Failed to decode header: %v", err)
 	}
 	return &header, nil
+}
+
+func (self *RestClient) GetUtxosFromSpv(script []byte, amount int64, fee int64) ([]btcjson.TransactionInput, int64, error) {
+	query, err := json.Marshal(QueryUtxosReq{
+		Script: hex.EncodeToString(script),
+		Amount: amount,
+		Fee: fee,
+	})
+	if err != nil {
+		return nil, 0, fmt.Errorf("Failed to parse parameter: %v", err)
+	}
+	data, err := self.SendRestRequest("http://0.0.0.0:20335/api/v1/queryutxos", query)
+	if err != nil {
+		return nil, 0, fmt.Errorf("Failed to send request: %v", err)
+	}
+
+	var resp ResponseWithUtxos
+	err = json.Unmarshal(data, &resp)
+	if err != nil {
+		return nil, 0, fmt.Errorf("Failed to unmarshal resp to json: %v", err)
+	}
+	if resp.Error != 0 || resp.Desc != "SUCCESS" {
+		return nil, 0, errors.New("Response shows failure")
+	}
+
+	return resp.Result.Inputs, resp.Result.Sum, nil
+}
+
+func (self *RestClient) GetCurrentHeightFromSpv() (uint32, error) {
+	data, err := self.SendRestRequest("http://0.0.0.0:20335/api/v1/getcurrentheight", []byte{})
+	if err != nil {
+		return 0, fmt.Errorf("Failed to send request: %v", err)
+	}
+
+	var resp ResponseWithHeight
+	err = json.Unmarshal(data, &resp)
+	if err != nil {
+		return 0, fmt.Errorf("Failed to unmarshal resp to json: %v", err)
+	}
+	if resp.Error != 0 || resp.Desc != "SUCCESS" {
+		return 0, errors.New("Response shows failure")
+	}
+
+	return resp.Result.Height, nil
+}
+
+func (self *RestClient) ChangeSpvWatchedScript(script []byte, action string) error {
+	req, err := json.Marshal(ChangeAddressReq{
+		Addr: hex.EncodeToString(script),
+		Aciton: action,
+	})
+	if err != nil {
+		return fmt.Errorf("Failed to parse parameter: %v", err)
+	}
+	data, err := self.SendRestRequest("http://0.0.0.0:20335/api/v1/changeaddress", req)
+	if err != nil {
+		return fmt.Errorf("Failed to send request: %v", err)
+	}
+
+	var resp ResponseWithChangeAddr
+	err = json.Unmarshal(data, &resp)
+	if err != nil {
+		return fmt.Errorf("Failed to unmarshal resp to json: %v", err)
+	}
+	if resp.Error != 0 || resp.Desc != "SUCCESS" {
+		return errors.New("Response shows failure")
+	}
+
+	return nil
 }
 
 // not sure now
@@ -154,7 +293,7 @@ func buildScript(pubks [][]byte, require int) ([]byte, error) {
 	}
 	var addrPks []*btcutil.AddressPubKey
 	for _, v := range pubks {
-		addrPk, err := btcutil.NewAddressPubKey(v, &chaincfg.TestNet3Params)
+		addrPk, err := btcutil.NewAddressPubKey(v, netParam)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to parse address pubkey: %v", err)
 		}
@@ -168,9 +307,24 @@ func buildScript(pubks [][]byte, require int) ([]byte, error) {
 	return s, nil
 }
 
+func getPubKeys() [][]byte {
+	_, pubk1 := btcec.PrivKeyFromBytes(btcec.S256(), base58.Decode(priv1))
+	_, pubk2 := btcec.PrivKeyFromBytes(btcec.S256(), base58.Decode(priv2))
+	_, pubk3 := btcec.PrivKeyFromBytes(btcec.S256(), base58.Decode(priv3))
+	_, pubk4 := btcec.PrivKeyFromBytes(btcec.S256(), base58.Decode(priv4))
+	_, pubk5 := btcec.PrivKeyFromBytes(btcec.S256(), base58.Decode(priv5))
+	_, pubk6 := btcec.PrivKeyFromBytes(btcec.S256(), base58.Decode(priv6))
+	_, pubk7 := btcec.PrivKeyFromBytes(btcec.S256(), base58.Decode(priv7))
+
+	pubks := make([][]byte, 0)
+	pubks = append(pubks, pubk1.SerializeCompressed(), pubk2.SerializeCompressed(), pubk3.SerializeCompressed(),
+		pubk4.SerializeCompressed(), pubk5.SerializeCompressed(), pubk6.SerializeCompressed(), pubk7.SerializeCompressed())
+	return pubks
+}
+
 func checkTxOutputs(tx *wire.MsgTx, pubKeys [][]byte, require int) (ret bool, err error) {
 	// has to be 2?
-	if len(tx.TxOut) >= 2 {
+	if len(tx.TxOut) < 2 {
 		return false, errors.New("Number of transaction's outputs is at least greater than 2")
 	}
 	if tx.TxOut[0].Value <= 0 {
@@ -189,7 +343,7 @@ func checkTxOutputs(tx *wire.MsgTx, pubKeys [][]byte, require int) (ret bool, er
 				tx.TxOut[0].PkScript, redeem)
 		}
 	} else if c1 == txscript.ScriptHashTy {
-		addr, err := btcutil.NewAddressScriptHash(redeem, &chaincfg.TestNet3Params)
+		addr, err := btcutil.NewAddressScriptHash(redeem, netParam)
 		if err != nil {
 			return false, err
 		}
@@ -216,10 +370,11 @@ func checkTxOutputs(tx *wire.MsgTx, pubKeys [][]byte, require int) (ret bool, er
 // and the lock time. Function build a raw transaction without signature and return it.
 // This function uses the partial logic and code of btcd to finally return the
 // reference of the transaction object.
-func getUnsignedTx(txIns []btcjson.TransactionInput, amounts map[string]float64, locktime *int64) (*wire.MsgTx, error) {
+func getUnsignedTx(txIns []btcjson.TransactionInput, amounts map[string]int64, change int64, multiScript []byte,
+	locktime *int64) (*wire.MsgTx, error) {
 	if locktime != nil &&
 		(*locktime < 0 || *locktime > int64(wire.MaxTxInSequenceNum)) {
-		return nil, fmt.Errorf("getRawTx, locktime %d out of range", *locktime)
+		return nil, fmt.Errorf("getUnsignedTx, locktime %d out of range", *locktime)
 	}
 
 	// Add all transaction inputs to a new transaction after performing
@@ -228,7 +383,7 @@ func getUnsignedTx(txIns []btcjson.TransactionInput, amounts map[string]float64,
 	for _, input := range txIns {
 		txHash, err := chainhash.NewHashFromStr(input.Txid)
 		if err != nil {
-			return nil, fmt.Errorf("getRawTx, decode txid fail: %v", err)
+			return nil, fmt.Errorf("getUnsignedTx, decode txid fail: %v", err)
 		}
 
 		prevOut := wire.NewOutPoint(txHash, input.Vout)
@@ -241,17 +396,11 @@ func getUnsignedTx(txIns []btcjson.TransactionInput, amounts map[string]float64,
 
 	// Add all transaction outputs to the transaction after performing
 	// some validity checks.
-	params := &chaincfg.TestNet3Params
 	for encodedAddr, amount := range amounts {
-		// Ensure amount is in the valid range for monetary amounts.
-		if amount <= 0 || amount > btcutil.MaxSatoshi {
-			return nil, fmt.Errorf("getRawTx, wrong amount: %f", amount)
-		}
-
 		// Decode the provided address.
-		addr, err := btcutil.DecodeAddress(encodedAddr, params)
+		addr, err := btcutil.DecodeAddress(encodedAddr, netParam)
 		if err != nil {
-			return nil, fmt.Errorf("getRawTx, decode addr fail: %v", err)
+			return nil, fmt.Errorf("getUnsignedTx, decode addr fail: %v", err)
 		}
 
 		// Ensure the address is one of the supported types and that
@@ -259,27 +408,34 @@ func getUnsignedTx(txIns []btcjson.TransactionInput, amounts map[string]float64,
 		// server is currently on.
 		switch addr.(type) {
 		case *btcutil.AddressPubKeyHash:
+		case *btcutil.AddressScriptHash:
 		default:
-			return nil, fmt.Errorf("getRawTx, type of addr is not found")
+			return nil, fmt.Errorf("getUnsignedTx, type of addr is not found")
 		}
-		if !addr.IsForNet(params) {
-			return nil, fmt.Errorf("getRawTx, addr is not for mainnet")
+		if !addr.IsForNet(netParam) {
+			return nil, fmt.Errorf("getUnsignedTx, addr is not for mainnet")
 		}
 
 		// Create a new script which pays to the provided address.
 		pkScript, err := txscript.PayToAddrScript(addr)
 		if err != nil {
-			return nil, fmt.Errorf("getRawTx, failed to generate pay-to-address script: %v", err)
+			return nil, fmt.Errorf("getUnsignedTx, failed to generate pay-to-address script: %v", err)
 		}
 
-		// Convert the amount to satoshi.
-		satoshi, err := btcutil.NewAmount(amount)
-		if err != nil {
-			return nil, fmt.Errorf("getRawTx, failed to convert amount: %v", err)
-		}
-
-		txOut := wire.NewTxOut(int64(satoshi), pkScript)
+		txOut := wire.NewTxOut(amount, pkScript)
 		mtx.AddTxOut(txOut)
+	}
+
+	if change > 0 {
+		p2shAddr, err := btcutil.NewAddressScriptHash(multiScript, netParam)
+		if err != nil {
+			return nil, fmt.Errorf("getRawTxToMultiAddr, failed to get p2sh: %v", err)
+		}
+		p2shScript, err := txscript.PayToAddrScript(p2shAddr)
+		if err != nil {
+			return nil, fmt.Errorf("getRawTxToMultiAddr, failed to get p2sh script: %v", err)
+		}
+		mtx.AddTxOut(wire.NewTxOut(change, p2shScript))
 	}
 
 	// Set the Locktime, if given.
@@ -289,3 +445,4 @@ func getUnsignedTx(txIns []btcjson.TransactionInput, amounts map[string]float64,
 
 	return mtx, nil
 }
+
