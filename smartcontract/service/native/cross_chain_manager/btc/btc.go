@@ -187,14 +187,18 @@ func makeBtcTx(native *native.NativeService, amounts map[string]int64) error {
 		return fmt.Errorf("makeBtcTx, failed to get multiPk-script: %v", err)
 	}
 
-	txIns, sum, err := NewRestClient().GetUtxosFromSpv(script, amountSum, FEE)
+	addr, err := btcutil.NewAddressScriptHash(script, netParam)
+	if err != nil {
+		return fmt.Errorf("makeBtcTx, failed to decode script to address: %v", err)
+	}
+	txIns, sum, err := NewRestClient().GetUtxosFromSpv(addr.EncodeAddress(), amountSum, FEE)
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, failed to get utxo from spv: %v", err)
 	} else if sum <= 0 || len(txIns) == 0 {
 		return fmt.Errorf("makeBtcTx, utxo not found")
 	}
 
-	change := sum - amountSum
+	change := sum - amountSum - FEE
 	if change < 0 {
 		return fmt.Errorf("makeBtcTx, not enough utxos: the change amount cannot be less than 0, change "+
 			"is %d satoshi", change)

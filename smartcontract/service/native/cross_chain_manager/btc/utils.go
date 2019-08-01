@@ -26,10 +26,11 @@ const (
 	OP_RETURN_DATA_LEN           = 42
 	OP_RETURN_SCRIPT_FLAG        = byte(0x66)
 	FEE                          = int64(2e3)
-	REQUIRE                      = 4
+	REQUIRE                      = 5
 	CONFRIMATION                 = 6
 	BTC_TX_PREFIX         string = "btctx"
 	VERIFIED_TX           string = "verified"
+	IP                    string = "192.168.203.102:20335"
 )
 
 var netParam = &chaincfg.TestNet3Params
@@ -57,7 +58,7 @@ type QueryHeaderByHeightResp struct {
 }
 
 type QueryUtxosReq struct {
-	Script string `json:"script"`
+	Addr   string `json:"addr"`
 	Amount int64  `json:"amount"`
 	Fee    int64  `json:"fee"`
 }
@@ -78,6 +79,10 @@ type ChangeAddressReq struct {
 
 type ChangeAddressResp struct {
 	Result string `json:"result"`
+}
+
+type GetAllAddressResp struct {
+	Addresses []string `json:"addresses"`
 }
 
 type ResponseWithHeader struct {
@@ -106,6 +111,13 @@ type ResponseWithChangeAddr struct {
 	Desc   string            `json:"desc"`
 	Error  uint32            `json:"error"`
 	Result ChangeAddressResp `json:"result"`
+}
+
+type ResponseWithWatchedAddrs struct {
+	Action string            `json:"action"`
+	Desc   string            `json:"desc"`
+	Error  uint32            `json:"error"`
+	Result GetAllAddressResp `json:"result"`
 }
 
 type RestClient struct {
@@ -152,6 +164,19 @@ func (self *RestClient) SendRestRequest(addr string, data []byte) ([]byte, error
 	return body, nil
 }
 
+func (self *RestClient) SendGetRequst(addr string) ([]byte, error) {
+	resp, err := self.restClient.Get(addr)
+	if err != nil {
+		return nil, fmt.Errorf("rest get request: error: %v", err)
+	}
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read get response body error:%s", err)
+	}
+	return body, nil
+}
+
 func (self *RestClient) GetHeaderFromSpv(height uint32) (*wire.BlockHeader, error) {
 	query, err := json.Marshal(queryHeaderByHeightParam{
 		Height: height,
@@ -161,7 +186,7 @@ func (self *RestClient) GetHeaderFromSpv(height uint32) (*wire.BlockHeader, erro
 	}
 
 	// how to config it???
-	data, err := self.SendRestRequest("http://0.0.0.0:20335/api/v1/queryheaderbyheight", query)
+	data, err := self.SendRestRequest("http://"+IP+"/api/v1/queryheaderbyheight", query)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to send request: %v", err)
 	}
@@ -189,16 +214,16 @@ func (self *RestClient) GetHeaderFromSpv(height uint32) (*wire.BlockHeader, erro
 	return &header, nil
 }
 
-func (self *RestClient) GetUtxosFromSpv(script []byte, amount int64, fee int64) ([]btcjson.TransactionInput, int64, error) {
+func (self *RestClient) GetUtxosFromSpv(addr string, amount int64, fee int64) ([]btcjson.TransactionInput, int64, error) {
 	query, err := json.Marshal(QueryUtxosReq{
-		Script: hex.EncodeToString(script),
+		Addr:   addr,
 		Amount: amount,
 		Fee:    fee,
 	})
 	if err != nil {
 		return nil, 0, fmt.Errorf("Failed to parse parameter: %v", err)
 	}
-	data, err := self.SendRestRequest("http://0.0.0.0:20335/api/v1/queryutxos", query)
+	data, err := self.SendRestRequest("http://"+IP+"/api/v1/queryutxos", query)
 	if err != nil {
 		return nil, 0, fmt.Errorf("Failed to send request: %v", err)
 	}
@@ -216,7 +241,7 @@ func (self *RestClient) GetUtxosFromSpv(script []byte, amount int64, fee int64) 
 }
 
 func (self *RestClient) GetCurrentHeightFromSpv() (uint32, error) {
-	data, err := self.SendRestRequest("http://0.0.0.0:20335/api/v1/getcurrentheight", []byte{})
+	data, err := self.SendGetRequst("http://" + IP + "/api/v1/getcurrentheight")
 	if err != nil {
 		return 0, fmt.Errorf("Failed to send request: %v", err)
 	}
@@ -233,15 +258,15 @@ func (self *RestClient) GetCurrentHeightFromSpv() (uint32, error) {
 	return resp.Result.Height, nil
 }
 
-func (self *RestClient) ChangeSpvWatchedScript(script []byte, action string) error {
+func (self *RestClient) ChangeSpvWatchedAddr(addr string, action string) error {
 	req, err := json.Marshal(ChangeAddressReq{
-		Addr:   hex.EncodeToString(script),
+		Addr:   addr,
 		Aciton: action,
 	})
 	if err != nil {
 		return fmt.Errorf("Failed to parse parameter: %v", err)
 	}
-	data, err := self.SendRestRequest("http://0.0.0.0:20335/api/v1/changeaddress", req)
+	data, err := self.SendRestRequest("http://"+IP+"/api/v1/changeaddress", req)
 	if err != nil {
 		return fmt.Errorf("Failed to send request: %v", err)
 	}
@@ -256,6 +281,24 @@ func (self *RestClient) ChangeSpvWatchedScript(script []byte, action string) err
 	}
 
 	return nil
+}
+
+func (self *RestClient) GetWatchedAddrsFromSpv() ([]string, error) {
+	data, err := self.SendGetRequst("http://" + IP + "/api/v1/getalladdress")
+	if err != nil {
+		return nil, fmt.Errorf("Failed to send request: %v", err)
+	}
+
+	var resp ResponseWithWatchedAddrs
+	err = json.Unmarshal(data, &resp)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to unmarshal resp to json: %v", err)
+	}
+	if resp.Error != 0 || resp.Desc != "SUCCESS" {
+		return nil, errors.New("Response shows failure")
+	}
+
+	return resp.Result.Addresses, nil
 }
 
 // not sure now

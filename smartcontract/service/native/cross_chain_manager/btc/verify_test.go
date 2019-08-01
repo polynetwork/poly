@@ -269,7 +269,7 @@ func TestVerifyBtcTx(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		isPassed, err := VerifyBtcTx(test.service, test.proof, test.tx, test.height)
+		isPassed, _, err := verifyBtcTx(test.service, test.proof, test.tx, test.height)
 		if test.isPositive && (!isPassed || err != nil) {
 			t.Fatalf("Failed to verify this positive case: %s-%v", test.name, err)
 		} else if !test.isPositive && (isPassed || err == nil) {
@@ -331,12 +331,10 @@ func TestTargetChainParam(t *testing.T) {
 	//	t.Fatal("wrong param")
 	//}
 
-	s, err := buildScript(getPubKeys(), 4)
+	s, err := buildScript(getPubKeys(), 5)
 	if err != nil {
 		t.Fatalf("FAiled to build: %v", err)
 	}
-
-	fmt.Println(hex.EncodeToString(s))
 
 	addr, err := btcutil.NewAddressScriptHash(s, &chaincfg.TestNet3Params)
 	if err != nil {
@@ -345,7 +343,15 @@ func TestTargetChainParam(t *testing.T) {
 
 	fmt.Println(addr.EncodeAddress())
 
-	s, err := txscript.PayToAddrScript(addr)
+	sc, err := txscript.PayToAddrScript(addr)
+	if err != nil {
+		t.Fatalf("Failed to get script: %v", err)
+	}
+	str, err := txscript.DisasmString(sc)
+	if err != nil {
+		t.Fatalf("Failed to disasm: %v", err)
+	}
+	fmt.Println(str)
 
 }
 
