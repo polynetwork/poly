@@ -13,12 +13,12 @@ type ChainHandler interface {
 }
 
 type EntranceParam struct {
-	SourceChainID  uint64
-	TxData         string
-	Height         uint32
-	Proof          string
-	RelayerAddress string
-	TargetChainID  uint64
+	SourceChainID  uint64	`json:"sourceChainId"`
+	TxData         string	`json:"txData"`
+	Height         uint32	`json:"height"`
+	Proof          string	`json:"proof"`
+	RelayerAddress string	`json:"relayerAddress"`
+	TargetChainID  uint64	`json:"targetChainId"`
 }
 
 func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error {

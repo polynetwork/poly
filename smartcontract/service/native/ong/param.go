@@ -25,10 +25,10 @@ import (
 )
 
 type OngLockParam struct {
-	Fee       uint64
-	ToChainID uint64
-	Address   common.Address
-	Amount    uint64
+	Fee       uint64			`json:"fee"`
+	ToChainID uint64			`json:"toChainId"`
+	Address   common.Address	`json:"address"`
+	Amount    uint64			`json:"amount"`
 }
 
 func (this *OngLockParam) Serialization(sink *common.ZeroCopySink) {
