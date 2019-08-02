@@ -1,9 +1,14 @@
 package eth
 
 import (
+	"bytes"
+	"encoding/hex"
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ethComm "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/light"
+	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/ethereum/go-ethereum/trie"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/eth/locker"
@@ -36,7 +41,11 @@ func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 		return nil, fmt.Errorf("Verify, GetEthBlockByNumber error:%v", err)
 	}
 	//todo 1. verify the proof with header
-	proofresult, err := verifyMerkleProof(params.Proof, blockdata)
+	//determine where the k and v from
+	k := []byte("k")
+	v := []byte("v")
+
+	proofresult, err := verifyMerkleProof(params.Proof, k, v, blockdata)
 	if err != nil {
 		return nil, fmt.Errorf("Verify, verifyMerkleProof error:%v", err)
 	}
@@ -83,7 +92,30 @@ func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *in
 	return nil
 }
 
-func verifyMerkleProof(proof string, blockdata *EthBlock) (bool, error) {
+func verifyMerkleProof(proof string, key []byte, value []byte, blockdata *EthBlock) (bool, error) {
 	//todo add verify logic here
+	proofdata, err := hex.DecodeString(proof)
+	if err != nil {
+		return false, err
+	}
+
+	nodelist := new(light.NodeList)
+
+	err = rlp.DecodeBytes(proofdata, nodelist)
+	if err != nil {
+		return false, err
+	}
+
+	roothash := ethComm.HexToHash(blockdata.StateRoot)
+
+	val, _, err := trie.VerifyProof(roothash, key, nodelist.NodeSet())
+	if err != nil {
+		return false, err
+	}
+
+	if !bytes.Equal(val, value) {
+		return false, nil
+	}
+
 	return true, nil
 }

@@ -54,17 +54,17 @@ func GetChainHandler(chainid uint64) (inf.ChainHandler, error) {
 }
 
 func ImportExTransfer(native *native.NativeService) ([]byte, error) {
-
+	fmt.Println("-===ImportExTransfer")
 	params := new(inf.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("CreateCrossChainTx, contract params deserialize error: %v", err)
 	}
-	//fmt.Printf("SourceChainID:%v\n",params.SourceChainID)
-	//fmt.Printf("TargetChainID:%v\n",params.TargetChainID)
-	//fmt.Printf("Proof:%v\n",params.Proof)
-	//fmt.Printf("TxData:%v\n",params.TxData)
-	//fmt.Printf("Height:%v\n",params.Height)
-	//fmt.Printf("RelayerAddress:%v\n",params.RelayerAddress)
+	fmt.Printf("SourceChainID:%v\n", params.SourceChainID)
+	fmt.Printf("TargetChainID:%v\n", params.TargetChainID)
+	fmt.Printf("Proof:%v\n", params.Proof)
+	fmt.Printf("TxData:%v\n", params.TxData)
+	fmt.Printf("Height:%v\n", params.Height)
+	fmt.Printf("RelayerAddress:%v\n", params.RelayerAddress)
 
 	chainid := params.SourceChainID
 	handler, err := GetChainHandler(chainid)

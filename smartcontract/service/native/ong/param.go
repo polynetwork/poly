@@ -25,16 +25,16 @@ import (
 )
 
 type OngLockParam struct {
-	Fee       uint64 `json:"fee"`
-	ToChainID uint64 `json:"toChainId"`
-	Address   string `json:"address"`
-	Amount    uint64 `json:"amount"`
+	Fee       uint64         `json:"fee"`
+	ToChainID uint64         `json:"toChainId"`
+	Address   common.Address `json:"address"`
+	Amount    uint64         `json:"amount"`
 }
 
 func (this *OngLockParam) Serialization(sink *common.ZeroCopySink) {
 	utils.EncodeVarUint(sink, this.Fee)
 	utils.EncodeVarUint(sink, this.ToChainID)
-	utils.EncodeString(sink, this.Address)
+	utils.EncodeAddress(sink, this.Address)
 	utils.EncodeVarUint(sink, this.Amount)
 }
 
@@ -47,7 +47,7 @@ func (this *OngLockParam) Deserialization(source *common.ZeroCopySource) error {
 	if err != nil {
 		return fmt.Errorf("OngLockParam deserialize toChainID error:%s", err)
 	}
-	address, err := utils.DecodeString(source)
+	address, err := utils.DecodeAddress(source)
 	if err != nil {
 		return fmt.Errorf("OngLockParam deserialize address error:%s", err)
 	}
