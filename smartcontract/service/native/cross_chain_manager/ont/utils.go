@@ -19,15 +19,18 @@
 package ont
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/ontio/multi-chain/common"
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/merkle"
+	"github.com/ontio/multi-chain/smartcontract/event"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/inf"
 	"github.com/ontio/multi-chain/smartcontract/service/native/header_sync"
 	"github.com/ontio/multi-chain/smartcontract/service/native/ont"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
+	"github.com/ontio/ontology/common/config"
 )
 
 func appCallTransferOng(native *native.NativeService, from common.Address, to common.Address, amount uint64) error {
@@ -277,6 +280,16 @@ func MakeFromOntProof(native *native.NativeService, params *CreateCrossChainTxPa
 	if err != nil {
 		return fmt.Errorf("MakeFromOntProof, putRequestID error:%s", err)
 	}
+	prefix, err := utils.GetUint64Bytes(newID)
+	if err != nil {
+		return fmt.Errorf("MakeFromOntProof, GetUint64Bytes error:%s", err)
+	}
+	chainIDBytes, err := utils.GetUint64Bytes(params.ToChainID)
+	if err != nil {
+		return fmt.Errorf("MakeFromOntProof, get chainIDBytes error: %v", err)
+	}
+	key := hex.EncodeToString(utils.ConcatKey(utils.CrossChainContractAddress, []byte(REQUEST), chainIDBytes, prefix))
+	notifyMakeFromOntProof(native, params.ToChainID, key)
 	return nil
 }
 
@@ -351,5 +364,37 @@ func MakeToOntProof(native *native.NativeService, params *inf.MakeTxParam) error
 	if err != nil {
 		return fmt.Errorf("MakeToOntProof, putRequestID error:%s", err)
 	}
+	prefix, err := utils.GetUint64Bytes(newID)
+	if err != nil {
+		return fmt.Errorf("MakeFromOntProof, GetUint64Bytes error:%s", err)
+	}
+	chainIDBytes, err := utils.GetUint64Bytes(params.ToChainID)
+	if err != nil {
+		return fmt.Errorf("MakeFromOntProof, get chainIDBytes error: %v", err)
+	}
+	key := hex.EncodeToString(utils.ConcatKey(utils.CrossChainContractAddress, []byte(REQUEST), chainIDBytes, prefix))
+	notifyMakeToOntProof(native, params.ToChainID, key)
 	return nil
+}
+
+func notifyMakeFromOntProof(native *native.NativeService, toChainID uint64, key string) {
+	if !config.DefConfig.Common.EnableEventLog {
+		return
+	}
+	native.Notifications = append(native.Notifications,
+		&event.NotifyEventInfo{
+			ContractAddress: utils.OngContractAddress,
+			States:          []interface{}{"MakeFromOntProof", toChainID, native.Height, key},
+		})
+}
+
+func notifyMakeToOntProof(native *native.NativeService, toChainID uint64, key string) {
+	if !config.DefConfig.Common.EnableEventLog {
+		return
+	}
+	native.Notifications = append(native.Notifications,
+		&event.NotifyEventInfo{
+			ContractAddress: utils.CrossChainManagerContractAddress,
+			States:          []interface{}{"MakeToOntProof", toChainID, native.Height, key},
+		})
 }
