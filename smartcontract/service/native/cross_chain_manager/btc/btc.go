@@ -34,6 +34,7 @@ import (
 )
 
 type BTCHandler struct {
+
 }
 
 func NewBTCHandler() *BTCHandler {
@@ -105,13 +106,18 @@ func verifyBtcTx(native *native.NativeService, proof []byte, tx []byte, height u
 	mb := wire_bch.MsgMerkleBlock{}
 	err = mb.BchDecode(bytes.NewReader(proof), wire_bch.ProtocolVersion, wire_bch.LatestEncoding)
 	if err != nil {
-		return false, nil, fmt.Errorf("")
+		return false, nil, fmt.Errorf("verifyBtcTx, failed to decode proof: %v", err)
 	}
 
 	txid := mtx.TxHash()
-	if !bytes.Equal(mb.Hashes[0][:], txid[:]) && !bytes.Equal(mb.Hashes[1][:], txid[:]) {
-		return false, nil, fmt.Errorf("verifyBtcTx, wrong transaction hash: %s in proof are not equal with %s",
-			mb.Hashes[0].String(), txid.String())
+	isExist := false
+	for _, hash := range mb.Hashes {
+		if bytes.Equal(hash[:], txid[:]) {
+			isExist = true
+		}
+	}
+	if !isExist {
+		return false, nil, fmt.Errorf("verifyBtcTx, transaction %s not found in proof", txid.String())
 	}
 	val, err := native.CacheDB.Get(append([]byte(VERIFIED_TX), txid[:]...))
 	if err != nil {
@@ -216,6 +222,6 @@ func makeBtcTx(native *native.NativeService, amounts map[string]int64) error {
 	}
 
 	// TODO: Define a key
-	native.CacheDB.Put(append([]byte(BTC_TX_PREFIX)), buf.Bytes())
+	native.CacheDB.Put([]byte(BTC_TX_PREFIX), buf.Bytes())
 	return nil
 }

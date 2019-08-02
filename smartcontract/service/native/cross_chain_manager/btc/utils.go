@@ -25,7 +25,7 @@ const (
 	// TODO: Temporary setting
 	OP_RETURN_DATA_LEN           = 42
 	OP_RETURN_SCRIPT_FLAG        = byte(0x66)
-	FEE                          = int64(2e3)
+	FEE                          = int64(1e3)
 	REQUIRE                      = 5
 	CONFRIMATION                 = 6
 	BTC_TX_PREFIX         string = "btctx"
@@ -49,7 +49,7 @@ var priv6 = "cNK7BwHmi8rZiqD2QfwJB1R6bF6qc7iVTMBNjTr2ACbsoq1vWau8"
 var addr7 = "msK9xpuXn5xqr4UK7KyWi9VCaFhiwCqqq6"
 var priv7 = "cUZdDF9sL11ya5civzMRYVYojoojjHbmWWm1yC5uRzfBRePVbQTZ"
 
-type queryHeaderByHeightParam struct {
+type QueryHeaderByHeightParam struct {
 	Height uint32 `json:"height"`
 }
 
@@ -85,6 +85,11 @@ type GetAllAddressResp struct {
 	Addresses []string `json:"addresses"`
 }
 
+type UnlockUtxoReq struct {
+	Hash string `json:"hash"`
+	Index uint32 `json:"index"`
+}
+
 type ResponseWithHeader struct {
 	Action string                  `json:"action"`
 	Desc   string                  `json:"desc"`
@@ -106,11 +111,11 @@ type ResponseWithHeight struct {
 	Result GetCurrentHeightResp `json:"result"`
 }
 
-type ResponseWithChangeAddr struct {
+type Response struct {
 	Action string            `json:"action"`
 	Desc   string            `json:"desc"`
 	Error  uint32            `json:"error"`
-	Result ChangeAddressResp `json:"result"`
+	Result interface{} `json:"result"`
 }
 
 type ResponseWithWatchedAddrs struct {
@@ -178,7 +183,7 @@ func (self *RestClient) SendGetRequst(addr string) ([]byte, error) {
 }
 
 func (self *RestClient) GetHeaderFromSpv(height uint32) (*wire.BlockHeader, error) {
-	query, err := json.Marshal(queryHeaderByHeightParam{
+	query, err := json.Marshal(QueryHeaderByHeightParam{
 		Height: height,
 	})
 	if err != nil {
@@ -197,7 +202,7 @@ func (self *RestClient) GetHeaderFromSpv(height uint32) (*wire.BlockHeader, erro
 	}
 
 	if resp.Error != 0 || resp.Desc != "SUCCESS" {
-		return nil, errors.New("Response shows failure")
+		return nil, fmt.Errorf("Response shows failure: %s", resp.Desc)
 	}
 
 	hbs, err := hex.DecodeString(resp.Result.Header)
@@ -234,7 +239,7 @@ func (self *RestClient) GetUtxosFromSpv(addr string, amount int64, fee int64) ([
 		return nil, 0, fmt.Errorf("Failed to unmarshal resp to json: %v", err)
 	}
 	if resp.Error != 0 || resp.Desc != "SUCCESS" {
-		return nil, 0, errors.New("Response shows failure")
+		return nil, 0, fmt.Errorf("Response shows failure: %s", resp.Desc)
 	}
 
 	return resp.Result.Inputs, resp.Result.Sum, nil
@@ -252,7 +257,7 @@ func (self *RestClient) GetCurrentHeightFromSpv() (uint32, error) {
 		return 0, fmt.Errorf("Failed to unmarshal resp to json: %v", err)
 	}
 	if resp.Error != 0 || resp.Desc != "SUCCESS" {
-		return 0, errors.New("Response shows failure")
+		return 0, fmt.Errorf("Response shows failure: %s", resp.Desc)
 	}
 
 	return resp.Result.Height, nil
@@ -271,13 +276,13 @@ func (self *RestClient) ChangeSpvWatchedAddr(addr string, action string) error {
 		return fmt.Errorf("Failed to send request: %v", err)
 	}
 
-	var resp ResponseWithChangeAddr
+	var resp Response
 	err = json.Unmarshal(data, &resp)
 	if err != nil {
 		return fmt.Errorf("Failed to unmarshal resp to json: %v", err)
 	}
 	if resp.Error != 0 || resp.Desc != "SUCCESS" {
-		return errors.New("Response shows failure")
+		return fmt.Errorf("Response shows failure: %s", resp.Desc)
 	}
 
 	return nil
@@ -295,10 +300,35 @@ func (self *RestClient) GetWatchedAddrsFromSpv() ([]string, error) {
 		return nil, fmt.Errorf("Failed to unmarshal resp to json: %v", err)
 	}
 	if resp.Error != 0 || resp.Desc != "SUCCESS" {
-		return nil, errors.New("Response shows failure")
+		return nil, fmt.Errorf("Response shows failure: %s", resp.Desc)
 	}
 
 	return resp.Result.Addresses, nil
+}
+
+func (self *RestClient) UnlockUtxoInSpv(hash string, index uint32) error {
+	req, err := json.Marshal(UnlockUtxoReq{
+		Hash: hash,
+		Index: index,
+	})
+	if err != nil {
+		return fmt.Errorf("Failed to parse parameter: %v", err)
+	}
+	data, err := self.SendRestRequest("http://"+IP+"/api/v1/unlockutxo", req)
+	if err != nil {
+		return fmt.Errorf("Failed to send request: %v", err)
+	}
+
+	var resp Response
+	err = json.Unmarshal(data, &resp)
+	if err != nil {
+		return fmt.Errorf("Failed to unmarshal resp to json: %v", err)
+	}
+	if resp.Error != 0 || resp.Desc != "SUCCESS" {
+		return fmt.Errorf("Response shows failure: %s", resp.Desc)
+	}
+
+	return nil
 }
 
 // not sure now

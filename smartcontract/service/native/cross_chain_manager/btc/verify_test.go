@@ -4,38 +4,52 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcutil"
-	"github.com/btcsuite/btcutil/base58"
+	"github.com/gcash/bchd/txscript"
+	wire_bch "github.com/gcash/bchd/wire"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/core/store/leveldbstore"
+	"github.com/ontio/multi-chain/core/store/overlaydb"
+	"github.com/ontio/multi-chain/smartcontract"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
+	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
+	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
+	"github.com/ontio/multi-chain/smartcontract/storage"
 	"testing"
+	cstates "github.com/ontio/multi-chain/core/states"
 )
 
-var Height = uint32(1571076)
-var Proof = "000000204792ea66b92f6674fb6fee519057f6393e9b16dc23a5b012d302000000000000b8656b21e501521420a99cf5649805462d13fbc07dcaa74dd80cc9eced95326e00cc3a5dffff001d6f3673ae190100000a552427bdd22ca1dcb153c4a14834c2f8e51fb1dfac048bc8861074c9dfa50afcb7a24cac7560701775dbcae736dda808d2be586c9b8296ea222ad0d95e6945dc4aa4af9dfa6725a01c58a074d3c62b37c4df7e106ede73730084c60aec83c28c318723e3a1f76a73e4e629d57c016817bf5be473bb8050859056c181a416116c3981ddca291cc22bac64ddfb5000e1f0cc3a44744d46c75bcb7ebc16dd85e552230a05bef81f4d27376f312c405bc02369aed75fa6211c9be7f4e2833242df065bf579da2b19e530143ae0914a6b28d362e7911097a0c1ddc7b9d897f895b62dd3316c0a3752749d54a92f31b8269a63d61bbe2751daec138794901c8071c846530e55a188f59b57f3884076bdb4272ff54471852d340f9858ed9836cde3e7df4f4cba97dfc7051650a3f5cb771d20b442040c3712f6ecdd8caee897412cae3c035b2f00"
-var Header = "000000204792ea66b92f6674fb6fee519057f6393e9b16dc23a5b012d302000000000000b8656b21e501521420a99cf5649805462d13fbc07dcaa74dd80cc9eced95326e00cc3a5dffff001d6f3673ae"
-var RawTxStr = "01000000019c91fd64e5424a6c7dc62805b18342a81c95f241f3f559475f5529d32e8fc143000000006b4830450221008102bc2ac7d6bd82347da24cf080e20a6e4d85b854b05ba671cea47b09a12e34022066d0d82a92b98eee43e0488b9a5229c370edeed577f0a9a9c0e8559284c7700d012103128a2c4525179e47f38cf3fefca37a61548ca4610255b3fb4ee86de2d3e80c0fffffffff03d007000000000000f15421023ac710e73e1410718530b2686ce47f12fa3c470a9eb6085976b70b01c64c9f732102c9dc4d8f419e325bbef0fe039ed6feaf2079a2ef7b27336ddb79be2ea6e334bf2102eac939f2f0873894d8bf0ef2f8bbdd32e4290cbf9632b59dee743529c0af9e802103378b4a3854c88cca8bfed2558e9875a144521df4a75ab37a206049ccef12be692103495a81957ce65e3359c114e6c2fe9f97568be491e3f24d6fa66cc542e360cd662102d43e29299971e802160a92cfcd4037e8ae83fb8f6af138684bebdc5686f3b9db21031e415c04cbc9b81fbee6e04d8c902e8f61109a2c9883a959ba528c52698c055a57ae00000000000000002c6a2a66000000000000000100000000000003e86f28d2e8cee08857f569e5a1b147c5d5e87339e081b5ae5dfa00230f00000000001976a91428d2e8cee08857f569e5a1b147c5d5e87339e08188ac00000000"
+var Height = uint32(1571626)
+var Proof = "00000020c60a7dbed205d1e66c1858a58a4a6b810495a57d529ff5f814010000000000008b70b1dcd77ee7d9faef2f79a1943371621f4e67acd3dcf83e0349aab0b1c5822732405dffff001dae137c5d900000000967e5d59f9b3aea1dacdb50321dbdbd38404fcde592c08edb5ec25d8910ee161b97ac69bea21159a411690ca2e89ea9a1c87fb9dfc1bd6a55cb7d238eb7c21d8dca6c94054633100013a3293b2e5782170fcfc6f65284a7af1e1b83cc2975b5d5a4d13efb1fc25a91a6dd8af7a5e1a624d7641118c3e16b9a9258aa49f7c3cde31adaecb1943d4f432e751f93bf58481fd67b753ca07aab04823e0e5abc515b36c298305f40a432b0559ca74aab15ae5ff77a24da5c177d8308cb5f38c981ed25de8c82c5fd94dfb81cb4cf9685e39abbae8b41327a8b0542ae6810b87d45237adb9f21077f3151a651ac47501ee0b5b8097c1bb8508c69e7eaae359586274d8c77b7d42a3c113f0d9e62d21953e30085b751173ace8abbb16905fed55b3f041503f70600"
+var Header = "00000020c60a7dbed205d1e66c1858a58a4a6b810495a57d529ff5f814010000000000008b70b1dcd77ee7d9faef2f79a1943371621f4e67acd3dcf83e0349aab0b1c5822732405dffff001dae137c5d"
+var RawTxStr = "01000000013981ddca291cc22bac64ddfb5000e1f0cc3a44744d46c75bcb7ebc16dd85e552020000006a47304402206d5a299ab1e7e69b5c051581a6a3cf0e1ea4cd93354b6676874c5ac59a08f07b02207ff679e76507162890ea51f7b215f999562a3b912c6eb89a3667dcaca27e2dc9012103128a2c4525179e47f38cf3fefca37a61548ca4610255b3fb4ee86de2d3e80c0fffffffff03d00700000000000017a91487a9652e9b396545598c0fc72cb5a98848bf93d38700000000000000002c6a2a66000000000000000100000000000003e86f28d2e8cee08857f569e5a1b147c5d5e87339e081b5ae5dfa60130f00000000001976a91428d2e8cee08857f569e5a1b147c5d5e87339e08188ac00000000"
 
 var addr = "mjEoyyCPsLzJ23xMX6Mti13zMyN36kzn57"
 var privkey = "cRRMYvoHPNQu1tCz4ajPxytBVc2SN6GWLAVuyjzm4MVwyqZVrAcX"
+var getNativeFunc = func() *native.NativeService {
+	store, _ := leveldbstore.NewMemLevelDBStore()
+	cacheDB := storage.NewCacheDB(overlaydb.NewOverlayDB(store))
+	sc := smartcontract.SmartContract{
+		CacheDB: cacheDB,
+	}
+	service := &native.NativeService{
+		CacheDB:    sc.CacheDB,
+		ServiceMap: make(map[string]native.Handler),
+	}
 
-//var addr1 = "mj3LUsSvk9ZQH1pSHvC8LBtsYXsZvbky8H"
-//var priv1 = "cTqbqa1YqCf4BaQTwYDGsPAB4VmWKUU67G5S1EtrHSWNRwY6QSag"
-//var addr2 = "mtNiC48WWbGRk2zLqiTMwKLhrCk6rBqBen"
-//var priv2 = "cT2HP4QvL8c6otn4LrzUWzgMBfTo1gzV2aobN1cTiuHPXH9Jk2ua"
-//var addr3 = "mi1bYK8SR3Qsf2cdrxgak3spzFx4EVH1pf"
-//var priv3 = "cSQmGg6spbhd23jHQ9HAtz3XU7GYJjYaBmFLWHbyKa9mWzTxEY5A"
-//var addr4 = "mz3bTZaQ2tNzsn4szNE8R6gp5zyHuqN29V"
-//var priv4 = "cPYAx61EjwshK5SQ6fqH7QGjc8L48xiJV7VRGpYzPSbkkZqrzQ5b"
-//var addr5 = "mfzbFf6njbEuyvZGDiAdfKamxWfAMv47NG"
-//var priv5 = "cVV9UmtnnhebmSQgHhbDZWCb7zBHbiAGDB9a5M2ffe1WpqvwD5zg"
-//var addr6 = "n4ESieuFJq5HCvE5GU8B35YTfShZmFrCKM"
-//var priv6 = "cNK7BwHmi8rZiqD2QfwJB1R6bF6qc7iVTMBNjTr2ACbsoq1vWau8"
-//var addr7 = "msK9xpuXn5xqr4UK7KyWi9VCaFhiwCqqq6"
-//var priv7 = "cUZdDF9sL11ya5civzMRYVYojoojjHbmWWm1yC5uRzfBRePVbQTZ"
+	return service
+}
+
+//func TestBTCHandler_Verify(t *testing.T) {
+//	handler := NewBTCHandler()
+//	service := getNativeFunc()
+//
+//
+//	p, err := handler.Verify(service)
+//	if err != nil {
+//
+//	}
+//}
 
 // This test's data is from TestNet.
 // Need to start a spv client daemon
@@ -57,29 +71,22 @@ func TestVerifyBtcTx(t *testing.T) {
 			proof:  hexToBytes(Proof),
 			height: Height,
 			tx:     hexToBytes(RawTxStr),
-			pks: func() [][]byte {
-				_, pubk1 := btcec.PrivKeyFromBytes(btcec.S256(), base58.Decode(priv1))
-				_, pubk2 := btcec.PrivKeyFromBytes(btcec.S256(), base58.Decode(priv2))
-				_, pubk3 := btcec.PrivKeyFromBytes(btcec.S256(), base58.Decode(priv3))
-				_, pubk4 := btcec.PrivKeyFromBytes(btcec.S256(), base58.Decode(priv4))
-				_, pubk5 := btcec.PrivKeyFromBytes(btcec.S256(), base58.Decode(priv5))
-				_, pubk6 := btcec.PrivKeyFromBytes(btcec.S256(), base58.Decode(priv6))
-				_, pubk7 := btcec.PrivKeyFromBytes(btcec.S256(), base58.Decode(priv7))
-				pubks := make([][]byte, 7)
-				pubks[0] = pubk1.SerializeCompressed()
-				pubks[1] = pubk2.SerializeCompressed()
-				pubks[2] = pubk3.SerializeCompressed()
-				pubks[3] = pubk4.SerializeCompressed()
-				pubks[4] = pubk5.SerializeCompressed()
-				pubks[5] = pubk6.SerializeCompressed()
-				pubks[6] = pubk7.SerializeCompressed()
-
-				return pubks
-			}(),
-			req:        4,
+			req:        5,
 			isPositive: true,
 			service: func() *native.NativeService {
-				return nil
+				service := getNativeFunc()
+				sideChain := &side_chain_manager.SideChain{
+					Chainid: 1,
+					Name: "ONT",
+					BlocksToWait: 6,
+				}
+				contract := utils.SideChainManagerContractAddress
+				sink := common.NewZeroCopySink(nil)
+				_ = sideChain.Serialization(sink)
+				chainidByte, _ := utils.GetUint64Bytes(sideChain.Chainid)
+				service.CacheDB.Put(utils.ConcatKey(contract, []byte(side_chain_manager.SIDE_CHAIN), chainidByte),
+					cstates.GenRawStorageItem(sink.Bytes()))
+				return service
 			}(),
 		},
 		//{
@@ -282,23 +289,36 @@ func TestVerifyBtcTx(t *testing.T) {
 	}
 }
 
-func TestRestClient_GetHeaderFromSpv(t *testing.T) {
-	header := wire.BlockHeader{}
-	hb, err := hex.DecodeString(Header)
+func TestMakeBtcTx(t *testing.T) {
+	service := getNativeFunc()
+	err := makeBtcTx(service, map[string]int64{
+		"mjEoyyCPsLzJ23xMX6Mti13zMyN36kzn57": 100,
+	})
 	if err != nil {
-		t.Fatalf("Failed to decode hex: %v", err)
-	}
-	err = header.BtcDecode(bytes.NewBuffer(hb), wire.ProtocolVersion, wire.LatestEncoding)
-	if err != nil {
-		t.Fatalf("Failed to decode header: %v", err)
+		t.Fatalf("Failed to make tx: %v", err)
 	}
 
-	h, err := NewRestClient().GetHeaderFromSpv(Height)
+	tx, err := service.CacheDB.Get([]byte(BTC_TX_PREFIX))
 	if err != nil {
-		t.Fatalf("Failed to get header: %v\n", err)
+		t.Fatalf("Failed to get tx: %v", err)
 	}
-	if bytes.Equal(h.MerkleRoot[:], header.MerkleRoot[:]) {
-		t.Fatalf("Merkle root %s from spv not equal to %s\n", h.MerkleRoot.String(), header.MerkleRoot[:])
+
+	mtx := wire.NewMsgTx(wire.TxVersion)
+	err = mtx.BtcDecode(bytes.NewBuffer(tx), wire.ProtocolVersion, wire.LatestEncoding)
+	if err != nil {
+		t.Fatalf("Failed to decode tx: %v", err)
+	}
+
+	for i, in := range mtx.TxIn {
+		fmt.Printf("No%d input: %s\n", i, in.PreviousOutPoint.String())
+	}
+
+	for i, out := range mtx.TxOut {
+		s, err := txscript.DisasmString(out.PkScript)
+		if err != nil {
+			t.Fatalf("Failed to disasm: %v", err)
+		}
+		fmt.Printf("No%d output: value: %d; pkScript: %s; \n", i, out.Value, s)
 	}
 }
 
@@ -331,28 +351,42 @@ func TestTargetChainParam(t *testing.T) {
 	//	t.Fatal("wrong param")
 	//}
 
-	s, err := buildScript(getPubKeys(), 5)
+	//s, err := buildScript(getPubKeys(), 5)
+	//if err != nil {
+	//	t.Fatalf("FAiled to build: %v", err)
+	//}
+	//
+	//addr, err := btcutil.NewAddressScriptHash(s, &chaincfg.TestNet3Params)
+	//if err != nil {
+	//	t.Fatalf("Failed to get addr: %v", err)
+	//}
+	//
+	//fmt.Println(addr.EncodeAddress())
+	//
+	//sc, err := txscript.PayToAddrScript(addr)
+	//if err != nil {
+	//	t.Fatalf("Failed to get script: %v", err)
+	//}
+	//str, err := txscript.DisasmString(sc)
+	//if err != nil {
+	//	t.Fatalf("Failed to disasm: %v", err)
+	//}
+	//fmt.Println(str)
+
+	proof, err := hex.DecodeString(Proof)
+	mb := wire_bch.MsgMerkleBlock{}
+	err = mb.BchDecode(bytes.NewReader(proof), wire_bch.ProtocolVersion, wire_bch.LatestEncoding)
 	if err != nil {
-		t.Fatalf("FAiled to build: %v", err)
+		t.Fatalf("Failed to get mb: %v", err)
 	}
 
-	addr, err := btcutil.NewAddressScriptHash(s, &chaincfg.TestNet3Params)
-	if err != nil {
-		t.Fatalf("Failed to get addr: %v", err)
+	//for _, hash := range mb.Hashes {
+	//	fmt.Println(hash.String())
+	//}
+	fmt.Println(len(mb.Hashes))
+	for i, f := range mb.Flags {
+		fmt.Printf("No%d=%v\n", i, f)
 	}
-
-	fmt.Println(addr.EncodeAddress())
-
-	sc, err := txscript.PayToAddrScript(addr)
-	if err != nil {
-		t.Fatalf("Failed to get script: %v", err)
-	}
-	str, err := txscript.DisasmString(sc)
-	if err != nil {
-		t.Fatalf("Failed to disasm: %v", err)
-	}
-	fmt.Println(str)
-
 }
 
 func hexToBytes(s string) []byte {
