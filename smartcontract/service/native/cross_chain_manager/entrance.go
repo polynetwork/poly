@@ -10,8 +10,6 @@ import (
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/eth"
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/inf"
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/ont"
-	"bytes"
-	"github.com/ontio/multi-chain/common/serialization"
 )
 
 const (
@@ -57,13 +55,8 @@ func GetChainHandler(chainid uint64) (inf.ChainHandler, error) {
 
 func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 
-	bf := bytes.NewBuffer(native.Input)
-	inputs,err := serialization.ReadVarBytes(bf)
-	if err != nil {
-		return utils.BYTE_FALSE, err
-	}
 	params := new(inf.EntranceParam)
-	if err := params.Deserialization(common.NewZeroCopySource(inputs)); err != nil {
+	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("CreateCrossChainTx, contract params deserialize error: %v", err)
 	}
 	//fmt.Printf("SourceChainID:%v\n",params.SourceChainID)
