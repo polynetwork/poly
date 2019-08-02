@@ -86,7 +86,7 @@ type GetAllAddressResp struct {
 }
 
 type UnlockUtxoReq struct {
-	Hash string `json:"hash"`
+	Hash  string `json:"hash"`
 	Index uint32 `json:"index"`
 }
 
@@ -112,9 +112,9 @@ type ResponseWithHeight struct {
 }
 
 type Response struct {
-	Action string            `json:"action"`
-	Desc   string            `json:"desc"`
-	Error  uint32            `json:"error"`
+	Action string      `json:"action"`
+	Desc   string      `json:"desc"`
+	Error  uint32      `json:"error"`
 	Result interface{} `json:"result"`
 }
 
@@ -308,7 +308,7 @@ func (self *RestClient) GetWatchedAddrsFromSpv() ([]string, error) {
 
 func (self *RestClient) UnlockUtxoInSpv(hash string, index uint32) error {
 	req, err := json.Marshal(UnlockUtxoReq{
-		Hash: hash,
+		Hash:  hash,
 		Index: index,
 	})
 	if err != nil {

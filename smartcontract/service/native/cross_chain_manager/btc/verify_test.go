@@ -8,6 +8,7 @@ import (
 	"github.com/gcash/bchd/txscript"
 	wire_bch "github.com/gcash/bchd/wire"
 	"github.com/ontio/multi-chain/common"
+	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/core/store/leveldbstore"
 	"github.com/ontio/multi-chain/core/store/overlaydb"
 	"github.com/ontio/multi-chain/smartcontract"
@@ -16,7 +17,6 @@ import (
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 	"github.com/ontio/multi-chain/smartcontract/storage"
 	"testing"
-	cstates "github.com/ontio/multi-chain/core/states"
 )
 
 var Height = uint32(1571626)
@@ -67,17 +67,17 @@ func TestVerifyBtcTx(t *testing.T) {
 		service    *native.NativeService
 	}{
 		{
-			name:   "positive case",
-			proof:  hexToBytes(Proof),
-			height: Height,
-			tx:     hexToBytes(RawTxStr),
+			name:       "positive case",
+			proof:      hexToBytes(Proof),
+			height:     Height,
+			tx:         hexToBytes(RawTxStr),
 			req:        5,
 			isPositive: true,
 			service: func() *native.NativeService {
 				service := getNativeFunc()
 				sideChain := &side_chain_manager.SideChain{
-					Chainid: 1,
-					Name: "ONT",
+					Chainid:      1,
+					Name:         "ONT",
 					BlocksToWait: 6,
 				}
 				contract := utils.SideChainManagerContractAddress

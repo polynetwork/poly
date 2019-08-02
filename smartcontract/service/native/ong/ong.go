@@ -171,24 +171,28 @@ func Lock(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("OngLock, contract params deserialize error: %v", err)
 	}
 	contract := native.ContextRef.CurrentContext().ContractAddress
+	address, err := common.AddressFromBase58(params.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("OngLock, common.AddressFromBase58 error: %v", err)
+	}
 
 	//check witness
-	err := utils.ValidateOwner(native, params.Address)
+	err = utils.ValidateOwner(native, address)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("OngLock, checkWitness error: %v", err)
 	}
 
 	//ong transfer
-	err = appCallTransferOng(native, params.Address, utils.OngContractAddress, params.Amount)
+	err = appCallTransferOng(native, address, utils.OngContractAddress, params.Amount)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("OngLock, ong transfer error: %v", err)
 	}
-	notifyOngLock(native, contract, params.ToChainID, params.Address, params.Amount)
+	notifyOngLock(native, contract, params.ToChainID, address, params.Amount)
 
 	crossChainParam := cont.CreateCrossChainTxParam{
 		ToChainID: params.ToChainID,
 		Fee:       params.Fee,
-		Address:   params.Address,
+		Address:   address,
 		Amount:    params.Amount,
 	}
 	sink := common.NewZeroCopySink(nil)

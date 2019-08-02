@@ -34,7 +34,6 @@ import (
 )
 
 type BTCHandler struct {
-
 }
 
 func NewBTCHandler() *BTCHandler {
