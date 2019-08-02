@@ -384,7 +384,7 @@ func notifyMakeFromOntProof(native *native.NativeService, toChainID uint64, key 
 	native.Notifications = append(native.Notifications,
 		&event.NotifyEventInfo{
 			ContractAddress: utils.OngContractAddress,
-			States:          []interface{}{"MakeFromOntProof", toChainID, native.Height, key},
+			States:          []interface{}{MAKE_FROM_ONT_PROOF, toChainID, native.Height, key},
 		})
 }
 
@@ -395,6 +395,6 @@ func notifyMakeToOntProof(native *native.NativeService, toChainID uint64, key st
 	native.Notifications = append(native.Notifications,
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
-			States:          []interface{}{"MakeToOntProof", toChainID, native.Height, key},
+			States:          []interface{}{MAKE_TO_ONT_PROOF, toChainID, native.Height, key},
 		})
 }

@@ -34,6 +34,8 @@ import (
 const (
 	CREATE_CROSS_CHAIN_TX  = "createCrossChainTx"
 	PROCESS_CROSS_CHAIN_TX = "processCrossChainTx"
+	MAKE_FROM_ONT_PROOF    = "makeFromOntProof"
+	MAKE_TO_ONT_PROOF      = "makeToOntProof"
 
 	//key prefix
 	REQUEST_ID  = "requestID"
