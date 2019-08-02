@@ -33,8 +33,8 @@ import (
 )
 
 const (
-	LOCK   = "Lock"
-	UNLOCK = "Unlock"
+	LOCK   = "lock"
+	UNLOCK = "unlock"
 )
 
 func InitOng() {
