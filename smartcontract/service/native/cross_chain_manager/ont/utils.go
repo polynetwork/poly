@@ -206,7 +206,8 @@ func VerifyFromOntTx(native *native.NativeService, proof []byte, fromChainid uin
 	//get block header
 	header, err := header_sync.GetHeaderByHeight(native, fromChainid, height)
 	if err != nil {
-		return nil, fmt.Errorf("VerifyFromOntTx, get header by height error: %v", err)
+		return nil, fmt.Errorf("VerifyFromOntTx, get header by height %d from chain %d error: %v",
+			height, fromChainid, err)
 	}
 
 	v := merkle.MerkleProve(proof, header.CrossStatesRoot)
@@ -297,45 +298,46 @@ func VerifyToOntTx(native *native.NativeService, proof []byte, fromChainid uint6
 	//get block header
 	header, err := header_sync.GetHeaderByHeight(native, fromChainid, height)
 	if err != nil {
-		return nil, fmt.Errorf("VerifyFromOntTx, get header by height error: %v", err)
+		return nil, fmt.Errorf("VerifyToOntTx, get header by height %d from chain %d error: %v",
+			height, fromChainid, err)
 	}
 
 	v := merkle.MerkleProve(proof, header.CrossStatesRoot)
 	if v == nil {
-		return nil, fmt.Errorf("VerifyFromOntTx, merkle.MerkleProve verify merkle proof error")
+		return nil, fmt.Errorf("VerifyToOntTx, merkle.MerkleProve verify merkle proof error")
 	}
 
 	s := common.NewZeroCopySource(v)
 	merkleValue := new(ToMerkleValue)
 	if err := merkleValue.Deserialization(s); err != nil {
-		return nil, fmt.Errorf("VerifyFromOntTx, deserialize merkleValue error:%s", err)
+		return nil, fmt.Errorf("VerifyToOntTx, deserialize merkleValue error:%s", err)
 	}
 
 	//record done cross chain tx
 	oldCurrentID, err := getCurrentID(native, fromChainid)
 	if err != nil {
-		return nil, fmt.Errorf("VerifyFromOntTx, getCurrentID error: %v", err)
+		return nil, fmt.Errorf("VerifyToOntTx, getCurrentID error: %v", err)
 	}
 	if merkleValue.RequestID > oldCurrentID {
 		err = putRemainedIDs(native, merkleValue.RequestID, oldCurrentID, fromChainid)
 		if err != nil {
-			return nil, fmt.Errorf("VerifyFromOntTx, putRemainedIDs error: %v", err)
+			return nil, fmt.Errorf("VerifyToOntTx, putRemainedIDs error: %v", err)
 		}
 		err = putCurrentID(native, merkleValue.RequestID, fromChainid)
 		if err != nil {
-			return nil, fmt.Errorf("VerifyFromOntTx, putCurrentID error: %v", err)
+			return nil, fmt.Errorf("VerifyToOntTx, putCurrentID error: %v", err)
 		}
 	} else {
 		ok, err := checkIfRemained(native, merkleValue.RequestID, fromChainid)
 		if err != nil {
-			return nil, fmt.Errorf("VerifyFromOntTx, checkIfRemained error: %v", err)
+			return nil, fmt.Errorf("VerifyToOntTx, checkIfRemained error: %v", err)
 		}
 		if !ok {
-			return nil, fmt.Errorf("VerifyFromOntTx, tx already done")
+			return nil, fmt.Errorf("VerifyToOntTx, tx already done")
 		} else {
 			err = removeRemained(native, merkleValue.RequestID, fromChainid)
 			if err != nil {
-				return nil, fmt.Errorf("VerifyFromOntTx, removeRemained error: %v", err)
+				return nil, fmt.Errorf("VerifyToOntTx, removeRemained error: %v", err)
 			}
 		}
 	}
@@ -366,11 +368,11 @@ func MakeToOntProof(native *native.NativeService, params *inf.MakeTxParam) error
 	}
 	prefix, err := utils.GetUint64Bytes(newID)
 	if err != nil {
-		return fmt.Errorf("MakeFromOntProof, GetUint64Bytes error:%s", err)
+		return fmt.Errorf("MakeToOntProof, GetUint64Bytes error:%s", err)
 	}
 	chainIDBytes, err := utils.GetUint64Bytes(params.ToChainID)
 	if err != nil {
-		return fmt.Errorf("MakeFromOntProof, get chainIDBytes error: %v", err)
+		return fmt.Errorf("MakeToOntProof, get chainIDBytes error: %v", err)
 	}
 	key := hex.EncodeToString(utils.ConcatKey(utils.CrossChainContractAddress, []byte(REQUEST), chainIDBytes, prefix))
 	notifyMakeToOntProof(native, params.ToChainID, key)
