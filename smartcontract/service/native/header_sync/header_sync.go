@@ -106,7 +106,7 @@ func SyncBlockHeader(native *native.NativeService) ([]byte, error) {
 		}
 		_, err = GetHeaderByHeight(native, header.ShardID, header.Height)
 		if err == nil {
-			continue
+			return utils.BYTE_FALSE, fmt.Errorf("SyncBlockHeader, %d, %d", header.ShardID, header.Height)
 		}
 		err = verifyHeader(native, header)
 		if err != nil {
