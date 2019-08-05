@@ -19,18 +19,19 @@
 package header_sync
 
 import (
-	"fmt"
-
 	"encoding/hex"
+	"fmt"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/merkle"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
+	"github.com/ontio/multi-chain/smartcontract/service/native/global_params"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 )
 
 const (
 	//function name
+	SYNC_GENESIS_HEADER  = "syncGenesisHeader"
 	SYNC_BLOCK_HEADER    = "syncBlockHeader"
 	SYNC_CONSENSUS_PEERS = "syncConsensusPeers"
 
@@ -51,8 +52,46 @@ func InitHeaderSync() {
 
 //Register methods of governance contract
 func RegisterHeaderSyncContract(native *native.NativeService) {
+	native.Register(SYNC_GENESIS_HEADER, SyncGenesisHeader)
 	native.Register(SYNC_BLOCK_HEADER, SyncBlockHeader)
 	native.Register(SYNC_CONSENSUS_PEERS, SyncConsensusPeers)
+}
+
+func SyncGenesisHeader(native *native.NativeService) ([]byte, error) {
+	params := new(SyncGenesisHeaderParam)
+	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("SyncGenesisHeader, contract params deserialize error: %v", err)
+	}
+
+	// get operator from database
+	operatorAddress, err := global_params.GetStorageRole(native,
+		global_params.GenerateOperatorKey(utils.ParamContractAddress))
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("SyncGenesisHeader, get admin error: %v", err)
+	}
+
+	//check witness
+	err = utils.ValidateOwner(native, operatorAddress)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("SyncGenesisHeader, checkWitness error: %v", err)
+	}
+
+	header, err := types.HeaderFromRawBytes(params.GenesisHeader)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("SyncGenesisHeader, deserialize header err: %v", err)
+	}
+	//block header storage
+	err = PutBlockHeader(native, header)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("SyncGenesisHeader, put blockHeader error: %v", err)
+	}
+
+	//consensus node pk storage
+	err = UpdateConsensusPeer(native, header, operatorAddress)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("SyncGenesisHeader, update ConsensusPeer error: %v", err)
+	}
+	return utils.BYTE_TRUE, nil
 }
 
 func SyncBlockHeader(native *native.NativeService) ([]byte, error) {

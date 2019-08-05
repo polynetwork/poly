@@ -89,3 +89,21 @@ func (this *SyncConsensusPeerParam) Deserialization(source *common.ZeroCopySourc
 	this.Proof = proof
 	return nil
 }
+
+type SyncGenesisHeaderParam struct {
+	GenesisHeader []byte
+}
+
+func (this *SyncGenesisHeaderParam) Serialization(sink *common.ZeroCopySink) error {
+	utils.EncodeVarBytes(sink, this.GenesisHeader)
+	return nil
+}
+
+func (this *SyncGenesisHeaderParam) Deserialization(source *common.ZeroCopySource) error {
+	genesisHeader, err := utils.DecodeVarBytes(source)
+	if err != nil {
+		return fmt.Errorf("utils.DecodeVarBytes, deserialize genesisHeader count error:%s", err)
+	}
+	this.GenesisHeader = genesisHeader
+	return nil
+}
