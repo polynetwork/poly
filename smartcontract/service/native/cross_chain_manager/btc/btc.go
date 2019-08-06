@@ -66,14 +66,14 @@ func (this *BTCHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 	return &inf.MakeTxParam{
 		FromChainID: params.SourceChainID,
 		ToChainID:   p.ChainId,
-		Address:     hex.EncodeToString(p.Addr),
+		ToAddress:   hex.EncodeToString(p.Addr),
 		Amount:      new(big.Int).SetInt64(p.Value),
 	}, nil
 }
 
 func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *inf.MakeTxParam) error {
 	amounts := make(map[string]int64)
-	amounts[param.Address] = param.Amount.Int64() // ??
+	amounts[param.ToAddress] = param.Amount.Int64() // ??
 	err := makeBtcTx(service, amounts)
 	if err != nil {
 		return fmt.Errorf("btc MakeTransaction, failed to make transaction: %v", err)

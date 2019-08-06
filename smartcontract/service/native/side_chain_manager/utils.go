@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/smartcontract/service/native/ont"
+	"math"
 	"strconv"
 
 	cstates "github.com/ontio/multi-chain/core/states"
@@ -67,7 +68,9 @@ func getRegisterSideChain(native *native.NativeService, chanid uint64) (*SideCha
 	if err != nil {
 		return nil, fmt.Errorf("getRegisterSideChain,get registerSideChainRequestStore error: %v", err)
 	}
-	sideChain := new(SideChain)
+	sideChain := &SideChain{
+		Chainid: math.MaxUint64,
+	}
 	if sideChainStore != nil {
 		sideChainBytes, err := cstates.GetValueFromRawStorageItem(sideChainStore)
 		if err != nil {
@@ -108,7 +111,9 @@ func GetSideChain(native *native.NativeService, chanid uint64) (*SideChain, erro
 	if err != nil {
 		return nil, fmt.Errorf("getSideChain,get registerSideChainRequestStore error: %v", err)
 	}
-	sideChain := new(SideChain)
+	sideChain := &SideChain{
+		Chainid: math.MaxUint64,
+	}
 	if sideChainStore != nil {
 		sideChainBytes, err := cstates.GetValueFromRawStorageItem(sideChainStore)
 		if err != nil {

@@ -23,6 +23,7 @@ import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
+	"math"
 )
 
 const (
@@ -76,14 +77,14 @@ func RegisterSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, getRegisterSideChain error: %v", err)
 	}
-	if registerSideChain != new(SideChain) {
+	if registerSideChain.Chainid != math.MaxUint64 {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, chainid already requested")
 	}
 	sideChain, err := GetSideChain(native, params.Chainid)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, getSideChain error: %v", err)
 	}
-	if sideChain != new(SideChain) {
+	if sideChain.Chainid != math.MaxUint64 {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, chainid already registered")
 	}
 	sideChain = &SideChain{
@@ -115,7 +116,7 @@ func ApproveRegisterSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, getRegisterSideChain error: %v", err)
 	}
-	if registerSideChain.Chainid == 0 {
+	if registerSideChain.Chainid == math.MaxUint64 {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, chainid is not requested")
 	}
 	err = putSideChain(native, registerSideChain)
@@ -144,7 +145,7 @@ func UpdateSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, getSideChain error: %v", err)
 	}
-	if sideChain.Chainid == 0 {
+	if sideChain.Chainid == math.MaxUint64 {
 		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, chainid is not registered")
 	}
 	updateSideChain := &SideChain{
@@ -176,7 +177,7 @@ func ApproveUpdateSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, getUpdateSideChain error: %v", err)
 	}
-	if sideChain.Chainid == 0 {
+	if sideChain.Chainid == math.MaxUint64 {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, chainid is not requested update")
 	}
 	err = putSideChain(native, sideChain)
@@ -202,7 +203,7 @@ func RemoveSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, getUpdateSideChain error: %v", err)
 	}
-	if sideChain.Chainid == 0 {
+	if sideChain.Chainid == math.MaxUint64 {
 		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, chainid is not registered")
 	}
 	chainidByte, err := utils.GetUint64Bytes(params.Chainid)

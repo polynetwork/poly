@@ -70,7 +70,7 @@ func (this *ONTHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 		FromChainID:         merkleValue.CreateCrossChainTxMerkle.FromChainID,
 		FromContractAddress: merkleValue.CreateCrossChainTxMerkle.FromContractAddress,
 		ToChainID:           merkleValue.CreateCrossChainTxMerkle.ToChainID,
-		Address:             merkleValue.CreateCrossChainTxMerkle.Address.ToBase58(),
+		ToAddress:           merkleValue.CreateCrossChainTxMerkle.ToAddress,
 		Amount:              new(big.Int).SetUint64(merkleValue.CreateCrossChainTxMerkle.Amount),
 	}
 	return makeTxParam, nil
@@ -138,7 +138,7 @@ func ProcessCrossChainTx(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, common.AddressFromHexString error: %v", err)
 	}
 	functionName := "unlock"
-	addr, err := common.AddressFromBase58(merkleValue.MakeTxParam.Address)
+	addr, err := common.AddressFromBase58(merkleValue.MakeTxParam.ToAddress)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, common.AddressFromBase58 error: %v", err)
 	}

@@ -55,7 +55,7 @@ func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 	ret := &inf.MakeTxParam{}
 	ret.ToChainID = proof.ToChainID
 	ret.FromChainID = params.SourceChainID
-	ret.Address = proof.ToAddress
+	ret.ToAddress = proof.ToAddress
 	//todo 2. transform the decimal if needed
 	ret.Amount = proof.Amount
 
@@ -70,7 +70,7 @@ func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *in
 		return err
 	}
 
-	bindaddr := ethComm.HexToAddress(param.Address)
+	bindaddr := ethComm.HexToAddress(param.ToAddress)
 	amount := param.Amount
 	//lockAddress := ethComm.HexToAddress(LOCKER_CONTRACT_ADDR)
 

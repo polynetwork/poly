@@ -70,7 +70,7 @@ type MakeTxParam struct {
 	FromChainID         uint64
 	FromContractAddress string
 	ToChainID           uint64
-	Address             string
+	ToAddress           string
 	Amount              *big.Int
 }
 
@@ -78,7 +78,7 @@ func (this *MakeTxParam) Serialization(sink *common.ZeroCopySink) {
 	utils.EncodeVarUint(sink, this.FromChainID)
 	utils.EncodeString(sink, this.FromContractAddress)
 	utils.EncodeVarUint(sink, this.ToChainID)
-	utils.EncodeString(sink, this.Address)
+	utils.EncodeString(sink, this.ToAddress)
 	utils.EncodeVarBytes(sink, this.Amount.Bytes())
 }
 
@@ -95,7 +95,7 @@ func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 	if err != nil {
 		return err
 	}
-	address, err := utils.DecodeString(source)
+	toAddress, err := utils.DecodeString(source)
 	if err != nil {
 		return err
 	}
@@ -107,7 +107,7 @@ func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 	this.FromChainID = fromChainID
 	this.FromContractAddress = fromContractAddress
 	this.ToChainID = toChainID
-	this.Address = address
+	this.ToAddress = toAddress
 	this.Amount = new(big.Int).SetBytes(amount)
 	return nil
 }

@@ -266,7 +266,7 @@ func MakeFromOntProof(native *native.NativeService, params *CreateCrossChainTxPa
 			FromContractAddress: native.ContextRef.CallingContext().ContractAddress.ToHexString(),
 			ToChainID:           params.ToChainID,
 			Fee:                 params.Fee,
-			Address:             params.Address,
+			ToAddress:           params.ToAddress,
 			Amount:              params.Amount,
 		},
 	}

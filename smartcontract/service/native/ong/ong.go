@@ -173,7 +173,7 @@ func Lock(native *native.NativeService) ([]byte, error) {
 	contract := native.ContextRef.CurrentContext().ContractAddress
 	address, err := common.AddressFromBase58(params.Address)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("OngLock, common.AddressFromBase58 error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("OngLock, common.AddressFromBase58 %s error: %v", params.Address, err)
 	}
 
 	//check witness
@@ -192,7 +192,7 @@ func Lock(native *native.NativeService) ([]byte, error) {
 	crossChainParam := cont.CreateCrossChainTxParam{
 		ToChainID: params.ToChainID,
 		Fee:       params.Fee,
-		Address:   address,
+		ToAddress: params.ToAddress,
 		Amount:    params.Amount,
 	}
 	sink := common.NewZeroCopySink(nil)

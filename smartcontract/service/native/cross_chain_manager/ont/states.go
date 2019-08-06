@@ -82,7 +82,7 @@ type CreateCrossChainTxMerkle struct {
 	FromContractAddress string
 	ToChainID           uint64
 	Fee                 uint64
-	Address             common.Address
+	ToAddress           string
 	Amount              uint64
 }
 
@@ -91,7 +91,7 @@ func (this *CreateCrossChainTxMerkle) Serialization(sink *common.ZeroCopySink) {
 	utils.EncodeString(sink, this.FromContractAddress)
 	utils.EncodeVarUint(sink, this.ToChainID)
 	utils.EncodeVarUint(sink, this.Fee)
-	utils.EncodeAddress(sink, this.Address)
+	utils.EncodeString(sink, this.ToAddress)
 	utils.EncodeVarUint(sink, this.Amount)
 }
 
@@ -112,9 +112,9 @@ func (this *CreateCrossChainTxMerkle) Deserialization(source *common.ZeroCopySou
 	if err != nil {
 		return fmt.Errorf("CreateCrossChainTxMerkle deserialize fee error:%s", err)
 	}
-	address, err := utils.DecodeAddress(source)
+	toAddress, err := utils.DecodeString(source)
 	if err != nil {
-		return fmt.Errorf("CreateCrossChainTxMerkle deserialize address error:%s", err)
+		return fmt.Errorf("CreateCrossChainTxMerkle deserialize toAddress error:%s", err)
 	}
 	amount, err := utils.DecodeVarUint(source)
 	if err != nil {
@@ -125,7 +125,7 @@ func (this *CreateCrossChainTxMerkle) Deserialization(source *common.ZeroCopySou
 	this.FromContractAddress = fromContractAddress
 	this.ToChainID = toChainID
 	this.Fee = fee
-	this.Address = address
+	this.ToAddress = toAddress
 	this.Amount = amount
 	return nil
 }
