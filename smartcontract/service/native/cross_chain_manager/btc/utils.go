@@ -30,7 +30,7 @@ const (
 	CONFRIMATION                 = 6
 	BTC_TX_PREFIX         string = "btctx"
 	VERIFIED_TX           string = "verified"
-	IP                    string = "192.168.203.102:50071"
+	IP                    string = "0.0.0.0:50071"//"192.168.203.102:50071"
 )
 
 var netParam = &chaincfg.TestNet3Params
@@ -98,6 +98,18 @@ type GetFeePerByteResp struct {
 	Feepb uint64 `json:"feepb"`
 }
 
+type UtxoInfo struct {
+	Outpoint string `json:"outpoint"`
+	Val int64 `json:"val"`
+	IsLock bool `json:"is_lock"`
+	Height int32 `json:"height"`
+	Script string `json:"script"`
+}
+
+type GetAllUtxosResp struct {
+	Infos []UtxoInfo `json:"infos"`
+}
+
 type ResponseWithHeader struct {
 	Action string                  `json:"action"`
 	Desc   string                  `json:"desc"`
@@ -138,6 +150,13 @@ type ResponseWithFeeRate struct {
 	Desc   string            `json:"desc"`
 	Error  uint32            `json:"error"`
 	Result GetFeePerByteResp `json:"result"`
+}
+
+type ResponseAllUtxos struct {
+	Action string            `json:"action"`
+	Desc   string            `json:"desc"`
+	Error  uint32            `json:"error"`
+	Result GetAllUtxosResp `json:"result"`
 }
 
 type RestClient struct {
@@ -369,6 +388,24 @@ func (self *RestClient) GetFeeRateFromSpv(level int) (int64, error) {
 	}
 
 	return int64(resp.Result.Feepb), nil
+}
+
+func (self *RestClient) GetAllUtxosFromSpv() ([]UtxoInfo, error) {
+	data, err := self.SendGetRequst("http://" + IP + "/api/v1/getallutxos")
+	if err != nil {
+		return nil, fmt.Errorf("Failed to send request: %v", err)
+	}
+
+	var resp ResponseAllUtxos
+	err = json.Unmarshal(data, &resp)
+	if err != nil {
+		return nil, fmt.Errorf("Failed to unmarshal resp to json: %v", err)
+	}
+	if resp.Error != 0 || resp.Desc != "SUCCESS" {
+		return nil, fmt.Errorf("Response shows failure: %s", resp.Desc)
+	}
+
+	return resp.Result.Infos, nil
 }
 
 // not sure now
