@@ -196,7 +196,9 @@ func makeBtcTx(native *native.NativeService, amounts map[string]int64) error {
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, failed to decode script to address: %v", err)
 	}
-	txIns, sum, err := NewRestClient().GetUtxosFromSpv(addr.EncodeAddress(), amountSum, FEE)
+
+	cli := NewRestClient()
+	txIns, sum, err := cli.GetUtxosFromSpv(addr.EncodeAddress(), amountSum, FEE)
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, failed to get utxo from spv: %v", err)
 	} else if sum <= 0 || len(txIns) == 0 {

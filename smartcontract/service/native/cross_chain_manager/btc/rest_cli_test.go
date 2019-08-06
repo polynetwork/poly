@@ -39,7 +39,7 @@ func TestRestClient_GetCurrentHeightFromSpv(t *testing.T) {
 
 func TestRestClient_GetUtxosFromSpv(t *testing.T) {
 	cli := NewRestClient()
-	ins, sum, err := cli.GetUtxosFromSpv("2N5cY8y9RtbbvQRWkX5zAwTPCxSZF9xEj2C", 100, 100)
+	ins, sum, err := cli.GetUtxosFromSpv("2N5cY8y9RtbbvQRWkX5zAwTPCxSZF9xEj2C", 1000, 100)
 	if err != nil {
 		t.Fatalf("Failed to get utxos: %v", err)
 	}
@@ -61,8 +61,21 @@ func TestRestClient_GetHeaderFromSpv(t *testing.T) {
 
 func TestRestClient_UnlockUtxoInSpv(t *testing.T) {
 	cli := NewRestClient()
-	err := cli.UnlockUtxoInSpv("d5b57529cc831b1eafa78452f6c6cf0f1782572e3b29a3130010334605946cca", 0)
+	err := cli.UnlockUtxoInSpv("cdb0bf482bc872292def711bd1964a95981dcde91ef772f326289c214a5b116c", 1)
+	err = cli.UnlockUtxoInSpv("974533f80f82943b26933c140ed56d4a3805167c711de61a8939160096161011", 0)
+	err = cli.UnlockUtxoInSpv("1318594c73bf8ba1597b2dd3b643ec141607180310a9eaa170b53013bd4d0db4", 0)
+	err = cli.UnlockUtxoInSpv("d5b57529cc831b1eafa78452f6c6cf0f1782572e3b29a3130010334605946cca", 0)
 	if err != nil {
 		t.Fatalf("Failed to unlock: %v", err)
 	}
+}
+
+func TestRestClient_GetFeeRateFromSpv(t *testing.T) {
+	cli := NewRestClient()
+	rate, err := cli.GetFeeRateFromSpv(0)
+	if err != nil {
+		t.Fatalf("Failed to get fee rate: %v", err)
+	}
+
+	fmt.Printf("rate is %d\n", rate)
 }

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/gcash/bchd/txscript"
-	wire_bch "github.com/gcash/bchd/wire"
 	"github.com/ontio/multi-chain/common"
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/core/store/leveldbstore"
@@ -292,7 +291,7 @@ func TestVerifyBtcTx(t *testing.T) {
 func TestMakeBtcTx(t *testing.T) {
 	service := getNativeFunc()
 	err := makeBtcTx(service, map[string]int64{
-		"mjEoyyCPsLzJ23xMX6Mti13zMyN36kzn57": 100,
+		"mjEoyyCPsLzJ23xMX6Mti13zMyN36kzn57": 10,
 	})
 	if err != nil {
 		t.Fatalf("Failed to make tx: %v", err)
@@ -302,6 +301,8 @@ func TestMakeBtcTx(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get tx: %v", err)
 	}
+
+	fmt.Printf("raw tx: %x\n", tx)
 
 	mtx := wire.NewMsgTx(wire.TxVersion)
 	err = mtx.BtcDecode(bytes.NewBuffer(tx), wire.ProtocolVersion, wire.LatestEncoding)
@@ -373,20 +374,23 @@ func TestTargetChainParam(t *testing.T) {
 	//}
 	//fmt.Println(str)
 
-	proof, err := hex.DecodeString(Proof)
-	mb := wire_bch.MsgMerkleBlock{}
-	err = mb.BchDecode(bytes.NewReader(proof), wire_bch.ProtocolVersion, wire_bch.LatestEncoding)
-	if err != nil {
-		t.Fatalf("Failed to get mb: %v", err)
-	}
-
-	//for _, hash := range mb.Hashes {
-	//	fmt.Println(hash.String())
+	//proof, err := hex.DecodeString(Proof)
+	//mb := wire_bch.MsgMerkleBlock{}
+	//err = mb.BchDecode(bytes.NewReader(proof), wire_bch.ProtocolVersion, wire_bch.LatestEncoding)
+	//if err != nil {
+	//	t.Fatalf("Failed to get mb: %v", err)
 	//}
-	fmt.Println(len(mb.Hashes))
-	for i, f := range mb.Flags {
-		fmt.Printf("No%d=%v\n", i, f)
-	}
+	//
+	////for _, hash := range mb.Hashes {
+	////	fmt.Println(hash.String())
+	////}
+	//fmt.Println(len(mb.Hashes))
+	//for i, f := range mb.Flags {
+	//	fmt.Printf("No%d=%v\n", i, f)
+	//}
+
+	s, _ := buildScript(getPubKeys(), 5)
+	fmt.Println(len(s))
 }
 
 func hexToBytes(s string) []byte {

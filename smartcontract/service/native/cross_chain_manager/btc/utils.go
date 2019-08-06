@@ -30,7 +30,7 @@ const (
 	CONFRIMATION                 = 6
 	BTC_TX_PREFIX         string = "btctx"
 	VERIFIED_TX           string = "verified"
-	IP                    string = "0.0.0.0:50071"
+	IP                    string = "192.168.203.102:50071"
 )
 
 var netParam = &chaincfg.TestNet3Params
@@ -90,6 +90,14 @@ type UnlockUtxoReq struct {
 	Index uint32 `json:"index"`
 }
 
+type GetFeePerByteReq struct {
+	Level int `json:"level"`
+}
+
+type GetFeePerByteResp struct {
+	Feepb uint64 `json:"feepb"`
+}
+
 type ResponseWithHeader struct {
 	Action string                  `json:"action"`
 	Desc   string                  `json:"desc"`
@@ -123,6 +131,13 @@ type ResponseWithWatchedAddrs struct {
 	Desc   string            `json:"desc"`
 	Error  uint32            `json:"error"`
 	Result GetAllAddressResp `json:"result"`
+}
+
+type ResponseWithFeeRate struct {
+	Action string            `json:"action"`
+	Desc   string            `json:"desc"`
+	Error  uint32            `json:"error"`
+	Result GetFeePerByteResp `json:"result"`
 }
 
 type RestClient struct {
@@ -331,6 +346,31 @@ func (self *RestClient) UnlockUtxoInSpv(hash string, index uint32) error {
 	return nil
 }
 
+func (self *RestClient) GetFeeRateFromSpv(level int) (int64, error) {
+	req, err := json.Marshal(GetFeePerByteReq{
+		Level: level,
+	})
+	if err != nil {
+		return -1, fmt.Errorf("Failed to parse parameter: %v", err)
+	}
+
+	data, err := self.SendRestRequest("http://"+IP+"/api/v1/getfeeperbyte", req)
+	if err != nil {
+		return -1, fmt.Errorf("Failed to send request: %v", err)
+	}
+
+	var resp ResponseWithFeeRate
+	err = json.Unmarshal(data, &resp)
+	if err != nil {
+		return -1, fmt.Errorf("Failed to unmarshal resp to json: %v", err)
+	}
+	if resp.Error != 0 || resp.Desc != "SUCCESS" {
+		return -1, fmt.Errorf("Response shows failure: %s", resp.Desc)
+	}
+
+	return int64(resp.Result.Feepb), nil
+}
+
 // not sure now
 type targetChainParam struct {
 	ChainId uint64
@@ -518,3 +558,39 @@ func getUnsignedTx(txIns []btcjson.TransactionInput, amounts map[string]int64, c
 
 	return mtx, nil
 }
+
+//func getTxOuts(amounts map[string]int64) ([]*wire.TxOut, error) {
+//	outs := make([]*wire.TxOut, 0)
+//	for encodedAddr, amount := range amounts {
+//		// Decode the provided address.
+//		addr, err := btcutil.DecodeAddress(encodedAddr, netParam)
+//		if err != nil {
+//			return nil, fmt.Errorf("getTxOuts, decode addr fail: %v", err)
+//		}
+//
+//		// Ensure the address is one of the supported types and that
+//		// the network encoded with the address matches the network the
+//		// server is currently on.
+//		switch addr.(type) {
+//		case *btcutil.AddressPubKeyHash:
+//		case *btcutil.AddressScriptHash:
+//		default:
+//			return nil, fmt.Errorf("getTxOuts, type of addr is not found")
+//		}
+//		if !addr.IsForNet(netParam) {
+//			return nil, fmt.Errorf("getTxOuts, addr is not for mainnet")
+//		}
+//
+//		// Create a new script which pays to the provided address.
+//		pkScript, err := txscript.PayToAddrScript(addr)
+//		if err != nil {
+//			return nil, fmt.Errorf("getTxOuts, failed to generate pay-to-address script: %v", err)
+//		}
+//
+//		txOut := wire.NewTxOut(amount, pkScript)
+//		outs = append(outs, txOut)
+//	}
+//
+//	return outs, nil
+//}
+
