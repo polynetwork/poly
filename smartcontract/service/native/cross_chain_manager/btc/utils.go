@@ -30,7 +30,7 @@ const (
 	CONFRIMATION                 = 6
 	BTC_TX_PREFIX         string = "btctx"
 	VERIFIED_TX           string = "verified"
-	IP                    string = "0.0.0.0:50071"//"192.168.203.102:50071"
+	IP                    string = "0.0.0.0:50071" //"192.168.203.102:50071"
 )
 
 var netParam = &chaincfg.TestNet3Params
@@ -100,10 +100,10 @@ type GetFeePerByteResp struct {
 
 type UtxoInfo struct {
 	Outpoint string `json:"outpoint"`
-	Val int64 `json:"val"`
-	IsLock bool `json:"is_lock"`
-	Height int32 `json:"height"`
-	Script string `json:"script"`
+	Val      int64  `json:"val"`
+	IsLock   bool   `json:"is_lock"`
+	Height   int32  `json:"height"`
+	Script   string `json:"script"`
 }
 
 type GetAllUtxosResp struct {
@@ -153,9 +153,9 @@ type ResponseWithFeeRate struct {
 }
 
 type ResponseAllUtxos struct {
-	Action string            `json:"action"`
-	Desc   string            `json:"desc"`
-	Error  uint32            `json:"error"`
+	Action string          `json:"action"`
+	Desc   string          `json:"desc"`
+	Error  uint32          `json:"error"`
 	Result GetAllUtxosResp `json:"result"`
 }
 
@@ -630,4 +630,3 @@ func getUnsignedTx(txIns []btcjson.TransactionInput, amounts map[string]int64, c
 //
 //	return outs, nil
 //}
-
