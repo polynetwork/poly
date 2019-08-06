@@ -68,7 +68,10 @@ func RegisterSideChain(native *native.NativeService) ([]byte, error) {
 	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, contract params deserialize error: %v", err)
 	}
-
+	address, err := common.AddressFromBase58(params.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, common.AddressFromBase58 error: %v", err)
+	}
 	registerSideChain, err := getRegisterSideChain(native, params.Chainid)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, getRegisterSideChain error: %v", err)
@@ -94,7 +97,7 @@ func RegisterSideChain(native *native.NativeService) ([]byte, error) {
 	}
 
 	//ong transfer
-	err = appCallTransferOng(native, params.Address, utils.GovernanceContractAddress, ONG)
+	err = appCallTransferOng(native, address, utils.GovernanceContractAddress, ONG)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("appCallTransferOng, ong transfer error: %v", err)
 	}
@@ -133,7 +136,10 @@ func UpdateSideChain(native *native.NativeService) ([]byte, error) {
 	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, contract params deserialize error: %v", err)
 	}
-
+	address, err := common.AddressFromBase58(params.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, common.AddressFromBase58 error: %v", err)
+	}
 	sideChain, err := GetSideChain(native, params.Chainid)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, getSideChain error: %v", err)
@@ -152,7 +158,7 @@ func UpdateSideChain(native *native.NativeService) ([]byte, error) {
 	}
 
 	//ong transfer
-	err = appCallTransferOng(native, params.Address, utils.GovernanceContractAddress, ONG)
+	err = appCallTransferOng(native, address, utils.GovernanceContractAddress, ONG)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("appCallTransferOng, ong transfer error: %v", err)
 	}

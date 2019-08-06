@@ -1,14 +1,14 @@
 package eth
 
 import (
+	"encoding/hex"
 	"encoding/json"
+	ethComm "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"io/ioutil"
 	"math/big"
 	"net/http"
 	"strings"
-	"encoding/hex"
-	ethComm "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 )
 
 type Proof struct {

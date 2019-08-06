@@ -25,14 +25,14 @@ import (
 )
 
 type RegisterSideChainParam struct {
-	Address      common.Address
+	Address      string
 	Chainid      uint64
 	Name         string
 	BlocksToWait uint64
 }
 
 func (this *RegisterSideChainParam) Serialization(sink *common.ZeroCopySink) error {
-	utils.EncodeAddress(sink, this.Address)
+	utils.EncodeString(sink, this.Address)
 	utils.EncodeVarUint(sink, this.Chainid)
 	utils.EncodeString(sink, this.Name)
 	utils.EncodeVarUint(sink, this.BlocksToWait)
@@ -40,7 +40,7 @@ func (this *RegisterSideChainParam) Serialization(sink *common.ZeroCopySink) err
 }
 
 func (this *RegisterSideChainParam) Deserialization(source *common.ZeroCopySource) error {
-	address, err := utils.DecodeAddress(source)
+	address, err := utils.DecodeString(source)
 	if err != nil {
 		return fmt.Errorf("utils.DecodeString, deserialize address error: %v", err)
 	}
