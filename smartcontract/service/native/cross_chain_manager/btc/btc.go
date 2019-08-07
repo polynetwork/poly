@@ -76,6 +76,7 @@ func (this *BTCHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *inf.MakeTxParam) error {
 	amounts := make(map[string]int64)
 	amounts[param.ToAddress] = param.Amount.Int64() // ??
+
 	err := makeBtcTx(service, amounts)
 	if err != nil {
 		return fmt.Errorf("btc MakeTransaction, failed to make transaction: %v", err)
@@ -173,7 +174,7 @@ func verifyBtcTx(native *native.NativeService, proof []byte, tx []byte, height u
 // Parameter `prevTxids` is the txid of the previous output of the transaction input reference,
 // `prevIndexes` contain the indexes of the output in the transaction, `amounts` is the mapping
 // of accounts and amounts in transaction's output. Return true if building transacion success.
-func makeBtcTx(native *native.NativeService, amounts map[string]int64) error {
+func makeBtcTx(service *native.NativeService, amounts map[string]int64) error {
 	if len(amounts) == 0 {
 		return fmt.Errorf("makeBtcTx, input no amount")
 	}
@@ -200,7 +201,7 @@ func makeBtcTx(native *native.NativeService, amounts map[string]int64) error {
 	}
 
 	cli := NewRestClient(IP)
-	txIns, sum, err := cli.GetUtxosFromSpv(addr.EncodeAddress(), amountSum, FEE)
+	txIns, sum, err := cli.GetUtxosFromSpv(addr.EncodeAddress(), amountSum, FEE, service.PreExec)
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, failed to get utxo from spv: %v", err)
 	} else if sum <= 0 || len(txIns) == 0 {
@@ -225,8 +226,8 @@ func makeBtcTx(native *native.NativeService, amounts map[string]int64) error {
 	}
 
 	// TODO: Define a key
-	native.CacheDB.Put([]byte(BTC_TX_PREFIX), buf.Bytes())
-	native.Notifications = append(native.Notifications,
+	service.CacheDB.Put([]byte(BTC_TX_PREFIX), buf.Bytes())
+	service.Notifications = append(service.Notifications,
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
 			States:          []interface{}{hex.EncodeToString(buf.Bytes())},

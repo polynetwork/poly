@@ -58,9 +58,10 @@ type QueryHeaderByHeightResp struct {
 }
 
 type QueryUtxosReq struct {
-	Addr   string `json:"addr"`
-	Amount int64  `json:"amount"`
-	Fee    int64  `json:"fee"`
+	Addr      string `json:"addr"`
+	Amount    int64  `json:"amount"`
+	Fee       int64  `json:"fee"`
+	IsPreExec bool   `json:"is_pre_exec"`
 }
 
 type QueryUtxosResp struct {
@@ -258,11 +259,12 @@ func (self *RestClient) GetHeaderFromSpv(height uint32) (*wire.BlockHeader, erro
 	return &header, nil
 }
 
-func (self *RestClient) GetUtxosFromSpv(addr string, amount int64, fee int64) ([]btcjson.TransactionInput, int64, error) {
+func (self *RestClient) GetUtxosFromSpv(addr string, amount int64, fee int64, isPreExec bool) ([]btcjson.TransactionInput, int64, error) {
 	query, err := json.Marshal(QueryUtxosReq{
-		Addr:   addr,
-		Amount: amount,
-		Fee:    fee,
+		Addr:      addr,
+		Amount:    amount,
+		Fee:       fee,
+		IsPreExec: isPreExec,
 	})
 	if err != nil {
 		return nil, 0, fmt.Errorf("Failed to parse parameter: %v", err)
