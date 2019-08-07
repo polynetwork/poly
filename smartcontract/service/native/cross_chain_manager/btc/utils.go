@@ -30,7 +30,7 @@ const (
 	CONFRIMATION                 = 6
 	BTC_TX_PREFIX         string = "btctx"
 	VERIFIED_TX           string = "verified"
-	IP                    string = "192.168.203.102:50071" //"0.0.0.0:50071"
+	IP                    string = "0.0.0.0:50071" //"192.168.203.102:50071"
 )
 
 var netParam = &chaincfg.TestNet3Params
