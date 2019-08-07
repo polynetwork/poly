@@ -30,7 +30,7 @@ const (
 	CONFRIMATION                 = 6
 	BTC_TX_PREFIX         string = "btctx"
 	VERIFIED_TX           string = "verified"
-	IP                    string = "0.0.0.0:50071" //"192.168.203.102:50071"
+	IP                    string = "192.168.203.102:50071" //"0.0.0.0:50071"
 )
 
 var netParam = &chaincfg.TestNet3Params
@@ -75,6 +75,10 @@ type GetCurrentHeightResp struct {
 type ChangeAddressReq struct {
 	Aciton string `json:"aciton"`
 	Addr   string `json:"addr"`
+}
+
+type BroadcastTxReq struct {
+	RawTx string `json:"raw_tx"`
 }
 
 type ChangeAddressResp struct {
@@ -164,7 +168,7 @@ type RestClient struct {
 	restClient *http.Client
 }
 
-func NewRestClient() *RestClient {
+func NewRestClient(addr string) *RestClient {
 	return &RestClient{
 		restClient: &http.Client{
 			Transport: &http.Transport{
@@ -176,6 +180,7 @@ func NewRestClient() *RestClient {
 			},
 			Timeout: time.Second * 300,
 		},
+		Addr: addr,
 	}
 }
 
@@ -225,7 +230,7 @@ func (self *RestClient) GetHeaderFromSpv(height uint32) (*wire.BlockHeader, erro
 	}
 
 	// how to config it???
-	data, err := self.SendRestRequest("http://"+IP+"/api/v1/queryheaderbyheight", query)
+	data, err := self.SendRestRequest("http://"+self.Addr+"/api/v1/queryheaderbyheight", query)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to send request: %v", err)
 	}
@@ -262,7 +267,7 @@ func (self *RestClient) GetUtxosFromSpv(addr string, amount int64, fee int64) ([
 	if err != nil {
 		return nil, 0, fmt.Errorf("Failed to parse parameter: %v", err)
 	}
-	data, err := self.SendRestRequest("http://"+IP+"/api/v1/queryutxos", query)
+	data, err := self.SendRestRequest("http://"+self.Addr+"/api/v1/queryutxos", query)
 	if err != nil {
 		return nil, 0, fmt.Errorf("Failed to send request: %v", err)
 	}
@@ -280,7 +285,7 @@ func (self *RestClient) GetUtxosFromSpv(addr string, amount int64, fee int64) ([
 }
 
 func (self *RestClient) GetCurrentHeightFromSpv() (uint32, error) {
-	data, err := self.SendGetRequst("http://" + IP + "/api/v1/getcurrentheight")
+	data, err := self.SendGetRequst("http://" + self.Addr + "/api/v1/getcurrentheight")
 	if err != nil {
 		return 0, fmt.Errorf("Failed to send request: %v", err)
 	}
@@ -305,7 +310,7 @@ func (self *RestClient) ChangeSpvWatchedAddr(addr string, action string) error {
 	if err != nil {
 		return fmt.Errorf("Failed to parse parameter: %v", err)
 	}
-	data, err := self.SendRestRequest("http://"+IP+"/api/v1/changeaddress", req)
+	data, err := self.SendRestRequest("http://"+self.Addr+"/api/v1/changeaddress", req)
 	if err != nil {
 		return fmt.Errorf("Failed to send request: %v", err)
 	}
@@ -323,7 +328,7 @@ func (self *RestClient) ChangeSpvWatchedAddr(addr string, action string) error {
 }
 
 func (self *RestClient) GetWatchedAddrsFromSpv() ([]string, error) {
-	data, err := self.SendGetRequst("http://" + IP + "/api/v1/getalladdress")
+	data, err := self.SendGetRequst("http://" + self.Addr + "/api/v1/getalladdress")
 	if err != nil {
 		return nil, fmt.Errorf("Failed to send request: %v", err)
 	}
@@ -348,7 +353,7 @@ func (self *RestClient) UnlockUtxoInSpv(hash string, index uint32) error {
 	if err != nil {
 		return fmt.Errorf("Failed to parse parameter: %v", err)
 	}
-	data, err := self.SendRestRequest("http://"+IP+"/api/v1/unlockutxo", req)
+	data, err := self.SendRestRequest("http://"+self.Addr+"/api/v1/unlockutxo", req)
 	if err != nil {
 		return fmt.Errorf("Failed to send request: %v", err)
 	}
@@ -373,7 +378,7 @@ func (self *RestClient) GetFeeRateFromSpv(level int) (int64, error) {
 		return -1, fmt.Errorf("Failed to parse parameter: %v", err)
 	}
 
-	data, err := self.SendRestRequest("http://"+IP+"/api/v1/getfeeperbyte", req)
+	data, err := self.SendRestRequest("http://"+self.Addr+"/api/v1/getfeeperbyte", req)
 	if err != nil {
 		return -1, fmt.Errorf("Failed to send request: %v", err)
 	}
@@ -391,7 +396,7 @@ func (self *RestClient) GetFeeRateFromSpv(level int) (int64, error) {
 }
 
 func (self *RestClient) GetAllUtxosFromSpv() ([]UtxoInfo, error) {
-	data, err := self.SendGetRequst("http://" + IP + "/api/v1/getallutxos")
+	data, err := self.SendGetRequst("http://" + self.Addr + "/api/v1/getallutxos")
 	if err != nil {
 		return nil, fmt.Errorf("Failed to send request: %v", err)
 	}
@@ -406,6 +411,36 @@ func (self *RestClient) GetAllUtxosFromSpv() ([]UtxoInfo, error) {
 	}
 
 	return resp.Result.Infos, nil
+}
+
+func (self *RestClient) BroadcastTxBySpv(mtx *wire.MsgTx) error {
+	var buf bytes.Buffer
+	err := mtx.BtcEncode(&buf, wire.ProtocolVersion, wire.LatestEncoding)
+	if err != nil {
+		return err
+	}
+	req, err := json.Marshal(BroadcastTxReq{
+		RawTx: hex.EncodeToString(buf.Bytes()),
+	})
+	if err != nil {
+		return fmt.Errorf("Failed to parse parameter: %v", err)
+	}
+
+	data, err := self.SendRestRequest("http://"+self.Addr+"/api/v1/broadcasttx", req)
+	if err != nil {
+		return fmt.Errorf("Failed to send request: %v", err)
+	}
+
+	var resp Response
+	err = json.Unmarshal(data, &resp)
+	if err != nil {
+		return fmt.Errorf("Failed to unmarshal resp to json: %v", err)
+	}
+	if resp.Error != 0 || resp.Desc != "SUCCESS" {
+		return fmt.Errorf("Response shows failure: %s", resp.Desc)
+	}
+
+	return nil
 }
 
 // not sure now

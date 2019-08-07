@@ -2,9 +2,11 @@ package btc
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/btcsuite/btcutil/base58"
 	"github.com/gcash/bchd/txscript"
 	"github.com/ontio/multi-chain/common"
 	cstates "github.com/ontio/multi-chain/core/states"
@@ -18,10 +20,10 @@ import (
 	"testing"
 )
 
-var Height = uint32(1571626)
-var Proof = "00000020c60a7dbed205d1e66c1858a58a4a6b810495a57d529ff5f814010000000000008b70b1dcd77ee7d9faef2f79a1943371621f4e67acd3dcf83e0349aab0b1c5822732405dffff001dae137c5d900000000967e5d59f9b3aea1dacdb50321dbdbd38404fcde592c08edb5ec25d8910ee161b97ac69bea21159a411690ca2e89ea9a1c87fb9dfc1bd6a55cb7d238eb7c21d8dca6c94054633100013a3293b2e5782170fcfc6f65284a7af1e1b83cc2975b5d5a4d13efb1fc25a91a6dd8af7a5e1a624d7641118c3e16b9a9258aa49f7c3cde31adaecb1943d4f432e751f93bf58481fd67b753ca07aab04823e0e5abc515b36c298305f40a432b0559ca74aab15ae5ff77a24da5c177d8308cb5f38c981ed25de8c82c5fd94dfb81cb4cf9685e39abbae8b41327a8b0542ae6810b87d45237adb9f21077f3151a651ac47501ee0b5b8097c1bb8508c69e7eaae359586274d8c77b7d42a3c113f0d9e62d21953e30085b751173ace8abbb16905fed55b3f041503f70600"
+var Height = uint32(1572760)
+var Proof = "000000204149a82a4db84c25eabdd220ae55e568f3332f9a9d6bcc21be8d010000000000f783cb176b1c29fcb191eeb7299a105fc5db9a42be7cec34d08b8d819bb64fe44d1c495d71a5021a2ad64e1e26000000077702820166697756300bb36b2268ff36d93bbe63d09d42b42c7eb52a06aa9153320007b74b0935cbd73dd85deb23a2cc2268514e72d3795b563db1f77f8503aac3690bf489db8b0f3630a0f50a6767790c6f178d1027385f14d7e70ce2622a4a125da8708c3ddfb554fd8a636152007ca6f7ad7251c2514a07ea19a3718fb6b464259f0e6b7b06e34ae8f6c2e54d4d10c603cda1d2c1ebaf093c074e5b51e3a131b237e55e259bf74174441256a61f9d62d250d06ddcec3f6f94a3f6f43e3e3e59a4fc0e7c7dc59b926c2de2f4e9176ffbf7545e17b763cdc962d829500c321002bf00"
 var Header = "00000020c60a7dbed205d1e66c1858a58a4a6b810495a57d529ff5f814010000000000008b70b1dcd77ee7d9faef2f79a1943371621f4e67acd3dcf83e0349aab0b1c5822732405dffff001dae137c5d"
-var RawTxStr = "01000000013981ddca291cc22bac64ddfb5000e1f0cc3a44744d46c75bcb7ebc16dd85e552020000006a47304402206d5a299ab1e7e69b5c051581a6a3cf0e1ea4cd93354b6676874c5ac59a08f07b02207ff679e76507162890ea51f7b215f999562a3b912c6eb89a3667dcaca27e2dc9012103128a2c4525179e47f38cf3fefca37a61548ca4610255b3fb4ee86de2d3e80c0fffffffff03d00700000000000017a91487a9652e9b396545598c0fc72cb5a98848bf93d38700000000000000002c6a2a66000000000000000100000000000003e86f28d2e8cee08857f569e5a1b147c5d5e87339e081b5ae5dfa60130f00000000001976a91428d2e8cee08857f569e5a1b147c5d5e87339e08188ac00000000"
+var RawTxStr = "0100000001ba32eb944a29e6c0d26189cc0cc67c5bd34d48ba876de114255bb6e3284ea7d1000000006a473044022040f94d2f640377d28f6aa0176477d0924c13a4772d1344c824ed69aac0d8c48b02200f9d475ff9f877a37b7d3e418f9cca6c0cb1909d3aa16361fd256c7aa05f80e9012103128a2c4525179e47f38cf3fefca37a61548ca4610255b3fb4ee86de2d3e80c0fffffffff0300350c000000000017a91487a9652e9b396545598c0fc72cb5a98848bf93d38700000000000000002c6a2a66000000000000000200000000000003e81727e090b158ee5c69c7e46076a996c4bd6159286ef9621225a0860100000000001976a91428d2e8cee08857f569e5a1b147c5d5e87339e08188ac00000000"
 
 var addr = "mjEoyyCPsLzJ23xMX6Mti13zMyN36kzn57"
 var privkey = "cRRMYvoHPNQu1tCz4ajPxytBVc2SN6GWLAVuyjzm4MVwyqZVrAcX"
@@ -75,7 +77,7 @@ func TestVerifyBtcTx(t *testing.T) {
 			service: func() *native.NativeService {
 				service := getNativeFunc()
 				sideChain := &side_chain_manager.SideChain{
-					Chainid:      1,
+					Chainid:      2,
 					Name:         "ONT",
 					BlocksToWait: 6,
 				}
@@ -275,7 +277,8 @@ func TestVerifyBtcTx(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		isPassed, _, err := verifyBtcTx(test.service, test.proof, test.tx, test.height)
+		isPassed, cp, err := verifyBtcTx(test.service, test.proof, test.tx, test.height)
+
 		if test.isPositive && (!isPassed || err != nil) {
 			t.Fatalf("Failed to verify this positive case: %s-%v", test.name, err)
 		} else if !test.isPositive && (isPassed || err == nil) {
@@ -285,6 +288,12 @@ func TestVerifyBtcTx(t *testing.T) {
 		if !test.isPositive {
 			fmt.Printf("negative case: %s, error is %v", test.name, err)
 		}
+
+		addr := base58.Encode(cp.Addr)
+		val := cp.Value
+		cid := cp.ChainId
+		fee := cp.Fee
+		fmt.Printf("addr: %s, value: %d, chainId: %d, fee: %d\n", addr, val, cid, fee)
 	}
 }
 
@@ -324,73 +333,33 @@ func TestMakeBtcTx(t *testing.T) {
 }
 
 func TestTargetChainParam(t *testing.T) {
-	//flag := []byte{OP_RETURN_SCRIPT_FLAG}
-	//chainId := make([]byte, 8)
-	//binary.BigEndian.PutUint64(chainId, uint64(1))
-	//fee := make([]byte, 8)
-	//binary.BigEndian.PutUint64(fee, 100000)
-	//addrStr := "AXEJrpNMUhAvRo9ETbzWqAVUBpXXeAFY9u"
-	//addr := base58.Decode(addrStr)
-	//
-	//data := append(append(append(flag, chainId...), fee...), addr...)
-	//s, err := txscript.NullDataScript(data)
-	//if err != nil {
-	//	t.Fatalf("Failed to build script: %v", err)
-	//}
-	//
-	//var param targetChainParam
-	//out := &wire.TxOut{
-	//	Value:    0,
-	//	PkScript: s,
-	//}
-	//err = param.resolve(1e10, out)
-	//if err != nil {
-	//	t.Fatalf("Failed to resolve param: %v", err)
-	//}
-	//
-	//if param.ChainId != 1 || param.Fee != 100000 || !bytes.Equal(param.Addr, addr) {
-	//	t.Fatal("wrong param")
-	//}
+	flag := []byte{OP_RETURN_SCRIPT_FLAG}
+	chainId := make([]byte, 8)
+	binary.BigEndian.PutUint64(chainId, uint64(1))
+	fee := make([]byte, 8)
+	binary.BigEndian.PutUint64(fee, 100000)
+	addrStr := "AXEJrpNMUhAvRo9ETbzWqAVUBpXXeAFY9u"
+	addr := base58.Decode(addrStr)
 
-	//s, err := buildScript(getPubKeys(), 5)
-	//if err != nil {
-	//	t.Fatalf("FAiled to build: %v", err)
-	//}
-	//
-	//addr, err := btcutil.NewAddressScriptHash(s, &chaincfg.TestNet3Params)
-	//if err != nil {
-	//	t.Fatalf("Failed to get addr: %v", err)
-	//}
-	//
-	//fmt.Println(addr.EncodeAddress())
-	//
-	//sc, err := txscript.PayToAddrScript(addr)
-	//if err != nil {
-	//	t.Fatalf("Failed to get script: %v", err)
-	//}
-	//str, err := txscript.DisasmString(sc)
-	//if err != nil {
-	//	t.Fatalf("Failed to disasm: %v", err)
-	//}
-	//fmt.Println(str)
+	data := append(append(append(flag, chainId...), fee...), addr...)
+	s, err := txscript.NullDataScript(data)
+	if err != nil {
+		t.Fatalf("Failed to build script: %v", err)
+	}
 
-	//proof, err := hex.DecodeString(Proof)
-	//mb := wire_bch.MsgMerkleBlock{}
-	//err = mb.BchDecode(bytes.NewReader(proof), wire_bch.ProtocolVersion, wire_bch.LatestEncoding)
-	//if err != nil {
-	//	t.Fatalf("Failed to get mb: %v", err)
-	//}
-	//
-	////for _, hash := range mb.Hashes {
-	////	fmt.Println(hash.String())
-	////}
-	//fmt.Println(len(mb.Hashes))
-	//for i, f := range mb.Flags {
-	//	fmt.Printf("No%d=%v\n", i, f)
-	//}
+	var param targetChainParam
+	out := &wire.TxOut{
+		Value:    0,
+		PkScript: s,
+	}
+	err = param.resolve(1e10, out)
+	if err != nil {
+		t.Fatalf("Failed to resolve param: %v", err)
+	}
 
-	s, _ := buildScript(getPubKeys(), 5)
-	fmt.Println(len(s))
+	if param.ChainId != 1 || param.Fee != 100000 || !bytes.Equal(param.Addr, addr) {
+		t.Fatal("wrong param")
+	}
 }
 
 func hexToBytes(s string) []byte {

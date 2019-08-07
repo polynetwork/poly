@@ -27,9 +27,11 @@ import (
 	wire_bch "github.com/gcash/bchd/wire"
 	"github.com/gcash/bchutil/merkleblock"
 	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/smartcontract/event"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/inf"
 	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
+	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 	"math/big"
 )
 
@@ -85,7 +87,7 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *in
 // Firstly, calculate the merkleRoot from input `proof`; Then get header.MerkleRoot
 // by a spv client and check if they are equal.
 func verifyBtcTx(native *native.NativeService, proof []byte, tx []byte, height uint32) (bool, *targetChainParam, error) {
-	cli := NewRestClient()
+	cli := NewRestClient(IP)
 	besth, err := cli.GetCurrentHeightFromSpv()
 	if err != nil {
 		return false, nil, fmt.Errorf("verifyBtcTx, failed to get current height from spv: %v", err)
@@ -197,7 +199,7 @@ func makeBtcTx(native *native.NativeService, amounts map[string]int64) error {
 		return fmt.Errorf("makeBtcTx, failed to decode script to address: %v", err)
 	}
 
-	cli := NewRestClient()
+	cli := NewRestClient(IP)
 	txIns, sum, err := cli.GetUtxosFromSpv(addr.EncodeAddress(), amountSum, FEE)
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, failed to get utxo from spv: %v", err)
@@ -224,5 +226,10 @@ func makeBtcTx(native *native.NativeService, amounts map[string]int64) error {
 
 	// TODO: Define a key
 	native.CacheDB.Put([]byte(BTC_TX_PREFIX), buf.Bytes())
+	native.Notifications = append(native.Notifications,
+		&event.NotifyEventInfo{
+			ContractAddress: utils.CrossChainManagerContractAddress,
+			States:          []interface{}{hex.EncodeToString(buf.Bytes())},
+		})
 	return nil
 }
