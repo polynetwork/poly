@@ -19,6 +19,7 @@ type EntranceParam struct {
 	Proof          string `json:"proof"`
 	RelayerAddress string `json:"relayerAddress"`
 	TargetChainID  uint64 `json:"targetChainId"`
+	Key            string `json:"key"`
 }
 
 func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error {

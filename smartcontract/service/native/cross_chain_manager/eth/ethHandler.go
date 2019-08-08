@@ -1,7 +1,6 @@
 package eth
 
 import (
-	"bytes"
 	"encoding/hex"
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/abi"
@@ -31,27 +30,27 @@ func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 		return nil, fmt.Errorf("Verify, contract params deserialize error: %v", err)
 	}
 
-	proof := &Proof{}
-	if err := proof.Deserialize(params.Proof); err != nil {
-		return nil, fmt.Errorf("Verify, eth proof deserialize error: %v", err)
-	}
-
 	blockdata, err := GetEthBlockByNumber(params.Height)
 	if err != nil {
 		return nil, fmt.Errorf("Verify, GetEthBlockByNumber error:%v", err)
 	}
 	//todo 1. verify the proof with header
 	//determine where the k and v from
-	k := []byte("k")
-	v := []byte("v")
+	k := []byte(params.Key)
 
-	proofresult, err := verifyMerkleProof(params.Proof, k, v, blockdata)
+	proofresult, err := verifyMerkleProof(params.Proof, k, blockdata)
 	if err != nil {
 		return nil, fmt.Errorf("Verify, verifyMerkleProof error:%v", err)
 	}
-	if !proofresult {
+	if proofresult == nil {
 		return nil, fmt.Errorf("Verify, verifyMerkleProof failed!")
 	}
+
+	proof := &Proof{}
+	if err := proof.Deserialize(params.Proof); err != nil {
+		return nil, fmt.Errorf("Verify, eth proof deserialize error: %v", err)
+	}
+
 	ret := &inf.MakeTxParam{}
 	ret.ToChainID = proof.ToChainID
 	ret.FromChainID = params.SourceChainID
@@ -92,30 +91,26 @@ func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *in
 	return nil
 }
 
-func verifyMerkleProof(proof string, key []byte, value []byte, blockdata *EthBlock) (bool, error) {
+func verifyMerkleProof(proof string, key []byte, blockdata *EthBlock) ([]byte, error) {
 	//todo add verify logic here
 	proofdata, err := hex.DecodeString(proof)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	nodelist := new(light.NodeList)
 
 	err = rlp.DecodeBytes(proofdata, nodelist)
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
 	roothash := ethComm.HexToHash(blockdata.StateRoot)
 
 	val, _, err := trie.VerifyProof(roothash, key, nodelist.NodeSet())
 	if err != nil {
-		return false, err
+		return nil, err
 	}
 
-	if !bytes.Equal(val, value) {
-		return false, nil
-	}
-
-	return true, nil
+	return val, nil
 }
