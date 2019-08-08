@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strings"
+	"math/big"
+	"github.com/ethereum/go-ethereum/common"
 )
 
 type EthBlock struct {
@@ -44,6 +46,13 @@ type Request struct {
 	Params  []interface{} `json:"params"`
 	Id      int           `json:"id"`
 	JsonRpc string        `json:"jsonrpc"`
+}
+
+type ProofAccount struct {
+	Nounce *big.Int
+	Balance *big.Int
+	Storage common.Hash
+	Codehash common.Hash
 }
 
 func GetEthBlockByNumber(num uint32) (*EthBlock, error) {

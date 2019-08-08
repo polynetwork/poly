@@ -94,7 +94,7 @@ func MappingKeyAt(position1 string, position2 string) (error, []byte) {
 	return nil, key
 }
 
-func (this *Proof) Deserialize(raw string) error {
+func (this *Proof) Deserialize(raw []byte) error {
 	//todo add deserialize logic
 	return nil
 }

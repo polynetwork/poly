@@ -6,7 +6,6 @@ import (
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ethComm "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/light"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
@@ -14,6 +13,11 @@ import (
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/inf"
 	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
 	"strings"
+	"encoding/json"
+	"github.com/ethereum/go-ethereum/crypto"
+	"math/big"
+	"github.com/ethereum/go-ethereum/rlp"
+	"bytes"
 )
 
 type ETHHandler struct {
@@ -36,9 +40,7 @@ func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 	}
 	//todo 1. verify the proof with header
 	//determine where the k and v from
-	k := []byte(params.Key)
-
-	proofresult, err := verifyMerkleProof(params.Proof, k, blockdata)
+	proofresult, err := verifyMerkleProof(params.Proof, blockdata)
 	if err != nil {
 		return nil, fmt.Errorf("Verify, verifyMerkleProof error:%v", err)
 	}
@@ -46,8 +48,10 @@ func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 		return nil, fmt.Errorf("Verify, verifyMerkleProof failed!")
 	}
 
+
+
 	proof := &Proof{}
-	if err := proof.Deserialize(params.Proof); err != nil {
+	if err := proof.Deserialize(proofresult); err != nil {
 		return nil, fmt.Errorf("Verify, eth proof deserialize error: %v", err)
 	}
 
@@ -91,26 +95,86 @@ func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *in
 	return nil
 }
 
-func verifyMerkleProof(proof string, key []byte, blockdata *EthBlock) ([]byte, error) {
-	//todo add verify logic here
+func verifyMerkleProof(proof string, blockdata *EthBlock) ([]byte, error) {
+	//1. decode proof from json
+
 	proofdata, err := hex.DecodeString(proof)
 	if err != nil {
 		return nil, err
 	}
 
-	nodelist := new(light.NodeList)
-
-	err = rlp.DecodeBytes(proofdata, nodelist)
+	ethproof := new(ETHProof)
+	err = json.Unmarshal(proofdata,ethproof)
 	if err != nil {
 		return nil, err
 	}
 
-	roothash := ethComm.HexToHash(blockdata.StateRoot)
+	//2. verify account
+	nodelist := new(light.NodeList)
 
-	val, _, err := trie.VerifyProof(roothash, key, nodelist.NodeSet())
-	if err != nil {
+	for _,s:= range ethproof.AccountProof{
+		p :=  replace0x(s)
+		nodelist.Put(nil,ethComm.Hex2Bytes(p))
+	}
+	ns := nodelist.NodeSet()
+
+	acctkey := crypto.Keccak256(ethComm.Hex2Bytes(replace0x(ethproof.Address)))
+	acctval,_,err:=trie.VerifyProof(ethComm.HexToHash(replace0x(blockdata.StateRoot)),acctkey,ns)
+	if err != nil{
 		return nil, err
+	}
+
+	nounce := new(big.Int)
+	err = rlp.DecodeBytes(ethComm.Hex2Bytes( replace0x(ethproof.Nonce)),nounce)
+	if err != nil{
+		return nil,err
+	}
+	balance := new(big.Int)
+	err = rlp.DecodeBytes(ethComm.Hex2Bytes( replace0x(ethproof.Balance)),balance)
+	if err != nil{
+		return nil,err
+	}
+
+	storagehash := ethComm.HexToHash(replace0x(ethproof.StorageHash))
+	codehash := ethComm.HexToHash(replace0x(ethproof.CodeHash))
+	//construct the account value
+	acct := &ProofAccount{
+		Nounce:nounce,
+		Balance:balance,
+		Storage:storagehash,
+		Codehash:codehash,
+	}
+	acctrlp ,err:= rlp.EncodeToBytes(acct)
+	if err != nil{
+		return nil,err
+	}
+	if !bytes.Equal(acctrlp,acctval){
+		return nil, fmt.Errorf("[verifyMerkleProof]: verify account proof failed, wanted:%v, get:%v",acctrlp,acctval)
+	}
+
+	//3.verify storage proof
+	nodelist = new(light.NodeList)
+
+	if len(ethproof.StorageProofs) != 1 {
+		return nil,fmt.Errorf("[verifyMerkleProof]: storage proof fmt error")
+	}
+
+	sp := ethproof.StorageProofs[0]
+	storagekey := crypto.Keccak256(ethComm.Hex2Bytes(replace0x(sp.Key)))
+	for _, prf := range sp.Proof{
+		nodelist.Put(nil,ethComm.Hex2Bytes(replace0x(prf)))
+	}
+
+	ns = nodelist.NodeSet()
+	val, _, err := trie.VerifyProof(storagehash, storagekey, ns)
+	if err != nil{
+		return nil,err
 	}
 
 	return val, nil
+}
+
+func replace0x(s string) string {
+	p :=  strings.Replace(s,"0x","",0)
+	return strings.Replace(p,"0X","",0)
 }
