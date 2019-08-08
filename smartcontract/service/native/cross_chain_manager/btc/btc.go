@@ -35,6 +35,8 @@ import (
 	"math/big"
 )
 
+const BTC_ADDRESS = "btc"
+
 type BTCHandler struct {
 }
 
@@ -66,10 +68,11 @@ func (this *BTCHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 	}
 
 	return &inf.MakeTxParam{
-		FromChainID: params.SourceChainID,
-		ToChainID:   p.ChainId,
-		ToAddress:   hex.EncodeToString(p.Addr),
-		Amount:      new(big.Int).SetInt64(p.Value),
+		FromChainID:         params.SourceChainID,
+		FromContractAddress: BTC_ADDRESS,
+		ToChainID:           p.ChainId,
+		ToAddress:           hex.EncodeToString(p.Addr),
+		Amount:              new(big.Int).SetInt64(p.Value),
 	}, nil
 }
 
