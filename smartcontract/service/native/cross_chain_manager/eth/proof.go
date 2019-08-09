@@ -3,12 +3,13 @@ package eth
 import (
 	"encoding/hex"
 	"encoding/json"
-	ethComm "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
 	"io/ioutil"
 	"math/big"
 	"net/http"
 	"strings"
+
+	ethComm "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 )
 
 type Proof struct {
@@ -22,7 +23,7 @@ type Proof struct {
 
 type StorageProof struct {
 	Key   string   `json:"key"`
-	Value string   `json:"value"`
+	Value *big.Int `json:"value"`
 	Proof []string `json:"proof"`
 }
 
