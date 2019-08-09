@@ -12,6 +12,7 @@ import (
 	"encoding/hex"
 	"math/big"
 	"github.com/stretchr/testify/assert"
+	"github.com/Workiva/go-datastructures/threadsafe/err"
 )
 
 func TestGetEthBlockByNumber(t *testing.T) {
@@ -286,7 +287,7 @@ func TestAddress(t *testing.T){
 	//p1 := "1234567890123456789012345678901234567890"
 	//p1 := "2345678901234567890123456789012345678901"
 	p2 := "01"
-	err, v := MappingKeyAt(p1,p2)
+	v, err := MappingKeyAt(p1,p2)
 	if err != nil{
 		fmt.Printf("err:%s\n",err.Error())
 	}

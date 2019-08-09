@@ -77,22 +77,22 @@ func GetProof() ([]byte, error) {
 	return response.Result, nil
 }
 
-func MappingKeyAt(position1 string, position2 string) (error, []byte) {
+func MappingKeyAt(position1 string, position2 string) ([]byte, error) {
 
 	p1, err := hex.DecodeString(position1)
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	p2, err := hex.DecodeString(position2)
 
 	if err != nil {
-		return err, nil
+		return nil, err
 	}
 
 	key := crypto.Keccak256(ethComm.LeftPadBytes(p1, 32), ethComm.LeftPadBytes(p2, 32))
 
-	return nil, key
+	return key, nil
 }
 
 func (this *Proof) Deserialize(raw []byte) error {
