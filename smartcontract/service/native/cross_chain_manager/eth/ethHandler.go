@@ -28,7 +28,6 @@ func NewETHHandler() *ETHHandler {
 }
 
 func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam, error) {
-	//todo add logic
 	params := new(inf.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.Input)); err != nil {
 		return nil, fmt.Errorf("Verify, contract params deserialize error: %v", err)
@@ -38,9 +37,33 @@ func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 	if err != nil {
 		return nil, fmt.Errorf("Verify, GetEthBlockByNumber error:%v", err)
 	}
+
+	proofdata, err := hex.DecodeString(params.Proof)
+	if err != nil {
+		return nil, err
+	}
+
+	ethproof := new(ETHProof)
+	err = json.Unmarshal(proofdata,ethproof)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(ethproof.StorageProofs) != 1 {
+		return nil, fmt.Errorf("[Verify] incorrect proof format")
+	}
+	keybytes := ethComm.Hex2Bytes( inf.Key_prefix_ETH + replace0x(ethproof.StorageProofs[0].Key))
+	val ,err := service.CacheDB.Get(keybytes)
+	if err != nil{
+		return nil,err
+	}
+	if val != nil{
+		return nil,fmt.Errorf("[Verify] key:%s already solved ",ethproof.StorageProofs[0].Key)
+	}
+
 	//todo 1. verify the proof with header
 	//determine where the k and v from
-	proofresult, err := verifyMerkleProof(params.Proof, blockdata)
+	proofresult, err := verifyMerkleProof(ethproof, blockdata)
 	if err != nil {
 		return nil, fmt.Errorf("Verify, verifyMerkleProof error:%v", err)
 	}
@@ -48,18 +71,18 @@ func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 		return nil, fmt.Errorf("Verify, verifyMerkleProof failed!")
 	}
 
-
-
 	proof := &Proof{}
 	if err := proof.Deserialize(proofresult); err != nil {
 		return nil, fmt.Errorf("Verify, eth proof deserialize error: %v", err)
 	}
 
+	//todo does the proof data too big??
+	service.CacheDB.Put(keybytes,proofdata)
+
 	ret := &inf.MakeTxParam{}
 	ret.ToChainID = proof.ToChainID
 	ret.FromChainID = params.SourceChainID
 	ret.ToAddress = proof.ToAddress
-	//todo 2. transform the decimal if needed
 	ret.Amount = proof.Amount
 
 	return ret, nil
@@ -95,21 +118,9 @@ func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *in
 	return nil
 }
 
-func verifyMerkleProof(proof string, blockdata *EthBlock) ([]byte, error) {
-	//1. decode proof from json
+func verifyMerkleProof(ethproof *ETHProof, blockdata *EthBlock) ([]byte, error) {
 
-	proofdata, err := hex.DecodeString(proof)
-	if err != nil {
-		return nil, err
-	}
-
-	ethproof := new(ETHProof)
-	err = json.Unmarshal(proofdata,ethproof)
-	if err != nil {
-		return nil, err
-	}
-
-	//2. verify account
+	//1. prepare verify account
 	nodelist := new(light.NodeList)
 
 	for _,s:= range ethproof.AccountProof{
@@ -119,6 +130,8 @@ func verifyMerkleProof(proof string, blockdata *EthBlock) ([]byte, error) {
 	ns := nodelist.NodeSet()
 
 	acctkey := crypto.Keccak256(ethComm.Hex2Bytes(replace0x(ethproof.Address)))
+
+	//2. verify account proof
 	acctval,_,err:=trie.VerifyProof(ethComm.HexToHash(replace0x(blockdata.StateRoot)),acctkey,ns)
 	if err != nil{
 		return nil, err
