@@ -7,11 +7,10 @@ import (
 	"math/big"
 )
 
-var(
-	Key_prefix_BTC          = "01"
-	Key_prefix_ETH          = "02"
+var (
+	Key_prefix_BTC = "01"
+	Key_prefix_ETH = "02"
 )
-
 
 type ChainHandler interface {
 	Verify(service *native.NativeService) (*MakeTxParam, error)

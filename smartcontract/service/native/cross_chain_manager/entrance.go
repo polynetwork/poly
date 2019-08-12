@@ -17,9 +17,6 @@ const (
 	RegisterChainHandler_ID = "RegisterChainHandler"
 )
 
-
-
-
 type CrossChainHandler func(native *native.NativeService) ([]byte, error)
 
 //var mapping = make(map[uint64]CrossChainHandler)

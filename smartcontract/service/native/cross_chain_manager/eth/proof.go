@@ -10,6 +10,7 @@ import (
 
 	ethComm "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"bytes"
 )
 
 type Proof struct {
@@ -23,7 +24,7 @@ type Proof struct {
 
 type StorageProof struct {
 	Key   string   `json:"key"`
-	Value *big.Int `json:"value"`
+	Value string   `json:"value"`
 	Proof []string `json:"proof"`
 }
 
@@ -36,6 +37,25 @@ type ETHProof struct {
 	AccountProof  []string       `json:"accountProof"`
 	StorageProofs []StorageProof `json:"storageProof"`
 }
+
+func (this *ETHProof) String() string{
+	bs := bytes.NewBuffer([]byte("ETHProof:\n"))
+	bs.WriteString("AccountProof:\n")
+	for _, a:=range this.AccountProof{
+		bs.WriteString(a+"\n")
+	}
+	bs.WriteString("StorageProof:\n")
+	for _,s :=range this.StorageProofs{
+		bs.WriteString(s.Key+"\n")
+		bs.WriteString("proofs:\n[")
+		bs.WriteString(strings.Join(s.Proof,"\n"))
+		bs.WriteString("]\n")
+
+		bs.WriteString(s.Value+"\n")
+	}
+	return bs.String()
+}
+
 
 type RpcResponse struct {
 	JsonRpc string `json:"jsonrpc"`

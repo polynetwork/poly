@@ -1,23 +1,23 @@
 package eth
 
 import (
+	"bytes"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ethComm "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/light"
+	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/eth/locker"
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/inf"
 	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
-	"strings"
-	"encoding/json"
-	"github.com/ethereum/go-ethereum/crypto"
 	"math/big"
-	"github.com/ethereum/go-ethereum/rlp"
-	"bytes"
+	"strings"
 )
 
 type ETHHandler struct {
@@ -44,7 +44,7 @@ func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 	}
 
 	ethproof := new(ETHProof)
-	err = json.Unmarshal(proofdata,ethproof)
+	err = json.Unmarshal(proofdata, ethproof)
 	if err != nil {
 		return nil, err
 	}
@@ -52,15 +52,15 @@ func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 	if len(ethproof.StorageProofs) != 1 {
 		return nil, fmt.Errorf("[Verify] incorrect proof format")
 	}
-	keybytes := ethComm.Hex2Bytes( inf.Key_prefix_ETH + replace0x(ethproof.StorageProofs[0].Key))
-	val ,err := service.CacheDB.Get(keybytes)
-	if err != nil{
-		return nil,err
+	keybytes := ethComm.Hex2Bytes(inf.Key_prefix_ETH + replace0x(ethproof.StorageProofs[0].Key))
+	val, err := service.CacheDB.Get(keybytes)
+	if err != nil {
+		return nil, err
 	}
-	if val != nil{
-		return nil,fmt.Errorf("[Verify] key:%s already solved ",ethproof.StorageProofs[0].Key)
+	if val != nil {
+		return nil, fmt.Errorf("[Verify] key:%s already solved ", ethproof.StorageProofs[0].Key)
 	}
-
+	fmt.Printf("ethproof:%v\n",ethproof)
 	//todo 1. verify the proof with header
 	//determine where the k and v from
 	proofresult, err := verifyMerkleProof(ethproof, blockdata)
@@ -77,7 +77,7 @@ func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 	}
 
 	//todo does the proof data too big??
-	service.CacheDB.Put(keybytes,proofdata)
+	service.CacheDB.Put(keybytes, proofdata)
 
 	ret := &inf.MakeTxParam{}
 	ret.ToChainID = proof.ToChainID
@@ -123,71 +123,74 @@ func verifyMerkleProof(ethproof *ETHProof, blockdata *EthBlock) ([]byte, error) 
 	//1. prepare verify account
 	nodelist := new(light.NodeList)
 
-	for _,s:= range ethproof.AccountProof{
-		p :=  replace0x(s)
-		nodelist.Put(nil,ethComm.Hex2Bytes(p))
+	for _, s := range ethproof.AccountProof {
+		p := replace0x(s)
+		nodelist.Put(nil, ethComm.Hex2Bytes(p))
 	}
 	ns := nodelist.NodeSet()
 
 	acctkey := crypto.Keccak256(ethComm.Hex2Bytes(replace0x(ethproof.Address)))
 
 	//2. verify account proof
-	acctval,_,err:=trie.VerifyProof(ethComm.HexToHash(replace0x(blockdata.StateRoot)),acctkey,ns)
-	if err != nil{
+	acctval, _, err := trie.VerifyProof(ethComm.HexToHash(replace0x(blockdata.StateRoot)), acctkey, ns)
+	if err != nil {
+		fmt.Printf("[verifyMerkleProof]verify account err:%s\n",err.Error())
 		return nil, err
 	}
 
 	nounce := new(big.Int)
-	err = rlp.DecodeBytes(ethComm.Hex2Bytes( replace0x(ethproof.Nonce)),nounce)
-	if err != nil{
-		return nil,err
+	_,f := nounce.SetString(replace0x(ethproof.Nonce),16)
+	if !f{
+		fmt.Printf("error format of nounce:%s\n",ethproof.Nonce)
+		return nil,fmt.Errorf("error format of nounce:%s\n",ethproof.Nonce)
 	}
+
 	balance := new(big.Int)
-	err = rlp.DecodeBytes(ethComm.Hex2Bytes( replace0x(ethproof.Balance)),balance)
-	if err != nil{
-		return nil,err
+	_,f = balance.SetString(replace0x(ethproof.Balance),16)
+	if !f{
+		fmt.Printf("error format of Balance:%s\n",ethproof.Balance)
+		return nil,fmt.Errorf("error format of Balance:%s\n",ethproof.Balance)
 	}
 
 	storagehash := ethComm.HexToHash(replace0x(ethproof.StorageHash))
 	codehash := ethComm.HexToHash(replace0x(ethproof.CodeHash))
 	//construct the account value
 	acct := &ProofAccount{
-		Nounce:nounce,
-		Balance:balance,
-		Storage:storagehash,
-		Codehash:codehash,
+		Nounce:   nounce,
+		Balance:  balance,
+		Storage:  storagehash,
+		Codehash: codehash,
 	}
-	acctrlp ,err:= rlp.EncodeToBytes(acct)
-	if err != nil{
-		return nil,err
+	acctrlp, err := rlp.EncodeToBytes(acct)
+	if err != nil {
+		return nil, err
 	}
-	if !bytes.Equal(acctrlp,acctval){
-		return nil, fmt.Errorf("[verifyMerkleProof]: verify account proof failed, wanted:%v, get:%v",acctrlp,acctval)
+	if !bytes.Equal(acctrlp, acctval) {
+		return nil, fmt.Errorf("[verifyMerkleProof]: verify account proof failed, wanted:%v, get:%v", acctrlp, acctval)
 	}
-
 	//3.verify storage proof
 	nodelist = new(light.NodeList)
 
 	if len(ethproof.StorageProofs) != 1 {
-		return nil,fmt.Errorf("[verifyMerkleProof]: storage proof fmt error")
+		return nil, fmt.Errorf("[verifyMerkleProof]: storage proof fmt error")
 	}
 
 	sp := ethproof.StorageProofs[0]
 	storagekey := crypto.Keccak256(ethComm.Hex2Bytes(replace0x(sp.Key)))
-	for _, prf := range sp.Proof{
-		nodelist.Put(nil,ethComm.Hex2Bytes(replace0x(prf)))
+	for _, prf := range sp.Proof {
+		nodelist.Put(nil, ethComm.Hex2Bytes(replace0x(prf)))
 	}
 
 	ns = nodelist.NodeSet()
 	val, _, err := trie.VerifyProof(storagehash, storagekey, ns)
-	if err != nil{
-		return nil,err
+	if err != nil {
+		fmt.Printf("[verifyMerkleProof]verify storage failed:%s\n",err.Error())
+		return nil, err
 	}
-
 	return val, nil
 }
 
 func replace0x(s string) string {
-	p :=  strings.Replace(s,"0x","",0)
-	return strings.Replace(p,"0X","",0)
+	p := strings.Replace(s, "0x", "", 1)
+	return strings.Replace(p, "0X", "", 1)
 }
