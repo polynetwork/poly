@@ -1,6 +1,7 @@
 package eth
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -11,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
-	"encoding/hex"
 )
 
 func TestGetEthBlockByNumber(t *testing.T) {

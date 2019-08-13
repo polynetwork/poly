@@ -52,7 +52,7 @@ func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error 
 	if err != nil {
 		return err
 	}
-	value ,err := utils.DecodeString(source)
+	value, err := utils.DecodeString(source)
 	if err != nil {
 		return err
 	}
@@ -74,7 +74,7 @@ func (this *EntranceParam) Serialization(sink *common.ZeroCopySink) {
 	utils.EncodeString(sink, this.Proof)
 	utils.EncodeString(sink, this.RelayerAddress)
 	utils.EncodeVarUint(sink, this.TargetChainID)
-	utils.EncodeString(sink,this.Value)
+	utils.EncodeString(sink, this.Value)
 }
 
 type MakeTxParam struct {

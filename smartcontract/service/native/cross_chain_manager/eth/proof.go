@@ -8,11 +8,11 @@ import (
 	"net/http"
 	"strings"
 
+	"bytes"
+	"fmt"
 	ethComm "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"bytes"
 	"strconv"
-	"fmt"
 )
 
 type Proof struct {
@@ -40,24 +40,23 @@ type ETHProof struct {
 	StorageProofs []StorageProof `json:"storageProof"`
 }
 
-func (this *ETHProof) String() string{
+func (this *ETHProof) String() string {
 	bs := bytes.NewBuffer([]byte("ETHProof:\n"))
 	bs.WriteString("AccountProof:\n")
-	for _, a:=range this.AccountProof{
-		bs.WriteString(a+"\n")
+	for _, a := range this.AccountProof {
+		bs.WriteString(a + "\n")
 	}
 	bs.WriteString("StorageProof:\n")
-	for _,s :=range this.StorageProofs{
-		bs.WriteString(s.Key+"\n")
+	for _, s := range this.StorageProofs {
+		bs.WriteString(s.Key + "\n")
 		bs.WriteString("proofs:\n[")
-		bs.WriteString(strings.Join(s.Proof,"\n"))
+		bs.WriteString(strings.Join(s.Proof, "\n"))
 		bs.WriteString("]\n")
 
-		bs.WriteString(s.Value+"\n")
+		bs.WriteString(s.Value + "\n")
 	}
 	return bs.String()
 }
-
 
 type RpcResponse struct {
 	JsonRpc string `json:"jsonrpc"`
@@ -119,25 +118,25 @@ func MappingKeyAt(position1 string, position2 string) ([]byte, error) {
 
 func (this *Proof) Deserialize(raw string) error {
 	vals := strings.Split(raw, "#")
-	if len(vals)!= 6 {
+	if len(vals) != 6 {
 		return fmt.Errorf("error count of proof deserialize")
 	}
 	this.AssetAddress = vals[0]
 	this.FromAddress = vals[1]
-	cid,err := strconv.Atoi(vals[2])
-	if err != nil{
+	cid, err := strconv.Atoi(vals[2])
+	if err != nil {
 		return fmt.Errorf("chain id is not correct")
 	}
 	this.ToChainID = uint64(cid)
 	this.ToAddress = vals[3]
 	amt := new(big.Int)
-	_,b :=amt.SetString(vals[4],10)
+	_, b := amt.SetString(vals[4], 10)
 	if !b {
 		return fmt.Errorf("amount is not correct")
 	}
 	this.Amount = amt
-	decimal ,err := strconv.Atoi(vals[5])
-	if err != nil{
+	decimal, err := strconv.Atoi(vals[5])
+	if err != nil {
 		return fmt.Errorf("decimal is not correct")
 	}
 	this.Decimal = decimal
