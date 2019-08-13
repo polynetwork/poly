@@ -269,6 +269,7 @@ func TestProoflist(t *testing.T) {
 		fmt.Printf("%v\n", val)
 	}
 }
+
 //
 func TestAddress(t *testing.T) {
 	p1 := "01"

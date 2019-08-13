@@ -124,7 +124,9 @@ func verifyBtcTx(native *native.NativeService, proof []byte, tx []byte, height u
 	if !isExist {
 		return false, nil, fmt.Errorf("verifyBtcTx, transaction %s not found in proof", txid.String())
 	}
-	val, err := native.CacheDB.Get(append([]byte(VERIFIED_TX), txid[:]...))
+	prefix, _ := hex.DecodeString(inf.Key_prefix_BTC)
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, prefix, txid[:])
+	val, err := native.CacheDB.Get(key)
 	if err != nil {
 		return false, nil, fmt.Errorf("verifyBtcTx, failed to get verified transaction: %v", err)
 	} else if bytes.Equal(val, []byte{1}) {
@@ -167,7 +169,7 @@ func verifyBtcTx(native *native.NativeService, proof []byte, tx []byte, height u
 		return false, nil, fmt.Errorf("verifyBtcTx, merkle root not equal")
 	}
 
-	native.CacheDB.Put(append([]byte(VERIFIED_TX), txid[:]...), []byte{1})
+	native.CacheDB.Put(key, []byte{1})
 	return true, &param, nil
 }
 

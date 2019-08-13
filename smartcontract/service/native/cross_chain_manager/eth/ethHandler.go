@@ -60,7 +60,7 @@ func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 	if val != nil {
 		return nil, fmt.Errorf("[Verify] key:%s already solved ", ethproof.StorageProofs[0].Key)
 	}
-	fmt.Printf("ethproof:%v\n",ethproof)
+	fmt.Printf("ethproof:%v\n", ethproof)
 	//todo 1. verify the proof with header
 	//determine where the k and v from
 	proofresult, err := verifyMerkleProof(ethproof, blockdata)
@@ -140,22 +140,22 @@ func verifyMerkleProof(ethproof *ETHProof, blockdata *EthBlock) ([]byte, error) 
 	//2. verify account proof
 	acctval, _, err := trie.VerifyProof(ethComm.HexToHash(replace0x(blockdata.StateRoot)), acctkey, ns)
 	if err != nil {
-		fmt.Printf("[verifyMerkleProof]verify account err:%s\n",err.Error())
+		fmt.Printf("[verifyMerkleProof]verify account err:%s\n", err.Error())
 		return nil, err
 	}
 
 	nounce := new(big.Int)
-	_,f := nounce.SetString(replace0x(ethproof.Nonce),16)
-	if !f{
-		fmt.Printf("error format of nounce:%s\n",ethproof.Nonce)
-		return nil,fmt.Errorf("error format of nounce:%s\n",ethproof.Nonce)
+	_, f := nounce.SetString(replace0x(ethproof.Nonce), 16)
+	if !f {
+		fmt.Printf("error format of nounce:%s\n", ethproof.Nonce)
+		return nil, fmt.Errorf("error format of nounce:%s\n", ethproof.Nonce)
 	}
 
 	balance := new(big.Int)
-	_,f = balance.SetString(replace0x(ethproof.Balance),16)
-	if !f{
-		fmt.Printf("error format of Balance:%s\n",ethproof.Balance)
-		return nil,fmt.Errorf("error format of Balance:%s\n",ethproof.Balance)
+	_, f = balance.SetString(replace0x(ethproof.Balance), 16)
+	if !f {
+		fmt.Printf("error format of Balance:%s\n", ethproof.Balance)
+		return nil, fmt.Errorf("error format of Balance:%s\n", ethproof.Balance)
 	}
 
 	storagehash := ethComm.HexToHash(replace0x(ethproof.StorageHash))
@@ -190,7 +190,7 @@ func verifyMerkleProof(ethproof *ETHProof, blockdata *EthBlock) ([]byte, error) 
 	ns = nodelist.NodeSet()
 	val, _, err := trie.VerifyProof(storagehash, storagekey, ns)
 	if err != nil {
-		fmt.Printf("[verifyMerkleProof]verify storage failed:%s\n",err.Error())
+		fmt.Printf("[verifyMerkleProof]verify storage failed:%s\n", err.Error())
 		return nil, err
 	}
 	return val, nil
