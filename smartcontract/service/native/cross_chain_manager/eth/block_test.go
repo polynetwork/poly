@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"math/big"
 	"testing"
+	"encoding/hex"
 )
 
 func TestGetEthBlockByNumber(t *testing.T) {
@@ -269,15 +270,15 @@ func TestProoflist(t *testing.T) {
 	}
 }
 //
-//func TestAddress(t *testing.T) {
-//	p1 := "fa98bb293724fa6b012da0f39d4e185f0fe4a749"
-//	//p1 := "1234567890123456789012345678901234567890"
-//	//p1 := "2345678901234567890123456789012345678901"
-//	p2 := "01"
-//	err, v := MappingKeyAt(p1, p2)
-//	if err != nil {
-//		fmt.Printf("err:%s\n", err.Error())
-//	}
-//	fmt.Printf("=========%v\n", hex.EncodeToString(v))
-//
-//}
+func TestAddress(t *testing.T) {
+	p1 := "01"
+	//p1 := "1234567890123456789012345678901234567890"
+	//p1 := "2345678901234567890123456789012345678901"
+	p2 := "00"
+	v, err := MappingKeyAt(p1, p2)
+	if err != nil {
+		fmt.Printf("err:%s\n", err.Error())
+	}
+	fmt.Printf("=========%v\n", hex.EncodeToString(v))
+
+}

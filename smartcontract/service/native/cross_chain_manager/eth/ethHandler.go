@@ -71,8 +71,14 @@ func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 		return nil, fmt.Errorf("Verify, verifyMerkleProof failed!")
 	}
 
+	if !checkProofResult(proofresult,params.Value) {
+		fmt.Printf("verify value hash failed")
+		return nil, fmt.Errorf("Verify, verify value hash failed!")
+	}
+
+
 	proof := &Proof{}
-	if err := proof.Deserialize(proofresult); err != nil {
+	if err := proof.Deserialize(params.Value); err != nil {
 		return nil, fmt.Errorf("Verify, eth proof deserialize error: %v", err)
 	}
 
@@ -193,4 +199,9 @@ func verifyMerkleProof(ethproof *ETHProof, blockdata *EthBlock) ([]byte, error) 
 func replace0x(s string) string {
 	p := strings.Replace(s, "0x", "", 1)
 	return strings.Replace(p, "0X", "", 1)
+}
+
+func checkProofResult(result []byte, value string) bool{
+	hash := crypto.Keccak256([]byte(value))
+	return  bytes.Equal(result,hash)
 }

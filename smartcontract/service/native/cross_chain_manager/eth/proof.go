@@ -11,6 +11,8 @@ import (
 	ethComm "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"bytes"
+	"strconv"
+	"fmt"
 )
 
 type Proof struct {
@@ -115,7 +117,30 @@ func MappingKeyAt(position1 string, position2 string) ([]byte, error) {
 	return key, nil
 }
 
-func (this *Proof) Deserialize(raw []byte) error {
-	//todo add deserialize logic
+func (this *Proof) Deserialize(raw string) error {
+	vals := strings.Split(raw, "#")
+	if len(vals)!= 6 {
+		return fmt.Errorf("error count of proof deserialize")
+	}
+	this.AssetAddress = vals[0]
+	this.FromAddress = vals[1]
+	cid,err := strconv.Atoi(vals[2])
+	if err != nil{
+		return fmt.Errorf("chain id is not correct")
+	}
+	this.ToChainID = uint64(cid)
+	this.ToAddress = vals[3]
+	amt := new(big.Int)
+	_,b :=amt.SetString(vals[4],10)
+	if !b {
+		return fmt.Errorf("amount is not correct")
+	}
+	this.Amount = amt
+	decimal ,err := strconv.Atoi(vals[5])
+	if err != nil{
+		return fmt.Errorf("decimal is not correct")
+	}
+	this.Decimal = decimal
+
 	return nil
 }

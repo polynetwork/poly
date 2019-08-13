@@ -24,6 +24,7 @@ type EntranceParam struct {
 	Proof          string `json:"proof"`
 	RelayerAddress string `json:"relayerAddress"`
 	TargetChainID  uint64 `json:"targetChainId"`
+	Value          string `json:"value"`
 }
 
 func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error {
@@ -51,6 +52,10 @@ func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error 
 	if err != nil {
 		return err
 	}
+	value ,err := utils.DecodeString(source)
+	if err != nil {
+		return err
+	}
 
 	this.SourceChainID = sourcechainid
 	this.TxData = txdata
@@ -58,7 +63,7 @@ func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error 
 	this.Proof = proof
 	this.RelayerAddress = relayerAddr
 	this.TargetChainID = targetchainid
-
+	this.Value = value
 	return nil
 }
 
@@ -69,6 +74,7 @@ func (this *EntranceParam) Serialization(sink *common.ZeroCopySink) {
 	utils.EncodeString(sink, this.Proof)
 	utils.EncodeString(sink, this.RelayerAddress)
 	utils.EncodeVarUint(sink, this.TargetChainID)
+	utils.EncodeString(sink,this.Value)
 }
 
 type MakeTxParam struct {
