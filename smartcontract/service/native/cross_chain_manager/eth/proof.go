@@ -46,6 +46,8 @@ func (this *ETHProof) String() string {
 	for _, a := range this.AccountProof {
 		bs.WriteString(a + "\n")
 	}
+	bs.WriteString("Address:")
+	bs.WriteString(this.Address + "\n")
 	bs.WriteString("StorageProof:\n")
 	for _, s := range this.StorageProofs {
 		bs.WriteString(s.Key + "\n")

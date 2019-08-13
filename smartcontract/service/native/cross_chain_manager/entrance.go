@@ -65,6 +65,7 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	fmt.Printf("TxData:%v\n", params.TxData)
 	fmt.Printf("Height:%v\n", params.Height)
 	fmt.Printf("RelayerAddress:%v\n", params.RelayerAddress)
+	fmt.Printf("value:%v\n", params.Value)
 
 	chainid := params.SourceChainID
 	handler, err := GetChainHandler(chainid)

@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	ethComm "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/light"
@@ -13,11 +12,13 @@ import (
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
-	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/eth/locker"
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/inf"
-	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
 	"math/big"
+	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	"strings"
+	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/eth/locker"
+	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
 )
 
 type ETHHandler struct {
@@ -52,8 +53,12 @@ func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 	if len(ethproof.StorageProofs) != 1 {
 		return nil, fmt.Errorf("[Verify] incorrect proof format")
 	}
+
+	bf := bytes.NewBuffer(utils.CrossChainManagerContractAddress[:])
 	keybytes := ethComm.Hex2Bytes(inf.Key_prefix_ETH + replace0x(ethproof.StorageProofs[0].Key))
-	val, err := service.CacheDB.Get(keybytes)
+	bf.Write(keybytes)
+	key := bf.Bytes()
+	val, err := service.CacheDB.Get(key)
 	if err != nil {
 		return nil, err
 	}
@@ -71,8 +76,9 @@ func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 		return nil, fmt.Errorf("Verify, verifyMerkleProof failed!")
 	}
 
-	if !checkProofResult(proofresult, params.Value) {
-		fmt.Printf("verify value hash failed")
+
+	if !checkProofResult(proofresult,params.Value) {
+		fmt.Printf("verify value hash failed\n")
 		return nil, fmt.Errorf("Verify, verify value hash failed!")
 	}
 
@@ -82,7 +88,7 @@ func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 	}
 
 	//todo does the proof data too big??
-	service.CacheDB.Put(keybytes, proofdata)
+	service.CacheDB.Put(key, proofdata)
 
 	ret := &inf.MakeTxParam{}
 	ret.ToChainID = proof.ToChainID
@@ -124,7 +130,6 @@ func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *in
 }
 
 func verifyMerkleProof(ethproof *ETHProof, blockdata *EthBlock) ([]byte, error) {
-
 	//1. prepare verify account
 	nodelist := new(light.NodeList)
 
@@ -196,11 +201,14 @@ func verifyMerkleProof(ethproof *ETHProof, blockdata *EthBlock) ([]byte, error) 
 }
 
 func replace0x(s string) string {
-	p := strings.Replace(s, "0x", "", 1)
-	return strings.Replace(p, "0X", "", 1)
+	return strings.Replace(strings.ToLower(s), "0x", "", 1)
 }
 
-func checkProofResult(result []byte, value string) bool {
+
+func checkProofResult(result []byte, value string) bool{
+	var s []byte
+	rlp.DecodeBytes(result,&s)
+
 	hash := crypto.Keccak256([]byte(value))
-	return bytes.Equal(result, hash)
+	return  bytes.Equal(s,hash[1:])
 }
