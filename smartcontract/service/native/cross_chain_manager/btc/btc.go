@@ -30,7 +30,6 @@ import (
 	"github.com/ontio/multi-chain/smartcontract/event"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/inf"
-	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 	"math/big"
 )
@@ -146,14 +145,6 @@ func verifyBtcTx(native *native.NativeService, proof []byte, tx []byte, height u
 	}
 
 	//TODO: How to deal with param? We need to check this param, including chain_id, address..
-	//check if chainid exist
-	sideChain, err := side_chain_manager.GetSideChain(native, param.ChainId)
-	if err != nil {
-		return false, nil, fmt.Errorf("verifyBtcTx, side_chain_manager.GetSideChain error: %v", err)
-	}
-	if sideChain.Chainid != param.ChainId {
-		return false, nil, fmt.Errorf("verifyBtcTx, side chain is not registered")
-	}
 
 	mBlock := merkleblock.NewMerkleBlockFromMsg(mb)
 	merkleRootCalc := mBlock.ExtractMatches()

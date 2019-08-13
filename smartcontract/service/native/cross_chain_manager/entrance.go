@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
+	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/btc"
@@ -68,6 +69,16 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	fmt.Printf("value:%v\n", params.Value)
 
 	chainid := params.SourceChainID
+
+	//check if chainid exist
+	sideChain, err := side_chain_manager.GetSideChain(native, chainid)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side_chain_manager.GetSideChain error: %v", err)
+	}
+	if sideChain.Chainid != chainid {
+		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side chain is not registered")
+	}
+
 	handler, err := GetChainHandler(chainid)
 	if err != nil {
 		return utils.BYTE_FALSE, err
@@ -80,6 +91,16 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 
 	//2. make target chain tx
 	targetid := txParam.ToChainID
+
+	//check if chainid exist
+	sideChain, err = side_chain_manager.GetSideChain(native, targetid)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side_chain_manager.GetSideChain error: %v", err)
+	}
+	if sideChain.Chainid != targetid {
+		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, targetid chain is not registered")
+	}
+
 	targetHandler, err := GetChainHandler(targetid)
 	if err != nil {
 		return utils.BYTE_FALSE, err
