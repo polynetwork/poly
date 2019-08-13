@@ -226,7 +226,7 @@ func makeBtcTx(service *native.NativeService, amounts map[string]int64) error {
 	service.Notifications = append(service.Notifications,
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
-			States:          []interface{}{hex.EncodeToString(buf.Bytes())},
+			States:          []interface{}{"makeBtcTx", hex.EncodeToString(buf.Bytes())},
 		})
 	return nil
 }

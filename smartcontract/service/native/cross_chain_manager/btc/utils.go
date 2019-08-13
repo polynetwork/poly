@@ -49,6 +49,7 @@ var priv6 = "cNK7BwHmi8rZiqD2QfwJB1R6bF6qc7iVTMBNjTr2ACbsoq1vWau8"
 var addr7 = "msK9xpuXn5xqr4UK7KyWi9VCaFhiwCqqq6"
 var priv7 = "cUZdDF9sL11ya5civzMRYVYojoojjHbmWWm1yC5uRzfBRePVbQTZ"
 
+// request
 type QueryHeaderByHeightParam struct {
 	Height uint32 `json:"height"`
 }
@@ -115,6 +116,11 @@ type GetAllUtxosResp struct {
 	Infos []UtxoInfo `json:"infos"`
 }
 
+type RollbackReq struct {
+	Time string `json:"time"`
+}
+
+// response
 type ResponseWithHeader struct {
 	Action string                  `json:"action"`
 	Desc   string                  `json:"desc"`
@@ -429,6 +435,30 @@ func (self *RestClient) BroadcastTxBySpv(mtx *wire.MsgTx) error {
 	}
 
 	data, err := self.SendRestRequest("http://"+self.Addr+"/api/v1/broadcasttx", req)
+	if err != nil {
+		return fmt.Errorf("Failed to send request: %v", err)
+	}
+
+	var resp Response
+	err = json.Unmarshal(data, &resp)
+	if err != nil {
+		return fmt.Errorf("Failed to unmarshal resp to json: %v", err)
+	}
+	if resp.Error != 0 || resp.Desc != "SUCCESS" {
+		return fmt.Errorf("Response shows failure: %s", resp.Desc)
+	}
+
+	return nil
+}
+
+func (self *RestClient) RollbackSpv(time string) error {
+	req, err := json.Marshal(RollbackReq{
+		Time: time,
+	})
+	if err != nil {
+		return fmt.Errorf("Failed to parse parameter: %v", err)
+	}
+	data, err := self.SendRestRequest("http://"+self.Addr+"/api/v1/rollback", req)
 	if err != nil {
 		return fmt.Errorf("Failed to send request: %v", err)
 	}

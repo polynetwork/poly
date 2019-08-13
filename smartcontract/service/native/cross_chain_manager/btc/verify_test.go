@@ -325,6 +325,9 @@ func TestTargetChainParam(t *testing.T) {
 	if param.ChainId != 1 || param.Fee != 100000 || !bytes.Equal(param.Addr, addr) {
 		t.Fatal("wrong param")
 	}
+
+	sss, _ := buildScript(getPubKeys(), 5)
+	fmt.Printf("s is :%s\n", hex.EncodeToString(sss))
 }
 
 func hexToBytes(s string) []byte {
