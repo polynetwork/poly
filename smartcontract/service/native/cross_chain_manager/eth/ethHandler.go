@@ -19,6 +19,7 @@ import (
 	"strings"
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/eth/locker"
 	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
+	"github.com/ontio/multi-chain/smartcontract/event"
 )
 
 type ETHHandler struct {
@@ -102,7 +103,7 @@ func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *inf.MakeTxParam) error {
 	//todo add logic
 	//1 construct tx
-	contractabi, err := abi.JSON(strings.NewReader(locker.LockerABI))
+	contractabi, err := abi.JSON(strings.NewReader(locker.EthereumCrossChainABI))
 	if err != nil {
 		return err
 	}
@@ -117,14 +118,33 @@ func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *in
 	}
 
 	tokenAddress := ethComm.HexToAddress(targetTokenAddr)
-	txData, err := contractabi.Pack("SendToken", tokenAddress, bindaddr, amount)
-	if err != nil {
-		return err
+	var txData []byte
+	txid := ""
+	if targetTokenAddr == "0x0"{
+		txData, err = contractabi.Pack("WithdrawETH",txid, bindaddr, amount,nil,nil,nil)
+		if err != nil {
+			return err
+		}
+	}else{
+		txData, err = contractabi.Pack("WithdrawERC20",txid, tokenAddress, bindaddr, amount,nil,nil,nil)
+		if err != nil {
+			return err
+		}
 	}
 
 	//todo store the txData in storage
 	//determin the key format
-	service.CacheDB.Put([]byte("TEST_KEY"), txData)
+	bf := bytes.NewBuffer(utils.CrossChainManagerContractAddress[:])
+
+	bf.WriteString(service.Tx.Hash().ToHexString())
+	service.CacheDB.Put(bf.Bytes(), txData)
+
+	service.Notifications = append(service.Notifications,
+		&event.NotifyEventInfo{
+			ContractAddress: utils.CrossChainManagerContractAddress,
+			States:          []interface{}{hex.EncodeToString(bf.Bytes())},
+		})
+
 
 	return nil
 }
