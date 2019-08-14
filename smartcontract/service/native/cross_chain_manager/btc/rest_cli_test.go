@@ -40,8 +40,17 @@ func TestRestClient_GetCurrentHeightFromSpv(t *testing.T) {
 	fmt.Printf("height is %d\n", h)
 }
 
+func TestRestClient_GetWatchedAddrsFromSpv(t *testing.T) {
+	cli := NewRestClient("172.168.3.73:50071")
+	addrs, err := cli.GetWatchedAddrsFromSpv()
+	if err != nil {
+		t.Fatalf("Failed to get height: %v", err)
+	}
+	fmt.Printf("addrs is %v\n", addrs)
+}
+
 func TestRestClient_GetUtxosFromSpv(t *testing.T) {
-	cli := NewRestClient("192.168.203.102:50071")
+	cli := NewRestClient("172.168.3.73:50071")
 	ins, sum, err := cli.GetUtxosFromSpv("2N5cY8y9RtbbvQRWkX5zAwTPCxSZF9xEj2C", 1000, 100, true)
 	if err != nil {
 		t.Fatalf("Failed to get utxos: %v", err)

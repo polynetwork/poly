@@ -2,6 +2,7 @@ package btc
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
@@ -41,4 +42,6 @@ func TestMakeBtcTx(t *testing.T) {
 		}
 		fmt.Printf("No%d output: value: %d; pkScript: %s; \n", i, out.Value, s)
 	}
+
+	fmt.Printf("Raw unsigned tx: %s\n", hex.EncodeToString(tx))
 }

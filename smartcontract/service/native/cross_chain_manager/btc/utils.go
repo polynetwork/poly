@@ -30,7 +30,7 @@ const (
 	CONFRIMATION                 = 6
 	BTC_TX_PREFIX         string = "btctx"
 	VERIFIED_TX           string = "verified"
-	IP                    string = "0.0.0.0:50071" //"192.168.203.102:50071"
+	IP                    string = "0.0.0.0:50071" //"172.168.3.73:50071"
 )
 
 var netParam = &chaincfg.TestNet3Params
@@ -54,24 +54,11 @@ type QueryHeaderByHeightParam struct {
 	Height uint32 `json:"height"`
 }
 
-type QueryHeaderByHeightResp struct {
-	Header string `json:"header"`
-}
-
 type QueryUtxosReq struct {
 	Addr      string `json:"addr"`
 	Amount    int64  `json:"amount"`
 	Fee       int64  `json:"fee"`
 	IsPreExec bool   `json:"is_pre_exec"`
-}
-
-type QueryUtxosResp struct {
-	Inputs []btcjson.TransactionInput `json:"inputs"`
-	Sum    int64                      `json:"sum"`
-}
-
-type GetCurrentHeightResp struct {
-	Height uint32 `json:"height"`
 }
 
 type ChangeAddressReq struct {
@@ -83,14 +70,6 @@ type BroadcastTxReq struct {
 	RawTx string `json:"raw_tx"`
 }
 
-type ChangeAddressResp struct {
-	Result string `json:"result"`
-}
-
-type GetAllAddressResp struct {
-	Addresses []string `json:"addresses"`
-}
-
 type UnlockUtxoReq struct {
 	Hash  string `json:"hash"`
 	Index uint32 `json:"index"`
@@ -100,8 +79,8 @@ type GetFeePerByteReq struct {
 	Level int `json:"level"`
 }
 
-type GetFeePerByteResp struct {
-	Feepb uint64 `json:"feepb"`
+type RollbackReq struct {
+	Time string `json:"time"`
 }
 
 type UtxoInfo struct {
@@ -116,51 +95,12 @@ type GetAllUtxosResp struct {
 	Infos []UtxoInfo `json:"infos"`
 }
 
-type RollbackReq struct {
-	Time string `json:"time"`
-}
-
 // response
-type ResponseWithHeader struct {
-	Action string                  `json:"action"`
-	Desc   string                  `json:"desc"`
-	Error  uint32                  `json:"error"`
-	Result QueryHeaderByHeightResp `json:"result"`
-}
-
-type ResponseWithUtxos struct {
-	Action string         `json:"action"`
-	Desc   string         `json:"desc"`
-	Error  uint32         `json:"error"`
-	Result QueryUtxosResp `json:"result"`
-}
-
-type ResponseWithHeight struct {
-	Action string               `json:"action"`
-	Desc   string               `json:"desc"`
-	Error  uint32               `json:"error"`
-	Result GetCurrentHeightResp `json:"result"`
-}
-
 type Response struct {
 	Action string      `json:"action"`
 	Desc   string      `json:"desc"`
 	Error  uint32      `json:"error"`
 	Result interface{} `json:"result"`
-}
-
-type ResponseWithWatchedAddrs struct {
-	Action string            `json:"action"`
-	Desc   string            `json:"desc"`
-	Error  uint32            `json:"error"`
-	Result GetAllAddressResp `json:"result"`
-}
-
-type ResponseWithFeeRate struct {
-	Action string            `json:"action"`
-	Desc   string            `json:"desc"`
-	Error  uint32            `json:"error"`
-	Result GetFeePerByteResp `json:"result"`
 }
 
 type ResponseAllUtxos struct {
@@ -241,7 +181,7 @@ func (self *RestClient) GetHeaderFromSpv(height uint32) (*wire.BlockHeader, erro
 	if err != nil {
 		return nil, fmt.Errorf("Failed to send request: %v", err)
 	}
-	var resp ResponseWithHeader
+	var resp Response
 	err = json.Unmarshal(data, &resp)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to unmarshal resp to json: %v", err)
@@ -251,7 +191,7 @@ func (self *RestClient) GetHeaderFromSpv(height uint32) (*wire.BlockHeader, erro
 		return nil, fmt.Errorf("Response shows failure: %s", resp.Desc)
 	}
 
-	hbs, err := hex.DecodeString(resp.Result.Header)
+	hbs, err := hex.DecodeString(resp.Result.(map[string]interface{})["header"].(string))
 	if err != nil {
 		return nil, fmt.Errorf("Failed to decode hex string from response: %v", err)
 	}
@@ -280,7 +220,7 @@ func (self *RestClient) GetUtxosFromSpv(addr string, amount int64, fee int64, is
 		return nil, 0, fmt.Errorf("Failed to send request: %v", err)
 	}
 
-	var resp ResponseWithUtxos
+	var resp Response
 	err = json.Unmarshal(data, &resp)
 	if err != nil {
 		return nil, 0, fmt.Errorf("Failed to unmarshal resp to json: %v", err)
@@ -288,8 +228,16 @@ func (self *RestClient) GetUtxosFromSpv(addr string, amount int64, fee int64, is
 	if resp.Error != 0 || resp.Desc != "SUCCESS" {
 		return nil, 0, fmt.Errorf("Response shows failure: %s", resp.Desc)
 	}
+	var ins []btcjson.TransactionInput
+	for _, v := range resp.Result.(map[string]interface{})["inputs"].([]interface{}) {
+		m := v.(map[string]interface{})
+		ins = append(ins, btcjson.TransactionInput{
+			Txid: m["txid"].(string),
+			Vout: uint32(m["vout"].(float64)),
+		})
+	}
 
-	return resp.Result.Inputs, resp.Result.Sum, nil
+	return ins, int64(resp.Result.(map[string]interface{})["sum"].(float64)), nil
 }
 
 func (self *RestClient) GetCurrentHeightFromSpv() (uint32, error) {
@@ -298,7 +246,7 @@ func (self *RestClient) GetCurrentHeightFromSpv() (uint32, error) {
 		return 0, fmt.Errorf("Failed to send request: %v", err)
 	}
 
-	var resp ResponseWithHeight
+	var resp Response
 	err = json.Unmarshal(data, &resp)
 	if err != nil {
 		return 0, fmt.Errorf("Failed to unmarshal resp to json: %v", err)
@@ -307,7 +255,7 @@ func (self *RestClient) GetCurrentHeightFromSpv() (uint32, error) {
 		return 0, fmt.Errorf("Response shows failure: %s", resp.Desc)
 	}
 
-	return resp.Result.Height, nil
+	return uint32(resp.Result.(map[string]interface{})["height"].(float64)), nil
 }
 
 func (self *RestClient) ChangeSpvWatchedAddr(addr string, action string) error {
@@ -341,7 +289,7 @@ func (self *RestClient) GetWatchedAddrsFromSpv() ([]string, error) {
 		return nil, fmt.Errorf("Failed to send request: %v", err)
 	}
 
-	var resp ResponseWithWatchedAddrs
+	var resp Response
 	err = json.Unmarshal(data, &resp)
 	if err != nil {
 		return nil, fmt.Errorf("Failed to unmarshal resp to json: %v", err)
@@ -349,8 +297,11 @@ func (self *RestClient) GetWatchedAddrsFromSpv() ([]string, error) {
 	if resp.Error != 0 || resp.Desc != "SUCCESS" {
 		return nil, fmt.Errorf("Response shows failure: %s", resp.Desc)
 	}
-
-	return resp.Result.Addresses, nil
+	var addrs []string
+	for _, v := range resp.Result.(map[string]interface{})["addresses"].([]interface{}) {
+		addrs = append(addrs, v.(string))
+	}
+	return addrs, nil
 }
 
 func (self *RestClient) UnlockUtxoInSpv(hash string, index uint32) error {
@@ -391,7 +342,7 @@ func (self *RestClient) GetFeeRateFromSpv(level int) (int64, error) {
 		return -1, fmt.Errorf("Failed to send request: %v", err)
 	}
 
-	var resp ResponseWithFeeRate
+	var resp Response
 	err = json.Unmarshal(data, &resp)
 	if err != nil {
 		return -1, fmt.Errorf("Failed to unmarshal resp to json: %v", err)
@@ -400,7 +351,7 @@ func (self *RestClient) GetFeeRateFromSpv(level int) (int64, error) {
 		return -1, fmt.Errorf("Response shows failure: %s", resp.Desc)
 	}
 
-	return int64(resp.Result.Feepb), nil
+	return int64(resp.Result.(map[string]interface{})["feepb"].(float64)), nil
 }
 
 func (self *RestClient) GetAllUtxosFromSpv() ([]UtxoInfo, error) {
