@@ -32,7 +32,7 @@ func TestRestClient_ChangeSpvWatchedAddr(t *testing.T) {
 }
 
 func TestRestClient_GetCurrentHeightFromSpv(t *testing.T) {
-	cli := NewRestClient("172.168.3.73:50071")
+	cli := NewRestClient("0.0.0.0:50071")
 	h, err := cli.GetCurrentHeightFromSpv()
 	if err != nil {
 		t.Fatalf("Failed to get height: %v", err)
@@ -111,14 +111,14 @@ func TestRestClient_BroadcastTxBySpv(t *testing.T) {
 }
 
 func TestRestClient_RollbackSpv(t *testing.T) {
-	cli := NewRestClient("192.168.203.102:50071")
+	cli := NewRestClient("0.0.0.0:50071")
 
 	prevh, err := cli.GetCurrentHeightFromSpv()
 	if err != nil {
 		t.Fatalf("Failed to get height from spv: %v", err)
 	}
 
-	err = cli.RollbackSpv("2019-07-21 22:21:10")
+	err = cli.RollbackSpv("2019-08-01 22:21:10")
 	if err != nil {
 		t.Fatalf("Failed to roll back: %v", err)
 	}
