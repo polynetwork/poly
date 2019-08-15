@@ -95,7 +95,7 @@ func verifyBtcTx(native *native.NativeService, proof []byte, tx []byte, height u
 	if err != nil {
 		return false, nil, fmt.Errorf("verifyBtcTx, failed to get current height from spv: %v", err)
 	}
-	if besth-height < CONFRIMATION {
+	if besth-height < CONFRIMATION-1 {
 		return false, nil, fmt.Errorf("verifyBtcTx, transaction is not confirmed, current height: %d, "+
 			"input height: %d", besth, height)
 	}

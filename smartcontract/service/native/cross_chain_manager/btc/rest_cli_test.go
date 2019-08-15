@@ -72,7 +72,7 @@ func TestRestClient_GetHeaderFromSpv(t *testing.T) {
 }
 
 func TestRestClient_UnlockUtxoInSpv(t *testing.T) {
-	for _, i := range []string{"73", "74", "75", "76", "78", "79", "80"}{
+	for _, i := range []string{"73", "74", "75", "76", "78", "79", "80"} {
 		cli := NewRestClient("172.168.3." + i + ":50071")
 		err := cli.UnlockUtxoInSpv("d5b57529cc831b1eafa78452f6c6cf0f1782572e3b29a3130010334605946cca", 0)
 		err = cli.UnlockUtxoInSpv("974533f80f82943b26933c140ed56d4a3805167c711de61a8939160096161011", 0)
