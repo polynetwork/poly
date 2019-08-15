@@ -118,18 +118,10 @@ func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *in
 	}
 
 	tokenAddress := ethComm.HexToAddress(targetTokenAddr)
-	var txData []byte
 	txid := ""
-	if targetTokenAddr == "0x0"{
-		txData, err = contractabi.Pack("WithdrawETH",txid, bindaddr, amount,nil,nil,nil)
-		if err != nil {
-			return err
-		}
-	}else{
-		txData, err = contractabi.Pack("WithdrawERC20",txid, tokenAddress, bindaddr, amount,nil,nil,nil)
-		if err != nil {
-			return err
-		}
+	txData, err := contractabi.Pack("Withdraw",tokenAddress,txid, bindaddr, amount,nil,nil,nil)
+	if err != nil {
+		return err
 	}
 
 	//todo store the txData in storage
