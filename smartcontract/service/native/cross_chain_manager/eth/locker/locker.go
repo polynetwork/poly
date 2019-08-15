@@ -594,7 +594,7 @@ var (
 
 		// EthereumCrossChainDebugByte represents a DebugByte event raised by the EthereumCrossChain contract.
 		type EthereumCrossChainDebugByte struct { 
-			 []byte; 
+			b []byte;
 			Raw types.Log // Blockchain specific contextual infos
 		}
 

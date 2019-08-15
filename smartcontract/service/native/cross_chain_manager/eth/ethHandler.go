@@ -128,7 +128,8 @@ func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *in
 	//determin the key format
 	bf := bytes.NewBuffer(utils.CrossChainManagerContractAddress[:])
 
-	bf.WriteString(service.Tx.Hash().ToHexString())
+	txhash := service.Tx.Hash()
+	bf.WriteString(txhash.ToHexString())
 	service.CacheDB.Put(bf.Bytes(), txData)
 
 	service.Notifications = append(service.Notifications,
