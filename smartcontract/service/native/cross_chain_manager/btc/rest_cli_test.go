@@ -32,7 +32,7 @@ func TestRestClient_ChangeSpvWatchedAddr(t *testing.T) {
 }
 
 func TestRestClient_GetCurrentHeightFromSpv(t *testing.T) {
-	cli := NewRestClient("0.0.0.0:50071")
+	cli := NewRestClient("172.168.3.75:50071")
 	h, err := cli.GetCurrentHeightFromSpv()
 	if err != nil {
 		t.Fatalf("Failed to get height: %v", err)
