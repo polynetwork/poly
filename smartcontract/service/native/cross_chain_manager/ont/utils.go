@@ -346,7 +346,7 @@ func VerifyToOntTx(native *native.NativeService, proof []byte, fromChainid uint6
 
 func MakeToOntProof(native *native.NativeService, params *inf.MakeTxParam) error {
 	//record cross chain tx
-	requestID, err := getRequestID(native, native.ShardID.ToUint64())
+	requestID, err := getRequestID(native, params.ToChainID)
 	if err != nil {
 		return fmt.Errorf("MakeToOntProof, getRequestID error:%s", err)
 	}
@@ -357,12 +357,12 @@ func MakeToOntProof(native *native.NativeService, params *inf.MakeTxParam) error
 	}
 	sink := common.NewZeroCopySink(nil)
 	merkleValue.Serialization(sink)
-	err = putRequest(native, newID, native.ShardID.ToUint64(), sink.Bytes())
+	err = putRequest(native, newID, params.ToChainID, sink.Bytes())
 	if err != nil {
 		return fmt.Errorf("MakeToOntProof, putRequest error:%s", err)
 	}
 	native.ContextRef.PutMerkleVal(sink.Bytes())
-	err = putRequestID(native, newID, native.ShardID.ToUint64())
+	err = putRequestID(native, newID, params.ToChainID)
 	if err != nil {
 		return fmt.Errorf("MakeToOntProof, putRequestID error:%s", err)
 	}

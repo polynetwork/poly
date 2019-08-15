@@ -5,21 +5,21 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/accounts/abi"
 	ethComm "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/light"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/smartcontract/service/native"
-	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/inf"
-	"math/big"
-	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	"strings"
-	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/eth/locker"
-	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
 	"github.com/ontio/multi-chain/smartcontract/event"
+	"github.com/ontio/multi-chain/smartcontract/service/native"
+	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/eth/locker"
+	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/inf"
+	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
+	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
+	"math/big"
+	"strings"
 )
 
 type ETHHandler struct {
@@ -77,8 +77,7 @@ func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 		return nil, fmt.Errorf("Verify, verifyMerkleProof failed!")
 	}
 
-
-	if !checkProofResult(proofresult,params.Value) {
+	if !checkProofResult(proofresult, params.Value) {
 		fmt.Printf("verify value hash failed\n")
 		return nil, fmt.Errorf("Verify, verify value hash failed!")
 	}
@@ -119,7 +118,7 @@ func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *in
 
 	tokenAddress := ethComm.HexToAddress(targetTokenAddr)
 	txid := ""
-	txData, err := contractabi.Pack("Withdraw",tokenAddress,txid, bindaddr, amount,nil,nil,nil)
+	txData, err := contractabi.Pack("Withdraw", tokenAddress, txid, bindaddr, amount, nil, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -135,9 +134,8 @@ func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *in
 	service.Notifications = append(service.Notifications,
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
-			States:          []interface{}{"makeETHtx",hex.EncodeToString(bf.Bytes())},
+			States:          []interface{}{"makeETHtx", hex.EncodeToString(bf.Bytes())},
 		})
-
 
 	return nil
 }
@@ -217,11 +215,10 @@ func replace0x(s string) string {
 	return strings.Replace(strings.ToLower(s), "0x", "", 1)
 }
 
-
-func checkProofResult(result []byte, value string) bool{
+func checkProofResult(result []byte, value string) bool {
 	var s []byte
-	rlp.DecodeBytes(result,&s)
+	rlp.DecodeBytes(result, &s)
 
 	hash := crypto.Keccak256([]byte(value))
-	return  bytes.Equal(s,hash[1:])
+	return bytes.Equal(s, hash[1:])
 }
