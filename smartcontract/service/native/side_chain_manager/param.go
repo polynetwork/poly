@@ -107,13 +107,13 @@ func (this *Asset) Deserialization(source *common.ZeroCopySource) error {
 }
 
 type AssetMappingParam struct {
-	Address   common.Address
+	Address   string
 	AssetName string
 	AssetList []*Asset
 }
 
 func (this *AssetMappingParam) Serialization(sink *common.ZeroCopySink) error {
-	utils.EncodeAddress(sink, this.Address)
+	utils.EncodeString(sink, this.Address)
 	utils.EncodeString(sink, this.AssetName)
 	utils.EncodeVarUint(sink, uint64(len(this.AssetList)))
 	for _, v := range this.AssetList {
@@ -126,7 +126,7 @@ func (this *AssetMappingParam) Serialization(sink *common.ZeroCopySink) error {
 }
 
 func (this *AssetMappingParam) Deserialization(source *common.ZeroCopySource) error {
-	address, err := utils.DecodeAddress(source)
+	address, err := utils.DecodeString(source)
 	if err != nil {
 		return fmt.Errorf("utils.DecodeAddress, deserialize address error: %v", err)
 	}

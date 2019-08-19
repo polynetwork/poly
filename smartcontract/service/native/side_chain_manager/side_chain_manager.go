@@ -231,9 +231,13 @@ func AssetMapping(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("AssetMapping, putAssetMapRequest error: %v", err)
 	}
+	address, err := common.AddressFromBase58(params.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("AssetMapping, common.AddressFromBase58 error: %v", err)
+	}
 
 	//ong transfer
-	err = appCallTransferOng(native, params.Address, utils.GovernanceContractAddress, ONG)
+	err = appCallTransferOng(native, address, utils.GovernanceContractAddress, ONG)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("appCallTransferOng, ong transfer error: %v", err)
 	}
