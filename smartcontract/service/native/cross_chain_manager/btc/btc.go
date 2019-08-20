@@ -67,11 +67,12 @@ func (this *BTCHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 		return nil, fmt.Errorf("btc Verify, verify not passed")
 	}
 
+	toAddr, _ := common.AddressParseFromBytes(p.Addr)
 	return &inf.MakeTxParam{
 		FromChainID:         params.SourceChainID,
 		FromContractAddress: BTC_ADDRESS,
 		ToChainID:           p.ChainId,
-		ToAddress:           hex.EncodeToString(p.Addr),
+		ToAddress:           toAddr.ToBase58(),
 		Amount:              new(big.Int).SetInt64(p.Value),
 	}, nil
 }
@@ -96,9 +97,6 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *in
 	return nil
 }
 
-// Verify merkle proof in bytes, and return the result in true or false
-// Firstly, calculate the merkleRoot from input `proof`; Then get header.MerkleRoot
-// by a spv client and check if they are equal.
 func verifyBtcTx(native *native.NativeService, proof []byte, tx []byte, height uint32) (bool, *targetChainParam, error) {
 	cli := NewRestClient(IP)
 	besth, err := cli.GetCurrentHeightFromSpv()
@@ -128,11 +126,13 @@ func verifyBtcTx(native *native.NativeService, proof []byte, tx []byte, height u
 	for _, hash := range mb.Hashes {
 		if bytes.Equal(hash[:], txid[:]) {
 			isExist = true
+			break
 		}
 	}
 	if !isExist {
 		return false, nil, fmt.Errorf("verifyBtcTx, transaction %s not found in proof", txid.String())
 	}
+
 	prefix, _ := hex.DecodeString(inf.Key_prefix_BTC)
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, prefix, txid[:])
 	val, err := native.CacheDB.Get(key)
@@ -174,12 +174,6 @@ func verifyBtcTx(native *native.NativeService, proof []byte, tx []byte, height u
 	return true, &param, nil
 }
 
-// Create a raw transaction that returns the BTC that once locked the multi-sign account
-// to the original account and this transacion is not signed. In the end of this function,
-// serialized raw transaction would be put into native.CacheDB.
-// Parameter `prevTxids` is the txid of the previous output of the transaction input reference,
-// `prevIndexes` contain the indexes of the output in the transaction, `amounts` is the mapping
-// of accounts and amounts in transaction's output. Return true if building transacion success.
 func makeBtcTx(service *native.NativeService, amounts map[string]int64) error {
 	if len(amounts) == 0 {
 		return fmt.Errorf("makeBtcTx, input no amount")

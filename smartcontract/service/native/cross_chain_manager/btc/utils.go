@@ -23,7 +23,7 @@ import (
 
 const (
 	// TODO: Temporary setting
-	OP_RETURN_DATA_LEN           = 42
+	OP_RETURN_DATA_LEN           = 37
 	OP_RETURN_SCRIPT_FLAG        = byte(0x66)
 	FEE                          = int64(1e3)
 	REQUIRE                      = 5

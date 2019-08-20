@@ -304,9 +304,9 @@ func TestTargetChainParam(t *testing.T) {
 	fee := make([]byte, 8)
 	binary.BigEndian.PutUint64(fee, 100000)
 	addrStr := "AXEJrpNMUhAvRo9ETbzWqAVUBpXXeAFY9u"
-	addr := base58.Decode(addrStr)
+	addr, _ := common.AddressFromBase58(addrStr)
 
-	data := append(append(append(flag, chainId...), fee...), addr...)
+	data := append(append(append(flag, chainId...), fee...), addr[:]...)
 	s, err := txscript.NullDataScript(data)
 	if err != nil {
 		t.Fatalf("Failed to build script: %v", err)
@@ -322,9 +322,12 @@ func TestTargetChainParam(t *testing.T) {
 		t.Fatalf("Failed to resolve param: %v", err)
 	}
 
-	if param.ChainId != 1 || param.Fee != 100000 || !bytes.Equal(param.Addr, addr) {
+	if param.ChainId != 1 || param.Fee != 100000 || !bytes.Equal(param.Addr, addr[:]) {
 		t.Fatal("wrong param")
 	}
+
+	parsed, _ := common.AddressParseFromBytes(param.Addr)
+	fmt.Printf("addr is %s\n", parsed.ToBase58())
 
 	sss, _ := buildScript(getPubKeys(), 5)
 	fmt.Printf("s is :%s\n", hex.EncodeToString(sss))
