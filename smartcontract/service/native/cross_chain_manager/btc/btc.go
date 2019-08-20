@@ -30,6 +30,7 @@ import (
 	"github.com/ontio/multi-chain/smartcontract/event"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/inf"
+	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 	"math/big"
 )
@@ -79,7 +80,16 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *in
 	amounts := make(map[string]int64)
 	amounts[param.ToAddress] = param.Amount.Int64() // ??
 
-	err := makeBtcTx(service, amounts)
+	destContractAddr, err := side_chain_manager.GetAssetContractAddress(service, param.FromChainID,
+		param.ToChainID, param.FromContractAddress)
+	if err != nil {
+		return fmt.Errorf("btc MakeTransaction, side_chain_manager.GetAssetContractAddress error: %v", err)
+	}
+	if destContractAddr != "btc" {
+		return fmt.Errorf("btc MakeTransaction, destContractAddr is %s not btc", destContractAddr)
+	}
+
+	err = makeBtcTx(service, amounts)
 	if err != nil {
 		return fmt.Errorf("btc MakeTransaction, failed to make transaction: %v", err)
 	}
