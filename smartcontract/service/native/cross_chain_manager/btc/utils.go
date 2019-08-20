@@ -16,6 +16,7 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/base58"
+	"github.com/ontio/multi-chain/common"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -30,7 +31,7 @@ const (
 	CONFRIMATION                 = 6
 	BTC_TX_PREFIX         string = "btctx"
 	VERIFIED_TX           string = "verified"
-	IP                    string = "0.0.0.0:50071" //"172.168.3.73:50071"
+	IP                    string = "172.168.3.73:50071" //"0.0.0.0:50071" //
 )
 
 var netParam = &chaincfg.TestNet3Params
@@ -430,7 +431,7 @@ func (self *RestClient) RollbackSpv(time string) error {
 type targetChainParam struct {
 	ChainId uint64
 	Fee     int64
-	Addr    []byte // 25 bytes
+	Addr    common.Address
 	Value   int64
 }
 
@@ -447,7 +448,11 @@ func (p *targetChainParam) resolve(amount int64, paramOutput *wire.TxOut) error 
 	p.ChainId = binary.BigEndian.Uint64(script[3:11])
 	p.Fee = int64(binary.BigEndian.Uint64(script[11:19]))
 	// TODO:need to check the addr format?
-	p.Addr = script[19:]
+	toAddr, err := common.AddressParseFromBytes(script[19:])
+	if err != nil {
+		return fmt.Errorf("Failed to parse address from bytes: %v", err)
+	}
+	p.Addr = toAddr
 	p.Value = amount
 	if p.Value < p.Fee && p.Fee >= 0 {
 		return errors.New("The transfer amount cannot be less than the transaction fee")

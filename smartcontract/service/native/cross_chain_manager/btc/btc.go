@@ -67,12 +67,11 @@ func (this *BTCHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 		return nil, fmt.Errorf("btc Verify, verify not passed")
 	}
 
-	toAddr, _ := common.AddressParseFromBytes(p.Addr)
 	return &inf.MakeTxParam{
 		FromChainID:         params.SourceChainID,
 		FromContractAddress: BTC_ADDRESS,
 		ToChainID:           p.ChainId,
-		ToAddress:           toAddr.ToBase58(),
+		ToAddress:           p.Addr.ToBase58(),
 		Amount:              new(big.Int).SetInt64(p.Value),
 	}, nil
 }

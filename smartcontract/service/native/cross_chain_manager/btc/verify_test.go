@@ -1,12 +1,10 @@
 package btc
 
 import (
-	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcutil/base58"
 	"github.com/gcash/bchd/txscript"
 	"github.com/ontio/multi-chain/common"
 	cstates "github.com/ontio/multi-chain/core/states"
@@ -289,11 +287,10 @@ func TestVerifyBtcTx(t *testing.T) {
 			fmt.Printf("negative case: %s, error is %v", test.name, err)
 		}
 
-		addr := base58.Encode(cp.Addr)
 		val := cp.Value
 		cid := cp.ChainId
 		fee := cp.Fee
-		fmt.Printf("addr: %s, value: %d, chainId: %d, fee: %d\n", addr, val, cid, fee)
+		fmt.Printf("addr: %s, value: %d, chainId: %d, fee: %d\n", cp.Addr.ToBase58(), val, cid, fee)
 	}
 }
 
@@ -322,12 +319,10 @@ func TestTargetChainParam(t *testing.T) {
 		t.Fatalf("Failed to resolve param: %v", err)
 	}
 
-	if param.ChainId != 1 || param.Fee != 100000 || !bytes.Equal(param.Addr, addr[:]) {
+	fmt.Printf("addr is %s\n", param.Addr.ToBase58())
+	if param.ChainId != 1 || param.Fee != 100000 || param.Addr.ToBase58() != addrStr {
 		t.Fatal("wrong param")
 	}
-
-	parsed, _ := common.AddressParseFromBytes(param.Addr)
-	fmt.Printf("addr is %s\n", parsed.ToBase58())
 
 	sss, _ := buildScript(getPubKeys(), 5)
 	fmt.Printf("s is :%s\n", hex.EncodeToString(sss))
