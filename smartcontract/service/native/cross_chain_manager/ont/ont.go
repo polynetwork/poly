@@ -26,7 +26,6 @@ import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/inf"
-	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 	"github.com/ontio/multi-chain/vm/neovm/types"
 )
@@ -128,12 +127,7 @@ func ProcessCrossChainTx(native *native.NativeService) ([]byte, error) {
 	}
 
 	//call cross chain function
-	destContractAddr, err := side_chain_manager.GetAssetContractAddress(native, params.FromChainID,
-		native.ShardID.ToUint64(), merkleValue.MakeTxParam.FromContractAddress)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, side_chain_manager.GetAssetContractAddress error: %v", err)
-	}
-	dest, err := common.AddressFromHexString(destContractAddr)
+	dest, err := common.AddressFromHexString(merkleValue.ToContractAddress)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, common.AddressFromHexString error: %v", err)
 	}

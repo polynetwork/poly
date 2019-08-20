@@ -52,12 +52,14 @@ func (this *FromMerkleValue) Deserialization(source *common.ZeroCopySource) erro
 }
 
 type ToMerkleValue struct {
-	RequestID   uint64
-	MakeTxParam *inf.MakeTxParam
+	RequestID         uint64
+	ToContractAddress string
+	MakeTxParam       *inf.MakeTxParam
 }
 
 func (this *ToMerkleValue) Serialization(sink *common.ZeroCopySink) {
 	utils.EncodeVarUint(sink, this.RequestID)
+	utils.EncodeString(sink, this.ToContractAddress)
 	this.MakeTxParam.Serialization(sink)
 }
 
@@ -66,6 +68,10 @@ func (this *ToMerkleValue) Deserialization(source *common.ZeroCopySource) error 
 	if err != nil {
 		return fmt.Errorf("MerkleValue deserialize requestID error:%s", err)
 	}
+	toContractAddress, err := utils.DecodeString(source)
+	if err != nil {
+		return fmt.Errorf("MerkleValue deserialize toContractAddress error:%s", err)
+	}
 	makeTxParam := new(inf.MakeTxParam)
 	err = makeTxParam.Deserialization(source)
 	if err != nil {
@@ -73,6 +79,7 @@ func (this *ToMerkleValue) Deserialization(source *common.ZeroCopySource) error 
 	}
 
 	this.RequestID = requestID
+	this.ToContractAddress = toContractAddress
 	this.MakeTxParam = makeTxParam
 	return nil
 }

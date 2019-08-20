@@ -29,6 +29,7 @@ import (
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/inf"
 	"github.com/ontio/multi-chain/smartcontract/service/native/header_sync"
 	"github.com/ontio/multi-chain/smartcontract/service/native/ont"
+	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 	"github.com/ontio/ontology/common/config"
 )
@@ -351,9 +352,17 @@ func MakeToOntProof(native *native.NativeService, params *inf.MakeTxParam) error
 		return fmt.Errorf("MakeToOntProof, getRequestID error:%s", err)
 	}
 	newID := requestID + 1
+
+	destContractAddr, err := side_chain_manager.GetAssetContractAddress(native, params.FromChainID,
+		params.ToChainID, params.FromContractAddress)
+	if err != nil {
+		return fmt.Errorf("MakeToOntProof, side_chain_manager.GetAssetContractAddress error: %v", err)
+	}
+
 	merkleValue := &ToMerkleValue{
-		RequestID:   newID,
-		MakeTxParam: params,
+		RequestID:         newID,
+		ToContractAddress: destContractAddr,
+		MakeTxParam:       params,
 	}
 	sink := common.NewZeroCopySink(nil)
 	merkleValue.Serialization(sink)
