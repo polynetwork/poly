@@ -19,12 +19,7 @@
 package native
 
 import (
-	"bytes"
 	"fmt"
-	"github.com/ontio/multi-chain/common/serialization"
-	"io"
-	"math/big"
-
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/core/types"
@@ -35,7 +30,6 @@ import (
 	sstates "github.com/ontio/multi-chain/smartcontract/states"
 	"github.com/ontio/multi-chain/smartcontract/storage"
 	ntypes "github.com/ontio/multi-chain/vm/neovm/types"
-	vmtypes "github.com/ontio/multi-chain/vm/neovm/types"
 )
 
 type (
@@ -124,28 +118,4 @@ func (this *NativeService) NeoVMCall(address common.Address, method string, args
 		return nil, err
 	}
 	return engine.Invoke()
-}
-
-func NeoVmSerializeInteger(buf io.Writer, item *big.Int) error {
-	if err := serialization.WriteByte(buf, vmtypes.IntegerType); err != nil {
-		return errors.NewErr("NeoVmSerializeInteger error: " + err.Error())
-	}
-	if err := serialization.WriteVarBytes(buf, common.BigIntToNeoBytes(item)); err != nil {
-		return errors.NewErr("NeoVmSerializeInteger error: " + err.Error())
-	}
-	return nil
-}
-
-func NeoVmSerializeByteArray(buf io.Writer, item []byte) error {
-	if err := serialization.WriteByte(buf, vmtypes.ByteArrayType); err != nil {
-		return errors.NewErr("NeoVmSerializeInteger error: " + err.Error())
-	}
-	if err := serialization.WriteVarBytes(buf, item); err != nil {
-		return errors.NewErr("NeoVmSerializeInteger error: " + err.Error())
-	}
-	return nil
-}
-
-func NeoVmSerializeAddress(buf io.Writer, item common.Address) error {
-	return NeoVmSerializeByteArray(buf, item[:])
 }

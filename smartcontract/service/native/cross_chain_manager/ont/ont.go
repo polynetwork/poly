@@ -19,6 +19,7 @@
 package ont
 
 import (
+	"bytes"
 	"encoding/hex"
 	"fmt"
 	"math/big"
@@ -143,13 +144,26 @@ func ProcessCrossChainTx(native *native.NativeService) ([]byte, error) {
 	}
 	sink := common.NewZeroCopySink(nil)
 	args.Serialization(sink)
+	buf := bytes.NewBuffer(nil)
+	err = utils.NeoVmSerializeInteger(buf, new(big.Int).SetUint64(args.FromChainID))
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, utils.NeoVmSerializeInteger fromChainID error: %v", err)
+	}
+	err = utils.NeoVmSerializeAddress(buf, args.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, utils.NeoVmSerializeAddress address error: %v", err)
+	}
+	err = utils.NeoVmSerializeInteger(buf, new(big.Int).SetUint64(args.Amount))
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, utils.NeoVmSerializeInteger amount error: %v", err)
+	}
 
 	if dest == utils.OngContractAddress {
 		if _, err := native.NativeCall(dest, functionName, sink.Bytes()); err != nil {
 			return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, native.NativeCall error: %v", err)
 		}
 	} else {
-		res, err := native.NeoVMCall(dest, functionName, sink.Bytes())
+		res, err := native.NeoVMCall(dest, functionName, buf.Bytes())
 		if err != nil {
 			return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, native.NeoVMCall error: %v", err)
 		}

@@ -144,3 +144,27 @@ func DecodeVarUint(source *common.ZeroCopySource) (uint64, error) {
 	}
 	return v.Uint64(), nil
 }
+
+func NeoVmSerializeInteger(buf io.Writer, item *big.Int) error {
+	if err := serialization.WriteByte(buf, types.IntegerType); err != nil {
+		return fmt.Errorf("NeoVmSerializeInteger error: %s", err)
+	}
+	if err := serialization.WriteVarBytes(buf, common.BigIntToNeoBytes(item)); err != nil {
+		return fmt.Errorf("NeoVmSerializeInteger error: %s", err)
+	}
+	return nil
+}
+
+func NeoVmSerializeByteArray(buf io.Writer, item []byte) error {
+	if err := serialization.WriteByte(buf, types.ByteArrayType); err != nil {
+		return fmt.Errorf("NeoVmSerializeInteger error: %s", err)
+	}
+	if err := serialization.WriteVarBytes(buf, item); err != nil {
+		return fmt.Errorf("NeoVmSerializeInteger error: %s", err)
+	}
+	return nil
+}
+
+func NeoVmSerializeAddress(buf io.Writer, item common.Address) error {
+	return NeoVmSerializeByteArray(buf, item[:])
+}

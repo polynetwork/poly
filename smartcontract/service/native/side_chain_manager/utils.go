@@ -20,13 +20,13 @@ package side_chain_manager
 
 import (
 	"fmt"
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/smartcontract/service/native/ont"
 	"math"
 	"strconv"
 
+	"github.com/ontio/multi-chain/common"
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
+	"github.com/ontio/multi-chain/smartcontract/service/native/ont"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 )
 
