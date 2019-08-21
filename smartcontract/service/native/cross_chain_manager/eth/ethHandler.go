@@ -95,6 +95,8 @@ func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 	ret.FromChainID = params.SourceChainID
 	ret.ToAddress = proof.ToAddress
 	ret.Amount = proof.Amount
+	//todo deal with the proof.decimal
+
 
 	return ret, nil
 }

@@ -11,6 +11,8 @@ import (
 	"strings"
 )
 
+const ParityURL = "http://127.0.0.1:8545"
+
 type EthBlock struct {
 	Author          string           `json:"author"`
 	Difficulty      string           `json:"difficulty"`
@@ -96,7 +98,7 @@ func GetEthBlockByNumber(num uint32) (*EthBlock, error) {
 
 	fmt.Printf("req is %s\n", reqbs)
 
-	resp, err := http.Post("http://127.0.0.1:8545", "application/json", strings.NewReader(string(reqbs)))
+	resp, err := http.Post(ParityURL, "application/json", strings.NewReader(string(reqbs)))
 	if err != nil {
 		return nil, err
 	}
