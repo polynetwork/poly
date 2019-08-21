@@ -12,7 +12,9 @@ import (
 	"github.com/ontio/multi-chain/common/log"
 )
 
-const ParityURL = "http://127.0.0.1:8545"
+const ParityURL = "http://139.219.131.74:10331"
+//const ParityURL = "http://127.0.0.1:8545"
+
 
 type EthBlock struct {
 	Author          string           `json:"author"`
