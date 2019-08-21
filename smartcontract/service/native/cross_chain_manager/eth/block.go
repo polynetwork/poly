@@ -9,6 +9,7 @@ import (
 	"math/big"
 	"net/http"
 	"strings"
+	"github.com/ontio/multi-chain/common/log"
 )
 
 const ParityURL = "http://127.0.0.1:8545"
@@ -96,8 +97,6 @@ func GetEthBlockByNumber(num uint32) (*EthBlock, error) {
 		return nil, err
 	}
 
-	fmt.Printf("req is %s\n", reqbs)
-
 	resp, err := http.Post(ParityURL, "application/json", strings.NewReader(string(reqbs)))
 	if err != nil {
 		return nil, err
@@ -107,11 +106,17 @@ func GetEthBlockByNumber(num uint32) (*EthBlock, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("body is %s\n", body)
+	log.Debugf("[eth_getBlockByNumber] body is %s\n", body)
+	fmt.Printf("[eth_getBlockByNumber] body is %s\n", body)
 	response := &Response{}
 	err = json.Unmarshal(body, response)
 	if err != nil {
 		return nil, err
 	}
+	if response.Result == nil{
+		log.Debugf("[eth_getBlockByNumber] body is %s\n", body)
+		return nil,fmt.Errorf("[eth_getBlockByNumber] can't get the block num:%d\n",num)
+	}
+
 	return response.Result, nil
 }
