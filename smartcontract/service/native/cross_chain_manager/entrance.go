@@ -61,13 +61,13 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("CreateCrossChainTx, contract params deserialize error: %v", err)
 	}
-	log.Debugf("SourceChainID:%v\n", params.SourceChainID)
-	log.Debugf("TargetChainID:%v\n", params.TargetChainID)
-	log.Debugf("Proof:%v\n", params.Proof)
-	log.Debugf("TxData:%v\n", params.TxData)
-	log.Debugf("Height:%v\n", params.Height)
-	log.Debugf("RelayerAddress:%v\n", params.RelayerAddress)
-	log.Debugf("value:%v\n", params.Value)
+	log.Infof("SourceChainID:%v\n", params.SourceChainID)
+	log.Infof("TargetChainID:%v\n", params.TargetChainID)
+	log.Infof("Proof:%v\n", params.Proof)
+	log.Infof("TxData:%v\n", params.TxData)
+	log.Infof("Height:%v\n", params.Height)
+	log.Infof("RelayerAddress:%v\n", params.RelayerAddress)
+	log.Infof("value:%v\n", params.Value)
 
 	chainid := params.SourceChainID
 
