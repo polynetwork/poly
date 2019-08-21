@@ -11,6 +11,7 @@ import (
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/eth"
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/inf"
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/ont"
+	"github.com/ontio/multi-chain/common/log"
 )
 
 const (
@@ -55,18 +56,18 @@ func GetChainHandler(chainid uint64) (inf.ChainHandler, error) {
 }
 
 func ImportExTransfer(native *native.NativeService) ([]byte, error) {
-	fmt.Println("-===ImportExTransfer")
+	log.Debugf("-===ImportExTransfer")
 	params := new(inf.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("CreateCrossChainTx, contract params deserialize error: %v", err)
 	}
-	fmt.Printf("SourceChainID:%v\n", params.SourceChainID)
-	fmt.Printf("TargetChainID:%v\n", params.TargetChainID)
-	fmt.Printf("Proof:%v\n", params.Proof)
-	fmt.Printf("TxData:%v\n", params.TxData)
-	fmt.Printf("Height:%v\n", params.Height)
-	fmt.Printf("RelayerAddress:%v\n", params.RelayerAddress)
-	fmt.Printf("value:%v\n", params.Value)
+	log.Debugf("SourceChainID:%v\n", params.SourceChainID)
+	log.Debugf("TargetChainID:%v\n", params.TargetChainID)
+	log.Debugf("Proof:%v\n", params.Proof)
+	log.Debugf("TxData:%v\n", params.TxData)
+	log.Debugf("Height:%v\n", params.Height)
+	log.Debugf("RelayerAddress:%v\n", params.RelayerAddress)
+	log.Debugf("value:%v\n", params.Value)
 
 	chainid := params.SourceChainID
 
