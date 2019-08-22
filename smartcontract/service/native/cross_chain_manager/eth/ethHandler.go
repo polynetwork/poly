@@ -134,7 +134,10 @@ func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *in
 	log.Infof("tokenAddress:%s\n",tokenAddress)
 
 	txid := "1"
-	txData, err := contractabi.Pack("Withdraw", tokenAddress, txid, bindaddr, amount, nil, nil, nil)
+	v := []uint8{0}
+	r := [][32]byte{[32]byte{0}}
+	s := [][32]byte{[32]byte{0}}
+	txData, err := contractabi.Pack("Withdraw", tokenAddress, txid, bindaddr, amount, v, r, s)
 	if err != nil {
 		log.Errorf("[MakeTransaction]contractabi.Pack error:%s\n",err)
 		return err

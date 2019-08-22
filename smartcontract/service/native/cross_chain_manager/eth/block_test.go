@@ -59,7 +59,7 @@ func TestMissingKeyProof(t *testing.T) {
 		//	t.Errorf("test %d: proof should have one element", i)
 		//}
 
-		fmt.Println("%+v:", proof)
+		fmt.Printf("%+v:", proof)
 
 		val, _, err := trie.VerifyProof(mtrie.Hash(), []byte(key), proof)
 		//val, _, err := trie.VerifyProof(mtrie.Hash(), []byte(key), tmpp)
@@ -179,7 +179,7 @@ func TestProof2(t *testing.T) {
 
 	val, _, err := trie.VerifyProof(common.HexToHash(stateroot), acctkey, ns)
 	if err != nil {
-		t.Fatal("err:%s\n", err.Error())
+		t.Fatalf("err:%s\n", err.Error())
 	}
 	fmt.Printf("val is %v\n", val)
 	acct := &proofAcct{
