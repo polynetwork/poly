@@ -28,9 +28,7 @@ const (
 	OP_RETURN_SCRIPT_FLAG        = byte(0x66)
 	FEE                          = int64(1e3)
 	REQUIRE                      = 5
-	CONFRIMATION                 = 6
 	BTC_TX_PREFIX         string = "btctx"
-	VERIFIED_TX           string = "verified"
 	IP                    string = "172.168.3.73:50071" //"0.0.0.0:50071" //
 )
 

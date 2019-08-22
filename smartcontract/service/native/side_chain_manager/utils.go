@@ -233,7 +233,7 @@ func GetAssetContractAddress(native *native.NativeService, fromChainid, toChaini
 		return "", fmt.Errorf("getAssetMap,get assetMapStore error: %v", err)
 	}
 	if assetMapStore == nil {
-		return "", fmt.Errorf("getAssetMap, can't find any record")
+		return "", fmt.Errorf("getAssetMap, can't find any record with from chainid %d and contract address %s", fromChainid, contractAddress)
 	}
 	assetMapBytes, err := cstates.GetValueFromRawStorageItem(assetMapStore)
 	if err != nil {

@@ -60,7 +60,7 @@ func (this *BTCHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 	if err != nil {
 		return nil, fmt.Errorf("btc Verify, failed to decode proof from string to bytes: %v", err)
 	}
-	ok, p, err := verifyBtcTx(service, proof, tx, params.Height)
+	ok, p, err := verifyBtcTx(service, proof, tx, params.Height, params.SourceChainID)
 	if err != nil {
 		return nil, fmt.Errorf("btc Verify, failed to verify: %v", err)
 	} else if ok != true {
@@ -96,13 +96,17 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *in
 	return nil
 }
 
-func verifyBtcTx(native *native.NativeService, proof []byte, tx []byte, height uint32) (bool, *targetChainParam, error) {
+func verifyBtcTx(native *native.NativeService, proof []byte, tx []byte, height uint32, btcChainID uint64) (bool, *targetChainParam, error) {
 	cli := NewRestClient(IP)
 	besth, err := cli.GetCurrentHeightFromSpv()
 	if err != nil {
 		return false, nil, fmt.Errorf("verifyBtcTx, failed to get current height from spv: %v", err)
 	}
-	if besth-height < CONFRIMATION-1 {
+	sideChain, err := side_chain_manager.GetSideChain(native, btcChainID)
+	if err != nil {
+		return false, nil, fmt.Errorf("verifyBtcTx, side_chain_manager.GetSideChain error: %v", err)
+	}
+	if besth-height < uint32(sideChain.BlocksToWait-1) {
 		return false, nil, fmt.Errorf("verifyBtcTx, transaction is not confirmed, current height: %d, "+
 			"input height: %d", besth, height)
 	}
