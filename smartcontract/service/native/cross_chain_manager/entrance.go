@@ -11,6 +11,7 @@ import (
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/inf"
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/ont"
 	"github.com/ontio/multi-chain/common/log"
+	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
 )
 
 const (
@@ -71,13 +72,13 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	chainid := params.SourceChainID
 
 	//check if chainid exist
-	//sideChain, err := side_chain_manager.GetSideChain(native, chainid)
-	//if err != nil {
-	//	return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side_chain_manager.GetSideChain error: %v", err)
-	//}
-	//if sideChain.Chainid != chainid {
-	//	return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side chain is not registered")
-	//}
+	sideChain, err := side_chain_manager.GetSideChain(native, chainid)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side_chain_manager.GetSideChain error: %v", err)
+	}
+	if sideChain.Chainid != chainid {
+		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side chain is not registered")
+	}
 
 	handler, err := GetChainHandler(chainid)
 	if err != nil {
@@ -93,13 +94,13 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	targetid := txParam.ToChainID
 
 	//check if chainid exist
-	//sideChain, err = side_chain_manager.GetSideChain(native, targetid)
-	//if err != nil {
-	//	return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side_chain_manager.GetSideChain error: %v", err)
-	//}
-	//if sideChain.Chainid != targetid {
-	//	return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, targetid chain is not registered")
-	//}
+	sideChain, err = side_chain_manager.GetSideChain(native, targetid)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side_chain_manager.GetSideChain error: %v", err)
+	}
+	if sideChain.Chainid != targetid {
+		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, targetid chain is not registered")
+	}
 
 	targetHandler, err := GetChainHandler(targetid)
 	if err != nil {
