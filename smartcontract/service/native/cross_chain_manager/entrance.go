@@ -6,11 +6,11 @@ import (
 	"github.com/ontio/multi-chain/smartcontract/service/native"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 
+	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/btc"
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/eth"
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/inf"
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/ont"
-	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
 )
 

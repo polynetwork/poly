@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ontio/multi-chain/common/log"
 	"io/ioutil"
 	"math/big"
 	"net/http"
 	"strings"
-	"github.com/ontio/multi-chain/common/log"
 )
 
 const ParityURL = "http://139.219.131.74:10331"
-//const ParityURL = "http://127.0.0.1:8545"
 
+//const ParityURL = "http://127.0.0.1:8545"
 
 type EthBlock struct {
 	Author          string           `json:"author"`
@@ -115,9 +115,9 @@ func GetEthBlockByNumber(num uint32) (*EthBlock, error) {
 	if err != nil {
 		return nil, err
 	}
-	if response.Result == nil{
+	if response.Result == nil {
 		log.Debugf("[eth_getBlockByNumber] body is %s\n", body)
-		return nil,fmt.Errorf("[eth_getBlockByNumber] can't get the block num:%d\n",num)
+		return nil, fmt.Errorf("[eth_getBlockByNumber] can't get the block num:%d\n", num)
 	}
 
 	return response.Result, nil

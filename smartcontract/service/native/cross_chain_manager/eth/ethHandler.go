@@ -12,6 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/smartcontract/event"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/eth/locker"
@@ -20,7 +21,6 @@ import (
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 	"math/big"
 	"strings"
-	"github.com/ontio/multi-chain/common/log"
 )
 
 type ETHHandler struct {
@@ -89,7 +89,7 @@ func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 	}
 
 	//todo does the proof data too big??
-	tmp := strings.Split(params.Value,"#")
+	tmp := strings.Split(params.Value, "#")
 	fromcontractAddr := tmp[0]
 
 	service.CacheDB.Put(key, proofdata)
@@ -225,14 +225,14 @@ func replace0x(s string) string {
 func checkProofResult(result []byte, value string) bool {
 	fmt.Println("==checkProofResult==")
 	var s []byte
-	err:= rlp.DecodeBytes(result, &s)
-	if err != nil{
-		log.Errorf("[checkProofResult]rlp.DecodeBytes error :%s\n",err)
+	err := rlp.DecodeBytes(result, &s)
+	if err != nil {
+		log.Errorf("[checkProofResult]rlp.DecodeBytes error :%s\n", err)
 		return false
 	}
-	log.Infof("s is %v\n",s)
+	log.Infof("s is %v\n", s)
 	hash := crypto.Keccak256([]byte(value))
-	log.Infof("hash is %v\n",hash)
+	log.Infof("hash is %v\n", hash)
 
 	return bytes.Equal(s, hash)
 }
