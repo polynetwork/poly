@@ -20,6 +20,7 @@ import (
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 	"math/big"
 	"strings"
+	"github.com/ontio/multi-chain/common/log"
 )
 
 type ETHHandler struct {
@@ -97,7 +98,7 @@ func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 	ret.Amount = proof.Amount
 	//todo deal with the proof.decimal
 
-
+	log.Infof("ETH verify succeed!")
 	return ret, nil
 }
 
@@ -218,9 +219,16 @@ func replace0x(s string) string {
 }
 
 func checkProofResult(result []byte, value string) bool {
+	fmt.Println("==checkProofResult==")
 	var s []byte
-	rlp.DecodeBytes(result, &s)
-
+	err:= rlp.DecodeBytes(result, &s)
+	if err != nil{
+		log.Errorf("[checkProofResult]rlp.DecodeBytes error :%s\n",err)
+		return false
+	}
+	log.Infof("s is %v\n",s)
 	hash := crypto.Keccak256([]byte(value))
-	return bytes.Equal(s, hash[1:])
+	log.Infof("hash is %v\n",hash)
+
+	return bytes.Equal(s, hash)
 }
