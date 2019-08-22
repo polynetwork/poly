@@ -113,15 +113,15 @@ func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *in
 	log.Infof("FromContractAddress:%s\n",param.FromContractAddress)
 	log.Infof("ToAddress:%s\n",param.ToAddress)
 	log.Infof("Amount:%d\n",param.Amount)
-	log.Infof("ToChainID:%s\n",param.ToChainID)
-	log.Infof("FromChainID:%s\n",param.FromChainID)
+	log.Infof("ToChainID:%d\n",param.ToChainID)
+	log.Infof("FromChainID:%d\n",param.FromChainID)
 	contractabi, err := abi.JSON(strings.NewReader(locker.EthereumCrossChainABI))
 	if err != nil {
 		return err
 	}
 
 	bindaddr := ethComm.HexToAddress(param.ToAddress)
-
+	log.Infof("bindaddr:%v\n",bindaddr)
 	amount := param.Amount
 	//lockAddress := ethComm.HexToAddress(LOCKER_CONTRACT_ADDR)
 
@@ -129,8 +129,10 @@ func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *in
 	if err != nil {
 		return err
 	}
-
+	log.Infof("targetTokenAddr:%s\n",targetTokenAddr)
 	tokenAddress := ethComm.HexToAddress(targetTokenAddr)
+	log.Infof("tokenAddress:%s\n",tokenAddress)
+
 	txid := "1"
 	txData, err := contractabi.Pack("Withdraw", tokenAddress, txid, bindaddr, amount, nil, nil, nil)
 	if err != nil {
