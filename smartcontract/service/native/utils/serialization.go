@@ -168,3 +168,13 @@ func NeoVmSerializeByteArray(buf io.Writer, item []byte) error {
 func NeoVmSerializeAddress(buf io.Writer, item common.Address) error {
 	return NeoVmSerializeByteArray(buf, item[:])
 }
+
+func NeoVmSerializeArray(buf io.Writer, len uint64) error {
+	if err := serialization.WriteByte(buf, types.ArrayType); err != nil {
+		return fmt.Errorf("NeoVmSerializeArray error: %s", err)
+	}
+	if err := serialization.WriteVarUint(buf, len); err != nil {
+		return fmt.Errorf("NeoVmSerializeArray error: %s", err)
+	}
+	return nil
+}

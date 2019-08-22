@@ -145,19 +145,10 @@ func ProcessCrossChainTx(native *native.NativeService) ([]byte, error) {
 	sink := common.NewZeroCopySink(nil)
 	args.Serialization(sink)
 	buf := bytes.NewBuffer(nil)
-	err = utils.NeoVmSerializeInteger(buf, new(big.Int).SetUint64(args.FromChainID))
+	err = args.NeoVmSerialization(buf)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, utils.NeoVmSerializeInteger fromChainID error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, args.NeoVmSerialization error: %v", err)
 	}
-	err = utils.NeoVmSerializeAddress(buf, args.Address)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, utils.NeoVmSerializeAddress address error: %v", err)
-	}
-	err = utils.NeoVmSerializeInteger(buf, new(big.Int).SetUint64(args.Amount))
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, utils.NeoVmSerializeInteger amount error: %v", err)
-	}
-
 	if dest == utils.OngContractAddress {
 		if _, err := native.NativeCall(dest, functionName, sink.Bytes()); err != nil {
 			return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, native.NativeCall error: %v", err)

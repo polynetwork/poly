@@ -22,6 +22,8 @@ import (
 	"fmt"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
+	"io"
+	"math/big"
 )
 
 type CreateCrossChainTxParam struct {
@@ -131,3 +133,24 @@ func (this *OngUnlockParam) Deserialization(source *common.ZeroCopySource) error
 	this.Amount = amount
 	return nil
 }
+
+func (this *OngUnlockParam) NeoVmSerialization(buf io.Writer) error {
+	err := utils.NeoVmSerializeArray(buf, 3)
+	if err != nil {
+		return fmt.Errorf("OngUnlockParam NeoVmSerialization, utils.NeoVmSerializeArray length error: %v", err)
+	}
+	err = utils.NeoVmSerializeInteger(buf, new(big.Int).SetUint64(this.FromChainID))
+	if err != nil {
+		return fmt.Errorf("OngUnlockParam NeoVmSerialization, utils.NeoVmSerializeInteger fromChainID error: %v", err)
+	}
+	err = utils.NeoVmSerializeAddress(buf, this.Address)
+	if err != nil {
+		return fmt.Errorf("OngUnlockParam NeoVmSerialization, utils.NeoVmSerializeAddress address error: %v", err)
+	}
+	err = utils.NeoVmSerializeInteger(buf, new(big.Int).SetUint64(this.Amount))
+	if err != nil {
+		return fmt.Errorf("OngUnlockParam NeoVmSerialization, utils.NeoVmSerializeInteger amount error: %v", err)
+	}
+	return nil
+}
+
