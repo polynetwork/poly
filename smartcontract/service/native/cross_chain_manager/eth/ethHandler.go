@@ -154,7 +154,7 @@ func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *in
 	service.Notifications = append(service.Notifications,
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
-			States:          []interface{}{"makeETHtx", hex.EncodeToString(bf.Bytes())},
+			States:          []interface{}{"makeETHtx", hex.EncodeToString(txData)},
 		})
 
 	return nil
