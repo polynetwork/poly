@@ -41,7 +41,7 @@ func TestRestClient_GetCurrentHeightFromSpv(t *testing.T) {
 }
 
 func TestRestClient_GetWatchedAddrsFromSpv(t *testing.T) {
-	cli := NewRestClient("172.168.3.73:50071")
+	cli := NewRestClient("centosa:50071")
 	addrs, err := cli.GetWatchedAddrsFromSpv()
 	if err != nil {
 		t.Fatalf("Failed to get height: %v", err)
@@ -111,14 +111,14 @@ func TestRestClient_BroadcastTxBySpv(t *testing.T) {
 }
 
 func TestRestClient_RollbackSpv(t *testing.T) {
-	cli := NewRestClient("0.0.0.0:50071")
+	cli := NewRestClient("centosa:50071")
 
 	prevh, err := cli.GetCurrentHeightFromSpv()
 	if err != nil {
 		t.Fatalf("Failed to get height from spv: %v", err)
 	}
 
-	err = cli.RollbackSpv("2019-08-01 22:21:10")
+	err = cli.RollbackSpv("2019-07-25 22:21:10")
 	if err != nil {
 		t.Fatalf("Failed to roll back: %v", err)
 	}
@@ -129,4 +129,34 @@ func TestRestClient_RollbackSpv(t *testing.T) {
 	}
 
 	fmt.Printf("prev height is %d, now is %d\n", prevh, nowh)
+}
+
+func TestRestClient_DelUtxoFromSpv(t *testing.T) {
+	cli := NewRestClient("centosa:50071")
+
+	h, _ := cli.GetCurrentHeightFromSpv()
+	infos, _ := cli.GetAllUtxosFromSpv()
+
+	fmt.Printf("Total %d utxos\n", len(infos))
+	for i, u := range infos {
+		fmt.Printf("No%d outpoint: %s, height: %d(%d confs), value: %d, lock: %v, script: %s\n", i, u.Outpoint,
+			u.Height, int32(h)-u.Height, u.Val, u.IsLock, u.Script)
+	}
+
+	//err := cli.DelUtxoFromSpv(&btcjson.OutPoint{
+	//	Hash: "d5b57529cc831b1eafa78452f6c6cf0f1782572e3b29a3130010334605946cca",
+	//	Index: 0,
+	//})
+	//if err != nil {
+	//	t.Fatalf("Failed to del utxo: %v", err)
+	//}
+	//
+	//h, _ = cli.GetCurrentHeightFromSpv()
+	//infos, _ = cli.GetAllUtxosFromSpv()
+	//
+	//fmt.Printf("Total %d utxos\n", len(infos))
+	//for i, u := range infos {
+	//	fmt.Printf("No%d outpoint: %s, height: %d(%d confs), value: %d, lock: %v, script: %s\n", i, u.Outpoint,
+	//		u.Height, int32(h)-u.Height, u.Val, u.IsLock, u.Script)
+	//}
 }
