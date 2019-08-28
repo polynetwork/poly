@@ -29,7 +29,7 @@ const (
 	FEE                          = int64(1e3)
 	REQUIRE                      = 5
 	BTC_TX_PREFIX         string = "btctx"
-	IP                    string = "0.0.0.0:50071" //
+	IP                    string = "0.0.0.0:30336" //
 )
 
 var netParam = &chaincfg.TestNet3Params

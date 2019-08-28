@@ -9,39 +9,54 @@ import (
 )
 
 func TestRestClient_ChangeSpvWatchedAddr(t *testing.T) {
-	cli := NewRestClient(IP)
-	err := cli.ChangeSpvWatchedAddr("2N5cY8y9RtbbvQRWkX5zAwTPCxSZF9xEj2C", "add")
-	if err != nil {
-		t.Fatalf("Failed to change addr: %v", err)
-	}
-	addrs, err := cli.GetWatchedAddrsFromSpv()
-	if err != nil {
-		t.Fatalf("Failed to get watched addrs: %v", err)
-	}
-	flag := 0
-	for _, a := range addrs {
-		fmt.Println(a)
-		if a == "2N5cY8y9RtbbvQRWkX5zAwTPCxSZF9xEj2C" {
-			flag = 1
-			break
+	for _, i := range []string{"73", "74", "75", "76", "78", "79", "80"} {
+		cli := NewRestClient("172.168.3." + i + ":50071")
+		err := cli.ChangeSpvWatchedAddr("2N5cY8y9RtbbvQRWkX5zAwTPCxSZF9xEj2C", "add")
+		if err != nil {
+			t.Fatalf("Failed to change addr: %v", err)
 		}
+		addrs, err := cli.GetWatchedAddrsFromSpv()
+		if err != nil {
+			t.Fatalf("Failed to get watched addrs: %v", err)
+		}
+		fmt.Printf(i + ": %v\n\n", addrs)
 	}
-	if flag != 1 {
-		t.Fatalf("addr not found")
-	}
+
+	//cli := NewRestClient(IP)
+	//err := cli.ChangeSpvWatchedAddr("2N5cY8y9RtbbvQRWkX5zAwTPCxSZF9xEj2C", "add")
+	//if err != nil {
+	//	t.Fatalf("Failed to change addr: %v", err)
+	//}
+	//addrs, err := cli.GetWatchedAddrsFromSpv()
+	//if err != nil {
+	//	t.Fatalf("Failed to get watched addrs: %v", err)
+	//}
+	//flag := 0
+	//for _, a := range addrs {
+	//	fmt.Println(a)
+	//	if a == "2N5cY8y9RtbbvQRWkX5zAwTPCxSZF9xEj2C" {
+	//		flag = 1
+	//		break
+	//	}
+	//}
+	//if flag != 1 {
+	//	t.Fatalf("addr not found")
+	//}
 }
 
 func TestRestClient_GetCurrentHeightFromSpv(t *testing.T) {
-	cli := NewRestClient("172.168.3.73:50071")
-	h, err := cli.GetCurrentHeightFromSpv()
-	if err != nil {
-		t.Fatalf("Failed to get height: %v", err)
+	for _, i := range []string{"73", "74", "75", "76", "78", "79", "80"} {
+		cli := NewRestClient("172.168.3." + i + ":50071")
+		h, err := cli.GetCurrentHeightFromSpv()
+		if err != nil {
+			t.Fatalf("Failed to get height: %v", err)
+		}
+		fmt.Printf("height is %d\n", h)
 	}
-	fmt.Printf("height is %d\n", h)
 }
 
 func TestRestClient_GetWatchedAddrsFromSpv(t *testing.T) {
-	cli := NewRestClient("centosa:50071")
+	cli := NewRestClient("172.168.3.73:50071")
 	addrs, err := cli.GetWatchedAddrsFromSpv()
 	if err != nil {
 		t.Fatalf("Failed to get height: %v", err)
@@ -51,7 +66,7 @@ func TestRestClient_GetWatchedAddrsFromSpv(t *testing.T) {
 
 func TestRestClient_GetUtxosFromSpv(t *testing.T) {
 	cli := NewRestClient("172.168.3.73:50071")
-	ins, sum, err := cli.GetUtxosFromSpv("2N5cY8y9RtbbvQRWkX5zAwTPCxSZF9xEj2C", 1000, 100, true)
+	ins, sum, err := cli.GetUtxosFromSpv("mjEoyyCPsLzJ23xMX6Mti13zMyN36kzn57", 1000, 100, true)
 	if err != nil {
 		t.Fatalf("Failed to get utxos: %v", err)
 	}
@@ -84,7 +99,6 @@ func TestRestClient_UnlockUtxoInSpv(t *testing.T) {
 			t.Fatalf("Failed to unlock: %v", err)
 		}
 	}
-
 }
 
 func TestRestClient_GetFeeRateFromSpv(t *testing.T) {
@@ -111,7 +125,7 @@ func TestRestClient_BroadcastTxBySpv(t *testing.T) {
 }
 
 func TestRestClient_RollbackSpv(t *testing.T) {
-	cli := NewRestClient("centosa:50071")
+	cli := NewRestClient("172.168.3.73:50071")
 
 	prevh, err := cli.GetCurrentHeightFromSpv()
 	if err != nil {
@@ -132,14 +146,14 @@ func TestRestClient_RollbackSpv(t *testing.T) {
 }
 
 func TestRestClient_DelUtxoFromSpv(t *testing.T) {
-	cli := NewRestClient("centosa:50071")
+	cli := NewRestClient("172.168.3.79:50071")
 
 	h, _ := cli.GetCurrentHeightFromSpv()
 	infos, _ := cli.GetAllUtxosFromSpv()
 
 	fmt.Printf("Total %d utxos\n", len(infos))
 	for i, u := range infos {
-		fmt.Printf("No%d outpoint: %s, height: %d(%d confs), value: %d, lock: %v, script: %s\n", i, u.Outpoint,
+		fmt.Printf("No%d outpoint: %s, height: %d(%d confs), value: %v, lock: %v, script: %s\n", i, u.Outpoint,
 			u.Height, int32(h)-u.Height, u.Val, u.IsLock, u.Script)
 	}
 

@@ -275,7 +275,7 @@ func TestVerifyBtcTx(t *testing.T) {
 	}
 
 	for _, test := range tests {
-		isPassed, cp, err := verifyBtcTx(test.service, test.proof, test.tx, test.height)
+		isPassed, cp, err := verifyBtcTx(test.service, test.proof, test.tx, test.height, 1)
 
 		if test.isPositive && (!isPassed || err != nil) {
 			t.Fatalf("Failed to verify this positive case: %s-%v", test.name, err)
