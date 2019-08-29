@@ -19,7 +19,7 @@ func TestRestClient_ChangeSpvWatchedAddr(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Failed to get watched addrs: %v", err)
 		}
-		fmt.Printf(i + ": %v\n\n", addrs)
+		fmt.Printf(i+": %v\n\n", addrs)
 	}
 
 	//cli := NewRestClient(IP)

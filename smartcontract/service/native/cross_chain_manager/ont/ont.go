@@ -38,10 +38,8 @@ const (
 	MAKE_TO_ONT_PROOF      = "makeToOntProof"
 
 	//key prefix
-	REQUEST_ID  = "requestID"
-	REQUEST     = "request"
-	CURRENT_ID  = "currentID"
-	REMAINED_ID = "remainedID"
+	DONE_TX = "doneTx"
+	REQUEST = "request"
 )
 
 type ONTHandler struct {

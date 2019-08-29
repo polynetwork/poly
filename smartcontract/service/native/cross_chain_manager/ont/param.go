@@ -153,4 +153,3 @@ func (this *OngUnlockParam) NeoVmSerialization(buf io.Writer) error {
 	}
 	return nil
 }
-

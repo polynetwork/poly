@@ -26,19 +26,19 @@ import (
 )
 
 type FromMerkleValue struct {
-	RequestID                uint64
+	TxHash                   common.Uint256
 	CreateCrossChainTxMerkle *CreateCrossChainTxMerkle
 }
 
 func (this *FromMerkleValue) Serialization(sink *common.ZeroCopySink) {
-	utils.EncodeVarUint(sink, this.RequestID)
+	utils.EncodeUint256(sink, this.TxHash)
 	this.CreateCrossChainTxMerkle.Serialization(sink)
 }
 
 func (this *FromMerkleValue) Deserialization(source *common.ZeroCopySource) error {
-	requestID, err := utils.DecodeVarUint(source)
+	txHash, err := utils.DecodeUint256(source)
 	if err != nil {
-		return fmt.Errorf("MerkleValue deserialize requestID error:%s", err)
+		return fmt.Errorf("MerkleValue deserialize txHash error:%s", err)
 	}
 	createCrossChainTxMerkle := new(CreateCrossChainTxMerkle)
 	err = createCrossChainTxMerkle.Deserialization(source)
@@ -46,27 +46,27 @@ func (this *FromMerkleValue) Deserialization(source *common.ZeroCopySource) erro
 		return fmt.Errorf("MerkleValue deserialize createCrossChainTxMerkle error:%s", err)
 	}
 
-	this.RequestID = requestID
+	this.TxHash = txHash
 	this.CreateCrossChainTxMerkle = createCrossChainTxMerkle
 	return nil
 }
 
 type ToMerkleValue struct {
-	RequestID         uint64
+	TxHash            common.Uint256
 	ToContractAddress string
 	MakeTxParam       *inf.MakeTxParam
 }
 
 func (this *ToMerkleValue) Serialization(sink *common.ZeroCopySink) {
-	utils.EncodeVarUint(sink, this.RequestID)
+	utils.EncodeUint256(sink, this.TxHash)
 	utils.EncodeString(sink, this.ToContractAddress)
 	this.MakeTxParam.Serialization(sink)
 }
 
 func (this *ToMerkleValue) Deserialization(source *common.ZeroCopySource) error {
-	requestID, err := utils.DecodeVarUint(source)
+	txHash, err := utils.DecodeUint256(source)
 	if err != nil {
-		return fmt.Errorf("MerkleValue deserialize requestID error:%s", err)
+		return fmt.Errorf("MerkleValue deserialize txHash error:%s", err)
 	}
 	toContractAddress, err := utils.DecodeString(source)
 	if err != nil {
@@ -78,7 +78,7 @@ func (this *ToMerkleValue) Deserialization(source *common.ZeroCopySource) error 
 		return fmt.Errorf("MerkleValue deserialize makeTxParam error:%s", err)
 	}
 
-	this.RequestID = requestID
+	this.TxHash = txHash
 	this.ToContractAddress = toContractAddress
 	this.MakeTxParam = makeTxParam
 	return nil

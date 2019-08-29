@@ -61,146 +61,43 @@ func appCallTransfer(native *native.NativeService, contract common.Address, from
 	return nil
 }
 
-func putRequestID(native *native.NativeService, requestID uint64, chainID uint64) error {
+func putDoneTx(native *native.NativeService, txHash common.Uint256, chainID uint64) error {
 	contract := utils.CrossChainContractAddress
-	requestIDBytes, err := utils.GetUint64Bytes(requestID)
-	if err != nil {
-		return fmt.Errorf("putRequestID, get requestIDBytes error: %v", err)
-	}
+	prefix := txHash.ToArray()
 	chainIDBytes, err := utils.GetUint64Bytes(chainID)
 	if err != nil {
 		return fmt.Errorf("putRequestID, get chainIDBytes error: %v", err)
 	}
-	native.CacheDB.Put(utils.ConcatKey(contract, []byte(REQUEST_ID), chainIDBytes), cstates.GenRawStorageItem(requestIDBytes))
+	native.CacheDB.Put(utils.ConcatKey(contract, []byte(DONE_TX), chainIDBytes, prefix), cstates.GenRawStorageItem(txHash.ToArray()))
 	return nil
 }
 
-func getRequestID(native *native.NativeService, chainID uint64) (uint64, error) {
+func checkDoneTx(native *native.NativeService, txHash common.Uint256, chainID uint64) error {
 	contract := utils.CrossChainContractAddress
+	prefix := txHash.ToArray()
 	chainIDBytes, err := utils.GetUint64Bytes(chainID)
 	if err != nil {
-		return 0, fmt.Errorf("getRequestID, get chainIDBytes error: %v", err)
+		return fmt.Errorf("checkDoneTx, get chainIDBytes error: %v", err)
 	}
-	var requestID uint64 = 0
-	value, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(REQUEST_ID), chainIDBytes))
+	value, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(DONE_TX), chainIDBytes, prefix))
 	if err != nil {
-		return 0, fmt.Errorf("getRequestID, get requestID value error: %v", err)
+		return fmt.Errorf("checkDoneTx, native.CacheDB.Get error: %v", err)
 	}
 	if value != nil {
-		requestIDBytes, err := cstates.GetValueFromRawStorageItem(value)
-		if err != nil {
-			return 0, fmt.Errorf("getRequestID, deserialize from raw storage item err:%v", err)
-		}
-		requestID, err = utils.GetBytesUint64(requestIDBytes)
-		if err != nil {
-			return 0, fmt.Errorf("getRequestID, get requestID error: %v", err)
-		}
+		return fmt.Errorf("checkDoneTx, tx already done")
 	}
-	return requestID, nil
+	return nil
 }
 
-func putRequest(native *native.NativeService, requestID uint64, chainID uint64, request []byte) error {
+func putRequest(native *native.NativeService, txHash common.Uint256, chainID uint64, request []byte) error {
 	contract := utils.CrossChainContractAddress
-	prefix, err := utils.GetUint64Bytes(requestID)
-	if err != nil {
-		return fmt.Errorf("putRequest, GetUint64Bytes error:%s", err)
-	}
+	prefix := txHash.ToArray()
 	chainIDBytes, err := utils.GetUint64Bytes(chainID)
 	if err != nil {
 		return fmt.Errorf("putRequest, get chainIDBytes error: %v", err)
 	}
 	utils.PutBytes(native, utils.ConcatKey(contract, []byte(REQUEST), chainIDBytes, prefix), request)
 	return nil
-}
-
-//must be called before putCurrentID
-func putRemainedIDs(native *native.NativeService, requestID, currentID uint64, chainID uint64) error {
-	contract := utils.CrossChainContractAddress
-	for i := currentID + 1; i < requestID; i++ {
-		requestIDBytes, err := utils.GetUint64Bytes(i)
-		if err != nil {
-			return fmt.Errorf("putRemainedID, get requestIDBytes error: %v", err)
-		}
-		chainIDBytes, err := utils.GetUint64Bytes(chainID)
-		if err != nil {
-			return fmt.Errorf("putRemainedID, get chainIDBytes error: %v", err)
-		}
-		native.CacheDB.Put(utils.ConcatKey(contract, []byte(REMAINED_ID), chainIDBytes, requestIDBytes), cstates.GenRawStorageItem(requestIDBytes))
-	}
-	return nil
-}
-
-func checkIfRemained(native *native.NativeService, requestID uint64, chainID uint64) (bool, error) {
-	contract := utils.CrossChainContractAddress
-	chainIDBytes, err := utils.GetUint64Bytes(chainID)
-	if err != nil {
-		return false, fmt.Errorf("checkIfRemained, get chainIDBytes error: %v", err)
-	}
-	requestIDBytes, err := utils.GetUint64Bytes(requestID)
-	if err != nil {
-		return false, fmt.Errorf("checkIfRemained, get requestIDBytes error: %v", err)
-	}
-	value, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(REMAINED_ID), chainIDBytes, requestIDBytes))
-	if err != nil {
-		return false, fmt.Errorf("checkIfRemained, get value error: %v", err)
-	}
-	if value == nil {
-		return false, nil
-	} else {
-		return true, nil
-	}
-}
-
-func removeRemained(native *native.NativeService, requestID uint64, chainID uint64) error {
-	contract := utils.CrossChainContractAddress
-	chainIDBytes, err := utils.GetUint64Bytes(chainID)
-	if err != nil {
-		return fmt.Errorf("removeRemained, get chainIDBytes error: %v", err)
-	}
-	requestIDBytes, err := utils.GetUint64Bytes(requestID)
-	if err != nil {
-		return fmt.Errorf("removeRemained, get requestIDBytes error: %v", err)
-	}
-	native.CacheDB.Delete(utils.ConcatKey(contract, []byte(REMAINED_ID), chainIDBytes, requestIDBytes))
-	return nil
-}
-
-func putCurrentID(native *native.NativeService, currentID uint64, chainID uint64) error {
-	contract := utils.CrossChainContractAddress
-	currentIDBytes, err := utils.GetUint64Bytes(currentID)
-	if err != nil {
-		return fmt.Errorf("putCurrentID, get currentIDBytes error: %v", err)
-	}
-	chainIDBytes, err := utils.GetUint64Bytes(chainID)
-	if err != nil {
-		return fmt.Errorf("putRequestID, get chainIDBytes error: %v", err)
-	}
-	native.CacheDB.Put(utils.ConcatKey(contract, []byte(CURRENT_ID), chainIDBytes), cstates.GenRawStorageItem(currentIDBytes))
-	return nil
-}
-
-func getCurrentID(native *native.NativeService, chainID uint64) (uint64, error) {
-	contract := utils.CrossChainContractAddress
-	chainIDBytes, err := utils.GetUint64Bytes(chainID)
-	if err != nil {
-		return 0, fmt.Errorf("getCurrentID, get chainIDBytes error: %v", err)
-	}
-	var currentID uint64 = 0
-	value, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(CURRENT_ID), chainIDBytes))
-	if err != nil {
-		return 0, fmt.Errorf("getCurrentID, get currentID value error: %v", err)
-	}
-	if value != nil {
-		currentIDBytes, err := cstates.GetValueFromRawStorageItem(value)
-		if err != nil {
-			return 0, fmt.Errorf("getCurrentID, deserialize from raw storage item err:%v", err)
-		}
-		currentID, err = utils.GetBytesUint64(currentIDBytes)
-		if err != nil {
-			return 0, fmt.Errorf("getCurrentID, get currentID error: %v", err)
-		}
-	}
-	return currentID, nil
 }
 
 func VerifyFromOntTx(native *native.NativeService, proof []byte, fromChainid uint64, height uint32) (*FromMerkleValue, error) {
@@ -223,45 +120,22 @@ func VerifyFromOntTx(native *native.NativeService, proof []byte, fromChainid uin
 	}
 
 	//record done cross chain tx
-	oldCurrentID, err := getCurrentID(native, fromChainid)
+	err = checkDoneTx(native, merkleValue.TxHash, fromChainid)
 	if err != nil {
-		return nil, fmt.Errorf("VerifyFromOntTx, getCurrentID error: %v", err)
+		return nil, fmt.Errorf("VerifyToOntTx, checkDoneTx error:%s", err)
 	}
-	if merkleValue.RequestID > oldCurrentID {
-		err = putRemainedIDs(native, merkleValue.RequestID, oldCurrentID, fromChainid)
-		if err != nil {
-			return nil, fmt.Errorf("VerifyFromOntTx, putRemainedIDs error: %v", err)
-		}
-		err = putCurrentID(native, merkleValue.RequestID, fromChainid)
-		if err != nil {
-			return nil, fmt.Errorf("VerifyFromOntTx, putCurrentID error: %v", err)
-		}
-	} else {
-		ok, err := checkIfRemained(native, merkleValue.RequestID, fromChainid)
-		if err != nil {
-			return nil, fmt.Errorf("VerifyFromOntTx, checkIfRemained error: %v", err)
-		}
-		if !ok {
-			return nil, fmt.Errorf("VerifyFromOntTx, tx already done")
-		} else {
-			err = removeRemained(native, merkleValue.RequestID, fromChainid)
-			if err != nil {
-				return nil, fmt.Errorf("VerifyFromOntTx, removeRemained error: %v", err)
-			}
-		}
+	err = putDoneTx(native, merkleValue.TxHash, fromChainid)
+	if err != nil {
+		return nil, fmt.Errorf("VerifyToOntTx, putDoneTx error:%s", err)
 	}
+
 	return merkleValue, nil
 }
 
 func MakeFromOntProof(native *native.NativeService, params *CreateCrossChainTxParam) error {
 	//record cross chain tx
-	requestID, err := getRequestID(native, params.ToChainID)
-	if err != nil {
-		return fmt.Errorf("MakeFromOntProof, getRequestID error:%s", err)
-	}
-	newID := requestID + 1
 	merkleValue := &FromMerkleValue{
-		RequestID: newID,
+		TxHash: native.Tx.Hash(),
 		CreateCrossChainTxMerkle: &CreateCrossChainTxMerkle{
 			FromChainID:         native.ShardID.ToUint64(),
 			FromContractAddress: native.ContextRef.CallingContext().ContractAddress.ToHexString(),
@@ -273,19 +147,12 @@ func MakeFromOntProof(native *native.NativeService, params *CreateCrossChainTxPa
 	}
 	sink := common.NewZeroCopySink(nil)
 	merkleValue.Serialization(sink)
-	err = putRequest(native, newID, params.ToChainID, sink.Bytes())
+	err := putRequest(native, merkleValue.TxHash, params.ToChainID, sink.Bytes())
 	if err != nil {
 		return fmt.Errorf("MakeFromOntProof, putRequest error:%s", err)
 	}
 	native.ContextRef.PutMerkleVal(sink.Bytes())
-	err = putRequestID(native, newID, params.ToChainID)
-	if err != nil {
-		return fmt.Errorf("MakeFromOntProof, putRequestID error:%s", err)
-	}
-	prefix, err := utils.GetUint64Bytes(newID)
-	if err != nil {
-		return fmt.Errorf("MakeFromOntProof, GetUint64Bytes error:%s", err)
-	}
+	prefix := merkleValue.TxHash.ToArray()
 	chainIDBytes, err := utils.GetUint64Bytes(params.ToChainID)
 	if err != nil {
 		return fmt.Errorf("MakeFromOntProof, get chainIDBytes error: %v", err)
@@ -315,44 +182,20 @@ func VerifyToOntTx(native *native.NativeService, proof []byte, fromChainid uint6
 	}
 
 	//record done cross chain tx
-	oldCurrentID, err := getCurrentID(native, fromChainid)
+	err = checkDoneTx(native, merkleValue.TxHash, fromChainid)
 	if err != nil {
-		return nil, fmt.Errorf("VerifyToOntTx, getCurrentID error: %v", err)
+		return nil, fmt.Errorf("VerifyToOntTx, checkDoneTx error:%s", err)
 	}
-	if merkleValue.RequestID > oldCurrentID {
-		err = putRemainedIDs(native, merkleValue.RequestID, oldCurrentID, fromChainid)
-		if err != nil {
-			return nil, fmt.Errorf("VerifyToOntTx, putRemainedIDs error: %v", err)
-		}
-		err = putCurrentID(native, merkleValue.RequestID, fromChainid)
-		if err != nil {
-			return nil, fmt.Errorf("VerifyToOntTx, putCurrentID error: %v", err)
-		}
-	} else {
-		ok, err := checkIfRemained(native, merkleValue.RequestID, fromChainid)
-		if err != nil {
-			return nil, fmt.Errorf("VerifyToOntTx, checkIfRemained error: %v", err)
-		}
-		if !ok {
-			return nil, fmt.Errorf("VerifyToOntTx, tx already done")
-		} else {
-			err = removeRemained(native, merkleValue.RequestID, fromChainid)
-			if err != nil {
-				return nil, fmt.Errorf("VerifyToOntTx, removeRemained error: %v", err)
-			}
-		}
+	err = putDoneTx(native, merkleValue.TxHash, fromChainid)
+	if err != nil {
+		return nil, fmt.Errorf("VerifyToOntTx, putDoneTx error:%s", err)
 	}
+
 	return merkleValue, nil
 }
 
 func MakeToOntProof(native *native.NativeService, params *inf.MakeTxParam) error {
 	//record cross chain tx
-	requestID, err := getRequestID(native, params.ToChainID)
-	if err != nil {
-		return fmt.Errorf("MakeToOntProof, getRequestID error:%s", err)
-	}
-	newID := requestID + 1
-
 	destContractAddr, err := side_chain_manager.GetAssetContractAddress(native, params.FromChainID,
 		params.ToChainID, params.FromContractAddress)
 	if err != nil {
@@ -360,25 +203,18 @@ func MakeToOntProof(native *native.NativeService, params *inf.MakeTxParam) error
 	}
 
 	merkleValue := &ToMerkleValue{
-		RequestID:         newID,
+		TxHash:            native.Tx.Hash(),
 		ToContractAddress: destContractAddr,
 		MakeTxParam:       params,
 	}
 	sink := common.NewZeroCopySink(nil)
 	merkleValue.Serialization(sink)
-	err = putRequest(native, newID, params.ToChainID, sink.Bytes())
+	err = putRequest(native, merkleValue.TxHash, params.ToChainID, sink.Bytes())
 	if err != nil {
 		return fmt.Errorf("MakeToOntProof, putRequest error:%s", err)
 	}
 	native.ContextRef.PutMerkleVal(sink.Bytes())
-	err = putRequestID(native, newID, params.ToChainID)
-	if err != nil {
-		return fmt.Errorf("MakeToOntProof, putRequestID error:%s", err)
-	}
-	prefix, err := utils.GetUint64Bytes(newID)
-	if err != nil {
-		return fmt.Errorf("MakeToOntProof, GetUint64Bytes error:%s", err)
-	}
+	prefix := merkleValue.TxHash.ToArray()
 	chainIDBytes, err := utils.GetUint64Bytes(params.ToChainID)
 	if err != nil {
 		return fmt.Errorf("MakeToOntProof, get chainIDBytes error: %v", err)
