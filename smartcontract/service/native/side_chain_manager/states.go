@@ -27,13 +27,13 @@ import (
 )
 
 type SideChain struct {
-	Chainid      uint64
+	ChainId      uint64
 	Name         string
 	BlocksToWait uint64
 }
 
 func (this *SideChain) Serialization(sink *common.ZeroCopySink) error {
-	utils.EncodeVarUint(sink, this.Chainid)
+	utils.EncodeVarUint(sink, this.ChainId)
 	utils.EncodeString(sink, this.Name)
 	utils.EncodeVarUint(sink, this.BlocksToWait)
 	return nil
@@ -53,7 +53,7 @@ func (this *SideChain) Deserialization(source *common.ZeroCopySource) error {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize blocksToWait error: %v", err)
 	}
 
-	this.Chainid = chainid
+	this.ChainId = chainid
 	this.Name = name
 	this.BlocksToWait = blocksToWait
 	return nil
