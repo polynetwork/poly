@@ -89,7 +89,7 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *inf.MakeTxPa
 	}
 
 	return true, &inf.MakeTxParam{
-		FromChainID: params.FromChainID,
+		FromChainID:         params.FromChainID,
 		FromContractAddress: BTC_ADDRESS,
 		ToChainID:           p.ChainId,
 		ToAddress:           p.Addr.ToBase58(),

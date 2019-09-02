@@ -15,28 +15,20 @@ import (
 )
 
 const (
-	ImportExTransfer_Name = "ImportOuterTransfer"
-	Vote_Name             = "Vote"
+	IMPORT_OUTER_TRANSFER_NAME = "ImportOuterTransfer"
+	VOTE_NAME                  = "Vote"
 )
 
 type CrossChainHandler func(native *native.NativeService) ([]byte, error)
 
-//var mapping = make(map[uint64]CrossChainHandler)
-
 func InitEntrance() {
-	native.Contracts[utils.CrossChainManagerContractAddress] = RegisterCrossChianManagerContract
-	//RegisterChainHandler(0,BTCHandler)
-	//RegisterChainHandler(1,ETHHandler)
+	native.Contracts[utils.CrossChainManagerContractAddress] = RegisterCrossChainManagerContract
 }
 
-func RegisterCrossChianManagerContract(native *native.NativeService) {
-	native.Register(ImportExTransfer_Name, ImportExTransfer)
-	native.Register(Vote_Name, Vote)
+func RegisterCrossChainManagerContract(native *native.NativeService) {
+	native.Register(IMPORT_OUTER_TRANSFER_NAME, ImportExTransfer)
+	native.Register(VOTE_NAME, Vote)
 }
-
-//func RegisterChainHandler(chainid uint64, handler CrossChainHandler) {
-//	mapping[chainid] = handler
-//}
 
 func GetChainHandler(chainid uint64) (inf.ChainHandler, error) {
 	//handler, ok := mapping[chainid]
@@ -57,7 +49,6 @@ func GetChainHandler(chainid uint64) (inf.ChainHandler, error) {
 }
 
 func ImportExTransfer(native *native.NativeService) ([]byte, error) {
-	log.Debugf("-===ImportExTransfer")
 	params := new(inf.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, contract params deserialize error: %v", err)
@@ -95,7 +86,6 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 }
 
 func Vote(native *native.NativeService) ([]byte, error) {
-	log.Debugf("-===Vote")
 	params := new(inf.VoteParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("Vote, contract params deserialize error: %v", err)

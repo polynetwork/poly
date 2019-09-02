@@ -163,18 +163,18 @@ func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *in
 
 func verifyMerkleProof(ethproof *ETHProof, blockdata *EthBlock) ([]byte, error) {
 	//1. prepare verify account
-	nodelist := new(light.NodeList)
+	nodeList := new(light.NodeList)
 
 	for _, s := range ethproof.AccountProof {
 		p := replace0x(s)
-		nodelist.Put(nil, ethComm.Hex2Bytes(p))
+		nodeList.Put(nil, ethComm.Hex2Bytes(p))
 	}
-	ns := nodelist.NodeSet()
+	ns := nodeList.NodeSet()
 
-	acctkey := crypto.Keccak256(ethComm.Hex2Bytes(replace0x(ethproof.Address)))
+	acctKey := crypto.Keccak256(ethComm.Hex2Bytes(replace0x(ethproof.Address)))
 
 	//2. verify account proof
-	acctval, _, err := trie.VerifyProof(ethComm.HexToHash(replace0x(blockdata.StateRoot)), acctkey, ns)
+	acctVal, _, err := trie.VerifyProof(ethComm.HexToHash(replace0x(blockdata.StateRoot)), acctKey, ns)
 	if err != nil {
 		fmt.Printf("[verifyMerkleProof]verify account err:%s\n", err.Error())
 		return nil, err
@@ -194,37 +194,37 @@ func verifyMerkleProof(ethproof *ETHProof, blockdata *EthBlock) ([]byte, error) 
 		return nil, fmt.Errorf("error format of Balance:%s\n", ethproof.Balance)
 	}
 
-	storagehash := ethComm.HexToHash(replace0x(ethproof.StorageHash))
-	codehash := ethComm.HexToHash(replace0x(ethproof.CodeHash))
+	storageHash := ethComm.HexToHash(replace0x(ethproof.StorageHash))
+	codeHash := ethComm.HexToHash(replace0x(ethproof.CodeHash))
 	//construct the account value
 	acct := &ProofAccount{
 		Nounce:   nounce,
 		Balance:  balance,
-		Storage:  storagehash,
-		Codehash: codehash,
+		Storage:  storageHash,
+		Codehash: codeHash,
 	}
 	acctrlp, err := rlp.EncodeToBytes(acct)
 	if err != nil {
 		return nil, err
 	}
-	if !bytes.Equal(acctrlp, acctval) {
+	if !bytes.Equal(acctrlp, acctVal) {
 		return nil, fmt.Errorf("[verifyMerkleProof]: verify account proof failed, wanted:%v, get:%v", acctrlp, acctval)
 	}
 	//3.verify storage proof
-	nodelist = new(light.NodeList)
+	nodeList = new(light.NodeList)
 
 	if len(ethproof.StorageProofs) != 1 {
 		return nil, fmt.Errorf("[verifyMerkleProof]: storage proof fmt error")
 	}
 
 	sp := ethproof.StorageProofs[0]
-	storagekey := crypto.Keccak256(ethComm.Hex2Bytes(replace0x(sp.Key)))
+	storageKey := crypto.Keccak256(ethComm.Hex2Bytes(replace0x(sp.Key)))
 	for _, prf := range sp.Proof {
 		nodelist.Put(nil, ethComm.Hex2Bytes(replace0x(prf)))
 	}
 
 	ns = nodelist.NodeSet()
-	val, _, err := trie.VerifyProof(storagehash, storagekey, ns)
+	val, _, err := trie.VerifyProof(storagehash, storageKey, ns)
 	if err != nil {
 		fmt.Printf("[verifyMerkleProof]verify storage failed:%s\n", err.Error())
 		return nil, err

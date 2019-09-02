@@ -9,11 +9,11 @@ import (
 )
 
 var (
-	Key_prefix_BTC = "btc"
-	Key_prefix_ETH = "eth"
+	KEY_PREFIX_BTC = "btc"
+	KEY_PREFIX_ETH = "eth"
 
-	Key_prefix_BTC_Vote = "btcVote"
-	Key_prefix_ETH_Vote = "ethVote"
+	KEY_PREFIX_BTC_VOTE = "btcVote"
+	KEY_PREFIX_ETH_VOTE = "ethVote"
 )
 
 type ChainHandler interface {
@@ -130,7 +130,7 @@ func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 
 type VoteParam struct {
 	FromChainID uint64
-	TxHash []byte
+	TxHash      []byte
 }
 
 func (this *VoteParam) Serialization(sink *common.ZeroCopySink) {
