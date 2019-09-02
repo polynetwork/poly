@@ -3,13 +3,14 @@ package eth
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
-	"github.com/ontio/multi-chain/common/log"
 	"io/ioutil"
 	"math/big"
 	"net/http"
 	"strings"
+
+	"github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
+	"github.com/ontio/multi-chain/common/log"
 )
 
 const ParityURL = "http://139.219.131.74:10331"

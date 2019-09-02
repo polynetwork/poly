@@ -1,18 +1,18 @@
 package eth
 
 import (
+	"bytes"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"math/big"
 	"net/http"
+	"strconv"
 	"strings"
 
-	"bytes"
-	"fmt"
 	ethComm "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
-	"strconv"
 )
 
 type Proof struct {
