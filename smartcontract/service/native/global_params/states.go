@@ -19,9 +19,9 @@
 package global_params
 
 import (
+	"fmt"
 	"io"
 
-	"fmt"
 	"github.com/ontio/multi-chain/common/serialization"
 	"github.com/ontio/multi-chain/errors"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"

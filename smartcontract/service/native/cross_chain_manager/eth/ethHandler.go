@@ -58,7 +58,7 @@ func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam,
 	}
 
 	bf := bytes.NewBuffer(utils.CrossChainManagerContractAddress[:])
-	keybytes := ethComm.Hex2Bytes(inf.Key_prefix_ETH + replace0x(ethproof.StorageProofs[0].Key))
+	keybytes := ethComm.Hex2Bytes(inf.KEY_PREFIX_ETH + replace0x(ethproof.StorageProofs[0].Key))
 	bf.Write(keybytes)
 	key := bf.Bytes()
 	val, err := service.CacheDB.Get(key)
@@ -208,7 +208,7 @@ func verifyMerkleProof(ethproof *ETHProof, blockdata *EthBlock) ([]byte, error) 
 		return nil, err
 	}
 	if !bytes.Equal(acctrlp, acctVal) {
-		return nil, fmt.Errorf("[verifyMerkleProof]: verify account proof failed, wanted:%v, get:%v", acctrlp, acctval)
+		return nil, fmt.Errorf("[verifyMerkleProof]: verify account proof failed, wanted:%v, get:%v", acctrlp, acctVal)
 	}
 	//3.verify storage proof
 	nodeList = new(light.NodeList)
@@ -220,11 +220,11 @@ func verifyMerkleProof(ethproof *ETHProof, blockdata *EthBlock) ([]byte, error) 
 	sp := ethproof.StorageProofs[0]
 	storageKey := crypto.Keccak256(ethComm.Hex2Bytes(replace0x(sp.Key)))
 	for _, prf := range sp.Proof {
-		nodelist.Put(nil, ethComm.Hex2Bytes(replace0x(prf)))
+		nodeList.Put(nil, ethComm.Hex2Bytes(replace0x(prf)))
 	}
 
-	ns = nodelist.NodeSet()
-	val, _, err := trie.VerifyProof(storagehash, storageKey, ns)
+	ns = nodeList.NodeSet()
+	val, _, err := trie.VerifyProof(storageHash, storageKey, ns)
 	if err != nil {
 		fmt.Printf("[verifyMerkleProof]verify storage failed:%s\n", err.Error())
 		return nil, err
