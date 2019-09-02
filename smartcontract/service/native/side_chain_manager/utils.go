@@ -69,7 +69,7 @@ func getRegisterSideChain(native *native.NativeService, chanid uint64) (*SideCha
 		return nil, fmt.Errorf("getRegisterSideChain,get registerSideChainRequestStore error: %v", err)
 	}
 	sideChain := &SideChain{
-		Chainid: math.MaxUint64,
+		ChainId: math.MaxUint64,
 	}
 	if sideChainStore != nil {
 		sideChainBytes, err := cstates.GetValueFromRawStorageItem(sideChainStore)
@@ -85,7 +85,7 @@ func getRegisterSideChain(native *native.NativeService, chanid uint64) (*SideCha
 
 func putRegisterSideChain(native *native.NativeService, sideChain *SideChain) error {
 	contract := utils.SideChainManagerContractAddress
-	chainidByte, err := utils.GetUint64Bytes(sideChain.Chainid)
+	chainidByte, err := utils.GetUint64Bytes(sideChain.ChainId)
 	if err != nil {
 		return fmt.Errorf("putRegisterSideChain, utils.GetUint64Bytes error: %v", err)
 	}
@@ -112,7 +112,7 @@ func GetSideChain(native *native.NativeService, chanid uint64) (*SideChain, erro
 		return nil, fmt.Errorf("getSideChain,get registerSideChainRequestStore error: %v", err)
 	}
 	sideChain := &SideChain{
-		Chainid: math.MaxUint64,
+		ChainId: math.MaxUint64,
 	}
 	if sideChainStore != nil {
 		sideChainBytes, err := cstates.GetValueFromRawStorageItem(sideChainStore)
@@ -128,7 +128,7 @@ func GetSideChain(native *native.NativeService, chanid uint64) (*SideChain, erro
 
 func putSideChain(native *native.NativeService, sideChain *SideChain) error {
 	contract := utils.SideChainManagerContractAddress
-	chainidByte, err := utils.GetUint64Bytes(sideChain.Chainid)
+	chainidByte, err := utils.GetUint64Bytes(sideChain.ChainId)
 	if err != nil {
 		return fmt.Errorf("putSideChain, utils.GetUint32Bytes error: %v", err)
 	}
@@ -169,7 +169,7 @@ func getUpdateSideChain(native *native.NativeService, chanid uint64) (*SideChain
 
 func putUpdateSideChain(native *native.NativeService, sideChain *SideChain) error {
 	contract := utils.SideChainManagerContractAddress
-	chainidByte, err := utils.GetUint64Bytes(sideChain.Chainid)
+	chainidByte, err := utils.GetUint64Bytes(sideChain.ChainId)
 	if err != nil {
 		return fmt.Errorf("putUpdateSideChain, utils.GetUint64Bytes error: %v", err)
 	}

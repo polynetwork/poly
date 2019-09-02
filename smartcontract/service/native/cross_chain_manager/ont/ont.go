@@ -49,6 +49,10 @@ func NewONTHandler() *ONTHandler {
 	return &ONTHandler{}
 }
 
+func (this *ONTHandler) Vote(service *native.NativeService) (bool, *inf.MakeTxParam, error) {
+	return true, nil, nil
+}
+
 func (this *ONTHandler) Verify(service *native.NativeService) (*inf.MakeTxParam, error) {
 	params := new(inf.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.Input)); err != nil {

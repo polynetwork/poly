@@ -241,25 +241,25 @@ func getUnsignedTx(txIns []btcjson.TransactionInput, amounts map[string]int64, c
 	return mtx, nil
 }
 
-func putBtcTx(native *native.NativeService, txHash, tx []byte) {
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(inf.Key_prefix_BTC), txHash)
-	native.CacheDB.Put(key, cstates.GenRawStorageItem(tx))
+func putBtcProof(native *native.NativeService, txHash, proof []byte) {
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(inf.KEY_PREFIX_BTC), txHash)
+	native.CacheDB.Put(key, cstates.GenRawStorageItem(proof))
 }
 
-func getBtcTx(native *native.NativeService, txHash []byte) ([]byte, error) {
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(inf.Key_prefix_BTC), txHash)
-	btcTxStore, err := native.CacheDB.Get(key)
+func getBtcProof(native *native.NativeService, txHash []byte) ([]byte, error) {
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(inf.KEY_PREFIX_BTC), txHash)
+	btcProofStore, err := native.CacheDB.Get(key)
 	if err != nil {
-		return nil, fmt.Errorf("getBtcTx, get btcTxStore error: %v", err)
+		return nil, fmt.Errorf("getBtcProof, get btcProofStore error: %v", err)
 	}
-	if btcTxStore == nil {
-		return nil, fmt.Errorf("getBtcTx, can not find any records")
+	if btcProofStore == nil {
+		return nil, fmt.Errorf("getBtcProof, can not find any records")
 	}
-	btcTxBytes, err := cstates.GetValueFromRawStorageItem(btcTxStore)
+	btcProofBytes, err := cstates.GetValueFromRawStorageItem(btcProofStore)
 	if err != nil {
-		return nil, fmt.Errorf("getBtcTx, deserialize from raw storage item err:%v", err)
+		return nil, fmt.Errorf("getBtcProof, deserialize from raw storage item err:%v", err)
 	}
-	return btcTxBytes, nil
+	return btcProofBytes, nil
 }
 
 func putBtcVote(native *native.NativeService, txHash []byte, vote uint64) error {
@@ -267,13 +267,13 @@ func putBtcVote(native *native.NativeService, txHash []byte, vote uint64) error 
 	if err != nil {
 		return fmt.Errorf("putBtcVote, utils.GetBytesUint64 err:%v", err)
 	}
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(inf.Key_prefix_BTC_Vote), txHash)
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(inf.KEY_PREFIX_BTC_VOTE), txHash)
 	native.CacheDB.Put(key, cstates.GenRawStorageItem(voteBytes))
 	return nil
 }
 
 func getBtcVote(native *native.NativeService, txHash []byte) (uint64, error) {
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(inf.Key_prefix_BTC_Vote), txHash)
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(inf.KEY_PREFIX_BTC_VOTE), txHash)
 	btcVoteStore, err := native.CacheDB.Get(key)
 	if err != nil {
 		return 0, fmt.Errorf("getBtcVote, get btcTxStore error: %v", err)
@@ -290,6 +290,96 @@ func getBtcVote(native *native.NativeService, txHash []byte) (uint64, error) {
 		}
 	}
 	return vote, nil
+}
+
+func addUtxos(native *native.NativeService, chainID uint64, height uint32, mtx *wire.MsgTx) error {
+	utxos, err := getUtxos(native, chainID)
+	if err != nil {
+		return fmt.Errorf("addUtxos, getUtxos err:%v", err)
+	}
+	txHash := mtx.TxHash()
+	op := &OutPoint{
+		Hash:  txHash[:],
+		Index: 0,
+	}
+	newUtxo := &Utxo{
+		Op:           op,
+		AtHeight:     height,
+		Value:        uint64(mtx.TxOut[0].Value),
+		ScriptPubkey: mtx.TxOut[0].PkScript,
+	}
+	utxos.Utxos = append(utxos.Utxos, newUtxo)
+	err = putUtxos(native, chainID, utxos)
+	if err != nil {
+		return fmt.Errorf("addUtxos, putUtxos err:%v", err)
+	}
+	return nil
+}
+
+func chooseUtxos(native *native.NativeService, chainID uint64, amount int64, fee int64) ([]*Utxo, int64, error) {
+	utxos, err := getUtxos(native, chainID)
+	if err != nil {
+		return nil, 0, fmt.Errorf("chooseUtxos, getUtxos error: %v", err)
+	}
+	total := amount + fee
+	result := make([]*Utxo, 0)
+	var sum int64 = 0
+	var j int
+	for i := 0; i < len(utxos.Utxos); i++ {
+		sum = sum + int64(utxos.Utxos[i].Value)
+		result = append(result, utxos.Utxos[i])
+		if sum >= total {
+			j = i
+			break
+		}
+	}
+	if sum < total {
+		return nil, sum, fmt.Errorf("chooseUtxos, current utxo sum %d is not enough %d", sum, total)
+	}
+	utxos.Utxos = utxos.Utxos[j:]
+	err = putUtxos(native, chainID, utxos)
+	if err != nil {
+		return nil, sum, fmt.Errorf("chooseUtxos, putUtxos err:%v", err)
+	}
+	return result, sum, nil
+}
+
+func putUtxos(native *native.NativeService, chainID uint64, utxos *Utxos) error {
+	chainIDBytes, err := utils.GetUint64Bytes(chainID)
+	if err != nil {
+		return fmt.Errorf("putUtxo, utils.GetBytesUint64 err:%v", err)
+	}
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(UTXOS), chainIDBytes)
+	sink := common.NewZeroCopySink(nil)
+	utxos.Serialization(sink)
+	native.CacheDB.Put(key, cstates.GenRawStorageItem(sink.Bytes()))
+	return nil
+}
+
+func getUtxos(native *native.NativeService, chainID uint64) (*Utxos, error) {
+	chainIDBytes, err := utils.GetUint64Bytes(chainID)
+	if err != nil {
+		return nil, fmt.Errorf("getUtxos, utils.GetBytesUint64 err:%v", err)
+	}
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(UTXOS), chainIDBytes)
+	utxosStore, err := native.CacheDB.Get(key)
+	if err != nil {
+		return nil, fmt.Errorf("getUtxos, get btcTxStore error: %v", err)
+	}
+	utxos := &Utxos{
+		Utxos: make([]*Utxo, 0),
+	}
+	if utxosStore != nil {
+		utxosBytes, err := cstates.GetValueFromRawStorageItem(utxosStore)
+		if err != nil {
+			return nil, fmt.Errorf("getUtxos, deserialize from raw storage item err:%v", err)
+		}
+		err = utxos.Deserialization(common.NewZeroCopySource(utxosBytes))
+		if err != nil {
+			return nil, fmt.Errorf("getUtxos, utxos.Deserialization err:%v", err)
+		}
+	}
+	return utxos, nil
 }
 
 func notifyBtcProof(native *native.NativeService, btcProof string) {

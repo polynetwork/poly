@@ -24,6 +24,8 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/btcsuite/btcd/btcjson"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	wire_bch "github.com/gcash/bchd/wire"
@@ -38,6 +40,7 @@ import (
 const (
 	BTC_ADDRESS      = "btc"
 	NOTIFY_BTC_PROOF = "notifyBtcProof"
+	UTXOS            = "utxos"
 )
 
 type BTCHandler struct {
@@ -71,16 +74,26 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *inf.MakeTxPa
 		return false, nil, fmt.Errorf("btc Vote, putBtcVote error: %v", err)
 	}
 
-	tx, err := getBtcTx(service, params.TxHash)
+	proofBytes, err := getBtcProof(service, params.TxHash)
 	if err != nil {
 		return false, nil, fmt.Errorf("btc Vote, getBtcTx error: %v", err)
 	}
+	proof := new(BtcProof)
+	err = proof.Deserialization(common.NewZeroCopySource(proofBytes))
+	if err != nil {
+		return false, nil, fmt.Errorf("btc Vote, proof.Deserialization error: %v", err)
+	}
 
 	mtx := wire.NewMsgTx(wire.TxVersion)
-	reader := bytes.NewReader(tx)
+	reader := bytes.NewReader(proof.Tx)
 	err = mtx.BtcDecode(reader, wire.ProtocolVersion, wire.LatestEncoding)
 	if err != nil {
 		return false, nil, fmt.Errorf("btc Vote, failed to decode the transaction")
+	}
+
+	err = addUtxos(service, params.FromChainID, proof.Height, mtx)
+	if err != nil {
+		return false, nil, fmt.Errorf("btc Vote, updateUtxo error: %s", err)
 	}
 
 	var p targetChainParam
@@ -98,28 +111,28 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *inf.MakeTxPa
 	}, nil
 }
 
-func (this *BTCHandler) Verify(service *native.NativeService) error {
+func (this *BTCHandler) Verify(service *native.NativeService) (*inf.MakeTxParam, error) {
 	params := new(inf.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.Input)); err != nil {
-		return fmt.Errorf("btc Verify, contract params deserialize error: %v", err)
+		return nil, fmt.Errorf("btc Verify, contract params deserialize error: %v", err)
 	}
 	if params.Proof == "" || params.TxData == "" {
-		return fmt.Errorf("btc Verify, input data can't be empty")
+		return nil, fmt.Errorf("btc Verify, input data can't be empty")
 	}
 	tx, err := hex.DecodeString(params.TxData)
 	if err != nil {
-		return fmt.Errorf("btc Verify, failed to decode transaction from string to bytes: %v", err)
+		return nil, fmt.Errorf("btc Verify, failed to decode transaction from string to bytes: %v", err)
 	}
 	proof, err := hex.DecodeString(params.Proof)
 	if err != nil {
-		return fmt.Errorf("btc Verify, failed to decode proof from string to bytes: %v", err)
+		return nil, fmt.Errorf("btc Verify, failed to decode proof from string to bytes: %v", err)
 	}
 	err = notifyBtcTx(service, proof, tx, params.Height, params.SourceChainID)
 	if err != nil {
-		return fmt.Errorf("btc Verify, failed to verify: %v", err)
+		return nil, fmt.Errorf("btc Verify, failed to verify: %v", err)
 	}
 
-	return nil
+	return nil, nil
 }
 
 func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *inf.MakeTxParam) error {
@@ -135,7 +148,7 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *in
 		return fmt.Errorf("btc MakeTransaction, destContractAddr is %s not btc", destContractAddr)
 	}
 
-	err = makeBtcTx(service, amounts)
+	err = makeBtcTx(service, param.ToChainID, amounts)
 	if err != nil {
 		return fmt.Errorf("btc MakeTransaction, failed to make transaction: %v", err)
 	}
@@ -182,13 +195,13 @@ func notifyBtcTx(native *native.NativeService, proof, tx []byte, height uint32, 
 	sink := common.NewZeroCopySink(nil)
 	btcProof.Serialization(sink)
 
-	putBtcTx(native, txid[:], tx)
+	putBtcProof(native, txid[:], sink.Bytes())
 
 	notifyBtcProof(native, hex.EncodeToString(sink.Bytes()))
 	return nil
 }
 
-func makeBtcTx(service *native.NativeService, amounts map[string]int64) error {
+func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string]int64) error {
 	if len(amounts) == 0 {
 		return fmt.Errorf("makeBtcTx, input no amount")
 	}
@@ -209,26 +222,26 @@ func makeBtcTx(service *native.NativeService, amounts map[string]int64) error {
 		return fmt.Errorf("makeBtcTx, failed to get multiPk-script: %v", err)
 	}
 
-	addr, err := btcutil.NewAddressScriptHash(script, netParam)
+	choosed, sum, err := chooseUtxos(service, chainID, amountSum, FEE)
 	if err != nil {
-		return fmt.Errorf("makeBtcTx, failed to decode script to address: %v", err)
+		return fmt.Errorf("makeBtcTx, chooseUtxos error: %v", err)
+	}
+	txIns := make([]btcjson.TransactionInput, 0)
+	for _, u := range choosed {
+		hash, err := chainhash.NewHash(u.Op.Hash)
+		if err != nil {
+			return fmt.Errorf("makeBtcTx, chainhash.NewHash error: %v", err)
+		}
+		txIns = append(txIns, btcjson.TransactionInput{hash.String(), u.Op.Index})
 	}
 
-	cli := NewRestClient(IP)
-	txIns, sum, err := cli.GetUtxosFromSpv(addr.EncodeAddress(), amountSum, FEE, service.PreExec)
-	if err != nil {
-		return fmt.Errorf("makeBtcTx, failed to get utxo from spv: %v", err)
-	} else if sum <= 0 || len(txIns) == 0 {
-		return fmt.Errorf("makeBtcTx, utxo not found")
+	charge := sum - amountSum - FEE
+	if charge < 0 {
+		return fmt.Errorf("makeBtcTx, not enough utxos: the charge amount cannot be less than 0, charge "+
+			"is %d satoshi", charge)
 	}
 
-	change := sum - amountSum - FEE
-	if change < 0 {
-		return fmt.Errorf("makeBtcTx, not enough utxos: the change amount cannot be less than 0, change "+
-			"is %d satoshi", change)
-	}
-
-	mtx, err := getUnsignedTx(txIns, amounts, change, script, nil)
+	mtx, err := getUnsignedTx(txIns, amounts, charge, script, nil)
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, get rawtransaction fail: %v", err)
 	}
@@ -246,5 +259,13 @@ func makeBtcTx(service *native.NativeService, amounts map[string]int64) error {
 			ContractAddress: utils.CrossChainManagerContractAddress,
 			States:          []interface{}{"makeBtcTx", hex.EncodeToString(buf.Bytes())},
 		})
+
+	// TODO: charge
+	//if charge > 0 {
+	//	err = chargeUtxos(service, chainID, mtx)
+	//	if err != nil {
+	//		return fmt.Errorf("makeBtcTx, spendUtxos fail: %v", err)
+	//	}
+	//}
 	return nil
 }
