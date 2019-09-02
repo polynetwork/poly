@@ -2,12 +2,10 @@ package btc
 
 import (
 	"bytes"
-	"crypto/tls"
 	"encoding/binary"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
+
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -17,9 +15,12 @@ import (
 	"github.com/btcsuite/btcutil"
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/ontio/multi-chain/common"
-	"io/ioutil"
-	"net/http"
-	"time"
+	"github.com/ontio/multi-chain/common/config"
+	cstates "github.com/ontio/multi-chain/core/states"
+	"github.com/ontio/multi-chain/smartcontract/event"
+	"github.com/ontio/multi-chain/smartcontract/service/native"
+	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/inf"
+	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 )
 
 const (
@@ -47,383 +48,6 @@ var addr6 = "n4ESieuFJq5HCvE5GU8B35YTfShZmFrCKM"
 var priv6 = "cNK7BwHmi8rZiqD2QfwJB1R6bF6qc7iVTMBNjTr2ACbsoq1vWau8"
 var addr7 = "msK9xpuXn5xqr4UK7KyWi9VCaFhiwCqqq6"
 var priv7 = "cUZdDF9sL11ya5civzMRYVYojoojjHbmWWm1yC5uRzfBRePVbQTZ"
-
-// request
-type QueryHeaderByHeightParam struct {
-	Height uint32 `json:"height"`
-}
-
-type QueryUtxosReq struct {
-	Addr      string `json:"addr"`
-	Amount    int64  `json:"amount"`
-	Fee       int64  `json:"fee"`
-	IsPreExec bool   `json:"is_pre_exec"`
-}
-
-type ChangeAddressReq struct {
-	Aciton string `json:"aciton"`
-	Addr   string `json:"addr"`
-}
-
-type BroadcastTxReq struct {
-	RawTx string `json:"raw_tx"`
-}
-
-type UnlockUtxoReq struct {
-	Hash  string `json:"hash"`
-	Index uint32 `json:"index"`
-}
-
-type GetFeePerByteReq struct {
-	Level int `json:"level"`
-}
-
-type RollbackReq struct {
-	Time string `json:"time"`
-}
-
-type UtxoInfo struct {
-	Outpoint string `json:"outpoint"`
-	Val      int64  `json:"val"`
-	IsLock   bool   `json:"is_lock"`
-	Height   int32  `json:"height"`
-	Script   string `json:"script"`
-}
-
-type GetAllUtxosResp struct {
-	Infos []UtxoInfo `json:"infos"`
-}
-
-// response
-type Response struct {
-	Action string      `json:"action"`
-	Desc   string      `json:"desc"`
-	Error  uint32      `json:"error"`
-	Result interface{} `json:"result"`
-}
-
-type ResponseAllUtxos struct {
-	Action string          `json:"action"`
-	Desc   string          `json:"desc"`
-	Error  uint32          `json:"error"`
-	Result GetAllUtxosResp `json:"result"`
-}
-
-type RestClient struct {
-	Addr       string
-	restClient *http.Client
-}
-
-func NewRestClient(addr string) *RestClient {
-	return &RestClient{
-		restClient: &http.Client{
-			Transport: &http.Transport{
-				MaxIdleConnsPerHost:   5,
-				DisableKeepAlives:     false,
-				IdleConnTimeout:       time.Second * 300,
-				ResponseHeaderTimeout: time.Second * 300,
-				TLSClientConfig:       &tls.Config{InsecureSkipVerify: true},
-			},
-			Timeout: time.Second * 300,
-		},
-		Addr: addr,
-	}
-}
-
-func (self *RestClient) SetAddr(addr string) *RestClient {
-	self.Addr = addr
-	return self
-}
-
-func (self *RestClient) SetRestClient(restClient *http.Client) *RestClient {
-	self.restClient = restClient
-	return self
-}
-
-func (self *RestClient) SendRestRequest(addr string, data []byte) ([]byte, error) {
-	resp, err := self.restClient.Post(addr, "application/json;charset=UTF-8",
-		bytes.NewReader(data))
-	if err != nil {
-		return nil, fmt.Errorf("rest post request:%s error:%s", data, err)
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("read rest response body error:%s", err)
-	}
-	return body, nil
-}
-
-func (self *RestClient) SendGetRequst(addr string) ([]byte, error) {
-	resp, err := self.restClient.Get(addr)
-	if err != nil {
-		return nil, fmt.Errorf("rest get request: error: %v", err)
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("read get response body error:%s", err)
-	}
-	return body, nil
-}
-
-func (self *RestClient) GetHeaderFromSpv(height uint32) (*wire.BlockHeader, error) {
-	query, err := json.Marshal(QueryHeaderByHeightParam{
-		Height: height,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("Failed to parse query parameter: %v", err)
-	}
-
-	// how to config it???
-	data, err := self.SendRestRequest("http://"+self.Addr+"/api/v1/queryheaderbyheight", query)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to send request: %v", err)
-	}
-	var resp Response
-	err = json.Unmarshal(data, &resp)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to unmarshal resp to json: %v", err)
-	}
-
-	if resp.Error != 0 || resp.Desc != "SUCCESS" {
-		return nil, fmt.Errorf("Response shows failure: %s", resp.Desc)
-	}
-
-	hbs, err := hex.DecodeString(resp.Result.(map[string]interface{})["header"].(string))
-	if err != nil {
-		return nil, fmt.Errorf("Failed to decode hex string from response: %v", err)
-	}
-
-	header := wire.BlockHeader{}
-	buf := bytes.NewReader(hbs)
-	err = header.BtcDecode(buf, wire.ProtocolVersion, wire.LatestEncoding)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to decode header: %v", err)
-	}
-	return &header, nil
-}
-
-func (self *RestClient) GetUtxosFromSpv(addr string, amount int64, fee int64, isPreExec bool) ([]btcjson.TransactionInput, int64, error) {
-	query, err := json.Marshal(QueryUtxosReq{
-		Addr:      addr,
-		Amount:    amount,
-		Fee:       fee,
-		IsPreExec: isPreExec,
-	})
-	if err != nil {
-		return nil, 0, fmt.Errorf("Failed to parse parameter: %v", err)
-	}
-	data, err := self.SendRestRequest("http://"+self.Addr+"/api/v1/queryutxos", query)
-	if err != nil {
-		return nil, 0, fmt.Errorf("Failed to send request: %v", err)
-	}
-
-	var resp Response
-	err = json.Unmarshal(data, &resp)
-	if err != nil {
-		return nil, 0, fmt.Errorf("Failed to unmarshal resp to json: %v", err)
-	}
-	if resp.Error != 0 || resp.Desc != "SUCCESS" {
-		return nil, 0, fmt.Errorf("Response shows failure: %s", resp.Desc)
-	}
-	var ins []btcjson.TransactionInput
-	for _, v := range resp.Result.(map[string]interface{})["inputs"].([]interface{}) {
-		m := v.(map[string]interface{})
-		ins = append(ins, btcjson.TransactionInput{
-			Txid: m["txid"].(string),
-			Vout: uint32(m["vout"].(float64)),
-		})
-	}
-
-	return ins, int64(resp.Result.(map[string]interface{})["sum"].(float64)), nil
-}
-
-func (self *RestClient) GetCurrentHeightFromSpv() (uint32, error) {
-	data, err := self.SendGetRequst("http://" + self.Addr + "/api/v1/getcurrentheight")
-	if err != nil {
-		return 0, fmt.Errorf("Failed to send request: %v", err)
-	}
-
-	var resp Response
-	err = json.Unmarshal(data, &resp)
-	if err != nil {
-		return 0, fmt.Errorf("Failed to unmarshal resp to json: %v", err)
-	}
-	if resp.Error != 0 || resp.Desc != "SUCCESS" {
-		return 0, fmt.Errorf("Response shows failure: %s", resp.Desc)
-	}
-
-	return uint32(resp.Result.(map[string]interface{})["height"].(float64)), nil
-}
-
-func (self *RestClient) ChangeSpvWatchedAddr(addr string, action string) error {
-	req, err := json.Marshal(ChangeAddressReq{
-		Addr:   addr,
-		Aciton: action,
-	})
-	if err != nil {
-		return fmt.Errorf("Failed to parse parameter: %v", err)
-	}
-	data, err := self.SendRestRequest("http://"+self.Addr+"/api/v1/changeaddress", req)
-	if err != nil {
-		return fmt.Errorf("Failed to send request: %v", err)
-	}
-
-	var resp Response
-	err = json.Unmarshal(data, &resp)
-	if err != nil {
-		return fmt.Errorf("Failed to unmarshal resp to json: %v", err)
-	}
-	if resp.Error != 0 || resp.Desc != "SUCCESS" {
-		return fmt.Errorf("Response shows failure: %s", resp.Desc)
-	}
-
-	return nil
-}
-
-func (self *RestClient) GetWatchedAddrsFromSpv() ([]string, error) {
-	data, err := self.SendGetRequst("http://" + self.Addr + "/api/v1/getalladdress")
-	if err != nil {
-		return nil, fmt.Errorf("Failed to send request: %v", err)
-	}
-
-	var resp Response
-	err = json.Unmarshal(data, &resp)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to unmarshal resp to json: %v", err)
-	}
-	if resp.Error != 0 || resp.Desc != "SUCCESS" {
-		return nil, fmt.Errorf("Response shows failure: %s", resp.Desc)
-	}
-	var addrs []string
-	for _, v := range resp.Result.(map[string]interface{})["addresses"].([]interface{}) {
-		addrs = append(addrs, v.(string))
-	}
-	return addrs, nil
-}
-
-func (self *RestClient) UnlockUtxoInSpv(hash string, index uint32) error {
-	req, err := json.Marshal(UnlockUtxoReq{
-		Hash:  hash,
-		Index: index,
-	})
-	if err != nil {
-		return fmt.Errorf("Failed to parse parameter: %v", err)
-	}
-	data, err := self.SendRestRequest("http://"+self.Addr+"/api/v1/unlockutxo", req)
-	if err != nil {
-		return fmt.Errorf("Failed to send request: %v", err)
-	}
-
-	var resp Response
-	err = json.Unmarshal(data, &resp)
-	if err != nil {
-		return fmt.Errorf("Failed to unmarshal resp to json: %v", err)
-	}
-	if resp.Error != 0 || resp.Desc != "SUCCESS" {
-		return fmt.Errorf("Response shows failure: %s", resp.Desc)
-	}
-
-	return nil
-}
-
-func (self *RestClient) GetFeeRateFromSpv(level int) (int64, error) {
-	req, err := json.Marshal(GetFeePerByteReq{
-		Level: level,
-	})
-	if err != nil {
-		return -1, fmt.Errorf("Failed to parse parameter: %v", err)
-	}
-
-	data, err := self.SendRestRequest("http://"+self.Addr+"/api/v1/getfeeperbyte", req)
-	if err != nil {
-		return -1, fmt.Errorf("Failed to send request: %v", err)
-	}
-
-	var resp Response
-	err = json.Unmarshal(data, &resp)
-	if err != nil {
-		return -1, fmt.Errorf("Failed to unmarshal resp to json: %v", err)
-	}
-	if resp.Error != 0 || resp.Desc != "SUCCESS" {
-		return -1, fmt.Errorf("Response shows failure: %s", resp.Desc)
-	}
-
-	return int64(resp.Result.(map[string]interface{})["feepb"].(float64)), nil
-}
-
-func (self *RestClient) GetAllUtxosFromSpv() ([]UtxoInfo, error) {
-	data, err := self.SendGetRequst("http://" + self.Addr + "/api/v1/getallutxos")
-	if err != nil {
-		return nil, fmt.Errorf("Failed to send request: %v", err)
-	}
-
-	var resp ResponseAllUtxos
-	err = json.Unmarshal(data, &resp)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to unmarshal resp to json: %v", err)
-	}
-	if resp.Error != 0 || resp.Desc != "SUCCESS" {
-		return nil, fmt.Errorf("Response shows failure: %s", resp.Desc)
-	}
-
-	return resp.Result.Infos, nil
-}
-
-func (self *RestClient) BroadcastTxBySpv(mtx *wire.MsgTx) error {
-	var buf bytes.Buffer
-	err := mtx.BtcEncode(&buf, wire.ProtocolVersion, wire.LatestEncoding)
-	if err != nil {
-		return err
-	}
-	req, err := json.Marshal(BroadcastTxReq{
-		RawTx: hex.EncodeToString(buf.Bytes()),
-	})
-	if err != nil {
-		return fmt.Errorf("Failed to parse parameter: %v", err)
-	}
-
-	data, err := self.SendRestRequest("http://"+self.Addr+"/api/v1/broadcasttx", req)
-	if err != nil {
-		return fmt.Errorf("Failed to send request: %v", err)
-	}
-
-	var resp Response
-	err = json.Unmarshal(data, &resp)
-	if err != nil {
-		return fmt.Errorf("Failed to unmarshal resp to json: %v", err)
-	}
-	if resp.Error != 0 || resp.Desc != "SUCCESS" {
-		return fmt.Errorf("Response shows failure: %s", resp.Desc)
-	}
-
-	return nil
-}
-
-func (self *RestClient) RollbackSpv(time string) error {
-	req, err := json.Marshal(RollbackReq{
-		Time: time,
-	})
-	if err != nil {
-		return fmt.Errorf("Failed to parse parameter: %v", err)
-	}
-	data, err := self.SendRestRequest("http://"+self.Addr+"/api/v1/rollback", req)
-	if err != nil {
-		return fmt.Errorf("Failed to send request: %v", err)
-	}
-
-	var resp Response
-	err = json.Unmarshal(data, &resp)
-	if err != nil {
-		return fmt.Errorf("Failed to unmarshal resp to json: %v", err)
-	}
-	if resp.Error != 0 || resp.Desc != "SUCCESS" {
-		return fmt.Errorf("Response shows failure: %s", resp.Desc)
-	}
-
-	return nil
-}
 
 // not sure now
 type targetChainParam struct {
@@ -617,37 +241,64 @@ func getUnsignedTx(txIns []btcjson.TransactionInput, amounts map[string]int64, c
 	return mtx, nil
 }
 
-//func getTxOuts(amounts map[string]int64) ([]*wire.TxOut, error) {
-//	outs := make([]*wire.TxOut, 0)
-//	for encodedAddr, amount := range amounts {
-//		// Decode the provided address.
-//		addr, err := btcutil.DecodeAddress(encodedAddr, netParam)
-//		if err != nil {
-//			return nil, fmt.Errorf("getTxOuts, decode addr fail: %v", err)
-//		}
-//
-//		// Ensure the address is one of the supported types and that
-//		// the network encoded with the address matches the network the
-//		// server is currently on.
-//		switch addr.(type) {
-//		case *btcutil.AddressPubKeyHash:
-//		case *btcutil.AddressScriptHash:
-//		default:
-//			return nil, fmt.Errorf("getTxOuts, type of addr is not found")
-//		}
-//		if !addr.IsForNet(netParam) {
-//			return nil, fmt.Errorf("getTxOuts, addr is not for mainnet")
-//		}
-//
-//		// Create a new script which pays to the provided address.
-//		pkScript, err := txscript.PayToAddrScript(addr)
-//		if err != nil {
-//			return nil, fmt.Errorf("getTxOuts, failed to generate pay-to-address script: %v", err)
-//		}
-//
-//		txOut := wire.NewTxOut(amount, pkScript)
-//		outs = append(outs, txOut)
-//	}
-//
-//	return outs, nil
-//}
+func putBtcTx(native *native.NativeService, txHash, tx []byte) {
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(inf.Key_prefix_BTC), txHash)
+	native.CacheDB.Put(key, cstates.GenRawStorageItem(tx))
+}
+
+func getBtcTx(native *native.NativeService, txHash []byte) ([]byte, error) {
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(inf.Key_prefix_BTC), txHash)
+	btcTxStore, err := native.CacheDB.Get(key)
+	if err != nil {
+		return nil, fmt.Errorf("getBtcTx, get btcTxStore error: %v", err)
+	}
+	if btcTxStore == nil {
+		return nil, fmt.Errorf("getBtcTx, can not find any records")
+	}
+	btcTxBytes, err := cstates.GetValueFromRawStorageItem(btcTxStore)
+	if err != nil {
+		return nil, fmt.Errorf("getBtcTx, deserialize from raw storage item err:%v", err)
+	}
+	return btcTxBytes, nil
+}
+
+func putBtcVote(native *native.NativeService, txHash []byte, vote uint64) error {
+	voteBytes, err := utils.GetUint64Bytes(vote)
+	if err != nil {
+		return fmt.Errorf("putBtcVote, utils.GetBytesUint64 err:%v", err)
+	}
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(inf.Key_prefix_BTC_Vote), txHash)
+	native.CacheDB.Put(key, cstates.GenRawStorageItem(voteBytes))
+	return nil
+}
+
+func getBtcVote(native *native.NativeService, txHash []byte) (uint64, error) {
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(inf.Key_prefix_BTC_Vote), txHash)
+	btcVoteStore, err := native.CacheDB.Get(key)
+	if err != nil {
+		return 0, fmt.Errorf("getBtcVote, get btcTxStore error: %v", err)
+	}
+	var vote uint64 = 0
+	if btcVoteStore != nil {
+		btcVoteBytes, err := cstates.GetValueFromRawStorageItem(btcVoteStore)
+		if err != nil {
+			return 0, fmt.Errorf("getBtcVote, deserialize from raw storage item err:%v", err)
+		}
+		vote, err = utils.GetBytesUint64(btcVoteBytes)
+		if err != nil {
+			return 0, fmt.Errorf("getBtcVote, utils.GetBytesUint64 err:%v", err)
+		}
+	}
+	return vote, nil
+}
+
+func notifyBtcProof(native *native.NativeService, btcProof string) {
+	if !config.DefConfig.Common.EnableEventLog {
+		return
+	}
+	native.Notifications = append(native.Notifications,
+		&event.NotifyEventInfo{
+			ContractAddress: utils.CrossChainManagerContractAddress,
+			States:          []interface{}{NOTIFY_BTC_PROOF, btcProof},
+		})
+}

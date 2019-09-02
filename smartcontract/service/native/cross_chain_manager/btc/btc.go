@@ -25,7 +25,6 @@ import (
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	wire_bch "github.com/gcash/bchd/wire"
-	"github.com/gcash/bchutil/merkleblock"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/smartcontract/event"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
@@ -35,7 +34,10 @@ import (
 	"math/big"
 )
 
-const BTC_ADDRESS = "btc"
+const (
+	BTC_ADDRESS      = "btc"
+	NOTIFY_BTC_PROOF = "notifyBtcProof"
+)
 
 type BTCHandler struct {
 }
@@ -44,36 +46,79 @@ func NewBTCHandler() *BTCHandler {
 	return &BTCHandler{}
 }
 
-func (this *BTCHandler) Verify(service *native.NativeService) (*inf.MakeTxParam, error) {
-	params := new(inf.EntranceParam)
+func (this *BTCHandler) Vote(service *native.NativeService) (bool, *inf.MakeTxParam, error) {
+	params := new(inf.VoteParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.Input)); err != nil {
-		return nil, fmt.Errorf("btc Verify, contract params deserialize error: %v", err)
-	}
-	if params.Proof == "" || params.TxData == "" {
-		return nil, fmt.Errorf("btc Verify, input data can't be empty")
-	}
-	tx, err := hex.DecodeString(params.TxData)
-	if err != nil {
-		return nil, fmt.Errorf("btc Verify, failed to decode transaction from string to bytes: %v", err)
-	}
-	proof, err := hex.DecodeString(params.Proof)
-	if err != nil {
-		return nil, fmt.Errorf("btc Verify, failed to decode proof from string to bytes: %v", err)
-	}
-	ok, p, err := verifyBtcTx(service, proof, tx, params.Height, params.SourceChainID)
-	if err != nil {
-		return nil, fmt.Errorf("btc Verify, failed to verify: %v", err)
-	} else if ok != true {
-		return nil, fmt.Errorf("btc Verify, verify not passed")
+		return false, nil, fmt.Errorf("btc Vote, contract params deserialize error: %v", err)
 	}
 
-	return &inf.MakeTxParam{
-		FromChainID:         params.SourceChainID,
+	vote, err := getBtcVote(service, params.TxHash)
+	if err != nil {
+		return false, nil, fmt.Errorf("btc Vote, getBtcVote error: %v", err)
+	}
+	newVote := vote + 1
+	if newVote != 5 {
+		err = putBtcVote(service, params.TxHash, newVote)
+		if err != nil {
+			return false, nil, fmt.Errorf("btc Vote, putBtcVote error: %v", err)
+		}
+		return false, nil, nil
+	}
+
+	err = putBtcVote(service, params.TxHash, newVote)
+	if err != nil {
+		return false, nil, fmt.Errorf("btc Vote, putBtcVote error: %v", err)
+	}
+
+	tx, err := getBtcTx(service, params.TxHash)
+	if err != nil {
+		return false, nil, fmt.Errorf("btc Vote, getBtcTx error: %v", err)
+	}
+
+	mtx := wire.NewMsgTx(wire.TxVersion)
+	reader := bytes.NewReader(tx)
+	err = mtx.BtcDecode(reader, wire.ProtocolVersion, wire.LatestEncoding)
+	if err != nil {
+		return false, nil, fmt.Errorf("btc Vote, failed to decode the transaction")
+	}
+
+	var p targetChainParam
+	err = p.resolve(mtx.TxOut[0].Value, mtx.TxOut[1])
+	if err != nil {
+		return false, nil, fmt.Errorf("btc Vote, failed to resolve parameter: %v", err)
+	}
+
+	return true, &inf.MakeTxParam{
+		FromChainID: params.FromChainID,
 		FromContractAddress: BTC_ADDRESS,
 		ToChainID:           p.ChainId,
 		ToAddress:           p.Addr.ToBase58(),
 		Amount:              new(big.Int).SetInt64(p.Value),
 	}, nil
+}
+
+func (this *BTCHandler) Verify(service *native.NativeService) error {
+	params := new(inf.EntranceParam)
+	if err := params.Deserialization(common.NewZeroCopySource(service.Input)); err != nil {
+		return fmt.Errorf("btc Verify, contract params deserialize error: %v", err)
+	}
+	if params.Proof == "" || params.TxData == "" {
+		return fmt.Errorf("btc Verify, input data can't be empty")
+	}
+	tx, err := hex.DecodeString(params.TxData)
+	if err != nil {
+		return fmt.Errorf("btc Verify, failed to decode transaction from string to bytes: %v", err)
+	}
+	proof, err := hex.DecodeString(params.Proof)
+	if err != nil {
+		return fmt.Errorf("btc Verify, failed to decode proof from string to bytes: %v", err)
+	}
+	err = notifyBtcTx(service, proof, tx, params.Height, params.SourceChainID)
+	if err != nil {
+		return fmt.Errorf("btc Verify, failed to verify: %v", err)
+	}
+
+	return nil
 }
 
 func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *inf.MakeTxParam) error {
@@ -96,32 +141,23 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *in
 	return nil
 }
 
-func verifyBtcTx(native *native.NativeService, proof []byte, tx []byte, height uint32, btcChainID uint64) (bool, *targetChainParam, error) {
-	cli := NewRestClient(IP)
-	besth, err := cli.GetCurrentHeightFromSpv()
-	if err != nil {
-		return false, nil, fmt.Errorf("verifyBtcTx, failed to get current height from spv: %v", err)
-	}
+func notifyBtcTx(native *native.NativeService, proof, tx []byte, height uint32, btcChainID uint64) error {
 	sideChain, err := side_chain_manager.GetSideChain(native, btcChainID)
 	if err != nil {
-		return false, nil, fmt.Errorf("verifyBtcTx, side_chain_manager.GetSideChain error: %v", err)
-	}
-	if besth-height < uint32(sideChain.BlocksToWait-1) {
-		return false, nil, fmt.Errorf("verifyBtcTx, transaction is not confirmed, current height: %d, "+
-			"input height: %d", besth, height)
+		return fmt.Errorf("notifyBtcTx, side_chain_manager.GetSideChain error: %v", err)
 	}
 
 	mtx := wire.NewMsgTx(wire.TxVersion)
 	reader := bytes.NewReader(tx)
 	err = mtx.BtcDecode(reader, wire.ProtocolVersion, wire.LatestEncoding)
 	if err != nil {
-		return false, nil, fmt.Errorf("verifyBtcTx, failed to decode the transaction")
+		return fmt.Errorf("notifyBtcTx, failed to decode the transaction")
 	}
 
 	mb := wire_bch.MsgMerkleBlock{}
 	err = mb.BchDecode(bytes.NewReader(proof), wire_bch.ProtocolVersion, wire_bch.LatestEncoding)
 	if err != nil {
-		return false, nil, fmt.Errorf("verifyBtcTx, failed to decode proof: %v", err)
+		return fmt.Errorf("notifyBtcTx, failed to decode proof: %v", err)
 	}
 
 	txid := mtx.TxHash()
@@ -133,48 +169,22 @@ func verifyBtcTx(native *native.NativeService, proof []byte, tx []byte, height u
 		}
 	}
 	if !isExist {
-		return false, nil, fmt.Errorf("verifyBtcTx, transaction %s not found in proof", txid.String())
+		return fmt.Errorf("notifyBtcTx, transaction %s not found in proof", txid.String())
 	}
 
-	prefix, _ := hex.DecodeString(inf.Key_prefix_BTC)
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, prefix, txid[:])
-	val, err := native.CacheDB.Get(key)
-	if err != nil {
-		return false, nil, fmt.Errorf("verifyBtcTx, failed to get verified transaction: %v", err)
-	} else if bytes.Equal(val, []byte{1}) {
-		return false, nil, fmt.Errorf("verifyBtcTx, transaction already exist")
+	btcProof := &BtcProof{
+		Tx:           tx,
+		Proof:        proof,
+		Height:       height,
+		BlocksToWait: sideChain.BlocksToWait,
 	}
+	sink := common.NewZeroCopySink(nil)
+	btcProof.Serialization(sink)
 
-	// check the number of tx's outputs and their types
-	pubKeys := getPubKeys()
-	ok, err := checkTxOutputs(mtx, pubKeys, REQUIRE)
-	if ok != true || err != nil {
-		return false, nil, fmt.Errorf("verifyBtcTx, wrong outputs: %v", err)
-	}
-	var param targetChainParam
-	err = param.resolve(mtx.TxOut[0].Value, mtx.TxOut[1])
-	if err != nil {
-		return false, nil, fmt.Errorf("verifyBtcTx, failed to resolve parameter: %v", err)
-	}
+	putBtcTx(native, txid[:], tx)
 
-	//TODO: How to deal with param? We need to check this param, including chain_id, address..
-
-	mBlock := merkleblock.NewMerkleBlockFromMsg(mb)
-	merkleRootCalc := mBlock.ExtractMatches()
-	if merkleRootCalc == nil || mBlock.BadTree() || len(mBlock.GetMatches()) == 0 {
-		return false, nil, fmt.Errorf("verifyBtcTx, bad merkle tree")
-	}
-
-	header, err := cli.GetHeaderFromSpv(height)
-	if err != nil {
-		return false, nil, fmt.Errorf("verifyBtcTx, failed to get header from spv client: %v", err)
-	}
-	if !bytes.Equal(merkleRootCalc[:], header.MerkleRoot[:]) {
-		return false, nil, fmt.Errorf("verifyBtcTx, merkle root not equal")
-	}
-
-	native.CacheDB.Put(key, []byte{1})
-	return true, &param, nil
+	notifyBtcProof(native, hex.EncodeToString(sink.Bytes()))
+	return nil
 }
 
 func makeBtcTx(service *native.NativeService, amounts map[string]int64) error {

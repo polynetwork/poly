@@ -15,8 +15,8 @@ import (
 )
 
 const (
-	ImportExTransfer_Name   = "ImportOuterTransfer"
-	RegisterChainHandler_ID = "RegisterChainHandler"
+	ImportExTransfer_Name = "ImportOuterTransfer"
+	Vote_Name             = "Vote"
 )
 
 type CrossChainHandler func(native *native.NativeService) ([]byte, error)
@@ -31,6 +31,7 @@ func InitEntrance() {
 
 func RegisterCrossChianManagerContract(native *native.NativeService) {
 	native.Register(ImportExTransfer_Name, ImportExTransfer)
+	native.Register(Vote_Name, Vote)
 }
 
 //func RegisterChainHandler(chainid uint64, handler CrossChainHandler) {
@@ -59,7 +60,7 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	log.Debugf("-===ImportExTransfer")
 	params := new(inf.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("CreateCrossChainTx, contract params deserialize error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, contract params deserialize error: %v", err)
 	}
 	log.Infof("SourceChainID:%v\n", params.SourceChainID)
 	log.Infof("TargetChainID:%v\n", params.TargetChainID)
@@ -85,31 +86,64 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, err
 	}
 	//1. verify tx
-	txParam, err := handler.Verify(native)
+	err = handler.Verify(native)
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
 
-	//2. make target chain tx
-	targetid := txParam.ToChainID
+	return utils.BYTE_TRUE, nil
+}
+
+func Vote(native *native.NativeService) ([]byte, error) {
+	log.Debugf("-===Vote")
+	params := new(inf.VoteParam)
+	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("Vote, contract params deserialize error: %v", err)
+	}
+
+	from := params.FromChainID
 
 	//check if chainid exist
-	sideChain, err = side_chain_manager.GetSideChain(native, targetid)
+	sideChain, err := side_chain_manager.GetSideChain(native, from)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side_chain_manager.GetSideChain error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("Vote, side_chain_manager.GetSideChain error: %v", err)
 	}
-	if sideChain.Chainid != targetid {
-		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, targetid chain is not registered")
+	if sideChain.Chainid != from {
+		return utils.BYTE_FALSE, fmt.Errorf("Vote, side chain is not registered")
 	}
 
-	targetHandler, err := GetChainHandler(targetid)
+	handler, err := GetChainHandler(from)
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
-	//NOTE, you need to store the tx in this
-	err = targetHandler.MakeTransaction(native, txParam)
+	//1. vote
+	ok, txParam, err := handler.Vote(native)
 	if err != nil {
 		return utils.BYTE_FALSE, err
+	}
+	if ok {
+		//2. make target chain tx
+		targetid := txParam.ToChainID
+
+		//check if chainid exist
+		sideChain, err = side_chain_manager.GetSideChain(native, targetid)
+		if err != nil {
+			return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side_chain_manager.GetSideChain error: %v", err)
+		}
+		if sideChain.Chainid != targetid {
+			return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, targetid chain is not registered")
+		}
+
+		targetHandler, err := GetChainHandler(targetid)
+		if err != nil {
+			return utils.BYTE_FALSE, err
+		}
+		//NOTE, you need to store the tx in this
+		err = targetHandler.MakeTransaction(native, txParam)
+		if err != nil {
+			return utils.BYTE_FALSE, err
+		}
+		return utils.BYTE_TRUE, nil
 	}
 	return utils.BYTE_TRUE, nil
 }
