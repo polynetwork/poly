@@ -56,23 +56,23 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	log.Infof("RelayerAddress:%v\n", params.RelayerAddress)
 	log.Infof("value:%v\n", params.Value)
 
-	chainId := params.SourceChainID
+	chainID := params.SourceChainID
 
 	//check if chainid exist
-	sideChain, err := side_chain_manager.GetSideChain(native, chainId)
+	sideChain, err := side_chain_manager.GetSideChain(native, chainID)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side_chain_manager.GetSideChain error: %v", err)
 	}
-	if sideChain.ChainId != chainId {
+	if sideChain.ChainId != chainID {
 		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side chain is not registered")
 	}
 
-	handler, err := GetChainHandler(chainId)
+	handler, err := GetChainHandler(chainID)
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
 	//1. verify tx
-	if chainId == 2 {
+	if chainID == 2 {
 		txParam, err := handler.Verify(native)
 		if err != nil {
 			return utils.BYTE_FALSE, err

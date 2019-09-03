@@ -33,11 +33,11 @@ type EntranceParam struct {
 }
 
 func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error {
-	sourcechainid, err := utils.DecodeVarUint(source)
+	sourceChainID, err := utils.DecodeVarUint(source)
 	if err != nil {
 		return fmt.Errorf("EntranceParam deserialize sourcechainid error:%s", err)
 	}
-	txdata, err := utils.DecodeString(source)
+	txData, err := utils.DecodeString(source)
 	if err != nil {
 		return fmt.Errorf("EntranceParam deserialize txdata error:%s", err)
 	}
@@ -53,7 +53,7 @@ func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error 
 	if err != nil {
 		return fmt.Errorf("EntranceParam deserialize relayerAddr error:%s", err)
 	}
-	targetchainid, err := utils.DecodeVarUint(source)
+	targetChainID, err := utils.DecodeVarUint(source)
 	if err != nil {
 		return fmt.Errorf("EntranceParam deserialize targetchainid error:%s", err)
 	}
@@ -62,12 +62,12 @@ func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error 
 		return fmt.Errorf("EntranceParam deserialize value error:%s", err)
 	}
 
-	this.SourceChainID = sourcechainid
-	this.TxData = txdata
+	this.SourceChainID = sourceChainID
+	this.TxData = txData
 	this.Height = uint32(height)
 	this.Proof = proof
 	this.RelayerAddress = relayerAddr
-	this.TargetChainID = targetchainid
+	this.TargetChainID = targetChainID
 	this.Value = value
 	return nil
 }
