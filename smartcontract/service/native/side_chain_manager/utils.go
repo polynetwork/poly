@@ -100,14 +100,14 @@ func putRegisterSideChain(native *native.NativeService, sideChain *SideChain) er
 	return nil
 }
 
-func GetSideChain(native *native.NativeService, chanid uint64) (*SideChain, error) {
+func GetSideChain(native *native.NativeService, chainID uint64) (*SideChain, error) {
 	contract := utils.SideChainManagerContractAddress
-	chainidByte, err := utils.GetUint64Bytes(chanid)
+	chainIDByte, err := utils.GetUint64Bytes(chainID)
 	if err != nil {
 		return nil, fmt.Errorf("getSideChain, utils.GetUint64Bytes error: %v", err)
 	}
 	sideChainStore, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(SIDE_CHAIN),
-		chainidByte))
+		chainIDByte))
 	if err != nil {
 		return nil, fmt.Errorf("getSideChain,get registerSideChainRequestStore error: %v", err)
 	}
