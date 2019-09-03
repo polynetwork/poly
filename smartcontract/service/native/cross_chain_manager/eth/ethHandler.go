@@ -74,15 +74,15 @@ func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*inf
 	}
 	//todo 1. verify the proof with header
 	//determine where the k and v from
-	proofresult, err := verifyMerkleProof(ethProof, blockData)
+	proofResult, err := verifyMerkleProof(ethProof, blockData)
 	if err != nil {
 		return nil, fmt.Errorf("Verify, verifyMerkleProof error:%v", err)
 	}
-	if proofresult == nil {
+	if proofResult == nil {
 		return nil, fmt.Errorf("Verify, verifyMerkleProof failed!")
 	}
 
-	if !checkProofResult(proofresult, params.Value) {
+	if !checkProofResult(proofResult, params.Value) {
 		fmt.Printf("verify value hash failed\n")
 		return nil, fmt.Errorf("Verify, verify value hash failed!")
 	}
