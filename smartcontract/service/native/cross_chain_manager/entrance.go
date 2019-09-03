@@ -31,11 +31,6 @@ func RegisterCrossChainManagerContract(native *native.NativeService) {
 }
 
 func GetChainHandler(chainid uint64) (inf.ChainHandler, error) {
-	//handler, ok := mapping[chainid]
-	//if !ok {
-	//	return nil, fmt.Errorf("no handler for chainID:%d", chainid)
-	//}
-
 	switch chainid {
 	case 0:
 		return btc.NewBTCHandler(), nil
