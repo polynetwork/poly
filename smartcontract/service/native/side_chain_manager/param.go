@@ -26,14 +26,14 @@ import (
 
 type RegisterSideChainParam struct {
 	Address      string
-	Chainid      uint64
+	ChainId      uint64
 	Name         string
 	BlocksToWait uint64
 }
 
 func (this *RegisterSideChainParam) Serialization(sink *common.ZeroCopySink) error {
 	utils.EncodeString(sink, this.Address)
-	utils.EncodeVarUint(sink, this.Chainid)
+	utils.EncodeVarUint(sink, this.ChainId)
 	utils.EncodeString(sink, this.Name)
 	utils.EncodeVarUint(sink, this.BlocksToWait)
 	return nil
@@ -44,7 +44,7 @@ func (this *RegisterSideChainParam) Deserialization(source *common.ZeroCopySourc
 	if err != nil {
 		return fmt.Errorf("utils.DecodeString, deserialize address error: %v", err)
 	}
-	chainid, err := utils.DecodeVarUint(source)
+	chainId, err := utils.DecodeVarUint(source)
 	if err != nil {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize chainid error: %v", err)
 	}
@@ -57,7 +57,7 @@ func (this *RegisterSideChainParam) Deserialization(source *common.ZeroCopySourc
 		return fmt.Errorf("utils.DecodeVarUint, deserialize blocksToWait error: %v", err)
 	}
 	this.Address = address
-	this.Chainid = chainid
+	this.ChainId = chainId
 	this.Name = name
 	this.BlocksToWait = blocksToWait
 	return nil
@@ -82,12 +82,12 @@ func (this *ChainidParam) Deserialization(source *common.ZeroCopySource) error {
 }
 
 type Asset struct {
-	Chainid         uint64
+	ChainId         uint64
 	ContractAddress string
 }
 
 func (this *Asset) Serialization(sink *common.ZeroCopySink) error {
-	utils.EncodeVarUint(sink, this.Chainid)
+	utils.EncodeVarUint(sink, this.ChainId)
 	utils.EncodeString(sink, this.ContractAddress)
 	return nil
 }
@@ -101,7 +101,7 @@ func (this *Asset) Deserialization(source *common.ZeroCopySource) error {
 	if err != nil {
 		return fmt.Errorf("utils.DecodeString, deserialize contractAddress error: %v", err)
 	}
-	this.Chainid = chainid
+	this.ChainId = chainid
 	this.ContractAddress = contractAddress
 	return nil
 }

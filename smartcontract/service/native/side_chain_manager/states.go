@@ -40,7 +40,7 @@ func (this *SideChain) Serialization(sink *common.ZeroCopySink) error {
 }
 
 func (this *SideChain) Deserialization(source *common.ZeroCopySource) error {
-	chainid, err := utils.DecodeVarUint(source)
+	chainId, err := utils.DecodeVarUint(source)
 	if err != nil {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize chainid error: %v", err)
 	}
@@ -53,7 +53,7 @@ func (this *SideChain) Deserialization(source *common.ZeroCopySource) error {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize blocksToWait error: %v", err)
 	}
 
-	this.ChainId = chainid
+	this.ChainId = chainId
 	this.Name = name
 	this.BlocksToWait = blocksToWait
 	return nil
