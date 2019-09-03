@@ -41,41 +41,40 @@ func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*inf
 		return nil, fmt.Errorf("Verify, contract params deserialize error: %v", err)
 	}
 
-	blockdata, err := GetEthBlockByNumber(params.Height)
+	blockData, err := GetEthBlockByNumber(params.Height)
 	if err != nil {
 		return nil, fmt.Errorf("Verify, GetEthBlockByNumber error:%v", err)
 	}
 
-	proofdata, err := hex.DecodeString(params.Proof)
+	proofData, err := hex.DecodeString(params.Proof)
 	if err != nil {
 		return nil, err
 	}
 
-	ethproof := new(ETHProof)
-	err = json.Unmarshal(proofdata, ethproof)
+	ethProof := new(ETHProof)
+	err = json.Unmarshal(proofData, ethProof)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(ethproof.StorageProofs) != 1 {
+	if len(ethProof.StorageProofs) != 1 {
 		return nil, fmt.Errorf("[Verify] incorrect proof format")
 	}
 
 	bf := bytes.NewBuffer(utils.CrossChainManagerContractAddress[:])
-	keybytes := ethComm.Hex2Bytes(inf.KEY_PREFIX_ETH + replace0x(ethproof.StorageProofs[0].Key))
-	bf.Write(keybytes)
+	keyBytes := ethComm.Hex2Bytes(inf.KEY_PREFIX_ETH + replace0x(ethProof.StorageProofs[0].Key))
+	bf.Write(keyBytes)
 	key := bf.Bytes()
 	val, err := service.CacheDB.Get(key)
 	if err != nil {
 		return nil, err
 	}
 	if val != nil {
-		return nil, fmt.Errorf("[Verify] key:%s already solved ", ethproof.StorageProofs[0].Key)
+		return nil, fmt.Errorf("[Verify] key:%s already solved ", ethProof.StorageProofs[0].Key)
 	}
-	fmt.Printf("ethproof:%v\n", ethproof)
 	//todo 1. verify the proof with header
 	//determine where the k and v from
-	proofresult, err := verifyMerkleProof(ethproof, blockdata)
+	proofresult, err := verifyMerkleProof(ethProof, blockData)
 	if err != nil {
 		return nil, fmt.Errorf("Verify, verifyMerkleProof error:%v", err)
 	}
@@ -97,7 +96,7 @@ func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*inf
 	tmp := strings.Split(params.Value, "#")
 	fromcontractAddr := tmp[0]
 
-	service.CacheDB.Put(key, proofdata)
+	service.CacheDB.Put(key, proofData)
 
 	ret := &inf.MakeTxParam{}
 	ret.ToChainID = proof.ToChainID
@@ -106,8 +105,6 @@ func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*inf
 	ret.ToAddress = proof.ToAddress
 	ret.Amount = proof.Amount
 	//todo deal with the proof.decimal
-
-	log.Infof("ETH verify succeed!")
 	return ret, nil
 }
 
