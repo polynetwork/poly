@@ -73,7 +73,7 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	}
 	//1. verify tx
 	if chainID == 2 {
-		txParam, err := handler.Verify(native)
+		txParam, err := handler.MakeDepositProposal(native)
 		if err != nil {
 			return utils.BYTE_FALSE, err
 		}
@@ -101,7 +101,7 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 		}
 		return utils.BYTE_TRUE, nil
 	}
-	_, err = handler.Verify(native)
+	_, err = handler.MakeDepositProposal(native)
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}

@@ -35,7 +35,7 @@ func (this *ETHHandler) Vote(service *native.NativeService) (bool, *inf.MakeTxPa
 	return true, nil, nil
 }
 
-func (this *ETHHandler) Verify(service *native.NativeService) (*inf.MakeTxParam, error) {
+func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*inf.MakeTxParam, error) {
 	params := new(inf.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.Input)); err != nil {
 		return nil, fmt.Errorf("Verify, contract params deserialize error: %v", err)

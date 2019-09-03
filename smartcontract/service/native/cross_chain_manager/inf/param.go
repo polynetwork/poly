@@ -18,7 +18,7 @@ var (
 
 type ChainHandler interface {
 	Vote(service *native.NativeService) (bool, *MakeTxParam, error)
-	Verify(service *native.NativeService) (*MakeTxParam, error)
+	MakeDepositProposal(service *native.NativeService) (*MakeTxParam, error)
 	MakeTransaction(service *native.NativeService, param *MakeTxParam) error
 }
 

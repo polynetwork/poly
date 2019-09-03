@@ -111,7 +111,7 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *inf.MakeTxPa
 	}, nil
 }
 
-func (this *BTCHandler) Verify(service *native.NativeService) (*inf.MakeTxParam, error) {
+func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*inf.MakeTxParam, error) {
 	params := new(inf.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.Input)); err != nil {
 		return nil, fmt.Errorf("btc Verify, contract params deserialize error: %v", err)
