@@ -94,13 +94,13 @@ func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*inf
 
 	//todo does the proof data too big??
 	tmp := strings.Split(params.Value, "#")
-	fromcontractAddr := tmp[0]
+	fromContractAddr := tmp[0]
 
 	service.CacheDB.Put(key, proofData)
 
 	ret := &inf.MakeTxParam{}
 	ret.ToChainID = proof.ToChainID
-	ret.FromContractAddress = fromcontractAddr
+	ret.FromContractAddress = fromContractAddr
 	ret.FromChainID = params.SourceChainID
 	ret.ToAddress = proof.ToAddress
 	ret.Amount = proof.Amount
