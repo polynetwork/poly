@@ -130,11 +130,13 @@ func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 
 type VoteParam struct {
 	FromChainID uint64
+	Address     string
 	TxHash      []byte
 }
 
 func (this *VoteParam) Serialization(sink *common.ZeroCopySink) {
 	utils.EncodeVarUint(sink, this.FromChainID)
+	utils.EncodeString(sink, this.Address)
 	utils.EncodeVarBytes(sink, this.TxHash)
 }
 
@@ -143,12 +145,17 @@ func (this *VoteParam) Deserialization(source *common.ZeroCopySource) error {
 	if err != nil {
 		return fmt.Errorf("VoteParam deserialize fromChainID error:%s", err)
 	}
+	address, err := utils.DecodeString(source)
+	if err != nil {
+		return fmt.Errorf("VoteParam deserialize address error:%s", err)
+	}
 	txHash, err := utils.DecodeVarBytes(source)
 	if err != nil {
 		return fmt.Errorf("VoteParam deserialize txHash error:%s", err)
 	}
 
 	this.FromChainID = fromChainID
+	this.Address = address
 	this.TxHash = txHash
 	return nil
 }

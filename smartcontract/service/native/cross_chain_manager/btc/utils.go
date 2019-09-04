@@ -262,31 +262,31 @@ func getBtcProof(native *native.NativeService, txHash []byte) ([]byte, error) {
 	return btcProofBytes, nil
 }
 
-func putBtcVote(native *native.NativeService, txHash []byte, vote uint64) error {
-	voteBytes, err := utils.GetUint64Bytes(vote)
-	if err != nil {
-		return fmt.Errorf("putBtcVote, utils.GetBytesUint64 err:%v", err)
-	}
+func putBtcVote(native *native.NativeService, txHash []byte, vote *Vote) error {
+	sink := common.NewZeroCopySink(nil)
+	vote.Serialization(sink)
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(inf.KEY_PREFIX_BTC_VOTE), txHash)
-	native.CacheDB.Put(key, cstates.GenRawStorageItem(voteBytes))
+	native.CacheDB.Put(key, cstates.GenRawStorageItem(sink.Bytes()))
 	return nil
 }
 
-func getBtcVote(native *native.NativeService, txHash []byte) (uint64, error) {
+func getBtcVote(native *native.NativeService, txHash []byte) (*Vote, error) {
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(inf.KEY_PREFIX_BTC_VOTE), txHash)
 	btcVoteStore, err := native.CacheDB.Get(key)
 	if err != nil {
-		return 0, fmt.Errorf("getBtcVote, get btcTxStore error: %v", err)
+		return nil, fmt.Errorf("getBtcVote, get btcTxStore error: %v", err)
 	}
-	var vote uint64 = 0
+	vote := &Vote{
+		VoteMap: make(map[string]string),
+	}
 	if btcVoteStore != nil {
 		btcVoteBytes, err := cstates.GetValueFromRawStorageItem(btcVoteStore)
 		if err != nil {
-			return 0, fmt.Errorf("getBtcVote, deserialize from raw storage item err:%v", err)
+			return nil, fmt.Errorf("getBtcVote, deserialize from raw storage item err:%v", err)
 		}
-		vote, err = utils.GetBytesUint64(btcVoteBytes)
+		err = vote.Deserialization(common.NewZeroCopySource(btcVoteBytes))
 		if err != nil {
-			return 0, fmt.Errorf("getBtcVote, utils.GetBytesUint64 err:%v", err)
+			return nil, fmt.Errorf("getBtcVote, vote.Deserialization err:%v", err)
 		}
 	}
 	return vote, nil

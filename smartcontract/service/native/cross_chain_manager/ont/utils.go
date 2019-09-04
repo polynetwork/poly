@@ -196,7 +196,7 @@ func VerifyToOntTx(native *native.NativeService, proof []byte, fromChainid uint6
 
 func MakeToOntProof(native *native.NativeService, params *inf.MakeTxParam) error {
 	//record cross chain tx
-	destContractAddr, err := side_chain_manager.GetAssetContractAddress(native, params.FromChainID,
+	destAsset, err := side_chain_manager.GetDestAsset(native, params.FromChainID,
 		params.ToChainID, params.FromContractAddress)
 	if err != nil {
 		return fmt.Errorf("MakeToOntProof, side_chain_manager.GetAssetContractAddress error: %v", err)
@@ -204,7 +204,7 @@ func MakeToOntProof(native *native.NativeService, params *inf.MakeTxParam) error
 
 	merkleValue := &ToMerkleValue{
 		TxHash:            native.Tx.Hash(),
-		ToContractAddress: destContractAddr,
+		ToContractAddress: destAsset.ContractAddress,
 		MakeTxParam:       params,
 	}
 	sink := common.NewZeroCopySink(nil)

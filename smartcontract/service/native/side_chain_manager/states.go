@@ -91,7 +91,7 @@ func (this *AssetMap) Deserialization(source *common.ZeroCopySource) error {
 		if err := asset.Deserialization(source); err != nil {
 			return fmt.Errorf("deserialize asset error: %v", err)
 		}
-		assetMap[asset.Chainid] = asset
+		assetMap[asset.ChainId] = asset
 	}
 	this.AssetMap = assetMap
 	return nil

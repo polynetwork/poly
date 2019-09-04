@@ -218,30 +218,30 @@ func putAssetMap(native *native.NativeService, assetMap *AssetMap) error {
 	sink := common.NewZeroCopySink(nil)
 	assetMap.Serialization(sink)
 	for _, v := range assetMap.AssetMap {
-		prefix := strconv.Itoa(int(v.Chainid)) + v.ContractAddress
+		prefix := strconv.Itoa(int(v.ChainId)) + v.ContractAddress
 		native.CacheDB.Put(utils.ConcatKey(contract, []byte(ASSET_MAP), []byte(prefix)),
 			cstates.GenRawStorageItem(sink.Bytes()))
 	}
 	return nil
 }
 
-func GetAssetContractAddress(native *native.NativeService, fromChainid, toChainid uint64, contractAddress string) (string, error) {
+func GetDestAsset(native *native.NativeService, fromChainid, toChainid uint64, contractAddress string) (*Asset, error) {
 	contract := utils.SideChainManagerContractAddress
 	prefix := strconv.Itoa(int(fromChainid)) + contractAddress
 	assetMapStore, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(ASSET_MAP), []byte(prefix)))
 	if err != nil {
-		return "", fmt.Errorf("getAssetMap,get assetMapStore error: %v", err)
+		return nil, fmt.Errorf("getAssetMap,get assetMapStore error: %v", err)
 	}
 	if assetMapStore == nil {
-		return "", fmt.Errorf("getAssetMap, can't find any record with from chainid %d and contract address %s", fromChainid, contractAddress)
+		return nil, fmt.Errorf("getAssetMap, can't find any record with from chainid %d and contract address %s", fromChainid, contractAddress)
 	}
 	assetMapBytes, err := cstates.GetValueFromRawStorageItem(assetMapStore)
 	if err != nil {
-		return "", fmt.Errorf("getAssetMap, deserialize from raw storage item err:%v", err)
+		return nil, fmt.Errorf("getAssetMap, deserialize from raw storage item err:%v", err)
 	}
 	assetMap := new(AssetMap)
 	if err := assetMap.Deserialization(common.NewZeroCopySource(assetMapBytes)); err != nil {
-		return "", fmt.Errorf("getAssetMap, deserialize assetMap error: %v", err)
+		return nil, fmt.Errorf("getAssetMap, deserialize assetMap error: %v", err)
 	}
-	return assetMap.AssetMap[toChainid].ContractAddress, nil
+	return assetMap.AssetMap[toChainid], nil
 }

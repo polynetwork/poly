@@ -73,14 +73,14 @@ func RegisterSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, common.AddressFromBase58 error: %v", err)
 	}
-	registerSideChain, err := getRegisterSideChain(native, params.Chainid)
+	registerSideChain, err := getRegisterSideChain(native, params.ChainId)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, getRegisterSideChain error: %v", err)
 	}
 	if registerSideChain.ChainId != math.MaxUint64 {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, chainid already requested")
 	}
-	sideChain, err := GetSideChain(native, params.Chainid)
+	sideChain, err := GetSideChain(native, params.ChainId)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, getSideChain error: %v", err)
 	}
@@ -88,7 +88,7 @@ func RegisterSideChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, chainid already registered")
 	}
 	sideChain = &SideChain{
-		ChainId:      params.Chainid,
+		ChainId:      params.ChainId,
 		Name:         params.Name,
 		BlocksToWait: params.BlocksToWait,
 	}
@@ -141,7 +141,7 @@ func UpdateSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, common.AddressFromBase58 error: %v", err)
 	}
-	sideChain, err := GetSideChain(native, params.Chainid)
+	sideChain, err := GetSideChain(native, params.ChainId)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, getSideChain error: %v", err)
 	}
@@ -149,7 +149,7 @@ func UpdateSideChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, chainid is not registered")
 	}
 	updateSideChain := &SideChain{
-		ChainId:      params.Chainid,
+		ChainId:      params.ChainId,
 		Name:         params.Name,
 		BlocksToWait: params.BlocksToWait,
 	}
@@ -258,7 +258,7 @@ func ApproveAssetMapping(native *native.NativeService) ([]byte, error) {
 	}
 	assetMap := make(map[uint64]*Asset)
 	for _, v := range assetMapRequest.AssetList {
-		assetMap[v.Chainid] = v
+		assetMap[v.ChainId] = v
 	}
 	value := &AssetMap{
 		AssetMap: assetMap,

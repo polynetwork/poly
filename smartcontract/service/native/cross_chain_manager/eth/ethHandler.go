@@ -127,12 +127,12 @@ func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *in
 	amount := param.Amount
 	//lockAddress := ethComm.HexToAddress(LOCKER_CONTRACT_ADDR)
 
-	targetTokenAddr, err := side_chain_manager.GetAssetContractAddress(service, param.FromChainID, param.ToChainID, param.FromContractAddress)
+	targetAsset, err := side_chain_manager.GetDestAsset(service, param.FromChainID, param.ToChainID, param.FromContractAddress)
 	if err != nil {
 		return err
 	}
-	log.Infof("targetTokenAddr:%s\n", targetTokenAddr)
-	tokenAddress := ethComm.HexToAddress(targetTokenAddr)
+	log.Infof("targetTokenAddr:%s\n", targetAsset.ContractAddress)
+	tokenAddress := ethComm.HexToAddress(targetAsset.ContractAddress)
 	log.Infof("tokenAddress:%s\n", tokenAddress)
 
 	txid := "1"

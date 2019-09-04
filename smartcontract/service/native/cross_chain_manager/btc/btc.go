@@ -56,23 +56,32 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *inf.MakeTxPa
 		return false, nil, fmt.Errorf("btc Vote, contract params deserialize error: %v", err)
 	}
 
+	address, err := common.AddressFromBase58(params.Address)
+	if err != nil {
+		return false, nil, fmt.Errorf("btc Vote, common.AddressFromBase58 error: %v", err)
+	}
+	//check witness
+	err = utils.ValidateOwner(service, address)
+	if err != nil {
+		return false, nil, fmt.Errorf("btc Vote, utils.ValidateOwner error: %v", err)
+	}
+
+	// TODO: get current consensus node
+
 	vote, err := getBtcVote(service, params.TxHash)
 	if err != nil {
 		return false, nil, fmt.Errorf("btc Vote, getBtcVote error: %v", err)
 	}
-	newVote := vote + 1
-	if newVote != 5 {
-		err = putBtcVote(service, params.TxHash, newVote)
-		if err != nil {
-			return false, nil, fmt.Errorf("btc Vote, putBtcVote error: %v", err)
-		}
-		return false, nil, nil
-	}
-
-	err = putBtcVote(service, params.TxHash, newVote)
+	vote.VoteMap[params.Address] = params.Address
+	err = putBtcVote(service, params.TxHash, vote)
 	if err != nil {
 		return false, nil, fmt.Errorf("btc Vote, putBtcVote error: %v", err)
 	}
+
+	//TODO: check if sign is enough
+	//if newVote != 5 {
+	//	return false, nil, nil
+	//}
 
 	proofBytes, err := getBtcProof(service, params.TxHash)
 	if err != nil {
@@ -139,13 +148,13 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *in
 	amounts := make(map[string]int64)
 	amounts[param.ToAddress] = param.Amount.Int64() // ??
 
-	destContractAddr, err := side_chain_manager.GetAssetContractAddress(service, param.FromChainID,
+	destAsset, err := side_chain_manager.GetDestAsset(service, param.FromChainID,
 		param.ToChainID, param.FromContractAddress)
 	if err != nil {
 		return fmt.Errorf("btc MakeTransaction, side_chain_manager.GetAssetContractAddress error: %v", err)
 	}
-	if destContractAddr != "btc" {
-		return fmt.Errorf("btc MakeTransaction, destContractAddr is %s not btc", destContractAddr)
+	if destAsset.ContractAddress != "btc" {
+		return fmt.Errorf("btc MakeTransaction, destContractAddr is %s not btc", destAsset.ContractAddress)
 	}
 
 	err = makeBtcTx(service, param.ToChainID, amounts)

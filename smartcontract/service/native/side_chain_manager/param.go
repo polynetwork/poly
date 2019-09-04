@@ -84,11 +84,13 @@ func (this *ChainidParam) Deserialization(source *common.ZeroCopySource) error {
 type Asset struct {
 	ChainId         uint64
 	ContractAddress string
+	Decimal         uint64
 }
 
 func (this *Asset) Serialization(sink *common.ZeroCopySink) error {
 	utils.EncodeVarUint(sink, this.ChainId)
 	utils.EncodeString(sink, this.ContractAddress)
+	utils.EncodeVarUint(sink, this.Decimal)
 	return nil
 }
 
@@ -102,7 +104,13 @@ func (this *Asset) Deserialization(source *common.ZeroCopySource) error {
 		return fmt.Errorf("utils.DecodeString, deserialize contractAddress error: %v", err)
 	}
 	this.ChainId = chainid
+	decimal, err := utils.DecodeVarUint(source)
+	if err != nil {
+		return fmt.Errorf("utils.DecodeVarUint, deserialize decimal error: %v", err)
+	}
+	this.ChainId = chainid
 	this.ContractAddress = contractAddress
+	this.Decimal = decimal
 	return nil
 }
 

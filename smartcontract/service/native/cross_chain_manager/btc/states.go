@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
+	"sort"
 )
 
 type BtcProof struct {
@@ -143,5 +144,40 @@ func (this *OutPoint) Deserialization(source *common.ZeroCopySource) error {
 
 	this.Hash = hash
 	this.Index = uint32(index)
+	return nil
+}
+
+type Vote struct {
+	VoteMap map[string]string
+}
+
+func (this *Vote) Serialization(sink *common.ZeroCopySink) {
+	utils.EncodeVarUint(sink, uint64(len(this.VoteMap)))
+	var voteList []string
+	for _, v := range this.VoteMap {
+		voteList = append(voteList, v)
+	}
+	sort.SliceStable(voteList, func(i, j int) bool {
+		return voteList[i] > voteList[j]
+	})
+	for _, v := range voteList {
+		utils.EncodeString(sink, v)
+	}
+}
+
+func (this *Vote) Deserialization(source *common.ZeroCopySource) error {
+	n, err := utils.DecodeVarUint(source)
+	if err != nil {
+		return fmt.Errorf("utils.DecodeVarUint, deserialize VoteMap length error: %v", err)
+	}
+	voteMap := make(map[string]string)
+	for i := 0; uint64(i) < n; i++ {
+		v, err := utils.DecodeString(source)
+		if err != nil {
+			return fmt.Errorf("deserialize VoteMap error: %v", err)
+		}
+		voteMap[v] = v
+	}
+	this.VoteMap = voteMap
 	return nil
 }
