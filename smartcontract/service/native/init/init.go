@@ -19,51 +19,16 @@
 package init
 
 import (
-	"bytes"
-	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
-	"math/big"
-
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/smartcontract/service/native/auth"
 	"github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager"
 	cont "github.com/ontio/multi-chain/smartcontract/service/native/cross_chain_manager/ont"
-	params "github.com/ontio/multi-chain/smartcontract/service/native/global_params"
-	"github.com/ontio/multi-chain/smartcontract/service/native/governance"
 	"github.com/ontio/multi-chain/smartcontract/service/native/header_sync"
-	"github.com/ontio/multi-chain/smartcontract/service/native/ong"
-	"github.com/ontio/multi-chain/smartcontract/service/native/ont"
-	"github.com/ontio/multi-chain/smartcontract/service/native/ontid"
-	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
-	"github.com/ontio/multi-chain/smartcontract/service/neovm"
-	vm "github.com/ontio/multi-chain/vm/neovm"
+	"github.com/ontio/multi-chain/smartcontract/service/native/side_chain_manager"
 )
 
-var (
-	COMMIT_DPOS_BYTES = InitBytes(utils.GovernanceContractAddress, governance.COMMIT_DPOS)
-)
 
 func init() {
-	ong.InitOng()
-	ont.InitOnt()
-	params.InitGlobalParams()
-	ontid.Init()
-	auth.Init()
-	governance.InitGovernance()
 	cont.InitCrossChain()
 	header_sync.InitHeaderSync()
 	side_chain_manager.InitSideChainManager()
 	cross_chain_manager.InitEntrance()
-}
-
-func InitBytes(addr common.Address, method string) []byte {
-	bf := new(bytes.Buffer)
-	builder := vm.NewParamsBuilder(bf)
-	builder.EmitPushByteArray([]byte{})
-	builder.EmitPushByteArray([]byte(method))
-	builder.EmitPushByteArray(addr[:])
-	builder.EmitPushInteger(big.NewInt(0))
-	builder.Emit(vm.SYSCALL)
-	builder.EmitPushByteArray([]byte(neovm.NATIVE_INVOKE_NAME))
-
-	return builder.ToArray()
 }
