@@ -28,10 +28,7 @@ import (
 	"github.com/ontio/multi-chain/smartcontract/context"
 	"github.com/ontio/multi-chain/smartcontract/event"
 	"github.com/ontio/multi-chain/smartcontract/service/native"
-	"github.com/ontio/multi-chain/smartcontract/service/neovm"
 	"github.com/ontio/multi-chain/smartcontract/storage"
-	vm "github.com/ontio/multi-chain/vm/neovm"
-	"github.com/ontio/multi-chain/vm/neovm/types"
 )
 
 const (
@@ -101,14 +98,6 @@ func (this *SmartContract) PushNotifications(notifications []*event.NotifyEventI
 	this.Notifications = append(this.Notifications, notifications...)
 }
 
-func (this *SmartContract) CheckExecStep() bool {
-	if this.ExecStep >= neovm.VM_STEP_LIMIT {
-		return false
-	}
-	this.ExecStep += 1
-	return true
-}
-
 func (this *SmartContract) CheckUseGas(gas uint64) bool {
 	if this.Gas < gas {
 		return false
@@ -126,52 +115,6 @@ func (this *SmartContract) checkContexts() bool {
 		return false
 	}
 	return true
-}
-
-// Execute is smart contract execute manager
-// According different vm type to launch different service
-func (this *SmartContract) NewExecuteEngine(code []byte) (context.Engine, error) {
-	if !this.checkContexts() {
-		return nil, fmt.Errorf("%s", "engine over max limit!")
-	}
-	service := &neovm.NeoVmService{
-		Store:      this.Store,
-		CacheDB:    this.CacheDB,
-		ContextRef: this,
-		Code:       code,
-		Tx:         this.Config.Tx,
-		ShardID:    this.Config.ShardID,
-		Time:       this.Config.Time,
-		Height:     this.Config.Height,
-		BlockHash:  this.Config.BlockHash,
-		Engine:     vm.NewExecutionEngine(),
-		PreExec:    this.PreExec,
-	}
-	return service, nil
-}
-
-func (this *SmartContract) NewExecuteEngineWithElem(code []byte, stacks []types.StackItems) (context.Engine, error) {
-	if !this.checkContexts() {
-		return nil, fmt.Errorf("%s", "engine over max limit!")
-	}
-	engine := vm.NewExecutionEngine()
-	for i := len(stacks) - 1; i >= 0; i-- {
-		engine.EvaluationStack.Push(stacks[i])
-	}
-	service := &neovm.NeoVmService{
-		Store:      this.Store,
-		CacheDB:    this.CacheDB,
-		ContextRef: this,
-		Code:       code,
-		Tx:         this.Config.Tx,
-		ShardID:    this.Config.ShardID,
-		Time:       this.Config.Time,
-		Height:     this.Config.Height,
-		BlockHash:  this.Config.BlockHash,
-		Engine:     engine,
-		PreExec:    this.PreExec,
-	}
-	return service, nil
 }
 
 func (this *SmartContract) NewNativeService() (*native.NativeService, error) {
