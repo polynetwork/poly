@@ -19,8 +19,6 @@
 package storage
 
 import (
-	comm "github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/core/payload"
 	"github.com/ontio/multi-chain/core/store/common"
 	"github.com/ontio/multi-chain/core/store/overlaydb"
 	"github.com/syndtr/goleveldb/leveldb/util"
@@ -81,41 +79,6 @@ func (self *CacheDB) Put(key []byte, value []byte) {
 func (self *CacheDB) put(prefix common.DataEntryPrefix, key []byte, value []byte) {
 	self.keyScratch = makePrefixedKey(self.keyScratch, byte(prefix), key)
 	self.memdb.Put(self.keyScratch, value)
-}
-
-func (self *CacheDB) GetContract(addr comm.Address) (*payload.DeployCode, error) {
-	value, err := self.get(common.ST_CONTRACT, addr[:])
-	if err != nil {
-		return nil, err
-	}
-
-	if len(value) == 0 {
-		return nil, nil
-	}
-
-	contract := new(payload.DeployCode)
-	if err := contract.Deserialization(comm.NewZeroCopySource(value)); err != nil {
-		return nil, err
-	}
-	return contract, nil
-}
-
-func (self *CacheDB) PutContract(contract *payload.DeployCode) error {
-	address := contract.Address()
-
-	sink := comm.NewZeroCopySink(nil)
-	err := contract.Serialization(sink)
-	if err != nil {
-		return err
-	}
-
-	value := sink.Bytes()
-	self.put(common.ST_CONTRACT, address[:], value)
-	return nil
-}
-
-func (self *CacheDB) DeleteContract(address comm.Address) {
-	self.delete(common.ST_CONTRACT, address[:])
 }
 
 func (self *CacheDB) Get(key []byte) ([]byte, error) {
