@@ -224,6 +224,7 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 	if amountSum > btcutil.MaxSatoshi {
 		return fmt.Errorf("makeBtcTx, sum(%d) of amounts exceeds the MaxSatoshi", amountSum)
 	}
+	amountSum = amountSum - FEE
 
 	pubKeys := getPubKeys()
 	script, err := buildScript(pubKeys, REQUIRE)
