@@ -17,18 +17,18 @@ func putEthProof(native *native.NativeService, txHash, proof []byte) {
 
 func getEthProof(native *native.NativeService, txHash []byte) ([]byte, error) {
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(inf.KEY_PREFIX_ETH), txHash)
-	btcProofStore, err := native.CacheDB.Get(key)
+	ethProofStore, err := native.CacheDB.Get(key)
 	if err != nil {
 		return nil, fmt.Errorf("getEthProof, get ethProofStore error: %v", err)
 	}
-	if btcProofStore == nil {
+	if ethProofStore == nil {
 		return nil, fmt.Errorf("getEthProof, can not find any records")
 	}
-	btcProofBytes, err := states.GetValueFromRawStorageItem(btcProofStore)
+	ethProofBytes, err := states.GetValueFromRawStorageItem(ethProofStore)
 	if err != nil {
 		return nil, fmt.Errorf("getEthProof, deserialize from raw storage item err:%v", err)
 	}
-	return btcProofBytes, nil
+	return ethProofBytes, nil
 }
 
 func putEthVote(native *native.NativeService, txHash []byte, vote *inf.Vote) error {
@@ -41,19 +41,19 @@ func putEthVote(native *native.NativeService, txHash []byte, vote *inf.Vote) err
 
 func getEthVote(native *native.NativeService, txHash []byte) (*inf.Vote, error) {
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(inf.KEY_PREFIX_ETH_VOTE), txHash)
-	btcVoteStore, err := native.CacheDB.Get(key)
+	ethVoteStore, err := native.CacheDB.Get(key)
 	if err != nil {
-		return nil, fmt.Errorf("getEthVote, get btcTxStore error: %v", err)
+		return nil, fmt.Errorf("getEthVote, get ethTxStore error: %v", err)
 	}
 	vote := &inf.Vote{
 		VoteMap: make(map[string]string),
 	}
-	if btcVoteStore != nil {
-		btcVoteBytes, err := states.GetValueFromRawStorageItem(btcVoteStore)
+	if ethVoteStore != nil {
+		ethVoteBytes, err := states.GetValueFromRawStorageItem(ethVoteStore)
 		if err != nil {
 			return nil, fmt.Errorf("getEthVote, deserialize from raw storage item err:%v", err)
 		}
-		err = vote.Deserialization(common.NewZeroCopySource(btcVoteBytes))
+		err = vote.Deserialization(common.NewZeroCopySource(ethVoteBytes))
 		if err != nil {
 			return nil, fmt.Errorf("getEthVote, vote.Deserialization err:%v", err)
 		}
