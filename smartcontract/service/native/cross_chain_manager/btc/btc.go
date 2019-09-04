@@ -22,6 +22,9 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/multi-chain/smartcontract/service/native/governance"
+	"github.com/ontio/ontology-crypto/keypair"
 	"math/big"
 
 	"github.com/btcsuite/btcd/btcjson"
@@ -66,7 +69,11 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *inf.MakeTxPa
 		return false, nil, fmt.Errorf("btc Vote, utils.ValidateOwner error: %v", err)
 	}
 
-	// TODO: get current consensus node
+	//get current consensus node
+	consesusPeers, err := governance.GetConsensusPeers(service)
+	if err != nil {
+		return false, nil, fmt.Errorf("btc Vote, governance.GetConsensusPeers error: %v", err)
+	}
 
 	vote, err := getBtcVote(service, params.TxHash)
 	if err != nil {
@@ -78,10 +85,27 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *inf.MakeTxPa
 		return false, nil, fmt.Errorf("btc Vote, putBtcVote error: %v", err)
 	}
 
-	//TODO: check if sign is enough
-	//if newVote != 5 {
-	//	return false, nil, nil
-	//}
+	//check if sign is enough
+	sum := 0
+	for _, v := range consesusPeers {
+		b, err := hex.DecodeString(v)
+		if err != nil {
+			return false, nil, fmt.Errorf("btc Vote, hex.DecodeString consensus public key error: %v", err)
+		}
+		pk, err := keypair.DeserializePublicKey(b)
+		if err != nil {
+			return false, nil, fmt.Errorf("btc Vote, keypair.DeserializePublicKey consensus public key error: %v", err)
+		}
+		address := types.AddressFromPubKey(pk)
+		_, ok := vote.VoteMap[address.ToBase58()]
+		if ok {
+			sum = sum + 1
+		}
+	}
+
+	if sum != (2*len(consesusPeers)+2)/3 {
+		return false, nil, nil
+	}
 
 	proofBytes, err := getBtcProof(service, params.TxHash)
 	if err != nil {

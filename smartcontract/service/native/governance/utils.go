@@ -113,6 +113,25 @@ func GetView(native *native.NativeService, contract common.Address) (uint32, err
 	return governanceView.View, nil
 }
 
+func GetConsensusPeers(native *native.NativeService) ([]string, error) {
+	contract := utils.GovernanceContractAddress
+	view, err := GetView(native, contract)
+	if err != nil {
+		return nil, fmt.Errorf("GetConsensusPeers, GetView error: %v", err)
+	}
+	peerPoolMap, err := GetPeerPoolMap(native, contract, view)
+	if err != nil {
+		return nil, fmt.Errorf("GetConsensusPeers, GetPeerPoolMap error: %v", err)
+	}
+	result := make([]string, 0)
+	for _, v := range peerPoolMap.PeerPoolMap {
+		if v.Status == ConsensusStatus {
+			result = append(result, v.PeerPubkey)
+		}
+	}
+	return result, nil
+}
+
 func appCallTransferOnt(native *native.NativeService, from common.Address, to common.Address, amount uint64) error {
 	err := appCallTransfer(native, utils.OntContractAddress, from, to, amount)
 	if err != nil {
