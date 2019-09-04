@@ -32,6 +32,58 @@ func NewETHHandler() *ETHHandler {
 }
 
 func (this *ETHHandler) Vote(service *native.NativeService) (bool, *inf.MakeTxParam, error) {
+	params := new(inf.VoteParam)
+	if err := params.Deserialization(common.NewZeroCopySource(service.Input)); err != nil {
+		return false, nil, fmt.Errorf("eth Vote, contract params deserialize error: %v", err)
+	}
+
+	address, err := common.AddressFromBase58(params.Address)
+	if err != nil {
+		return false, nil, fmt.Errorf("eth Vote, common.AddressFromBase58 error: %v", err)
+	}
+	//check witness
+	err = utils.ValidateOwner(service, address)
+	if err != nil {
+		return false, nil, fmt.Errorf("eth Vote, utils.ValidateOwner error: %v", err)
+	}
+
+	// TODO: get current consensus node
+
+	vote, err := getEthVote(service, params.TxHash)
+	if err != nil {
+		return false, nil, fmt.Errorf("eth Vote, getBtcVote error: %v", err)
+	}
+	vote.VoteMap[params.Address] = params.Address
+	err = putEthVote(service, params.TxHash, vote)
+	if err != nil {
+		return false, nil, fmt.Errorf("eth Vote, putBtcVote error: %v", err)
+	}
+
+	//TODO: check if sign is enough
+	//if newVote != 5 {
+	//	return false, nil, nil
+	//}
+	//end
+
+	proofBytes, err := getEthProof(service, params.TxHash)
+	if err != nil {
+		return false, nil, fmt.Errorf("eth Vote, getEth Tx error: %v", err)
+	}
+
+
+	proof := &Proof{}
+	if err := proof.Deserialize(string(proofBytes)); err != nil {
+		return false, nil, fmt.Errorf("eth Vote, eth proof deserialize error: %v", err)
+	}
+
+	return true, &inf.MakeTxParam{
+		FromChainID:         params.FromChainID,
+		FromContractAddress: proof.FromAddress,
+		ToChainID:           proof.ToChainID,
+		ToAddress:           proof.ToAddress,
+		Amount:              proof.Amount,
+	}, nil
+
 	return true, nil, nil
 }
 
@@ -105,6 +157,11 @@ func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*inf
 	ret.ToAddress = proof.ToAddress
 	ret.Amount = proof.Amount
 	//todo deal with the proof.decimal
+
+	//todo put eth proof
+	rawHash := crypto.Keccak256([]byte(params.Value))
+	key = utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(inf.KEY_PREFIX_ETH), rawHash)
+	service.CacheDB.Put(key, []byte(params.Value))
 	return ret, nil
 }
 

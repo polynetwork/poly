@@ -262,7 +262,7 @@ func getBtcProof(native *native.NativeService, txHash []byte) ([]byte, error) {
 	return btcProofBytes, nil
 }
 
-func putBtcVote(native *native.NativeService, txHash []byte, vote *Vote) error {
+func putBtcVote(native *native.NativeService, txHash []byte, vote *inf.Vote) error {
 	sink := common.NewZeroCopySink(nil)
 	vote.Serialization(sink)
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(inf.KEY_PREFIX_BTC_VOTE), txHash)
@@ -270,13 +270,13 @@ func putBtcVote(native *native.NativeService, txHash []byte, vote *Vote) error {
 	return nil
 }
 
-func getBtcVote(native *native.NativeService, txHash []byte) (*Vote, error) {
+func getBtcVote(native *native.NativeService, txHash []byte) (*inf.Vote, error) {
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(inf.KEY_PREFIX_BTC_VOTE), txHash)
 	btcVoteStore, err := native.CacheDB.Get(key)
 	if err != nil {
 		return nil, fmt.Errorf("getBtcVote, get btcTxStore error: %v", err)
 	}
-	vote := &Vote{
+	vote := &inf.Vote{
 		VoteMap: make(map[string]string),
 	}
 	if btcVoteStore != nil {
