@@ -35,16 +35,16 @@ type EntranceParam struct {
 }
 
 func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error {
-	sourceChainID, err := utils.DecodeVarUint(source)
-	if err != nil {
-		return fmt.Errorf("EntranceParam deserialize sourcechainid error:%s", err)
+	sourceChainID, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("EntranceParam deserialize sourcechainid error")
 	}
 	txData, err := utils.DecodeString(source)
 	if err != nil {
 		return fmt.Errorf("EntranceParam deserialize txdata error:%s", err)
 	}
-	height, err := utils.DecodeVarUint(source)
-	if err != nil {
+	height, eof := source.NextUint32()
+	if eof {
 		return fmt.Errorf("EntranceParam deserialize height error:%s", err)
 	}
 	proof, err := utils.DecodeString(source)
@@ -55,8 +55,8 @@ func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error 
 	if err != nil {
 		return fmt.Errorf("EntranceParam deserialize relayerAddr error:%s", err)
 	}
-	targetChainID, err := utils.DecodeVarUint(source)
-	if err != nil {
+	targetChainID, eof := source.NextUint64()
+	if eof {
 		return fmt.Errorf("EntranceParam deserialize targetchainid error:%s", err)
 	}
 	value, err := utils.DecodeString(source)
@@ -75,13 +75,13 @@ func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error 
 }
 
 func (this *EntranceParam) Serialization(sink *common.ZeroCopySink) {
-	utils.EncodeVarUint(sink, this.SourceChainID)
-	utils.EncodeString(sink, this.TxData)
-	utils.EncodeVarUint(sink, uint64(this.Height))
-	utils.EncodeString(sink, this.Proof)
-	utils.EncodeString(sink, this.RelayerAddress)
-	utils.EncodeVarUint(sink, this.TargetChainID)
-	utils.EncodeString(sink, this.Value)
+	sink.WriteUint64(this.SourceChainID)
+	sink.WriteVarBytes([]byte(this.TxData))
+	sink.WriteUint32(this.Height)
+	sink.WriteVarBytes([]byte(this.Proof))
+	sink.WriteVarBytes([]byte(this.RelayerAddress))
+	sink.WriteUint64(this.TargetChainID)
+	sink.WriteVarBytes([]byte(this.Value))
 }
 
 type MakeTxParam struct {
@@ -93,25 +93,25 @@ type MakeTxParam struct {
 }
 
 func (this *MakeTxParam) Serialization(sink *common.ZeroCopySink) {
-	utils.EncodeVarUint(sink, this.FromChainID)
-	utils.EncodeString(sink, this.FromContractAddress)
-	utils.EncodeVarUint(sink, this.ToChainID)
-	utils.EncodeString(sink, this.ToAddress)
-	utils.EncodeVarBytes(sink, this.Amount.Bytes())
+	sink.WriteUint64(this.FromChainID)
+	sink.WriteVarBytes([]byte(this.FromContractAddress))
+	sink.WriteUint64(this.ToChainID)
+	sink.WriteVarBytes([]byte(this.ToAddress))
+	sink.WriteVarBytes([]byte(this.Amount.Bytes()))
 }
 
 func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
-	fromChainID, err := utils.DecodeVarUint(source)
-	if err != nil {
-		return fmt.Errorf("MakeTxParam deserialize fromChainID error:%s", err)
+	fromChainID, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("MakeTxParam deserialize fromChainID error")
 	}
 	fromContractAddress, err := utils.DecodeString(source)
 	if err != nil {
 		return fmt.Errorf("MakeTxParam deserialize fromContractAddress error:%s", err)
 	}
-	toChainID, err := utils.DecodeVarUint(source)
-	if err != nil {
-		return fmt.Errorf("MakeTxParam deserialize toChainID error:%s", err)
+	toChainID, eof := source.NextUint64()
+	if eof{
+		return fmt.Errorf("MakeTxParam deserialize toChainID error")
 	}
 	toAddress, err := utils.DecodeString(source)
 	if err != nil {
@@ -137,15 +137,15 @@ type VoteParam struct {
 }
 
 func (this *VoteParam) Serialization(sink *common.ZeroCopySink) {
-	utils.EncodeVarUint(sink, this.FromChainID)
-	utils.EncodeString(sink, this.Address)
-	utils.EncodeVarBytes(sink, this.TxHash)
+	sink.WriteUint64(this.FromChainID)
+	sink.WriteVarBytes([]byte(this.Address))
+	sink.WriteVarBytes(this.TxHash)
 }
 
 func (this *VoteParam) Deserialization(source *common.ZeroCopySource) error {
-	fromChainID, err := utils.DecodeVarUint(source)
-	if err != nil {
-		return fmt.Errorf("VoteParam deserialize fromChainID error:%s", err)
+	fromChainID, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("VoteParam deserialize fromChainID error")
 	}
 	address, err := utils.DecodeString(source)
 	if err != nil {
@@ -167,7 +167,7 @@ type Vote struct {
 }
 
 func (this *Vote) Serialization(sink *common.ZeroCopySink) {
-	utils.EncodeVarUint(sink, uint64(len(this.VoteMap)))
+	sink.WriteUint64(uint64(len(this.VoteMap)))
 	var voteList []string
 	for _, v := range this.VoteMap {
 		voteList = append(voteList, v)
@@ -176,14 +176,14 @@ func (this *Vote) Serialization(sink *common.ZeroCopySink) {
 		return voteList[i] > voteList[j]
 	})
 	for _, v := range voteList {
-		utils.EncodeString(sink, v)
+		sink.WriteVarBytes([]byte(v))
 	}
 }
 
 func (this *Vote) Deserialization(source *common.ZeroCopySource) error {
-	n, err := utils.DecodeVarUint(source)
-	if err != nil {
-		return fmt.Errorf("utils.DecodeVarUint, deserialize VoteMap length error: %v", err)
+	n, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("utils.DecodeVarUint, deserialize VoteMap length error")
 	}
 	voteMap := make(map[string]string)
 	for i := 0; uint64(i) < n; i++ {

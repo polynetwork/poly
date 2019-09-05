@@ -26,40 +26,14 @@ import (
 	"github.com/ontio/multi-chain/merkle"
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/event"
-	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/header_sync"
-	"github.com/ontio/multi-chain/native/service/ont"
 	"github.com/ontio/multi-chain/native/service/side_chain_manager"
 	"github.com/ontio/multi-chain/native/service/utils"
 	"github.com/ontio/ontology/common/config"
+	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
+
 )
 
-func appCallTransferOng(native *native.NativeService, from common.Address, to common.Address, amount uint64) error {
-	err := appCallTransfer(native, utils.OngContractAddress, from, to, amount)
-	if err != nil {
-		return fmt.Errorf("appCallTransferOng, appCallTransfer error: %v", err)
-	}
-	return nil
-}
-
-func appCallTransfer(native *native.NativeService, contract common.Address, from common.Address, to common.Address, amount uint64) error {
-	var sts []ont.State
-	sts = append(sts, ont.State{
-		From:  from,
-		To:    to,
-		Value: amount,
-	})
-	transfers := ont.Transfers{
-		States: sts,
-	}
-	sink := common.NewZeroCopySink(nil)
-	transfers.Serialization(sink)
-
-	if _, err := native.NativeCall(contract, "transfer", sink.Bytes()); err != nil {
-		return fmt.Errorf("appCallTransfer, appCall error: %v", err)
-	}
-	return nil
-}
 
 func putDoneTx(native *native.NativeService, txHash common.Uint256, chainID uint64) error {
 	contract := utils.CrossChainContractAddress
@@ -132,69 +106,7 @@ func VerifyFromOntTx(native *native.NativeService, proof []byte, fromChainid uin
 	return merkleValue, nil
 }
 
-func MakeFromOntProof(native *native.NativeService, params *CreateCrossChainTxParam) error {
-	//record cross chain tx
-	merkleValue := &FromMerkleValue{
-		TxHash: native.Tx.Hash(),
-		CreateCrossChainTxMerkle: &CreateCrossChainTxMerkle{
-			FromChainID:         native.ShardID.ToUint64(),
-			FromContractAddress: native.ContextRef.CallingContext().ContractAddress.ToHexString(),
-			ToChainID:           params.ToChainID,
-			Fee:                 params.Fee,
-			ToAddress:           params.ToAddress,
-			Amount:              params.Amount,
-		},
-	}
-	sink := common.NewZeroCopySink(nil)
-	merkleValue.Serialization(sink)
-	err := putRequest(native, merkleValue.TxHash, params.ToChainID, sink.Bytes())
-	if err != nil {
-		return fmt.Errorf("MakeFromOntProof, putRequest error:%s", err)
-	}
-	native.ContextRef.PutMerkleVal(sink.Bytes())
-	prefix := merkleValue.TxHash.ToArray()
-	chainIDBytes, err := utils.GetUint64Bytes(params.ToChainID)
-	if err != nil {
-		return fmt.Errorf("MakeFromOntProof, get chainIDBytes error: %v", err)
-	}
-	key := hex.EncodeToString(utils.ConcatKey(utils.CrossChainContractAddress, []byte(REQUEST), chainIDBytes, prefix))
-	notifyMakeFromOntProof(native, params.ToChainID, key)
-	return nil
-}
-
-func VerifyToOntTx(native *native.NativeService, proof []byte, fromChainid uint64, height uint32) (*ToMerkleValue, error) {
-	//get block header
-	header, err := header_sync.GetHeaderByHeight(native, fromChainid, height)
-	if err != nil {
-		return nil, fmt.Errorf("VerifyToOntTx, get header by height %d from chain %d error: %v",
-			height, fromChainid, err)
-	}
-
-	v := merkle.MerkleProve(proof, header.CrossStatesRoot)
-	if v == nil {
-		return nil, fmt.Errorf("VerifyToOntTx, merkle.MerkleProve verify merkle proof error")
-	}
-
-	s := common.NewZeroCopySource(v)
-	merkleValue := new(ToMerkleValue)
-	if err := merkleValue.Deserialization(s); err != nil {
-		return nil, fmt.Errorf("VerifyToOntTx, deserialize merkleValue error:%s", err)
-	}
-
-	//record done cross chain tx
-	err = checkDoneTx(native, merkleValue.TxHash, fromChainid)
-	if err != nil {
-		return nil, fmt.Errorf("VerifyToOntTx, checkDoneTx error:%s", err)
-	}
-	err = putDoneTx(native, merkleValue.TxHash, fromChainid)
-	if err != nil {
-		return nil, fmt.Errorf("VerifyToOntTx, putDoneTx error:%s", err)
-	}
-
-	return merkleValue, nil
-}
-
-func MakeToOntProof(native *native.NativeService, params *common.MakeTxParam) error {
+func MakeToOntProof(native *native.NativeService, params *crosscommon.MakeTxParam) error {
 	//record cross chain tx
 	destAsset, err := side_chain_manager.GetDestAsset(native, params.FromChainID,
 		params.ToChainID, params.FromContractAddress)
@@ -203,7 +115,7 @@ func MakeToOntProof(native *native.NativeService, params *common.MakeTxParam) er
 	}
 
 	merkleValue := &ToMerkleValue{
-		TxHash:            native.Tx.Hash(),
+		TxHash:            native.GetTx().Hash(),
 		ToContractAddress: destAsset.ContractAddress,
 		MakeTxParam:       params,
 	}
@@ -213,7 +125,7 @@ func MakeToOntProof(native *native.NativeService, params *common.MakeTxParam) er
 	if err != nil {
 		return fmt.Errorf("MakeToOntProof, putRequest error:%s", err)
 	}
-	native.ContextRef.PutMerkleVal(sink.Bytes())
+	native.PutMerkleVal(sink.Bytes())
 	prefix := merkleValue.TxHash.ToArray()
 	chainIDBytes, err := utils.GetUint64Bytes(params.ToChainID)
 	if err != nil {
@@ -224,22 +136,11 @@ func MakeToOntProof(native *native.NativeService, params *common.MakeTxParam) er
 	return nil
 }
 
-func notifyMakeFromOntProof(native *native.NativeService, toChainID uint64, key string) {
-	if !config.DefConfig.Common.EnableEventLog {
-		return
-	}
-	native.Notifications = append(native.Notifications,
-		&event.NotifyEventInfo{
-			ContractAddress: utils.OngContractAddress,
-			States:          []interface{}{MAKE_FROM_ONT_PROOF, toChainID, native.Height, key},
-		})
-}
-
 func notifyMakeToOntProof(native *native.NativeService, toChainID uint64, key string) {
 	if !config.DefConfig.Common.EnableEventLog {
 		return
 	}
-	native.Notifications = append(native.Notifications,
+	native.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
 			States:          []interface{}{MAKE_TO_ONT_PROOF, toChainID, native.Height, key},

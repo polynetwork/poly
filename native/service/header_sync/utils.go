@@ -27,15 +27,15 @@ import (
 	"github.com/ontio/multi-chain/core/signature"
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/multi-chain/native/service/native"
-	"github.com/ontio/multi-chain/native/service/native/utils"
+	"github.com/ontio/multi-chain/native"
+	"github.com/ontio/multi-chain/native/service/utils"
 )
 
 func PutBlockHeader(native *native.NativeService, blockHeader *types.Header) error {
 	contract := utils.HeaderSyncContractAddress
 	sink := common.NewZeroCopySink(nil)
 	blockHeader.Serialization(sink)
-	chainIDBytes, err := utils.GetUint64Bytes(blockHeader.ShardID)
+	chainIDBytes, err := utils.GetUint64Bytes(blockHeader.ChainID)
 	if err != nil {
 		return fmt.Errorf("chainIDBytes, GetUint64Bytes error: %v", err)
 	}
@@ -44,11 +44,11 @@ func PutBlockHeader(native *native.NativeService, blockHeader *types.Header) err
 		return fmt.Errorf("heightBytes, getUint32Bytes error: %v", err)
 	}
 	blockHash := blockHeader.Hash()
-	native.CacheDB.Put(utils.ConcatKey(contract, []byte(BLOCK_HEADER), chainIDBytes, blockHash.ToArray()),
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(BLOCK_HEADER), chainIDBytes, blockHash.ToArray()),
 		cstates.GenRawStorageItem(sink.Bytes()))
-	native.CacheDB.Put(utils.ConcatKey(contract, []byte(HEADER_INDEX), chainIDBytes, heightBytes),
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(HEADER_INDEX), chainIDBytes, heightBytes),
 		cstates.GenRawStorageItem(blockHash.ToArray()))
-	native.CacheDB.Put(utils.ConcatKey(contract, []byte(CURRENT_HEIGHT), chainIDBytes), cstates.GenRawStorageItem(heightBytes))
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(CURRENT_HEIGHT), chainIDBytes), cstates.GenRawStorageItem(heightBytes))
 	return nil
 }
 
@@ -62,7 +62,7 @@ func GetHeaderByHeight(native *native.NativeService, chainID uint64, height uint
 	if err != nil {
 		return nil, fmt.Errorf("GetHeaderByHeight, getUint32Bytes error: %v", err)
 	}
-	blockHashStore, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(HEADER_INDEX), chainIDBytes, heightBytes))
+	blockHashStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(HEADER_INDEX), chainIDBytes, heightBytes))
 	if err != nil {
 		return nil, fmt.Errorf("GetHeaderByHeight, get blockHashStore error: %v", err)
 	}
@@ -74,7 +74,7 @@ func GetHeaderByHeight(native *native.NativeService, chainID uint64, height uint
 		return nil, fmt.Errorf("GetHeaderByHeight, deserialize blockHashBytes from raw storage item err:%v", err)
 	}
 	header := new(types.Header)
-	headerStore, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(BLOCK_HEADER), chainIDBytes, blockHashBytes))
+	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(BLOCK_HEADER), chainIDBytes, blockHashBytes))
 	if err != nil {
 		return nil, fmt.Errorf("GetHeaderByHeight, get headerStore error: %v", err)
 	}
@@ -98,7 +98,7 @@ func GetHeaderByHash(native *native.NativeService, chainID uint64, hash common.U
 		return nil, fmt.Errorf("GetHeaderByHash, getUint32Bytes error: %v", err)
 	}
 	header := new(types.Header)
-	headerStore, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(BLOCK_HEADER), chainIDBytes, hash.ToArray()))
+	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(BLOCK_HEADER), chainIDBytes, hash.ToArray()))
 	if err != nil {
 		return nil, fmt.Errorf("GetHeaderByHash, get headerStore error: %v", err)
 	}
@@ -120,12 +120,12 @@ func GetHeaderByHash(native *native.NativeService, chainID uint64, hash common.U
 func verifyHeader(native *native.NativeService, header *types.Header) error {
 	height := header.Height
 	//search consensus peer
-	keyHeight, err := findKeyHeight(native, height, header.ShardID)
+	keyHeight, err := findKeyHeight(native, height, header.ChainID)
 	if err != nil {
 		return fmt.Errorf("verifyHeader, findKeyHeight error:%v", err)
 	}
 
-	consensusPeer, err := getConsensusPeersByHeight(native, header.ShardID, keyHeight)
+	consensusPeer, err := getConsensusPeersByHeight(native, header.ChainID, keyHeight)
 	if err != nil {
 		return fmt.Errorf("verifyHeader, get ConsensusPeer error:%v", err)
 	}
@@ -154,7 +154,7 @@ func GetKeyHeights(native *native.NativeService, chainID uint64) (*KeyHeights, e
 	if err != nil {
 		return nil, fmt.Errorf("chainIDBytes, GetUint64Bytes error: %v", err)
 	}
-	value, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(KEY_HEIGHTS), chainIDBytes))
+	value, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(KEY_HEIGHTS), chainIDBytes))
 	if err != nil {
 		return nil, fmt.Errorf("GetKeyHeights, get keyHeights value error: %v", err)
 	}
@@ -182,7 +182,7 @@ func putKeyHeights(native *native.NativeService, chainID uint64, keyHeights *Key
 	if err != nil {
 		return fmt.Errorf("GetUint64Bytes error: %v", err)
 	}
-	native.CacheDB.Put(utils.ConcatKey(contract, []byte(KEY_HEIGHTS), chainIDBytes), cstates.GenRawStorageItem(sink.Bytes()))
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(KEY_HEIGHTS), chainIDBytes), cstates.GenRawStorageItem(sink.Bytes()))
 	return nil
 }
 
@@ -230,7 +230,7 @@ func getConsensusPeersByHeight(native *native.NativeService, chainID uint64, hei
 	if err != nil {
 		return nil, fmt.Errorf("GetUint64Bytes error: %v", err)
 	}
-	consensusPeerStore, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(CONSENSUS_PEER), chainIDBytes, heightBytes))
+	consensusPeerStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(CONSENSUS_PEER), chainIDBytes, heightBytes))
 	if err != nil {
 		return nil, fmt.Errorf("getConsensusPeerByHeight, get consensusPeerStore error: %v", err)
 	}
@@ -262,7 +262,7 @@ func checkIfConsensusPeersSynced(native *native.NativeService, chainID uint64, h
 	if err != nil {
 		return false, fmt.Errorf("GetUint64Bytes error: %v", err)
 	}
-	consensusPeerStore, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(CONSENSUS_PEER), chainIDBytes, heightBytes))
+	consensusPeerStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(CONSENSUS_PEER), chainIDBytes, heightBytes))
 	if err != nil {
 		return false, fmt.Errorf("getConsensusPeerByHeight, get consensusPeerStore error: %v", err)
 	}
@@ -285,14 +285,14 @@ func putConsensusPeers(native *native.NativeService, consensusPeers *ConsensusPe
 	if err != nil {
 		return fmt.Errorf("putConsensusPeer, getUint32Bytes 1 error: %v", err)
 	}
-	blockHeightBytes, err := utils.GetUint32Bytes(native.Height)
+	blockHeightBytes, err := utils.GetUint32Bytes(native.GetHeight())
 	if err != nil {
 		return fmt.Errorf("putConsensusPeer, getUint32Bytes 2 error: %v", err)
 	}
-	native.CacheDB.Put(utils.ConcatKey(contract, []byte(CONSENSUS_PEER), chainIDBytes, heightBytes), cstates.GenRawStorageItem(sink.Bytes()))
-	native.CacheDB.Put(utils.ConcatKey(contract, []byte(CONSENSUS_PEER_BLOCK_HEIGHT), chainIDBytes, heightBytes),
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(CONSENSUS_PEER), chainIDBytes, heightBytes), cstates.GenRawStorageItem(sink.Bytes()))
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(CONSENSUS_PEER_BLOCK_HEIGHT), chainIDBytes, heightBytes),
 		cstates.GenRawStorageItem(blockHeightBytes))
-	native.ContextRef.PutMerkleVal(sink.Bytes())
+	native.PutMerkleVal(sink.Bytes())
 
 	//update key heights
 	keyHeights, err := GetKeyHeights(native, consensusPeers.ChainID)
@@ -314,7 +314,7 @@ func UpdateConsensusPeer(native *native.NativeService, header *types.Header, add
 	}
 	if blkInfo.NewChainConfig != nil {
 		consensusPeers := &ConsensusPeers{
-			ChainID: header.ShardID,
+			ChainID: header.ChainID,
 			Height:  header.Height,
 			PeerMap: make(map[string]*Peer),
 		}
@@ -325,7 +325,7 @@ func UpdateConsensusPeer(native *native.NativeService, header *types.Header, add
 		if err != nil {
 			return fmt.Errorf("updateConsensusPeer, put ConsensusPeer eerror: %s", err)
 		}
-		err = putSyncAddress(native, header.ShardID, address)
+		err = putSyncAddress(native, header.ChainID, address)
 		if err != nil {
 			return fmt.Errorf("updateConsensusPeer, put SyncAddress eerror: %s", err)
 		}
@@ -336,12 +336,12 @@ func UpdateConsensusPeer(native *native.NativeService, header *types.Header, add
 func putSyncAddress(native *native.NativeService, chainID uint64, address common.Address) error {
 	contract := utils.HeaderSyncContractAddress
 	sink := common.NewZeroCopySink(nil)
-	utils.EncodeAddress(sink, address)
+	sink.WriteAddress(address)
 	chainIDBytes, err := utils.GetUint64Bytes(chainID)
 	if err != nil {
 		return fmt.Errorf("GetUint64Bytes error: %v", err)
 	}
-	native.CacheDB.Put(utils.ConcatKey(contract, []byte(SYNC_ADDRESS), chainIDBytes), cstates.GenRawStorageItem(sink.Bytes()))
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(SYNC_ADDRESS), chainIDBytes), cstates.GenRawStorageItem(sink.Bytes()))
 	return nil
 }
 
@@ -351,7 +351,7 @@ func GetSyncAddress(native *native.NativeService, chainID uint64) (common.Addres
 	if err != nil {
 		return common.Address{}, fmt.Errorf("GetSyncAddress, getUint32Bytes error: %v", err)
 	}
-	headerStore, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(SYNC_ADDRESS), chainIDBytes))
+	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(SYNC_ADDRESS), chainIDBytes))
 	if err != nil {
 		return common.Address{}, fmt.Errorf("GetSyncAddress, get headerStore error: %v", err)
 	}

@@ -21,9 +21,7 @@ package ont
 import (
 	"fmt"
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/native/service/native/utils"
-	"io"
-	"math/big"
+	"github.com/ontio/multi-chain/native/service/utils"
 )
 
 type CreateCrossChainTxParam struct {
@@ -34,28 +32,28 @@ type CreateCrossChainTxParam struct {
 }
 
 func (this *CreateCrossChainTxParam) Serialization(sink *common.ZeroCopySink) {
-	utils.EncodeVarUint(sink, this.ToChainID)
-	utils.EncodeVarUint(sink, this.Fee)
-	utils.EncodeString(sink, this.ToAddress)
-	utils.EncodeVarUint(sink, this.Amount)
+	sink.WriteUint64(this.ToChainID)
+	sink.WriteUint64(this.Fee)
+	sink.WriteVarBytes([]byte(this.ToAddress))
+	sink.WriteUint64(this.Amount)
 }
 
 func (this *CreateCrossChainTxParam) Deserialization(source *common.ZeroCopySource) error {
-	toChainID, err := utils.DecodeVarUint(source)
-	if err != nil {
-		return fmt.Errorf("CreateCrossChainTxParam deserialize toChainID error:%s", err)
+	toChainID, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("CreateCrossChainTxParam deserialize toChainID error")
 	}
-	fee, err := utils.DecodeVarUint(source)
-	if err != nil {
-		return fmt.Errorf("CreateCrossChainTxParam deserialize fee error:%s", err)
+	fee, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("CreateCrossChainTxParam deserialize fee error")
 	}
 	toAddress, err := utils.DecodeString(source)
 	if err != nil {
-		return fmt.Errorf("CreateCrossChainTxParam deserialize address error:%s", err)
+		return fmt.Errorf("CreateCrossChainTxParam deserialize address error")
 	}
-	amount, err := utils.DecodeVarUint(source)
-	if err != nil {
-		return fmt.Errorf("CreateCrossChainTxParam deserialize amount error:%s", err)
+	amount, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("CreateCrossChainTxParam deserialize amount error")
 	}
 
 	this.ToChainID = toChainID
@@ -73,10 +71,10 @@ type ProcessCrossChainTxParam struct {
 }
 
 func (this *ProcessCrossChainTxParam) Serialization(sink *common.ZeroCopySink) {
-	utils.EncodeAddress(sink, this.Address)
-	utils.EncodeVarUint(sink, this.FromChainID)
-	utils.EncodeVarUint(sink, uint64(this.Height))
-	utils.EncodeString(sink, this.Proof)
+	sink.WriteAddress(this.Address)
+	sink.WriteUint64(this.FromChainID)
+	sink.WriteUint32(this.Height)
+	sink.WriteVarBytes([]byte(this.Proof))
 }
 
 func (this *ProcessCrossChainTxParam) Deserialization(source *common.ZeroCopySource) error {
@@ -84,13 +82,13 @@ func (this *ProcessCrossChainTxParam) Deserialization(source *common.ZeroCopySou
 	if err != nil {
 		return fmt.Errorf("ProcessCrossChainTxParam deserialize address error:%s", err)
 	}
-	fromChainID, err := utils.DecodeVarUint(source)
-	if err != nil {
-		return fmt.Errorf("ProcessCrossChainTxParam deserialize fromChainID error:%s", err)
+	fromChainID, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("ProcessCrossChainTxParam deserialize fromChainID error")
 	}
-	height, err := utils.DecodeVarUint(source)
-	if err != nil {
-		return fmt.Errorf("ProcessCrossChainTxParam deserialize height error:%s", err)
+	height, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("ProcessCrossChainTxParam deserialize height error")
 	}
 	proof, err := utils.DecodeString(source)
 	if err != nil {
@@ -110,46 +108,26 @@ type OngUnlockParam struct {
 }
 
 func (this *OngUnlockParam) Serialization(sink *common.ZeroCopySink) {
-	utils.EncodeVarUint(sink, this.FromChainID)
-	utils.EncodeAddress(sink, this.Address)
-	utils.EncodeVarUint(sink, this.Amount)
+	sink.WriteUint64(this.FromChainID)
+	sink.WriteAddress(this.Address)
+	sink.WriteUint64(this.Amount)
 }
 
 func (this *OngUnlockParam) Deserialization(source *common.ZeroCopySource) error {
-	fromChainID, err := utils.DecodeVarUint(source)
-	if err != nil {
-		return fmt.Errorf("OngLockParam deserialize fromChainID error:%s", err)
+	fromChainID, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("OngLockParam deserialize fromChainID error")
 	}
 	address, err := utils.DecodeAddress(source)
 	if err != nil {
 		return fmt.Errorf("OngLockParam deserialize address error:%s", err)
 	}
-	amount, err := utils.DecodeVarUint(source)
-	if err != nil {
-		return fmt.Errorf("OngLockParam deserialize amount error:%s", err)
+	amount, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("OngLockParam deserialize amount error")
 	}
 	this.FromChainID = fromChainID
 	this.Address = address
 	this.Amount = amount
-	return nil
-}
-
-func (this *OngUnlockParam) NeoVmSerialization(buf io.Writer) error {
-	err := utils.NeoVmSerializeArray(buf, 3)
-	if err != nil {
-		return fmt.Errorf("OngUnlockParam NeoVmSerialization, utils.NeoVmSerializeArray length error: %v", err)
-	}
-	err = utils.NeoVmSerializeInteger(buf, new(big.Int).SetUint64(this.FromChainID))
-	if err != nil {
-		return fmt.Errorf("OngUnlockParam NeoVmSerialization, utils.NeoVmSerializeInteger fromChainID error: %v", err)
-	}
-	err = utils.NeoVmSerializeAddress(buf, this.Address)
-	if err != nil {
-		return fmt.Errorf("OngUnlockParam NeoVmSerialization, utils.NeoVmSerializeAddress address error: %v", err)
-	}
-	err = utils.NeoVmSerializeInteger(buf, new(big.Int).SetUint64(this.Amount))
-	if err != nil {
-		return fmt.Errorf("OngUnlockParam NeoVmSerialization, utils.NeoVmSerializeInteger amount error: %v", err)
-	}
 	return nil
 }

@@ -19,7 +19,6 @@
 package ont
 
 import (
-	"bytes"
 	"encoding/hex"
 	"fmt"
 	"math/big"
@@ -27,7 +26,6 @@ import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native"
 	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
-	"github.com/ontio/multi-chain/native/service/utils"
 )
 
 const (
@@ -82,94 +80,5 @@ func (this *ONTHandler) MakeTransaction(service *native.NativeService, param *cr
 	if err != nil {
 		return fmt.Errorf("ont MakeTransaction, MakeToOntProof error: %v", err)
 	}
-
 	return nil
-}
-
-//Init governance contract address
-func InitCrossChain() {
-	native.Contracts[utils.CrossChainContractAddress] = RegisterCrossChianContract
-}
-
-//Register methods of governance contract
-func RegisterCrossChianContract(native *native.NativeService) {
-	native.Register(CREATE_CROSS_CHAIN_TX, CreateCrossChainTx)
-	native.Register(PROCESS_CROSS_CHAIN_TX, ProcessCrossChainTx)
-}
-
-func CreateCrossChainTx(native *native.NativeService) ([]byte, error) {
-	params := new(CreateCrossChainTxParam)
-	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("CreateCrossChainTx, contract params deserialize error: %v", err)
-	}
-
-	err := MakeFromOntProof(native, params)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("CreateCrossChainTx, MakeOntProof error: %v", err)
-	}
-
-	//TODO: miner fee?
-
-	return utils.BYTE_TRUE, nil
-}
-
-func ProcessCrossChainTx(native *native.NativeService) ([]byte, error) {
-	params := new(ProcessCrossChainTxParam)
-	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, contract params deserialize error: %v", err)
-	}
-
-	proof, err := hex.DecodeString(params.Proof)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, proof hex.DecodeString error: %v", err)
-	}
-	merkleValue, err := VerifyToOntTx(native, proof, params.FromChainID, params.Height)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, VerifyOntTx error: %v", err)
-	}
-
-	//call cross chain function
-	dest, err := common.AddressFromHexString(merkleValue.ToContractAddress)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, common.AddressFromHexString error: %v", err)
-	}
-	functionName := "unlock"
-	addr, err := common.AddressFromBase58(merkleValue.MakeTxParam.ToAddress)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, common.AddressFromBase58 error: %v", err)
-	}
-	args := &OngUnlockParam{
-		FromChainID: merkleValue.MakeTxParam.FromChainID,
-		Address:     addr,
-		Amount:      merkleValue.MakeTxParam.Amount.Uint64(),
-	}
-	sink := common.NewZeroCopySink(nil)
-	args.Serialization(sink)
-	buf := bytes.NewBuffer(nil)
-	err = args.NeoVmSerialization(buf)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, args.NeoVmSerialization error: %v", err)
-	}
-	if dest == utils.OngContractAddress {
-		if _, err := native.NativeCall(dest, functionName, sink.Bytes()); err != nil {
-			return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, native.NativeCall error: %v", err)
-		}
-	} else {
-		res, err := native.NeoVMCall(dest, functionName, buf.Bytes())
-		if err != nil {
-			return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, native.NeoVMCall error: %v", err)
-		}
-		r, ok := res.(*types.Integer)
-		if !ok {
-			return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, res of neo vm call must be bool")
-		}
-		v, _ := r.GetBigInteger()
-		if v.Cmp(new(big.Int).SetUint64(0)) == 0 {
-			return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, res of neo vm call is false")
-		}
-	}
-
-	//TODO: miner fee?
-
-	return utils.BYTE_TRUE, nil
 }

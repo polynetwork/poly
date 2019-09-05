@@ -15,10 +15,10 @@ type BtcProof struct {
 }
 
 func (this *BtcProof) Serialization(sink *common.ZeroCopySink) {
-	utils.EncodeVarBytes(sink, this.Tx)
-	utils.EncodeVarBytes(sink, this.Proof)
-	utils.EncodeVarUint(sink, uint64(this.Height))
-	utils.EncodeVarUint(sink, this.BlocksToWait)
+	sink.WriteVarBytes(this.Tx)
+	sink.WriteVarBytes(this.Proof)
+	sink.WriteUint32(this.Height)
+	sink.WriteUint64(this.BlocksToWait)
 }
 
 func (this *BtcProof) Deserialization(source *common.ZeroCopySource) error {
@@ -30,12 +30,12 @@ func (this *BtcProof) Deserialization(source *common.ZeroCopySource) error {
 	if err != nil {
 		return fmt.Errorf("BtcProof deserialize proof error:%s", err)
 	}
-	height, err := utils.DecodeVarUint(source)
-	if err != nil {
+	height, eof := source.NextUint32()
+	if eof {
 		return fmt.Errorf("BtcProof deserialize height error:%s", err)
 	}
-	blocksToWait, err := utils.DecodeVarUint(source)
-	if err != nil {
+	blocksToWait, eof := source.NextUint64()
+	if eof {
 		return fmt.Errorf("BtcProof deserialize blocksToWait error:%s", err)
 	}
 
@@ -51,16 +51,16 @@ type Utxos struct {
 }
 
 func (this *Utxos) Serialization(sink *common.ZeroCopySink) {
-	utils.EncodeVarUint(sink, uint64(len(this.Utxos)))
+	sink.WriteUint64(uint64(len(this.Utxos)))
 	for _, v := range this.Utxos {
 		v.Serialization(sink)
 	}
 }
 
 func (this *Utxos) Deserialization(source *common.ZeroCopySource) error {
-	n, err := utils.DecodeVarUint(source)
-	if err != nil {
-		return fmt.Errorf("utils.DecodeVarUint, deserialize Utxos length error: %v", err)
+	n, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("utils.DecodeVarUint, deserialize Utxos length error")
 	}
 	utxos := make([]*Utxo, 0)
 	for i := 0; uint64(i) < n; i++ {
@@ -91,9 +91,9 @@ type Utxo struct {
 
 func (this *Utxo) Serialization(sink *common.ZeroCopySink) {
 	this.Op.Serialization(sink)
-	utils.EncodeVarUint(sink, uint64(this.AtHeight))
-	utils.EncodeVarUint(sink, this.Value)
-	utils.EncodeVarBytes(sink, this.ScriptPubkey)
+	sink.WriteUint32(this.AtHeight)
+	sink.WriteUint64(this.Value)
+	sink.WriteVarBytes(this.ScriptPubkey)
 }
 
 func (this *Utxo) Deserialization(source *common.ZeroCopySource) error {
@@ -102,12 +102,12 @@ func (this *Utxo) Deserialization(source *common.ZeroCopySource) error {
 	if err != nil {
 		return fmt.Errorf("Utxo deserialize OutPoint error:%s", err)
 	}
-	atHeight, err := utils.DecodeVarUint(source)
-	if err != nil {
+	atHeight, eof := source.NextUint32()
+	if eof {
 		return fmt.Errorf("OutPoint deserialize atHeight error:%s", err)
 	}
-	value, err := utils.DecodeVarUint(source)
-	if err != nil {
+	value, eof := source.NextUint64()
+	if eof {
 		return fmt.Errorf("OutPoint deserialize value error:%s", err)
 	}
 	scriptPubkey, err := utils.DecodeVarBytes(source)
@@ -116,7 +116,7 @@ func (this *Utxo) Deserialization(source *common.ZeroCopySource) error {
 	}
 
 	this.Op = op
-	this.AtHeight = uint32(atHeight)
+	this.AtHeight = atHeight
 	this.Value = value
 	this.ScriptPubkey = scriptPubkey
 	return nil
@@ -128,8 +128,8 @@ type OutPoint struct {
 }
 
 func (this *OutPoint) Serialization(sink *common.ZeroCopySink) {
-	utils.EncodeVarBytes(sink, this.Hash)
-	utils.EncodeVarUint(sink, uint64(this.Index))
+	sink.WriteVarBytes(this.Hash)
+	sink.WriteUint32(this.Index)
 }
 
 func (this *OutPoint) Deserialization(source *common.ZeroCopySource) error {
@@ -137,12 +137,12 @@ func (this *OutPoint) Deserialization(source *common.ZeroCopySource) error {
 	if err != nil {
 		return fmt.Errorf("OutPoint deserialize hash error:%s", err)
 	}
-	index, err := utils.DecodeVarUint(source)
-	if err != nil {
+	index, eof := source.NextUint32()
+	if eof {
 		return fmt.Errorf("OutPoint deserialize height error:%s", err)
 	}
 
 	this.Hash = hash
-	this.Index = uint32(index)
+	this.Index = index
 	return nil
 }

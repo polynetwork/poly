@@ -30,10 +30,10 @@ type SyncBlockHeaderParam struct {
 }
 
 func (this *SyncBlockHeaderParam) Serialization(sink *common.ZeroCopySink) {
-	utils.EncodeAddress(sink, this.Address)
-	utils.EncodeVarUint(sink, uint64(len(this.Headers)))
+	sink.WriteAddress(this.Address)
+	sink.WriteUint64(uint64(len(this.Headers)))
 	for _, v := range this.Headers {
-		utils.EncodeVarBytes(sink, v)
+		sink.WriteVarBytes(v)
 	}
 }
 
@@ -42,9 +42,9 @@ func (this *SyncBlockHeaderParam) Deserialization(source *common.ZeroCopySource)
 	if err != nil {
 		return fmt.Errorf("utils.DecodeAddress, deserialize address error:%s", err)
 	}
-	n, err := utils.DecodeVarUint(source)
-	if err != nil {
-		return fmt.Errorf("utils.DecodeVarUint, deserialize header count error:%s", err)
+	n, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("utils.DecodeVarUint, deserialize header count error")
 	}
 	var headers [][]byte
 	for i := 0; uint64(i) < n; i++ {
@@ -66,9 +66,9 @@ type SyncConsensusPeerParam struct {
 }
 
 func (this *SyncConsensusPeerParam) Serialization(sink *common.ZeroCopySink) {
-	utils.EncodeAddress(sink, this.Address)
-	utils.EncodeVarBytes(sink, this.Header)
-	utils.EncodeString(sink, this.Proof)
+	sink.WriteAddress(this.Address)
+	sink.WriteVarBytes(this.Header)
+	sink.WriteVarBytes([]byte(this.Proof))
 }
 
 func (this *SyncConsensusPeerParam) Deserialization(source *common.ZeroCopySource) error {
@@ -95,7 +95,7 @@ type SyncGenesisHeaderParam struct {
 }
 
 func (this *SyncGenesisHeaderParam) Serialization(sink *common.ZeroCopySink) error {
-	utils.EncodeVarBytes(sink, this.GenesisHeader)
+	sink.WriteVarBytes(this.GenesisHeader)
 	return nil
 }
 

@@ -41,10 +41,6 @@ func ReadAddress(r io.Reader) (common.Address, error) {
 	return common.AddressParseFromBytes(from)
 }
 
-func EncodeAddress(sink *common.ZeroCopySink, addr common.Address) (size uint64) {
-	return sink.WriteVarBytes(addr[:])
-}
-
 func DecodeAddress(source *common.ZeroCopySource) (common.Address, error) {
 	from, _, irregular, eof := source.NextVarBytes()
 	if eof {
@@ -55,10 +51,6 @@ func DecodeAddress(source *common.ZeroCopySource) (common.Address, error) {
 	}
 
 	return common.AddressParseFromBytes(from)
-}
-
-func EncodeVarBytes(sink *common.ZeroCopySink, v []byte) (size uint64) {
-	return sink.WriteVarBytes(v)
 }
 
 func DecodeVarBytes(source *common.ZeroCopySource) ([]byte, error) {
@@ -73,9 +65,6 @@ func DecodeVarBytes(source *common.ZeroCopySource) ([]byte, error) {
 	return v, nil
 }
 
-func EncodeString(sink *common.ZeroCopySink, str string) (size uint64) {
-	return sink.WriteVarBytes([]byte(str))
-}
 
 func DecodeString(source *common.ZeroCopySource) (string, error) {
 	str, _, irregular, eof := source.NextString()

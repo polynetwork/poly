@@ -125,3 +125,7 @@ func (this *NativeService) GetInput() []byte {
 func (this *NativeService) GetTx() *types.Transaction {
 	return this.tx
 }
+
+func (this *NativeService) GetHeight() uint32 {
+	return this.height
+}

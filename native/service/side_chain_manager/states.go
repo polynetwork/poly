@@ -33,24 +33,24 @@ type SideChain struct {
 }
 
 func (this *SideChain) Serialization(sink *common.ZeroCopySink) error {
-	utils.EncodeVarUint(sink, this.ChainId)
-	utils.EncodeString(sink, this.Name)
-	utils.EncodeVarUint(sink, this.BlocksToWait)
+	sink.WriteUint64(this.ChainId)
+	sink.WriteString(this.Name)
+	sink.WriteUint64(this.BlocksToWait)
 	return nil
 }
 
 func (this *SideChain) Deserialization(source *common.ZeroCopySource) error {
-	chainId, err := utils.DecodeVarUint(source)
-	if err != nil {
-		return fmt.Errorf("utils.DecodeVarUint, deserialize chainid error: %v", err)
+	chainId, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("utils.DecodeVarUint, deserialize chainid error")
 	}
 	name, err := utils.DecodeString(source)
 	if err != nil {
 		return fmt.Errorf("utils.DecodeString, deserialize name error: %v", err)
 	}
-	blocksToWait, err := utils.DecodeVarUint(source)
-	if err != nil {
-		return fmt.Errorf("utils.DecodeVarUint, deserialize blocksToWait error: %v", err)
+	blocksToWait, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("utils.DecodeVarUint, deserialize blocksToWait error")
 	}
 
 	this.ChainId = chainId
@@ -64,7 +64,7 @@ type AssetMap struct {
 }
 
 func (this *AssetMap) Serialization(sink *common.ZeroCopySink) error {
-	utils.EncodeVarUint(sink, uint64(len(this.AssetMap)))
+	sink.WriteUint64(uint64(len(this.AssetMap)))
 	var assetList []*Asset
 	for _, v := range this.AssetMap {
 		assetList = append(assetList, v)
@@ -81,8 +81,8 @@ func (this *AssetMap) Serialization(sink *common.ZeroCopySink) error {
 }
 
 func (this *AssetMap) Deserialization(source *common.ZeroCopySource) error {
-	n, err := utils.DecodeVarUint(source)
-	if err != nil {
+	n, eof := source.NextUint64()
+	if eof {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize length error: %v", err)
 	}
 	assetMap := make(map[uint64]*Asset)

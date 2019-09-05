@@ -243,12 +243,12 @@ func getUnsignedTx(txIns []btcjson.TransactionInput, amounts map[string]int64, c
 
 func putBtcProof(native *native.NativeService, txHash, proof []byte) {
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_BTC), txHash)
-	native.CacheDB.Put(key, cstates.GenRawStorageItem(proof))
+	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(proof))
 }
 
 func getBtcProof(native *native.NativeService, txHash []byte) ([]byte, error) {
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_BTC), txHash)
-	btcProofStore, err := native.CacheDB.Get(key)
+	btcProofStore, err := native.GetCacheDB().Get(key)
 	if err != nil {
 		return nil, fmt.Errorf("getBtcProof, get btcProofStore error: %v", err)
 	}
@@ -266,13 +266,13 @@ func putBtcVote(native *native.NativeService, txHash []byte, vote *crosscommon.V
 	sink := common.NewZeroCopySink(nil)
 	vote.Serialization(sink)
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_BTC_VOTE), txHash)
-	native.CacheDB.Put(key, cstates.GenRawStorageItem(sink.Bytes()))
+	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(sink.Bytes()))
 	return nil
 }
 
 func getBtcVote(native *native.NativeService, txHash []byte) (*crosscommon.Vote, error) {
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_BTC_VOTE), txHash)
-	btcVoteStore, err := native.CacheDB.Get(key)
+	btcVoteStore, err := native.GetCacheDB().Get(key)
 	if err != nil {
 		return nil, fmt.Errorf("getBtcVote, get btcTxStore error: %v", err)
 	}
@@ -352,7 +352,7 @@ func putUtxos(native *native.NativeService, chainID uint64, utxos *Utxos) error 
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(UTXOS), chainIDBytes)
 	sink := common.NewZeroCopySink(nil)
 	utxos.Serialization(sink)
-	native.CacheDB.Put(key, cstates.GenRawStorageItem(sink.Bytes()))
+	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(sink.Bytes()))
 	return nil
 }
 
@@ -362,7 +362,7 @@ func getUtxos(native *native.NativeService, chainID uint64) (*Utxos, error) {
 		return nil, fmt.Errorf("getUtxos, utils.GetBytesUint64 err:%v", err)
 	}
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(UTXOS), chainIDBytes)
-	utxosStore, err := native.CacheDB.Get(key)
+	utxosStore, err := native.GetCacheDB().Get(key)
 	if err != nil {
 		return nil, fmt.Errorf("getUtxos, get btcTxStore error: %v", err)
 	}
@@ -386,7 +386,7 @@ func notifyBtcProof(native *native.NativeService, btcProof string) {
 	if !config.DefConfig.Common.EnableEventLog {
 		return
 	}
-	native.Notifications = append(native.Notifications,
+	native.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
 			States:          []interface{}{NOTIFY_BTC_PROOF, btcProof},

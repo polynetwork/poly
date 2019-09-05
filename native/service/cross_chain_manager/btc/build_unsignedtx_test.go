@@ -18,7 +18,7 @@ func TestMakeBtcTx(t *testing.T) {
 		t.Fatalf("Failed to make tx: %v", err)
 	}
 
-	tx, err := service.CacheDB.Get([]byte(BTC_TX_PREFIX))
+	tx, err := service.GetCacheDB().Get([]byte(BTC_TX_PREFIX))
 	if err != nil {
 		t.Fatalf("Failed to get tx: %v", err)
 	}
