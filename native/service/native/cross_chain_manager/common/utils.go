@@ -10,6 +10,7 @@ import (
 	crosscommon "github.com/ontio/multi-chain/native/service/native/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/native/governance"
 	"github.com/ontio/ontology-crypto/keypair"
+	"strings"
 )
 
 func ValidateVote(service *native.NativeService, vote *crosscommon.Vote) error {
@@ -38,4 +39,8 @@ func ValidateVote(service *native.NativeService, vote *crosscommon.Vote) error {
 		return fmt.Errorf("ValidateVote, not enough vote")
 	}
 	return nil
+}
+
+func Replace0x(s string) string {
+	return strings.Replace(strings.ToLower(s), "0x", "", 1)
 }
