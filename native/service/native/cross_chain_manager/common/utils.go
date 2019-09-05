@@ -5,12 +5,15 @@ import (
 
 	"encoding/hex"
 
+	"math/big"
+	"strings"
+
+	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/native/service/native"
 	crosscommon "github.com/ontio/multi-chain/native/service/native/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/native/governance"
 	"github.com/ontio/ontology-crypto/keypair"
-	"strings"
 )
 
 func ValidateVote(service *native.NativeService, vote *crosscommon.Vote) error {
@@ -43,4 +46,14 @@ func ValidateVote(service *native.NativeService, vote *crosscommon.Vote) error {
 
 func Replace0x(s string) string {
 	return strings.Replace(strings.ToLower(s), "0x", "", 1)
+}
+
+func ConverDecimal(fromDecimal int, toDecimal int, fromAmount *big.Int) *big.Int {
+	diff := fromDecimal - toDecimal
+	if diff > 0 {
+		return new(big.Int).Div(fromAmount, math.Exp(big.NewInt(10), big.NewInt(int64(diff))))
+	} else if diff < 0 {
+		return new(big.Int).Mul(fromAmount, math.Exp(big.NewInt(10), big.NewInt(int64(diff))))
+	}
+	return fromAmount
 }
