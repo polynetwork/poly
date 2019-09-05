@@ -3,15 +3,12 @@ package eth
 import (
 	"bytes"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"math/big"
-	"net/http"
 	"strconv"
 	"strings"
 
-	ethComm "github.com/ethereum/go-ethereum/common"
+	ethcomm "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 )
 
@@ -60,46 +57,6 @@ func (this *ETHProof) String() string {
 	return bs.String()
 }
 
-type RpcResponse struct {
-	JsonRpc string `json:"jsonrpc"`
-	Result  []byte `json:"result"`
-	id      int    `json:"id"`
-}
-
-func GetProof() ([]byte, error) {
-
-	params := []interface{}{"0xfa98bb293724fa6b012da0f39d4e185f0fe4a749", []string{"0x2a1543b4300f0f31df4d4ca5a28e30970d5e92ab3c4b01b8df45979ff2a863f5"}, "latest"}
-
-	req := &Request{
-		JsonRpc: "2.0",
-		Id:      1,
-		Method:  "eth_getProof",
-		Params:  params,
-	}
-
-	reqbs, err := json.Marshal(req)
-	if err != nil {
-		return nil, err
-	}
-
-	resp, err := http.Post("http://127.0.0.1:8545", "application/json", strings.NewReader(string(reqbs)))
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
-
-	response := &RpcResponse{}
-	err = json.Unmarshal(body, response)
-	if err != nil {
-		return nil, err
-	}
-	return response.Result, nil
-}
-
 func MappingKeyAt(position1 string, position2 string) ([]byte, error) {
 
 	p1, err := hex.DecodeString(position1)
@@ -113,7 +70,7 @@ func MappingKeyAt(position1 string, position2 string) ([]byte, error) {
 		return nil, err
 	}
 
-	key := crypto.Keccak256(ethComm.LeftPadBytes(p1, 32), ethComm.LeftPadBytes(p2, 32))
+	key := crypto.Keccak256(ethcomm.LeftPadBytes(p1, 32), ethcomm.LeftPadBytes(p2, 32))
 
 	return key, nil
 }

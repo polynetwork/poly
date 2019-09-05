@@ -40,7 +40,7 @@ func putEthVote(native *native.NativeService, txHash []byte, vote *crosscommon.V
 }
 
 func getEthVote(native *native.NativeService, txHash []byte) (*crosscommon.Vote, error) {
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(common.KEY_PREFIX_ETH_VOTE), txHash)
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_ETH_VOTE), txHash)
 	ethVoteStore, err := native.CacheDB.Get(key)
 	if err != nil {
 		return nil, fmt.Errorf("getEthVote, get ethTxStore error: %v", err)

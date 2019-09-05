@@ -8,7 +8,7 @@ import (
 	"math/big"
 	"strings"
 
-	"github.com/ethereum/go-ethereum/common/math"
+	ethmath "github.com/ethereum/go-ethereum/common/math"
 	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/native/service/native"
 	crosscommon "github.com/ontio/multi-chain/native/service/native/cross_chain_manager/common"
@@ -51,9 +51,9 @@ func Replace0x(s string) string {
 func ConverDecimal(fromDecimal int, toDecimal int, fromAmount *big.Int) *big.Int {
 	diff := fromDecimal - toDecimal
 	if diff > 0 {
-		return new(big.Int).Div(fromAmount, math.Exp(big.NewInt(10), big.NewInt(int64(diff))))
+		return new(big.Int).Div(fromAmount, ethmath.Exp(big.NewInt(10), big.NewInt(int64(diff))))
 	} else if diff < 0 {
-		return new(big.Int).Mul(fromAmount, math.Exp(big.NewInt(10), big.NewInt(int64(diff))))
+		return new(big.Int).Mul(fromAmount, ethmath.Exp(big.NewInt(10), big.NewInt(int64(-diff))))
 	}
 	return fromAmount
 }
