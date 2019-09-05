@@ -1,22 +1,19 @@
-package btc
+package common
 
 import (
-	"fmt"
-
 	"encoding/hex"
-
+	"fmt"
 	"math/big"
 	"strings"
 
 	ethmath "github.com/ethereum/go-ethereum/common/math"
 	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/native/service/native"
-	crosscommon "github.com/ontio/multi-chain/native/service/native/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/native/governance"
 	"github.com/ontio/ontology-crypto/keypair"
 )
 
-func ValidateVote(service *native.NativeService, vote *crosscommon.Vote) error {
+func ValidateVote(service *native.NativeService, vote *Vote) error {
 	consesusPeers, err := governance.GetConsensusPeers(service)
 	if err != nil {
 		return fmt.Errorf("ValidateVote, governance.GetConsensusPeers error: %v", err)

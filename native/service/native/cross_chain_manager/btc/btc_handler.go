@@ -22,9 +22,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/multi-chain/native/service/native/governance"
-	"github.com/ontio/ontology-crypto/keypair"
 	"math/big"
 
 	"github.com/btcsuite/btcd/btcjson"
@@ -35,7 +32,7 @@ import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native/event"
 	"github.com/ontio/multi-chain/native/service/native"
-	crosscommon"github.com/ontio/multi-chain/native/service/native/cross_chain_manager/common"
+	crosscommon "github.com/ontio/multi-chain/native/service/native/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/native/side_chain_manager"
 	"github.com/ontio/multi-chain/native/service/native/utils"
 )
@@ -80,7 +77,7 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 	}
 
 	err = crosscommon.ValidateVote(service, vote)
-	if err != nil{
+	if err != nil {
 		return false, nil, fmt.Errorf("btc Vote, ValidateVote error: %v", err)
 	}
 

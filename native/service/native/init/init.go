@@ -25,7 +25,6 @@ import (
 	"github.com/ontio/multi-chain/native/service/native/side_chain_manager"
 )
 
-
 func init() {
 	cont.InitCrossChain()
 	header_sync.InitHeaderSync()

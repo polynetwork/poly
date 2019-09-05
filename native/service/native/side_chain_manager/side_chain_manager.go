@@ -42,9 +42,6 @@ const (
 	SIDE_CHAIN                  = "sideChain"
 	ASSET_MAP                   = "assetMap"
 	ASSET_MAP_REQUEST           = "assetMapRequest"
-
-	//constant
-	ONG = 500000000000
 )
 
 //Init contract address
@@ -69,10 +66,6 @@ func RegisterSideChain(native *native.NativeService) ([]byte, error) {
 	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, contract params deserialize error: %v", err)
 	}
-	address, err := common.AddressFromBase58(params.Address)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, common.AddressFromBase58 error: %v", err)
-	}
 	registerSideChain, err := getRegisterSideChain(native, params.ChainId)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, getRegisterSideChain error: %v", err)
@@ -95,12 +88,6 @@ func RegisterSideChain(native *native.NativeService) ([]byte, error) {
 	err = putRegisterSideChain(native, sideChain)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, putRegisterSideChain error: %v", err)
-	}
-
-	//ong transfer
-	err = appCallTransferOng(native, address, utils.GovernanceContractAddress, ONG)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("appCallTransferOng, ong transfer error: %v", err)
 	}
 
 	return utils.BYTE_TRUE, nil
@@ -137,10 +124,6 @@ func UpdateSideChain(native *native.NativeService) ([]byte, error) {
 	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, contract params deserialize error: %v", err)
 	}
-	address, err := common.AddressFromBase58(params.Address)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, common.AddressFromBase58 error: %v", err)
-	}
 	sideChain, err := GetSideChain(native, params.ChainId)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, getSideChain error: %v", err)
@@ -156,12 +139,6 @@ func UpdateSideChain(native *native.NativeService) ([]byte, error) {
 	err = putUpdateSideChain(native, updateSideChain)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, putUpdateSideChain error: %v", err)
-	}
-
-	//ong transfer
-	err = appCallTransferOng(native, address, utils.GovernanceContractAddress, ONG)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("appCallTransferOng, ong transfer error: %v", err)
 	}
 
 	return utils.BYTE_TRUE, nil
@@ -231,16 +208,7 @@ func AssetMapping(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("AssetMapping, putAssetMapRequest error: %v", err)
 	}
-	address, err := common.AddressFromBase58(params.Address)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("AssetMapping, common.AddressFromBase58 error: %v", err)
-	}
 
-	//ong transfer
-	err = appCallTransferOng(native, address, utils.GovernanceContractAddress, ONG)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("appCallTransferOng, ong transfer error: %v", err)
-	}
 	return utils.BYTE_TRUE, nil
 }
 

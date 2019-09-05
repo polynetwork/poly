@@ -36,7 +36,6 @@ const (
 	GenesisNonce uint64 = 2083236893
 )
 
-
 var GenBlockTime = (config.DEFAULT_GEN_BLOCK_TIME * time.Second)
 
 var INIT_PARAM = map[string]string{
@@ -79,12 +78,9 @@ func BuildGenesisBlock(defaultBookkeeper []keypair.PublicKey, genesisConfig *con
 	}
 
 	genesisBlock := &types.Block{
-		Header: genesisHeader,
-		Transactions: []*types.Transaction{
-		},
+		Header:       genesisHeader,
+		Transactions: []*types.Transaction{},
 	}
 	genesisBlock.RebuildMerkleRoot()
 	return genesisBlock, nil
 }
-
-

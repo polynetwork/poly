@@ -26,36 +26,8 @@ import (
 	"github.com/ontio/multi-chain/common"
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/native/service/native"
-	"github.com/ontio/multi-chain/native/service/native/ont"
 	"github.com/ontio/multi-chain/native/service/native/utils"
 )
-
-func appCallTransferOng(native *native.NativeService, from common.Address, to common.Address, amount uint64) error {
-	err := appCallTransfer(native, utils.OngContractAddress, from, to, amount)
-	if err != nil {
-		return fmt.Errorf("appCallTransferOng, appCallTransfer error: %v", err)
-	}
-	return nil
-}
-
-func appCallTransfer(native *native.NativeService, contract common.Address, from common.Address, to common.Address, amount uint64) error {
-	var sts []ont.State
-	sts = append(sts, ont.State{
-		From:  from,
-		To:    to,
-		Value: amount,
-	})
-	transfers := ont.Transfers{
-		States: sts,
-	}
-	sink := common.NewZeroCopySink(nil)
-	transfers.Serialization(sink)
-
-	if _, err := native.NativeCall(contract, "transfer", sink.Bytes()); err != nil {
-		return fmt.Errorf("appCallTransfer, appCall error: %v", err)
-	}
-	return nil
-}
 
 func getRegisterSideChain(native *native.NativeService, chanid uint64) (*SideChain, error) {
 	contract := utils.SideChainManagerContractAddress
