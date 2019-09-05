@@ -20,9 +20,10 @@ package utils
 
 import (
 	"fmt"
+	"io"
+
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/serialization"
-	"io"
 )
 
 func WriteAddress(w io.Writer, address common.Address) error {

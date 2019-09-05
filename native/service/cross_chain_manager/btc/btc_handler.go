@@ -30,8 +30,8 @@ import (
 	"github.com/btcsuite/btcutil"
 	wire_bch "github.com/gcash/bchd/wire"
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/native/event"
 	"github.com/ontio/multi-chain/native"
+	"github.com/ontio/multi-chain/native/event"
 	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/side_chain_manager"
 	"github.com/ontio/multi-chain/native/service/utils"
@@ -234,13 +234,13 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, chooseUtxos error: %v", err)
 	}
-	txIns := make([]btcjson.TransactionGetInput(), 0)
+	txIns := make([]btcjson.TransactionInput, 0)
 	for _, u := range choosed {
 		hash, err := chainhash.NewHash(u.Op.Hash)
 		if err != nil {
 			return fmt.Errorf("makeBtcTx, chainhash.NewHash error: %v", err)
 		}
-		txIns = append(txIns, btcjson.TransactionGetInput(){hash.String(), u.Op.Index})
+		txIns = append(txIns, btcjson.TransactionInput{hash.String(), u.Op.Index})
 	}
 
 	charge := sum - amountSum - FEE
