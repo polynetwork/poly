@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/ethereum/go-ethereum/accounts/abi"
-	ethComm "github.com/ethereum/go-ethereum/common"
+	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/light"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -84,12 +84,12 @@ func (this *ETHHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*crosscommon.MakeTxParam, error) {
 	params := new(crosscommon.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.Input)); err != nil {
-		return nil, fmt.Errorf("Verify, contract params deserialize error: %v", err)
+		return nil, fmt.Errorf("MakeDepositProposal, contract params deserialize error: %v", err)
 	}
 
 	blockData, err := GetEthBlockByNumber(params.Height)
 	if err != nil {
-		return nil, fmt.Errorf("Verify, GetEthBlockByNumber error:%v", err)
+		return nil, fmt.Errorf("MakeDepositProposal, GetEthBlockByNumber error:%v", err)
 	}
 
 	proofData, err := hex.DecodeString(params.Proof)
@@ -104,11 +104,11 @@ func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*cro
 	}
 
 	if len(ethProof.StorageProofs) != 1 {
-		return nil, fmt.Errorf("[Verify] incorrect proof format")
+		return nil, fmt.Errorf("MakeDepositProposal, incorrect proof format")
 	}
 
 	bf := bytes.NewBuffer(utils.CrossChainManagerContractAddress[:])
-	keyBytes := ethComm.Hex2Bytes(crosscommon.KEY_PREFIX_ETH + replace0x(ethProof.StorageProofs[0].Key))
+	keyBytes := ethcommon.Hex2Bytes(crosscommon.KEY_PREFIX_ETH + crosscommon.Replace0x(ethProof.StorageProofs[0].Key))
 	bf.Write(keyBytes)
 	key := bf.Bytes()
 	val, err := service.CacheDB.Get(key)
@@ -116,33 +116,32 @@ func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*cro
 		return nil, err
 	}
 	if val != nil {
-		return nil, fmt.Errorf("[Verify] key:%s already solved ", ethProof.StorageProofs[0].Key)
+		return nil, fmt.Errorf("MakeDepositProposal, key:%s already solved ", ethProof.StorageProofs[0].Key)
 	}
 	//todo 1. verify the proof with header
 	//determine where the k and v from
 	proofResult, err := verifyMerkleProof(ethProof, blockData)
 	if err != nil {
-		return nil, fmt.Errorf("Verify, verifyMerkleProof error:%v", err)
+		return nil, fmt.Errorf("MakeDepositProposal, verifyMerkleProof error:%v", err)
 	}
 	if proofResult == nil {
-		return nil, fmt.Errorf("Verify, verifyMerkleProof failed!")
+		return nil, fmt.Errorf("MakeDepositProposal, verifyMerkleProof failed!")
 	}
 
 	if !checkProofResult(proofResult, params.Value) {
-		fmt.Printf("verify value hash failed\n")
-		return nil, fmt.Errorf("Verify, verify value hash failed!")
+		return nil, fmt.Errorf("MakeDepositProposal, verify proof value hash failed!")
 	}
 
 	proof := &Proof{}
 	if err := proof.Deserialize(params.Value); err != nil {
-		return nil, fmt.Errorf("Verify, eth proof deserialize error: %v", err)
+		return nil, fmt.Errorf("MakeDepositProposal, eth proof deserialize error:%v", err)
 	}
 
-	//todo does the proof data too big??
-	tmp := strings.Split(params.Value, "#")
-	fromContractAddr := tmp[0]
+	fromContractAddr := strings.Split(params.Value, "#")[0]
 
-	service.CacheDB.Put(key, proofData)
+	rawTxValue := crypto.Keccak256([]byte(params.Value))
+	key = utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_ETH), rawTxValue)
+	service.CacheDB.Put(key, []byte(params.Value))
 
 	ret := &crosscommon.MakeTxParam{}
 	ret.ToChainID = proof.ToChainID
@@ -152,29 +151,19 @@ func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*cro
 	ret.Amount = proof.Amount
 	//todo deal with the proof.decimal
 
-	//todo put eth proof
-	rawHash := crypto.Keccak256([]byte(params.Value))
-	key = utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_ETH), rawHash)
-	service.CacheDB.Put(key, []byte(params.Value))
 	return ret, nil
 }
 
 func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *crosscommon.MakeTxParam) error {
 	//todo add logic
+
 	//1 construct tx
-	log.Infof("===MakeTransaction param:is %v\n", param)
-	log.Infof("FromContractAddress:%s\n", param.FromContractAddress)
-	log.Infof("ToAddress:%s\n", param.ToAddress)
-	log.Infof("Amount:%d\n", param.Amount)
-	log.Infof("ToChainID:%d\n", param.ToChainID)
-	log.Infof("FromChainID:%d\n", param.FromChainID)
 	contractabi, err := abi.JSON(strings.NewReader(locker.EthereumCrossChainABI))
 	if err != nil {
 		return err
 	}
 
-	bindaddr := ethComm.HexToAddress(param.ToAddress)
-	log.Infof("bindaddr:%v\n", bindaddr)
+	bindaddr := ethcommon.HexToAddress(param.ToAddress)
 	amount := param.Amount
 	//lockAddress := ethComm.HexToAddress(LOCKER_CONTRACT_ADDR)
 
@@ -182,9 +171,8 @@ func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *cr
 	if err != nil {
 		return err
 	}
-	log.Infof("targetTokenAddr:%s\n", targetAsset.ContractAddress)
-	tokenAddress := ethComm.HexToAddress(targetAsset.ContractAddress)
-	log.Infof("tokenAddress:%s\n", tokenAddress)
+
+	tokenAddress := ethcommon.HexToAddress(targetAsset.ContractAddress)
 
 	txid := "1"
 	v := []uint8{0}
@@ -192,7 +180,6 @@ func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *cr
 	s := [][32]byte{[32]byte{0}}
 	txData, err := contractabi.Pack("Withdraw", tokenAddress, txid, bindaddr, amount, v, r, s)
 	if err != nil {
-		log.Errorf("[MakeTransaction]contractabi.Pack error:%s\n", err)
 		return err
 	}
 
@@ -218,81 +205,79 @@ func verifyMerkleProof(ethproof *ETHProof, blockdata *EthBlock) ([]byte, error) 
 	nodeList := new(light.NodeList)
 
 	for _, s := range ethproof.AccountProof {
-		p := replace0x(s)
-		nodeList.Put(nil, ethComm.Hex2Bytes(p))
+		p := crosscommon.Replace0x(s)
+		nodeList.Put(nil, ethcommon.Hex2Bytes(p))
 	}
 	ns := nodeList.NodeSet()
 
-	acctKey := crypto.Keccak256(ethComm.Hex2Bytes(replace0x(ethproof.Address)))
+	acctKey := crypto.Keccak256(ethcommon.Hex2Bytes(crosscommon.Replace0x(ethproof.Address)))
 
 	//2. verify account proof
-	acctVal, _, err := trie.VerifyProof(ethComm.HexToHash(replace0x(blockdata.StateRoot)), acctKey, ns)
+	acctVal, _, err := trie.VerifyProof(ethcommon.HexToHash(crosscommon.Replace0x(blockdata.StateRoot)), acctKey, ns)
 	if err != nil {
-		fmt.Printf("[verifyMerkleProof]verify account err:%s\n", err.Error())
+		fmt.Printf("verifyMerkleProof, verify account proof error:%s\n", err.Error())
 		return nil, err
 	}
 
 	nounce := new(big.Int)
-	_, f := nounce.SetString(replace0x(ethproof.Nonce), 16)
-	if !f {
-		fmt.Printf("error format of nounce:%s\n", ethproof.Nonce)
-		return nil, fmt.Errorf("error format of nounce:%s\n", ethproof.Nonce)
+	_, ok := nounce.SetString(crosscommon.Replace0x(ethproof.Nonce), 16)
+	if !ok {
+		return nil, fmt.Errorf("verifyMerkleProof, invalid format of nounce:%s\n", ethproof.Nonce)
 	}
 
 	balance := new(big.Int)
-	_, f = balance.SetString(replace0x(ethproof.Balance), 16)
-	if !f {
-		fmt.Printf("error format of Balance:%s\n", ethproof.Balance)
-		return nil, fmt.Errorf("error format of Balance:%s\n", ethproof.Balance)
+	_, ok = balance.SetString(crosscommon.Replace0x(ethproof.Balance), 16)
+	if !ok {
+		return nil, fmt.Errorf("verifyMerkleProof, invalid format of balance:%s\n", ethproof.Balance)
 	}
 
-	storageHash := ethComm.HexToHash(replace0x(ethproof.StorageHash))
-	codeHash := ethComm.HexToHash(replace0x(ethproof.CodeHash))
-	//construct the account value
+	storageHash := ethcommon.HexToHash(crosscommon.Replace0x(ethproof.StorageHash))
+	codeHash := ethcommon.HexToHash(crosscommon.Replace0x(ethproof.CodeHash))
+
 	acct := &ProofAccount{
 		Nounce:   nounce,
 		Balance:  balance,
 		Storage:  storageHash,
 		Codehash: codeHash,
 	}
+
 	acctrlp, err := rlp.EncodeToBytes(acct)
 	if err != nil {
 		return nil, err
 	}
+
 	if !bytes.Equal(acctrlp, acctVal) {
-		return nil, fmt.Errorf("[verifyMerkleProof]: verify account proof failed, wanted:%v, get:%v", acctrlp, acctVal)
+		return nil, fmt.Errorf("verifyMerkleProof, verify account proof failed, wanted:%v, get:%v", acctrlp, acctVal)
 	}
+
 	//3.verify storage proof
 	nodeList = new(light.NodeList)
-
 	if len(ethproof.StorageProofs) != 1 {
-		return nil, fmt.Errorf("[verifyMerkleProof]: storage proof fmt error")
+		return nil, fmt.Errorf("verifyMerkleProof, invalid storage proof format")
 	}
 
 	sp := ethproof.StorageProofs[0]
-	storageKey := crypto.Keccak256(ethComm.Hex2Bytes(replace0x(sp.Key)))
+	storageKey := crypto.Keccak256(ethcommon.Hex2Bytes(crosscommon.Replace0x(sp.Key)))
+
 	for _, prf := range sp.Proof {
-		nodeList.Put(nil, ethComm.Hex2Bytes(replace0x(prf)))
+		nodeList.Put(nil, ethcommon.Hex2Bytes(crosscommon.Replace0x(prf)))
 	}
 
 	ns = nodeList.NodeSet()
 	val, _, err := trie.VerifyProof(storageHash, storageKey, ns)
 	if err != nil {
-		fmt.Printf("[verifyMerkleProof]verify storage failed:%s\n", err.Error())
+		fmt.Printf("verifyMerkleProof, verify storage proof error:%s\n", err.Error())
 		return nil, err
 	}
-	return val, nil
-}
 
-func replace0x(s string) string {
-	return strings.Replace(strings.ToLower(s), "0x", "", 1)
+	return val, nil
 }
 
 func checkProofResult(result []byte, value string) bool {
 	var s []byte
 	err := rlp.DecodeBytes(result, &s)
 	if err != nil {
-		log.Errorf("[checkProofResult]rlp.DecodeBytes error :%s\n", err)
+		log.Errorf("checkProofResult, rlp.DecodeBytes error:%s\n", err)
 		return false
 	}
 	hash := crypto.Keccak256([]byte(value))

@@ -79,7 +79,6 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 		return false, nil, fmt.Errorf("btc Vote, putBtcVote error: %v", err)
 	}
 
-
 	err = crosscommon.ValidateVote(service, vote)
 	if err != nil{
 		return false, nil, fmt.Errorf("btc Vote, ValidateVote error: %v", err)
