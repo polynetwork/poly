@@ -25,12 +25,12 @@ import (
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/merkle"
 	"github.com/ontio/multi-chain/native/event"
-	"github.com/ontio/multi-chain/native/service/native"
-	crosscommon "github.com/ontio/multi-chain/native/service/native/cross_chain_manager/common"
-	"github.com/ontio/multi-chain/native/service/native/header_sync"
-	"github.com/ontio/multi-chain/native/service/native/ont"
-	"github.com/ontio/multi-chain/native/service/native/side_chain_manager"
-	"github.com/ontio/multi-chain/native/service/native/utils"
+	"github.com/ontio/multi-chain/native"
+	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
+	"github.com/ontio/multi-chain/native/service/header_sync"
+	"github.com/ontio/multi-chain/native/service/ont"
+	"github.com/ontio/multi-chain/native/service/side_chain_manager"
+	"github.com/ontio/multi-chain/native/service/utils"
 	"github.com/ontio/ontology/common/config"
 )
 
@@ -68,7 +68,7 @@ func putDoneTx(native *native.NativeService, txHash common.Uint256, chainID uint
 	if err != nil {
 		return fmt.Errorf("putRequestID, get chainIDBytes error: %v", err)
 	}
-	native.CacheDB.Put(utils.ConcatKey(contract, []byte(DONE_TX), chainIDBytes, prefix), cstates.GenRawStorageItem(txHash.ToArray()))
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(DONE_TX), chainIDBytes, prefix), cstates.GenRawStorageItem(txHash.ToArray()))
 	return nil
 }
 
@@ -79,9 +79,9 @@ func checkDoneTx(native *native.NativeService, txHash common.Uint256, chainID ui
 	if err != nil {
 		return fmt.Errorf("checkDoneTx, get chainIDBytes error: %v", err)
 	}
-	value, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(DONE_TX), chainIDBytes, prefix))
+	value, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(DONE_TX), chainIDBytes, prefix))
 	if err != nil {
-		return fmt.Errorf("checkDoneTx, native.CacheDB.Get error: %v", err)
+		return fmt.Errorf("checkDoneTx, native.GetCacheDB().Get error: %v", err)
 	}
 	if value != nil {
 		return fmt.Errorf("checkDoneTx, tx already done")

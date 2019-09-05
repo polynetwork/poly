@@ -21,7 +21,7 @@ package header_sync
 import (
 	"fmt"
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/native/service/native/utils"
+	"github.com/ontio/multi-chain/native/service/utils"
 	"math"
 	"sort"
 )

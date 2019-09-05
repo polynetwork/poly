@@ -31,10 +31,10 @@ import (
 	wire_bch "github.com/gcash/bchd/wire"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native/event"
-	"github.com/ontio/multi-chain/native/service/native"
-	crosscommon "github.com/ontio/multi-chain/native/service/native/cross_chain_manager/common"
-	"github.com/ontio/multi-chain/native/service/native/side_chain_manager"
-	"github.com/ontio/multi-chain/native/service/native/utils"
+	"github.com/ontio/multi-chain/native"
+	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
+	"github.com/ontio/multi-chain/native/service/side_chain_manager"
+	"github.com/ontio/multi-chain/native/service/utils"
 )
 
 const (
@@ -52,7 +52,7 @@ func NewBTCHandler() *BTCHandler {
 
 func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.MakeTxParam, error) {
 	params := new(crosscommon.VoteParam)
-	if err := params.Deserialization(common.NewZeroCopySource(service.Input)); err != nil {
+	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
 		return false, nil, fmt.Errorf("btc Vote, contract params deserialize error: %v", err)
 	}
 
@@ -120,11 +120,11 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 
 func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*crosscommon.MakeTxParam, error) {
 	params := new(crosscommon.EntranceParam)
-	if err := params.Deserialization(common.NewZeroCopySource(service.Input)); err != nil {
+	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
 		return nil, fmt.Errorf("btc Verify, contract params deserialize error: %v", err)
 	}
 	if params.Proof == "" || params.TxData == "" {
-		return nil, fmt.Errorf("btc Verify, input data can't be empty")
+		return nil, fmt.Errorf("btc Verify, GetInput() data can't be empty")
 	}
 	tx, err := hex.DecodeString(params.TxData)
 	if err != nil {
@@ -210,7 +210,7 @@ func notifyBtcTx(native *native.NativeService, proof, tx []byte, height uint32, 
 
 func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string]int64) error {
 	if len(amounts) == 0 {
-		return fmt.Errorf("makeBtcTx, input no amount")
+		return fmt.Errorf("makeBtcTx, GetInput() no amount")
 	}
 	var amountSum int64
 	for i, a := range amounts {
@@ -234,13 +234,13 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, chooseUtxos error: %v", err)
 	}
-	txIns := make([]btcjson.TransactionInput, 0)
+	txIns := make([]btcjson.TransactionGetInput(), 0)
 	for _, u := range choosed {
 		hash, err := chainhash.NewHash(u.Op.Hash)
 		if err != nil {
 			return fmt.Errorf("makeBtcTx, chainhash.NewHash error: %v", err)
 		}
-		txIns = append(txIns, btcjson.TransactionInput{hash.String(), u.Op.Index})
+		txIns = append(txIns, btcjson.TransactionGetInput(){hash.String(), u.Op.Index})
 	}
 
 	charge := sum - amountSum - FEE
@@ -261,19 +261,13 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 	}
 
 	// TODO: Define a key
-	service.CacheDB.Put([]byte(BTC_TX_PREFIX), buf.Bytes())
-	service.Notifications = append(service.Notifications,
+	service.GetCacheDB().Put([]byte(BTC_TX_PREFIX), buf.Bytes())
+	service.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
 			States:          []interface{}{"makeBtcTx", hex.EncodeToString(buf.Bytes())},
 		})
 
 	// TODO: charge
-	//if charge > 0 {
-	//	err = chargeUtxos(service, chainID, mtx)
-	//	if err != nil {
-	//		return fmt.Errorf("makeBtcTx, spendUtxos fail: %v", err)
-	//	}
-	//}
 	return nil
 }

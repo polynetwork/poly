@@ -8,8 +8,8 @@ import (
 
 	ethmath "github.com/ethereum/go-ethereum/common/math"
 	"github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/multi-chain/native/service/native"
-	"github.com/ontio/multi-chain/native/service/native/governance"
+	"github.com/ontio/multi-chain/native"
+	"github.com/ontio/multi-chain/native/service/governance"
 	"github.com/ontio/ontology-crypto/keypair"
 )
 

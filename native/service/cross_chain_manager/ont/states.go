@@ -21,8 +21,8 @@ package ont
 import (
 	"fmt"
 	"github.com/ontio/multi-chain/common"
-	crosscommon "github.com/ontio/multi-chain/native/service/native/cross_chain_manager/common"
-	"github.com/ontio/multi-chain/native/service/native/utils"
+	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
+	"github.com/ontio/multi-chain/native/service/utils"
 )
 
 type FromMerkleValue struct {

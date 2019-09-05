@@ -24,7 +24,7 @@ import (
 	"github.com/ontio/multi-chain/common/serialization"
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/errors"
-	"github.com/ontio/multi-chain/native/service/native"
+	"github.com/ontio/multi-chain/native"
 )
 
 type LinkedlistNode struct {
@@ -88,7 +88,7 @@ func (this *LinkedlistNode) Deserialize(r []byte) error {
 }
 
 func getListHead(native *native.NativeService, index []byte) ([]byte, error) {
-	head, err := native.CacheDB.Get(index)
+	head, err := native.GetCacheDB().Get(index)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +104,7 @@ func getListHead(native *native.NativeService, index []byte) ([]byte, error) {
 
 func getListNode(native *native.NativeService, index []byte, item []byte) (*LinkedlistNode, error) {
 	node := new(LinkedlistNode)
-	data, err := native.CacheDB.Get(append(index, item...))
+	data, err := native.GetCacheDB().Get(append(index, item...))
 	if err != nil {
 		return nil, err
 	}
@@ -204,7 +204,7 @@ func LinkedlistDelete(native *native.NativeService, index []byte, item []byte) (
 	if prev == nil {
 		if next == nil {
 			//clear linked list
-			native.CacheDB.Delete(index)
+			native.GetCacheDB().Delete(index)
 		} else {
 			qnext, err := getListNode(native, index, next)
 			if err != nil {
@@ -249,7 +249,7 @@ func LinkedlistDelete(native *native.NativeService, index []byte, item []byte) (
 			PutBytes(native, append(index, next...), node_next)
 		}
 	}
-	native.CacheDB.Delete(append(index, item...))
+	native.GetCacheDB().Delete(append(index, item...))
 	return true, nil
 }
 

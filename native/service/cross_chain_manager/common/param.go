@@ -6,8 +6,8 @@ import (
 	"sort"
 
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/native/service/native"
-	"github.com/ontio/multi-chain/native/service/native/utils"
+	"github.com/ontio/multi-chain/native"
+	"github.com/ontio/multi-chain/native/service/utils"
 )
 
 var (

@@ -24,7 +24,7 @@ import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/serialization"
 	"github.com/ontio/multi-chain/errors"
-	"github.com/ontio/multi-chain/native/service/native"
+	"github.com/ontio/multi-chain/native"
 )
 
 func ConcatKey(contract common.Address, args ...[]byte) []byte {
@@ -36,7 +36,7 @@ func ConcatKey(contract common.Address, args ...[]byte) []byte {
 }
 
 func ValidateOwner(native *native.NativeService, address common.Address) error {
-	if native.ContextRef.CheckWitness(address) == false {
+	if native.CheckWitness(address) == false {
 		return errors.NewErr("validateOwner, authentication failed!")
 	}
 	return nil
@@ -64,12 +64,4 @@ func GetUint64Bytes(num uint64) ([]byte, error) {
 		return nil, fmt.Errorf("serialization.WriteUint64, serialize uint64 error: %v", err)
 	}
 	return bf.Bytes(), nil
-}
-
-func GetBytesUint64(b []byte) (uint64, error) {
-	num, err := serialization.ReadUint64(bytes.NewBuffer(b))
-	if err != nil {
-		return 0, fmt.Errorf("serialization.ReadUint64, deserialize uint64 error: %v", err)
-	}
-	return num, nil
 }

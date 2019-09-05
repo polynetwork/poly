@@ -20,32 +20,10 @@ package utils
 
 import (
 	"fmt"
-	"io"
-	"math/big"
-
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/serialization"
-	"github.com/ontio/multi-chain/vm/neovm/types"
+	"io"
 )
-
-func WriteVarUint(w io.Writer, value uint64) error {
-	if err := serialization.WriteVarBytes(w, types.BigIntToBytes(big.NewInt(int64(value)))); err != nil {
-		return fmt.Errorf("serialize value error:%v", err)
-	}
-	return nil
-}
-
-func ReadVarUint(r io.Reader) (uint64, error) {
-	value, err := serialization.ReadVarBytes(r)
-	if err != nil {
-		return 0, fmt.Errorf("deserialize value error:%v", err)
-	}
-	v := types.BigIntFromBytes(value)
-	if v.Cmp(big.NewInt(0)) < 0 {
-		return 0, fmt.Errorf("%s", "value should not be a negative number.")
-	}
-	return v.Uint64(), nil
-}
 
 func WriteAddress(w io.Writer, address common.Address) error {
 	if err := serialization.WriteVarBytes(w, address[:]); err != nil {
@@ -124,57 +102,4 @@ func DecodeUint256(source *common.ZeroCopySource) (common.Uint256, error) {
 	}
 
 	return common.Uint256ParseFromBytes(from)
-}
-
-func EncodeVarUint(sink *common.ZeroCopySink, value uint64) (size uint64) {
-	return sink.WriteVarBytes(types.BigIntToBytes(big.NewInt(int64(value))))
-}
-
-func DecodeVarUint(source *common.ZeroCopySource) (uint64, error) {
-	value, _, irregular, eof := source.NextVarBytes()
-	if eof {
-		return 0, io.ErrUnexpectedEOF
-	}
-	if irregular {
-		return 0, common.ErrIrregularData
-	}
-	v := types.BigIntFromBytes(value)
-	if v.Cmp(big.NewInt(0)) < 0 {
-		return 0, fmt.Errorf("%s", "value should not be a negative number.")
-	}
-	return v.Uint64(), nil
-}
-
-func NeoVmSerializeInteger(buf io.Writer, item *big.Int) error {
-	if err := serialization.WriteByte(buf, types.IntegerType); err != nil {
-		return fmt.Errorf("NeoVmSerializeInteger error: %s", err)
-	}
-	if err := serialization.WriteVarBytes(buf, common.BigIntToNeoBytes(item)); err != nil {
-		return fmt.Errorf("NeoVmSerializeInteger error: %s", err)
-	}
-	return nil
-}
-
-func NeoVmSerializeByteArray(buf io.Writer, item []byte) error {
-	if err := serialization.WriteByte(buf, types.ByteArrayType); err != nil {
-		return fmt.Errorf("NeoVmSerializeInteger error: %s", err)
-	}
-	if err := serialization.WriteVarBytes(buf, item); err != nil {
-		return fmt.Errorf("NeoVmSerializeInteger error: %s", err)
-	}
-	return nil
-}
-
-func NeoVmSerializeAddress(buf io.Writer, item common.Address) error {
-	return NeoVmSerializeByteArray(buf, item[:])
-}
-
-func NeoVmSerializeArray(buf io.Writer, len uint64) error {
-	if err := serialization.WriteByte(buf, types.ArrayType); err != nil {
-		return fmt.Errorf("NeoVmSerializeArray error: %s", err)
-	}
-	if err := serialization.WriteVarUint(buf, len); err != nil {
-		return fmt.Errorf("NeoVmSerializeArray error: %s", err)
-	}
-	return nil
 }

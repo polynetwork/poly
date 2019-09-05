@@ -18,9 +18,9 @@ import (
 	"github.com/ontio/multi-chain/common/config"
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/native/event"
-	"github.com/ontio/multi-chain/native/service/native"
-	crosscommon "github.com/ontio/multi-chain/native/service/native/cross_chain_manager/common"
-	"github.com/ontio/multi-chain/native/service/native/utils"
+	"github.com/ontio/multi-chain/native"
+	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
+	"github.com/ontio/multi-chain/native/service/utils"
 )
 
 const (

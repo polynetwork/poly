@@ -19,135 +19,85 @@ package native
 
 import (
 	"fmt"
-
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/core/store"
-	ctypes "github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/merkle"
-	"github.com/ontio/multi-chain/native/context"
 	"github.com/ontio/multi-chain/native/event"
-	"github.com/ontio/multi-chain/native/service/native"
+	"github.com/ontio/multi-chain/native/states"
 	"github.com/ontio/multi-chain/native/storage"
 )
 
-const (
-	MAX_EXECUTE_ENGINE = 1024
+type (
+	Handler         func(native *NativeService) ([]byte, error)
+	RegisterService func(native *NativeService)
 )
 
-// SmartContract describe smart contract execute engine
-type SmartContract struct {
-	Contexts      []*context.Context // all execute smart contract context
-	CacheDB       *storage.CacheDB   // state cache
-	Store         store.LedgerStore  // ledger store
-	Config        *Config
-	Notifications []*event.NotifyEventInfo // all execute smart contract event notify info
-	Gas           uint64
-	ExecStep      int
-	PreExec       bool
-	CrossHashes   *common.ZeroCopySink
+var (
+	Contracts = make(map[common.Address]RegisterService)
+)
+
+// Native service struct
+// Invoke a native smart contract, new a native service
+type NativeService struct {
+	cacheDB       *storage.CacheDB
+	serviceMap    map[string]Handler
+	notifications []*event.NotifyEventInfo
+	invokeParam   states.ContractInvokeParam
+	input         []byte
+	tx            *types.Transaction
+	height        uint32
+	time          uint32
+	blockHash     common.Uint256
+	crossHashes   *common.ZeroCopySink
+	preExec       bool
 }
 
-// Config describe smart contract need parameters configuration
-type Config struct {
-	ShardID   ctypes.ShardID      // TODO: init this field
-	Time      uint32              // current block timestamp
-	Height    uint32              // current block height
-	BlockHash common.Uint256      // current block hash
-	Tx        *ctypes.Transaction // current transaction
-}
-
-// PushContext push current context to smart contract
-func (this *SmartContract) PushContext(context *context.Context) {
-	this.Contexts = append(this.Contexts, context)
-}
-
-// CurrentContext return smart contract current context
-func (this *SmartContract) CurrentContext() *context.Context {
-	if len(this.Contexts) < 1 {
-		return nil
-	}
-	return this.Contexts[len(this.Contexts)-1]
-}
-
-// CallingContext return smart contract caller context
-func (this *SmartContract) CallingContext() *context.Context {
-	if len(this.Contexts) < 2 {
-		return nil
-	}
-	return this.Contexts[len(this.Contexts)-2]
-}
-
-// EntryContext return smart contract entry entrance context
-func (this *SmartContract) EntryContext() *context.Context {
-	if len(this.Contexts) < 1 {
-		return nil
-	}
-	return this.Contexts[0]
-}
-
-// PopContext pop smart contract current context
-func (this *SmartContract) PopContext() {
-	if len(this.Contexts) > 1 {
-		this.Contexts = this.Contexts[:len(this.Contexts)-1]
-	}
-}
-
-// PushNotifications push smart contract event info
-func (this *SmartContract) PushNotifications(notifications []*event.NotifyEventInfo) {
-	this.Notifications = append(this.Notifications, notifications...)
-}
-
-func (this *SmartContract) CheckUseGas(gas uint64) bool {
-	if this.Gas < gas {
-		return false
-	}
-	this.Gas -= gas
-	return true
-}
-
-func (this *SmartContract) PutMerkleVal(data []byte) {
-	this.CrossHashes.WriteHash(merkle.HashLeaf(data))
-}
-
-func (this *SmartContract) checkContexts() bool {
-	if len(this.Contexts) > MAX_EXECUTE_ENGINE {
-		return false
-	}
-	return true
-}
-
-func (this *SmartContract) NewNativeService() (*native.NativeService, error) {
-	if !this.checkContexts() {
-		return nil, fmt.Errorf("%s", "engine over max limit!")
-	}
-	service := &native.NativeService{
-		CacheDB:    this.CacheDB,
-		ContextRef: this,
-		Tx:         this.Config.Tx,
-		ShardID:    this.Config.ShardID,
-		Time:       this.Config.Time,
-		Height:     this.Config.Height,
-		BlockHash:  this.Config.BlockHash,
-		ServiceMap: make(map[string]native.Handler),
-		PreExec:    this.PreExec,
+func NewNativeService(cacheDB *storage.CacheDB, tx *types.Transaction,
+	time, height uint32, blockHash common.Uint256, preExec bool) (*NativeService, error) {
+	service := &NativeService{
+		cacheDB:    cacheDB,
+		tx:         tx,
+		time:       time,
+		height:     height,
+		blockHash:  blockHash,
+		serviceMap: make(map[string]Handler),
+		preExec:    preExec,
 	}
 	return service, nil
 }
 
-// CheckWitness check whether authorization correct
-// If address is wallet address, check whether in the signature addressed list
-// Else check whether address is calling contract address
-// Param address: wallet address or contract address
-func (this *SmartContract) CheckWitness(address common.Address) bool {
-	if this.checkAccountAddress(address) || this.checkContractAddress(address) {
-		return true
-	}
-	return false
+func (this *NativeService) Register(methodName string, handler Handler) {
+	this.serviceMap[methodName] = handler
 }
 
-func (this *SmartContract) checkAccountAddress(address common.Address) bool {
-	addresses, err := this.Config.Tx.GetSignatureAddresses()
+func (this *NativeService) Invoke() (interface{}, error) {
+	contract := this.invokeParam
+	services, ok := Contracts[contract.Address]
+	if !ok {
+		return false, fmt.Errorf("[Invoke] Native contract address %x haven't been registered.", contract.Address)
+	}
+	services(this)
+	service, ok := this.serviceMap[contract.Method]
+	if !ok {
+		return false, fmt.Errorf("[Invoke] Native contract %x doesn't support this function %s.",
+			contract.Address, contract.Method)
+	}
+	this.input = contract.Args
+	result, err := service(this)
+	if err != nil {
+		return result, fmt.Errorf("[Invoke] Native serivce function execute error!")
+	}
+	return result, nil
+}
+
+func (this *NativeService) PutMerkleVal(data []byte) {
+	this.crossHashes.WriteHash(merkle.HashLeaf(data))
+}
+
+// CheckWitness check whether authorization correct
+func (this *NativeService) CheckWitness(address common.Address) bool {
+	addresses, err := this.tx.GetSignatureAddresses()
 	if err != nil {
 		log.Errorf("get signature address error:%v", err)
 		return false
@@ -160,9 +110,18 @@ func (this *SmartContract) checkAccountAddress(address common.Address) bool {
 	return false
 }
 
-func (this *SmartContract) checkContractAddress(address common.Address) bool {
-	if this.CallingContext() != nil && this.CallingContext().ContractAddress == address {
-		return true
-	}
-	return false
+func (this *NativeService) AddNotify(notify *event.NotifyEventInfo) {
+	this.notifications = append(this.notifications, notify)
+}
+
+func (this *NativeService) GetCacheDB() *storage.CacheDB {
+	return this.cacheDB
+}
+
+func (this *NativeService) GetInput() []byte {
+	return this.input
+}
+
+func (this *NativeService) GetTx() *types.Transaction {
+	return this.tx
 }

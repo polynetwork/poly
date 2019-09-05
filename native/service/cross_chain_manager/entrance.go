@@ -4,15 +4,15 @@ import (
 	"fmt"
 
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/native/service/native"
-	"github.com/ontio/multi-chain/native/service/native/utils"
+	"github.com/ontio/multi-chain/native"
+	"github.com/ontio/multi-chain/native/service/utils"
 
 	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/native/service/native/cross_chain_manager/btc"
-	crosscommon "github.com/ontio/multi-chain/native/service/native/cross_chain_manager/common"
-	"github.com/ontio/multi-chain/native/service/native/cross_chain_manager/eth"
-	"github.com/ontio/multi-chain/native/service/native/cross_chain_manager/ont"
-	"github.com/ontio/multi-chain/native/service/native/side_chain_manager"
+	"github.com/ontio/multi-chain/native/service/cross_chain_manager/btc"
+	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
+	"github.com/ontio/multi-chain/native/service/cross_chain_manager/eth"
+	"github.com/ontio/multi-chain/native/service/cross_chain_manager/ont"
+	"github.com/ontio/multi-chain/native/service/side_chain_manager"
 )
 
 const (
@@ -21,10 +21,6 @@ const (
 )
 
 type CrossChainHandler func(native *native.NativeService) ([]byte, error)
-
-func InitEntrance() {
-	native.Contracts[utils.CrossChainManagerContractAddress] = RegisterCrossChainManagerContract
-}
 
 func RegisterCrossChainManagerContract(native *native.NativeService) {
 	native.Register(IMPORT_OUTER_TRANSFER_NAME, ImportExTransfer)
@@ -46,7 +42,7 @@ func GetChainHandler(chainid uint64) (crosscommon.ChainHandler, error) {
 
 func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	params := new(crosscommon.EntranceParam)
-	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, contract params deserialize error: %v", err)
 	}
 	log.Infof("SourceChainID:%v\n", params.SourceChainID)
@@ -111,7 +107,7 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 
 func Vote(native *native.NativeService) ([]byte, error) {
 	params := new(crosscommon.VoteParam)
-	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("Vote, contract params deserialize error: %v", err)
 	}
 

@@ -17,11 +17,11 @@ import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/native/event"
-	"github.com/ontio/multi-chain/native/service/native"
-	crosscommon "github.com/ontio/multi-chain/native/service/native/cross_chain_manager/common"
-	"github.com/ontio/multi-chain/native/service/native/cross_chain_manager/eth/locker"
-	"github.com/ontio/multi-chain/native/service/native/side_chain_manager"
-	"github.com/ontio/multi-chain/native/service/native/utils"
+	"github.com/ontio/multi-chain/native"
+	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
+	"github.com/ontio/multi-chain/native/service/cross_chain_manager/eth/locker"
+	"github.com/ontio/multi-chain/native/service/side_chain_manager"
+	"github.com/ontio/multi-chain/native/service/utils"
 )
 
 type ETHHandler struct {
@@ -33,7 +33,7 @@ func NewETHHandler() *ETHHandler {
 
 func (this *ETHHandler) Vote(service *native.NativeService) (bool, *crosscommon.MakeTxParam, error) {
 	params := new(crosscommon.VoteParam)
-	if err := params.Deserialization(common.NewZeroCopySource(service.Input)); err != nil {
+	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
 		return false, nil, fmt.Errorf("eth Vote, contract params deserialize error: %v", err)
 	}
 
@@ -83,7 +83,7 @@ func (this *ETHHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 
 func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*crosscommon.MakeTxParam, error) {
 	params := new(crosscommon.EntranceParam)
-	if err := params.Deserialization(common.NewZeroCopySource(service.Input)); err != nil {
+	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
 		return nil, fmt.Errorf("MakeDepositProposal, contract params deserialize error: %v", err)
 	}
 
@@ -111,7 +111,7 @@ func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*cro
 	keyBytes := ethcommon.Hex2Bytes(crosscommon.KEY_PREFIX_ETH + crosscommon.Replace0x(ethProof.StorageProofs[0].Key))
 	bf.Write(keyBytes)
 	key := bf.Bytes()
-	val, err := service.CacheDB.Get(key)
+	val, err := service.GetCacheDB().Get(key)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +141,7 @@ func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*cro
 
 	rawTxValue := crypto.Keccak256([]byte(params.Value))
 	key = utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_ETH), rawTxValue)
-	service.CacheDB.Put(key, []byte(params.Value))
+	service.GetCacheDB().Put(key, []byte(params.Value))
 
 	destAsset, err := side_chain_manager.GetDestAsset(service, params.SourceChainID, proof.ToChainID, fromContractAddr)
 	if err := proof.Deserialize(params.Value); err != nil {
@@ -193,11 +193,11 @@ func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *cr
 	//determin the key format
 	bf := bytes.NewBuffer(utils.CrossChainManagerContractAddress[:])
 
-	txhash := service.Tx.Hash()
+	txhash := service.GetTx().Hash()
 	bf.WriteString(txhash.ToHexString())
-	service.CacheDB.Put(bf.Bytes(), txData)
+	service.GetCacheDB().Put(bf.Bytes(), txData)
 
-	service.Notifications = append(service.Notifications,
+	service.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
 			States:          []interface{}{"makeETHtx", hex.EncodeToString(txData)},

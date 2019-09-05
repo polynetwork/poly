@@ -21,8 +21,8 @@ package side_chain_manager
 import (
 	"fmt"
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/native/service/native"
-	"github.com/ontio/multi-chain/native/service/native/utils"
+	"github.com/ontio/multi-chain/native"
+	"github.com/ontio/multi-chain/native/service/utils"
 	"math"
 )
 
@@ -44,11 +44,6 @@ const (
 	ASSET_MAP_REQUEST           = "assetMapRequest"
 )
 
-//Init contract address
-func InitSideChainManager() {
-	native.Contracts[utils.SideChainManagerContractAddress] = RegisterSideChainManagerContract
-}
-
 //Register methods of governance contract
 func RegisterSideChainManagerContract(native *native.NativeService) {
 	native.Register(REGISTER_SIDE_CHAIN, RegisterSideChain)
@@ -63,7 +58,7 @@ func RegisterSideChainManagerContract(native *native.NativeService) {
 
 func RegisterSideChain(native *native.NativeService) ([]byte, error) {
 	params := new(RegisterSideChainParam)
-	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, contract params deserialize error: %v", err)
 	}
 	registerSideChain, err := getRegisterSideChain(native, params.ChainId)
@@ -95,7 +90,7 @@ func RegisterSideChain(native *native.NativeService) ([]byte, error) {
 
 func ApproveRegisterSideChain(native *native.NativeService) ([]byte, error) {
 	params := new(ChainidParam)
-	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, contract params deserialize error: %v", err)
 	}
 
@@ -114,14 +109,14 @@ func ApproveRegisterSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("ApproveRegisterSideChain, utils.GetUint64Bytes error: %v", err)
 	}
-	native.CacheDB.Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(REGISTER_SIDE_CHAIN_REQUEST), chainidByte))
+	native.GetCacheDB().Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(REGISTER_SIDE_CHAIN_REQUEST), chainidByte))
 
 	return utils.BYTE_TRUE, nil
 }
 
 func UpdateSideChain(native *native.NativeService) ([]byte, error) {
 	params := new(RegisterSideChainParam)
-	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, contract params deserialize error: %v", err)
 	}
 	sideChain, err := GetSideChain(native, params.ChainId)
@@ -146,7 +141,7 @@ func UpdateSideChain(native *native.NativeService) ([]byte, error) {
 
 func ApproveUpdateSideChain(native *native.NativeService) ([]byte, error) {
 	params := new(ChainidParam)
-	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, contract params deserialize error: %v", err)
 	}
 
@@ -165,14 +160,14 @@ func ApproveUpdateSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("ApproveUpdateSideChain, utils.GetUint64Bytes error: %v", err)
 	}
-	native.CacheDB.Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(UPDATE_SIDE_CHAIN_REQUEST), chainidByte))
+	native.GetCacheDB().Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(UPDATE_SIDE_CHAIN_REQUEST), chainidByte))
 
 	return utils.BYTE_TRUE, nil
 }
 
 func RemoveSideChain(native *native.NativeService) ([]byte, error) {
 	params := new(ChainidParam)
-	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, contract params deserialize error: %v", err)
 	}
 
@@ -187,14 +182,14 @@ func RemoveSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("RemoveSideChain, utils.GetUint64Bytes error: %v", err)
 	}
-	native.CacheDB.Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(SIDE_CHAIN), chainidByte))
+	native.GetCacheDB().Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(SIDE_CHAIN), chainidByte))
 
 	return utils.BYTE_TRUE, nil
 }
 
 func AssetMapping(native *native.NativeService) ([]byte, error) {
 	params := new(AssetMappingParam)
-	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("AssetMapping, contract params deserialize error: %v", err)
 	}
 	assetMapRequest, err := getAssetMapRequest(native, params.AssetName)
@@ -214,7 +209,7 @@ func AssetMapping(native *native.NativeService) ([]byte, error) {
 
 func ApproveAssetMapping(native *native.NativeService) ([]byte, error) {
 	params := new(ApproveAssetMappingParam)
-	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveAssetMapping, contract params deserialize error: %v", err)
 	}
 	assetMapRequest, err := getAssetMapRequest(native, params.AssetName)
@@ -241,6 +236,6 @@ func ApproveAssetMapping(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("AssetMapping, putAssetMap error: %v", err)
 	}
 
-	native.CacheDB.Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(ASSET_MAP_REQUEST), []byte(params.AssetName)))
+	native.GetCacheDB().Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(ASSET_MAP_REQUEST), []byte(params.AssetName)))
 	return utils.BYTE_TRUE, nil
 }

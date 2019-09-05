@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	ethComm "github.com/ethereum/go-ethereum/common"
-	"github.com/ontio/multi-chain/native/service/native/cross_chain_manager/eth/locker"
+	"github.com/ontio/multi-chain/native/service/cross_chain_manager/eth/locker"
 	"strings"
 	"testing"
 

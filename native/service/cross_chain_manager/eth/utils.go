@@ -5,19 +5,19 @@ import (
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/core/states"
-	"github.com/ontio/multi-chain/native/service/native"
-	crosscommon "github.com/ontio/multi-chain/native/service/native/cross_chain_manager/common"
-	"github.com/ontio/multi-chain/native/service/native/utils"
+	"github.com/ontio/multi-chain/native"
+	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
+	"github.com/ontio/multi-chain/native/service/utils"
 )
 
 func putEthProof(native *native.NativeService, txHash, proof []byte) {
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_ETH), txHash)
-	native.CacheDB.Put(key, states.GenRawStorageItem(proof))
+	native.GetCacheDB().Put(key, states.GenRawStorageItem(proof))
 }
 
 func getEthProof(native *native.NativeService, txHash []byte) ([]byte, error) {
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_ETH), txHash)
-	ethProofStore, err := native.CacheDB.Get(key)
+	ethProofStore, err := native.GetCacheDB().Get(key)
 	if err != nil {
 		return nil, fmt.Errorf("getEthProof, get ethProofStore error: %v", err)
 	}
@@ -35,13 +35,13 @@ func putEthVote(native *native.NativeService, txHash []byte, vote *crosscommon.V
 	sink := common.NewZeroCopySink(nil)
 	vote.Serialization(sink)
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_ETH_VOTE), txHash)
-	native.CacheDB.Put(key, states.GenRawStorageItem(sink.Bytes()))
+	native.GetCacheDB().Put(key, states.GenRawStorageItem(sink.Bytes()))
 	return nil
 }
 
 func getEthVote(native *native.NativeService, txHash []byte) (*crosscommon.Vote, error) {
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_ETH_VOTE), txHash)
-	ethVoteStore, err := native.CacheDB.Get(key)
+	ethVoteStore, err := native.GetCacheDB().Get(key)
 	if err != nil {
 		return nil, fmt.Errorf("getEthVote, get ethTxStore error: %v", err)
 	}

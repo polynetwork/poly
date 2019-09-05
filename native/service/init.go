@@ -16,18 +16,18 @@
  * along with The ontology.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package init
+package service
 
 import (
-	"github.com/ontio/multi-chain/native/service/native/cross_chain_manager"
-	cont "github.com/ontio/multi-chain/native/service/native/cross_chain_manager/ont"
-	"github.com/ontio/multi-chain/native/service/native/header_sync"
-	"github.com/ontio/multi-chain/native/service/native/side_chain_manager"
+	"github.com/ontio/multi-chain/native"
+	"github.com/ontio/multi-chain/native/service/cross_chain_manager"
+	"github.com/ontio/multi-chain/native/service/header_sync"
+	"github.com/ontio/multi-chain/native/service/side_chain_manager"
+	"github.com/ontio/multi-chain/native/service/utils"
 )
 
 func init() {
-	cont.InitCrossChain()
-	header_sync.InitHeaderSync()
-	side_chain_manager.InitSideChainManager()
-	cross_chain_manager.InitEntrance()
+	native.Contracts[utils.SideChainManagerContractAddress] = side_chain_manager.RegisterSideChainManagerContract
+	native.Contracts[utils.HeaderSyncContractAddress] = header_sync.RegisterHeaderSyncContract
+	native.Contracts[utils.CrossChainManagerContractAddress] = cross_chain_manager.RegisterCrossChainManagerContract
 }

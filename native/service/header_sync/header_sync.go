@@ -24,9 +24,9 @@ import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/merkle"
-	"github.com/ontio/multi-chain/native/service/native"
-	"github.com/ontio/multi-chain/native/service/native/global_params"
-	"github.com/ontio/multi-chain/native/service/native/utils"
+	"github.com/ontio/multi-chain/native"
+	"github.com/ontio/multi-chain/native/service/global_params"
+	"github.com/ontio/multi-chain/native/service/utils"
 )
 
 const (
@@ -59,7 +59,7 @@ func RegisterHeaderSyncContract(native *native.NativeService) {
 
 func SyncGenesisHeader(native *native.NativeService) ([]byte, error) {
 	params := new(SyncGenesisHeaderParam)
-	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("SyncGenesisHeader, contract params deserialize error: %v", err)
 	}
 
@@ -96,7 +96,7 @@ func SyncGenesisHeader(native *native.NativeService) ([]byte, error) {
 
 func SyncBlockHeader(native *native.NativeService) ([]byte, error) {
 	params := new(SyncBlockHeaderParam)
-	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("SyncBlockHeader, contract params deserialize error: %v", err)
 	}
 	for _, v := range params.Headers {
@@ -104,9 +104,9 @@ func SyncBlockHeader(native *native.NativeService) ([]byte, error) {
 		if err != nil {
 			return utils.BYTE_FALSE, fmt.Errorf("SyncBlockHeader, new_types.HeaderFromRawBytes error: %v", err)
 		}
-		_, err = GetHeaderByHeight(native, header.ShardID, header.Height)
+		_, err = GetHeaderByHeight(native, header.ChainID, header.Height)
 		if err == nil {
-			return utils.BYTE_FALSE, fmt.Errorf("SyncBlockHeader, %d, %d", header.ShardID, header.Height)
+			return utils.BYTE_FALSE, fmt.Errorf("SyncBlockHeader, %d, %d", header.ChainID, header.Height)
 		}
 		err = verifyHeader(native, header)
 		if err != nil {
@@ -126,7 +126,7 @@ func SyncBlockHeader(native *native.NativeService) ([]byte, error) {
 
 func SyncConsensusPeers(native *native.NativeService) ([]byte, error) {
 	params := new(SyncConsensusPeerParam)
-	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("SyncConsensusPeers, contract params deserialize error: %v", err)
 	}
 

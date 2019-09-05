@@ -24,11 +24,11 @@ import (
 	"github.com/ontio/multi-chain/common/serialization"
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/errors"
-	"github.com/ontio/multi-chain/native/service/native"
+	"github.com/ontio/multi-chain/native"
 )
 
 func GetStorageItem(native *native.NativeService, key []byte) (*cstates.StorageItem, error) {
-	store, err := native.CacheDB.Get(key)
+	store, err := native.GetCacheDB().Get(key)
 	if err != nil {
 		return nil, errors.NewDetailErr(err, errors.ErrNoCode, "[GetStorageItem] storage error!")
 	}
@@ -86,5 +86,5 @@ func GenUInt32StorageItem(value uint32) *cstates.StorageItem {
 }
 
 func PutBytes(native *native.NativeService, key []byte, value []byte) {
-	native.CacheDB.Put(key, cstates.GenRawStorageItem(value))
+	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(value))
 }

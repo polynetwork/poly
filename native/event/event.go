@@ -30,7 +30,7 @@ const (
 )
 
 // PushSmartCodeEvent push event content to socket.io
-func PushSmartCodeEvent(txHash common.Uint256, errcode int64, action string, result interface{}) {
+func PushSmartCodeEvent(txHash common.Uint256, errCode int64, action string, result interface{}) {
 	if events.DefActorPublisher == nil {
 		return
 	}
@@ -38,7 +38,7 @@ func PushSmartCodeEvent(txHash common.Uint256, errcode int64, action string, res
 		TxHash: txHash,
 		Action: action,
 		Result: result,
-		Error:  errcode,
+		Error:  errCode,
 	}
 	events.DefActorPublisher.Publish(message.TOPIC_SMART_CODE_EVENT, &message.SmartCodeEventMsg{smartCodeEvt})
 }

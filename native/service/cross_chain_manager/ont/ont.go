@@ -25,10 +25,9 @@ import (
 	"math/big"
 
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/native/service/native"
-	crosscommon "github.com/ontio/multi-chain/native/service/native/cross_chain_manager/common"
-	"github.com/ontio/multi-chain/native/service/native/utils"
-	"github.com/ontio/multi-chain/vm/neovm/types"
+	"github.com/ontio/multi-chain/native"
+	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
+	"github.com/ontio/multi-chain/native/service/utils"
 )
 
 const (
@@ -55,7 +54,7 @@ func (this *ONTHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 
 func (this *ONTHandler) MakeDepositProposal(service *native.NativeService) (*crosscommon.MakeTxParam, error) {
 	params := new(crosscommon.EntranceParam)
-	if err := params.Deserialization(common.NewZeroCopySource(service.Input)); err != nil {
+	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
 		return nil, fmt.Errorf("ont Verify, contract params deserialize error: %v", err)
 	}
 
@@ -100,7 +99,7 @@ func RegisterCrossChianContract(native *native.NativeService) {
 
 func CreateCrossChainTx(native *native.NativeService) ([]byte, error) {
 	params := new(CreateCrossChainTxParam)
-	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("CreateCrossChainTx, contract params deserialize error: %v", err)
 	}
 
@@ -116,7 +115,7 @@ func CreateCrossChainTx(native *native.NativeService) ([]byte, error) {
 
 func ProcessCrossChainTx(native *native.NativeService) ([]byte, error) {
 	params := new(ProcessCrossChainTxParam)
-	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ProcessCrossChainTx, contract params deserialize error: %v", err)
 	}
 

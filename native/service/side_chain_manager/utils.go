@@ -25,8 +25,8 @@ import (
 
 	"github.com/ontio/multi-chain/common"
 	cstates "github.com/ontio/multi-chain/core/states"
-	"github.com/ontio/multi-chain/native/service/native"
-	"github.com/ontio/multi-chain/native/service/native/utils"
+	"github.com/ontio/multi-chain/native"
+	"github.com/ontio/multi-chain/native/service/utils"
 )
 
 func getRegisterSideChain(native *native.NativeService, chanid uint64) (*SideChain, error) {
@@ -35,7 +35,7 @@ func getRegisterSideChain(native *native.NativeService, chanid uint64) (*SideCha
 	if err != nil {
 		return nil, fmt.Errorf("getRegisterSideChain, utils.GetUint64Bytes error: %v", err)
 	}
-	sideChainStore, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(REGISTER_SIDE_CHAIN_REQUEST),
+	sideChainStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(REGISTER_SIDE_CHAIN_REQUEST),
 		chainidByte))
 	if err != nil {
 		return nil, fmt.Errorf("getRegisterSideChain,get registerSideChainRequestStore error: %v", err)
@@ -67,7 +67,7 @@ func putRegisterSideChain(native *native.NativeService, sideChain *SideChain) er
 		return fmt.Errorf("putRegisterSideChain, sideChain.Serialization error: %v", err)
 	}
 
-	native.CacheDB.Put(utils.ConcatKey(contract, []byte(REGISTER_SIDE_CHAIN_REQUEST), chainidByte),
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(REGISTER_SIDE_CHAIN_REQUEST), chainidByte),
 		cstates.GenRawStorageItem(sink.Bytes()))
 	return nil
 }
@@ -78,7 +78,7 @@ func GetSideChain(native *native.NativeService, chainID uint64) (*SideChain, err
 	if err != nil {
 		return nil, fmt.Errorf("getSideChain, utils.GetUint64Bytes error: %v", err)
 	}
-	sideChainStore, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(SIDE_CHAIN),
+	sideChainStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(SIDE_CHAIN),
 		chainIDByte))
 	if err != nil {
 		return nil, fmt.Errorf("getSideChain,get registerSideChainRequestStore error: %v", err)
@@ -110,7 +110,7 @@ func putSideChain(native *native.NativeService, sideChain *SideChain) error {
 		return fmt.Errorf("putSideChain, sideChain.Serialization error: %v", err)
 	}
 
-	native.CacheDB.Put(utils.ConcatKey(contract, []byte(SIDE_CHAIN), chainidByte),
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(SIDE_CHAIN), chainidByte),
 		cstates.GenRawStorageItem(sink.Bytes()))
 	return nil
 }
@@ -121,7 +121,7 @@ func getUpdateSideChain(native *native.NativeService, chanid uint64) (*SideChain
 	if err != nil {
 		return nil, fmt.Errorf("getUpdateSideChain, utils.GetUint64Bytes error: %v", err)
 	}
-	sideChainStore, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(UPDATE_SIDE_CHAIN_REQUEST),
+	sideChainStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(UPDATE_SIDE_CHAIN_REQUEST),
 		chainidByte))
 	if err != nil {
 		return nil, fmt.Errorf("getUpdateSideChain,get registerSideChainRequestStore error: %v", err)
@@ -151,14 +151,14 @@ func putUpdateSideChain(native *native.NativeService, sideChain *SideChain) erro
 		return fmt.Errorf("putUpdateSideChain, sideChain.Serialization error: %v", err)
 	}
 
-	native.CacheDB.Put(utils.ConcatKey(contract, []byte(UPDATE_SIDE_CHAIN_REQUEST), chainidByte),
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(UPDATE_SIDE_CHAIN_REQUEST), chainidByte),
 		cstates.GenRawStorageItem(sink.Bytes()))
 	return nil
 }
 
 func getAssetMapRequest(native *native.NativeService, assetName string) (*AssetMappingParam, error) {
 	contract := utils.SideChainManagerContractAddress
-	assetMapRequestStore, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(ASSET_MAP_REQUEST),
+	assetMapRequestStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(ASSET_MAP_REQUEST),
 		[]byte(assetName)))
 	if err != nil {
 		return nil, fmt.Errorf("getAssetMapRequest, get assetMapRequestStore error: %v", err)
@@ -180,7 +180,7 @@ func putAssetMapRequest(native *native.NativeService, assetMappingParam *AssetMa
 	contract := utils.SideChainManagerContractAddress
 	sink := common.NewZeroCopySink(nil)
 	assetMappingParam.Serialization(sink)
-	native.CacheDB.Put(utils.ConcatKey(contract, []byte(ASSET_MAP_REQUEST), []byte(assetMappingParam.AssetName)),
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(ASSET_MAP_REQUEST), []byte(assetMappingParam.AssetName)),
 		cstates.GenRawStorageItem(sink.Bytes()))
 	return nil
 }
@@ -191,7 +191,7 @@ func putAssetMap(native *native.NativeService, assetMap *AssetMap) error {
 	assetMap.Serialization(sink)
 	for _, v := range assetMap.AssetMap {
 		prefix := strconv.Itoa(int(v.ChainId)) + v.ContractAddress
-		native.CacheDB.Put(utils.ConcatKey(contract, []byte(ASSET_MAP), []byte(prefix)),
+		native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(ASSET_MAP), []byte(prefix)),
 			cstates.GenRawStorageItem(sink.Bytes()))
 	}
 	return nil
@@ -200,7 +200,7 @@ func putAssetMap(native *native.NativeService, assetMap *AssetMap) error {
 func GetDestAsset(native *native.NativeService, fromChainid, toChainid uint64, contractAddress string) (*Asset, error) {
 	contract := utils.SideChainManagerContractAddress
 	prefix := strconv.Itoa(int(fromChainid)) + contractAddress
-	assetMapStore, err := native.CacheDB.Get(utils.ConcatKey(contract, []byte(ASSET_MAP), []byte(prefix)))
+	assetMapStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(ASSET_MAP), []byte(prefix)))
 	if err != nil {
 		return nil, fmt.Errorf("getAssetMap,get assetMapStore error: %v", err)
 	}
