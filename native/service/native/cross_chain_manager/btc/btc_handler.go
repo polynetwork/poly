@@ -35,7 +35,7 @@ import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native/event"
 	"github.com/ontio/multi-chain/native/service/native"
-	"github.com/ontio/multi-chain/native/service/native/cross_chain_manager/inf"
+	crosscommon"github.com/ontio/multi-chain/native/service/native/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/native/side_chain_manager"
 	"github.com/ontio/multi-chain/native/service/native/utils"
 )
@@ -53,8 +53,8 @@ func NewBTCHandler() *BTCHandler {
 	return &BTCHandler{}
 }
 
-func (this *BTCHandler) Vote(service *native.NativeService) (bool, *inf.MakeTxParam, error) {
-	params := new(inf.VoteParam)
+func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.MakeTxParam, error) {
+	params := new(crosscommon.VoteParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.Input)); err != nil {
 		return false, nil, fmt.Errorf("btc Vote, contract params deserialize error: %v", err)
 	}
@@ -69,12 +69,6 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *inf.MakeTxPa
 		return false, nil, fmt.Errorf("btc Vote, utils.ValidateOwner error: %v", err)
 	}
 
-	//get current consensus node
-	consesusPeers, err := governance.GetConsensusPeers(service)
-	if err != nil {
-		return false, nil, fmt.Errorf("btc Vote, governance.GetConsensusPeers error: %v", err)
-	}
-
 	vote, err := getBtcVote(service, params.TxHash)
 	if err != nil {
 		return false, nil, fmt.Errorf("btc Vote, getBtcVote error: %v", err)
@@ -85,26 +79,10 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *inf.MakeTxPa
 		return false, nil, fmt.Errorf("btc Vote, putBtcVote error: %v", err)
 	}
 
-	//check if sign is enough
-	sum := 0
-	for _, v := range consesusPeers {
-		b, err := hex.DecodeString(v)
-		if err != nil {
-			return false, nil, fmt.Errorf("btc Vote, hex.DecodeString consensus public key error: %v", err)
-		}
-		pk, err := keypair.DeserializePublicKey(b)
-		if err != nil {
-			return false, nil, fmt.Errorf("btc Vote, keypair.DeserializePublicKey consensus public key error: %v", err)
-		}
-		address := types.AddressFromPubKey(pk)
-		_, ok := vote.VoteMap[address.ToBase58()]
-		if ok {
-			sum = sum + 1
-		}
-	}
 
-	if sum != (2*len(consesusPeers)+2)/3 {
-		return false, nil, nil
+	err = crosscommon.ValidateVote(service, vote)
+	if err != nil{
+		return false, nil, fmt.Errorf("btc Vote, ValidateVote error: %v", err)
 	}
 
 	proofBytes, err := getBtcProof(service, params.TxHash)
@@ -135,7 +113,7 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *inf.MakeTxPa
 		return false, nil, fmt.Errorf("btc Vote, failed to resolve parameter: %v", err)
 	}
 
-	return true, &inf.MakeTxParam{
+	return true, &crosscommon.MakeTxParam{
 		FromChainID:         params.FromChainID,
 		FromContractAddress: BTC_ADDRESS,
 		ToChainID:           p.ChainId,
@@ -144,8 +122,8 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *inf.MakeTxPa
 	}, nil
 }
 
-func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*inf.MakeTxParam, error) {
-	params := new(inf.EntranceParam)
+func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*crosscommon.MakeTxParam, error) {
+	params := new(crosscommon.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.Input)); err != nil {
 		return nil, fmt.Errorf("btc Verify, contract params deserialize error: %v", err)
 	}
@@ -168,7 +146,7 @@ func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*inf
 	return nil, nil
 }
 
-func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *inf.MakeTxParam) error {
+func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *crosscommon.MakeTxParam) error {
 	amounts := make(map[string]int64)
 	amounts[param.ToAddress] = param.Amount.Int64() // ??
 

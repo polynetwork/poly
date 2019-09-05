@@ -2,14 +2,15 @@ package cross_chain_manager
 
 import (
 	"fmt"
+
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native/service/native"
 	"github.com/ontio/multi-chain/native/service/native/utils"
 
 	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/native/service/native/cross_chain_manager/btc"
+	crosscommon "github.com/ontio/multi-chain/native/service/native/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/native/cross_chain_manager/eth"
-	"github.com/ontio/multi-chain/native/service/native/cross_chain_manager/inf"
 	"github.com/ontio/multi-chain/native/service/native/cross_chain_manager/ont"
 	"github.com/ontio/multi-chain/native/service/native/side_chain_manager"
 )
@@ -30,7 +31,7 @@ func RegisterCrossChainManagerContract(native *native.NativeService) {
 	native.Register(VOTE_NAME, Vote)
 }
 
-func GetChainHandler(chainid uint64) (inf.ChainHandler, error) {
+func GetChainHandler(chainid uint64) (crosscommon.ChainHandler, error) {
 	switch chainid {
 	case 0:
 		return btc.NewBTCHandler(), nil
@@ -44,7 +45,7 @@ func GetChainHandler(chainid uint64) (inf.ChainHandler, error) {
 }
 
 func ImportExTransfer(native *native.NativeService) ([]byte, error) {
-	params := new(inf.EntranceParam)
+	params := new(crosscommon.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, contract params deserialize error: %v", err)
 	}
@@ -109,7 +110,7 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 }
 
 func Vote(native *native.NativeService) ([]byte, error) {
-	params := new(inf.VoteParam)
+	params := new(crosscommon.VoteParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.Input)); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("Vote, contract params deserialize error: %v", err)
 	}

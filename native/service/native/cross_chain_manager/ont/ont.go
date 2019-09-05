@@ -26,7 +26,7 @@ import (
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native/service/native"
-	"github.com/ontio/multi-chain/native/service/native/cross_chain_manager/inf"
+	crosscommon "github.com/ontio/multi-chain/native/service/native/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/native/utils"
 	"github.com/ontio/multi-chain/vm/neovm/types"
 )
@@ -49,12 +49,12 @@ func NewONTHandler() *ONTHandler {
 	return &ONTHandler{}
 }
 
-func (this *ONTHandler) Vote(service *native.NativeService) (bool, *inf.MakeTxParam, error) {
+func (this *ONTHandler) Vote(service *native.NativeService) (bool, *crosscommon.MakeTxParam, error) {
 	return true, nil, nil
 }
 
-func (this *ONTHandler) MakeDepositProposal(service *native.NativeService) (*inf.MakeTxParam, error) {
-	params := new(inf.EntranceParam)
+func (this *ONTHandler) MakeDepositProposal(service *native.NativeService) (*crosscommon.MakeTxParam, error) {
+	params := new(crosscommon.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.Input)); err != nil {
 		return nil, fmt.Errorf("ont Verify, contract params deserialize error: %v", err)
 	}
@@ -68,7 +68,7 @@ func (this *ONTHandler) MakeDepositProposal(service *native.NativeService) (*inf
 		return nil, fmt.Errorf("ont Verify, VerifyOntTx error: %v", err)
 	}
 
-	makeTxParam := &inf.MakeTxParam{
+	makeTxParam := &crosscommon.MakeTxParam{
 		FromChainID:         merkleValue.CreateCrossChainTxMerkle.FromChainID,
 		FromContractAddress: merkleValue.CreateCrossChainTxMerkle.FromContractAddress,
 		ToChainID:           merkleValue.CreateCrossChainTxMerkle.ToChainID,
@@ -78,7 +78,7 @@ func (this *ONTHandler) MakeDepositProposal(service *native.NativeService) (*inf
 	return makeTxParam, nil
 }
 
-func (this *ONTHandler) MakeTransaction(service *native.NativeService, param *inf.MakeTxParam) error {
+func (this *ONTHandler) MakeTransaction(service *native.NativeService, param *crosscommon.MakeTxParam) error {
 	err := MakeToOntProof(service, param)
 	if err != nil {
 		return fmt.Errorf("ont MakeTransaction, MakeToOntProof error: %v", err)

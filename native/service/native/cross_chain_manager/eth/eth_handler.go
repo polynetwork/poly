@@ -18,8 +18,8 @@ import (
 	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/native/event"
 	"github.com/ontio/multi-chain/native/service/native"
+	crosscommon "github.com/ontio/multi-chain/native/service/native/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/native/cross_chain_manager/eth/locker"
-	"github.com/ontio/multi-chain/native/service/native/cross_chain_manager/inf"
 	"github.com/ontio/multi-chain/native/service/native/side_chain_manager"
 	"github.com/ontio/multi-chain/native/service/native/utils"
 )
@@ -31,8 +31,8 @@ func NewETHHandler() *ETHHandler {
 	return &ETHHandler{}
 }
 
-func (this *ETHHandler) Vote(service *native.NativeService) (bool, *inf.MakeTxParam, error) {
-	params := new(inf.VoteParam)
+func (this *ETHHandler) Vote(service *native.NativeService) (bool, *crosscommon.MakeTxParam, error) {
+	params := new(crosscommon.VoteParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.Input)); err != nil {
 		return false, nil, fmt.Errorf("eth Vote, contract params deserialize error: %v", err)
 	}
@@ -47,8 +47,6 @@ func (this *ETHHandler) Vote(service *native.NativeService) (bool, *inf.MakeTxPa
 		return false, nil, fmt.Errorf("eth Vote, utils.ValidateOwner error: %v", err)
 	}
 
-	// TODO: get current consensus node
-
 	vote, err := getEthVote(service, params.TxHash)
 	if err != nil {
 		return false, nil, fmt.Errorf("eth Vote, getEthVote error: %v", err)
@@ -59,11 +57,10 @@ func (this *ETHHandler) Vote(service *native.NativeService) (bool, *inf.MakeTxPa
 		return false, nil, fmt.Errorf("eth Vote, putEthVote error: %v", err)
 	}
 
-	//TODO: check if sign is enough
-	//if newVote != 5 {
-	//	return false, nil, nil
-	//}
-	//end
+	err = crosscommon.ValidateVote(service, vote)
+	if err != nil {
+		return false, nil, fmt.Errorf("eth Vote, ValidateVote error: %v", err)
+	}
 
 	proofBytes, err := getEthProof(service, params.TxHash)
 	if err != nil {
@@ -75,7 +72,7 @@ func (this *ETHHandler) Vote(service *native.NativeService) (bool, *inf.MakeTxPa
 		return false, nil, fmt.Errorf("eth Vote, eth proof deserialize error: %v", err)
 	}
 
-	return true, &inf.MakeTxParam{
+	return true, &crosscommon.MakeTxParam{
 		FromChainID:         params.FromChainID,
 		FromContractAddress: proof.FromAddress,
 		ToChainID:           proof.ToChainID,
@@ -84,8 +81,8 @@ func (this *ETHHandler) Vote(service *native.NativeService) (bool, *inf.MakeTxPa
 	}, nil
 }
 
-func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*inf.MakeTxParam, error) {
-	params := new(inf.EntranceParam)
+func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*crosscommon.MakeTxParam, error) {
+	params := new(crosscommon.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.Input)); err != nil {
 		return nil, fmt.Errorf("Verify, contract params deserialize error: %v", err)
 	}
@@ -111,7 +108,7 @@ func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*inf
 	}
 
 	bf := bytes.NewBuffer(utils.CrossChainManagerContractAddress[:])
-	keyBytes := ethComm.Hex2Bytes(inf.KEY_PREFIX_ETH + replace0x(ethProof.StorageProofs[0].Key))
+	keyBytes := ethComm.Hex2Bytes(crosscommon.KEY_PREFIX_ETH + replace0x(ethProof.StorageProofs[0].Key))
 	bf.Write(keyBytes)
 	key := bf.Bytes()
 	val, err := service.CacheDB.Get(key)
@@ -147,7 +144,7 @@ func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*inf
 
 	service.CacheDB.Put(key, proofData)
 
-	ret := &inf.MakeTxParam{}
+	ret := &crosscommon.MakeTxParam{}
 	ret.ToChainID = proof.ToChainID
 	ret.FromContractAddress = fromContractAddr
 	ret.FromChainID = params.SourceChainID
@@ -157,12 +154,12 @@ func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*inf
 
 	//todo put eth proof
 	rawHash := crypto.Keccak256([]byte(params.Value))
-	key = utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(inf.KEY_PREFIX_ETH), rawHash)
+	key = utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_ETH), rawHash)
 	service.CacheDB.Put(key, []byte(params.Value))
 	return ret, nil
 }
 
-func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *inf.MakeTxParam) error {
+func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *crosscommon.MakeTxParam) error {
 	//todo add logic
 	//1 construct tx
 	log.Infof("===MakeTransaction param:is %v\n", param)
@@ -292,16 +289,13 @@ func replace0x(s string) string {
 }
 
 func checkProofResult(result []byte, value string) bool {
-	fmt.Println("==checkProofResult==")
 	var s []byte
 	err := rlp.DecodeBytes(result, &s)
 	if err != nil {
 		log.Errorf("[checkProofResult]rlp.DecodeBytes error :%s\n", err)
 		return false
 	}
-	log.Infof("s is %v\n", s)
 	hash := crypto.Keccak256([]byte(value))
-	log.Infof("hash is %v\n", hash)
 
 	return bytes.Equal(s, hash)
 }

@@ -26,7 +26,7 @@ import (
 	"github.com/ontio/multi-chain/merkle"
 	"github.com/ontio/multi-chain/native/event"
 	"github.com/ontio/multi-chain/native/service/native"
-	"github.com/ontio/multi-chain/native/service/native/cross_chain_manager/inf"
+	crosscommon "github.com/ontio/multi-chain/native/service/native/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/native/header_sync"
 	"github.com/ontio/multi-chain/native/service/native/ont"
 	"github.com/ontio/multi-chain/native/service/native/side_chain_manager"
@@ -194,7 +194,7 @@ func VerifyToOntTx(native *native.NativeService, proof []byte, fromChainid uint6
 	return merkleValue, nil
 }
 
-func MakeToOntProof(native *native.NativeService, params *inf.MakeTxParam) error {
+func MakeToOntProof(native *native.NativeService, params *common.MakeTxParam) error {
 	//record cross chain tx
 	destAsset, err := side_chain_manager.GetDestAsset(native, params.FromChainID,
 		params.ToChainID, params.FromContractAddress)

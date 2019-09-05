@@ -21,7 +21,7 @@ package ont
 import (
 	"fmt"
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/native/service/native/cross_chain_manager/inf"
+	crosscommon "github.com/ontio/multi-chain/native/service/native/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/native/utils"
 )
 
@@ -54,7 +54,7 @@ func (this *FromMerkleValue) Deserialization(source *common.ZeroCopySource) erro
 type ToMerkleValue struct {
 	TxHash            common.Uint256
 	ToContractAddress string
-	MakeTxParam       *inf.MakeTxParam
+	MakeTxParam       *crosscommon.MakeTxParam
 }
 
 func (this *ToMerkleValue) Serialization(sink *common.ZeroCopySink) {
@@ -72,7 +72,7 @@ func (this *ToMerkleValue) Deserialization(source *common.ZeroCopySource) error 
 	if err != nil {
 		return fmt.Errorf("MerkleValue deserialize toContractAddress error:%s", err)
 	}
-	makeTxParam := new(inf.MakeTxParam)
+	makeTxParam := new(crosscommon.MakeTxParam)
 	err = makeTxParam.Deserialization(source)
 	if err != nil {
 		return fmt.Errorf("MerkleValue deserialize makeTxParam error:%s", err)

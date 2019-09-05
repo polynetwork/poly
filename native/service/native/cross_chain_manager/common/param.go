@@ -1,12 +1,13 @@
-package inf
+package common
 
 import (
 	"fmt"
+	"math/big"
+	"sort"
+
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native/service/native"
 	"github.com/ontio/multi-chain/native/service/native/utils"
-	"math/big"
-	"sort"
 )
 
 var (

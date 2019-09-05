@@ -19,7 +19,7 @@ import (
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/native/event"
 	"github.com/ontio/multi-chain/native/service/native"
-	"github.com/ontio/multi-chain/native/service/native/cross_chain_manager/inf"
+	crosscommon "github.com/ontio/multi-chain/native/service/native/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/native/utils"
 )
 
@@ -242,12 +242,12 @@ func getUnsignedTx(txIns []btcjson.TransactionInput, amounts map[string]int64, c
 }
 
 func putBtcProof(native *native.NativeService, txHash, proof []byte) {
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(inf.KEY_PREFIX_BTC), txHash)
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_BTC), txHash)
 	native.CacheDB.Put(key, cstates.GenRawStorageItem(proof))
 }
 
 func getBtcProof(native *native.NativeService, txHash []byte) ([]byte, error) {
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(inf.KEY_PREFIX_BTC), txHash)
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_BTC), txHash)
 	btcProofStore, err := native.CacheDB.Get(key)
 	if err != nil {
 		return nil, fmt.Errorf("getBtcProof, get btcProofStore error: %v", err)
@@ -262,21 +262,21 @@ func getBtcProof(native *native.NativeService, txHash []byte) ([]byte, error) {
 	return btcProofBytes, nil
 }
 
-func putBtcVote(native *native.NativeService, txHash []byte, vote *inf.Vote) error {
+func putBtcVote(native *native.NativeService, txHash []byte, vote *crosscommon.Vote) error {
 	sink := common.NewZeroCopySink(nil)
 	vote.Serialization(sink)
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(inf.KEY_PREFIX_BTC_VOTE), txHash)
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_BTC_VOTE), txHash)
 	native.CacheDB.Put(key, cstates.GenRawStorageItem(sink.Bytes()))
 	return nil
 }
 
-func getBtcVote(native *native.NativeService, txHash []byte) (*inf.Vote, error) {
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(inf.KEY_PREFIX_BTC_VOTE), txHash)
+func getBtcVote(native *native.NativeService, txHash []byte) (*crosscommon.Vote, error) {
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_BTC_VOTE), txHash)
 	btcVoteStore, err := native.CacheDB.Get(key)
 	if err != nil {
 		return nil, fmt.Errorf("getBtcVote, get btcTxStore error: %v", err)
 	}
-	vote := &inf.Vote{
+	vote := &crosscommon.Vote{
 		VoteMap: make(map[string]string),
 	}
 	if btcVoteStore != nil {
