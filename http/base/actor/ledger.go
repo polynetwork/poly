@@ -23,8 +23,8 @@ import (
 	"github.com/ontio/multi-chain/core/ledger"
 	"github.com/ontio/multi-chain/core/payload"
 	"github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/multi-chain/smartcontract/event"
-	cstate "github.com/ontio/multi-chain/smartcontract/states"
+	"github.com/ontio/multi-chain/native/event"
+	cstate "github.com/ontio/multi-chain/native/states"
 )
 
 const (

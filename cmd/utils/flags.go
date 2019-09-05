@@ -22,7 +22,7 @@ import (
 	"strings"
 
 	"github.com/ontio/multi-chain/common/config"
-	"github.com/ontio/multi-chain/smartcontract/service/neovm"
+	"github.com/ontio/multi-chain/native/service/neovm"
 	"github.com/urfave/cli"
 )
 

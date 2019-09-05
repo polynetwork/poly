@@ -20,12 +20,11 @@ package store
 
 import (
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/core/payload"
 	"github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/core/store/overlaydb"
 	"github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/multi-chain/smartcontract/event"
-	cstates "github.com/ontio/multi-chain/smartcontract/states"
+	"github.com/ontio/multi-chain/native/event"
+	cstates "github.com/ontio/multi-chain/native/states"
 	"github.com/ontio/ontology-crypto/keypair"
 )
 
@@ -63,7 +62,6 @@ type LedgerStore interface {
 	GetBlockRootWithNewTxRoots(startHeight uint32, txRoots []common.Uint256) common.Uint256
 	GetMerkleProof(m, n uint32) ([]common.Uint256, error)
 	GetCrossStatesProof(height uint32, key []byte) ([]byte, error)
-	GetContractState(contractHash common.Address) (*payload.DeployCode, error)
 	GetBookkeeperState() (*states.BookkeeperState, error)
 	GetStorageItem(key *states.StorageKey) (*states.StorageItem, error)
 	PreExecuteContract(tx *types.Transaction) (*cstates.PreExecResult, error)

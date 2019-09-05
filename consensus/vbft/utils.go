@@ -34,8 +34,8 @@ import (
 	"github.com/ontio/multi-chain/core/states"
 	scommon "github.com/ontio/multi-chain/core/store/common"
 	"github.com/ontio/multi-chain/core/store/overlaydb"
-	gov "github.com/ontio/multi-chain/smartcontract/service/native/governance"
-	nutils "github.com/ontio/multi-chain/smartcontract/service/native/utils"
+	gov "github.com/ontio/multi-chain/native/service/native/governance"
+	nutils "github.com/ontio/multi-chain/native/service/native/utils"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/ontology-crypto/vrf"
 )

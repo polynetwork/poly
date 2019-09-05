@@ -26,7 +26,7 @@ import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/core/types"
 	httpcom "github.com/ontio/multi-chain/http/base/common"
-	svrneovm "github.com/ontio/multi-chain/smartcontract/service/neovm"
+	svrneovm "github.com/ontio/multi-chain/native/service/neovm"
 	"github.com/ontio/multi-chain/vm/neovm"
 	"math"
 	"math/big"

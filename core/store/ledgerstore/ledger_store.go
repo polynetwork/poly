@@ -19,14 +19,12 @@
 package ledgerstore
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"fmt"
 	"hash"
 	"math"
 	"os"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -34,7 +32,6 @@ import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/common/serialization"
 	"github.com/ontio/multi-chain/consensus/vbft/config"
 	"github.com/ontio/multi-chain/core/payload"
 	"github.com/ontio/multi-chain/core/signature"
@@ -47,14 +44,10 @@ import (
 	"github.com/ontio/multi-chain/events"
 	"github.com/ontio/multi-chain/events/message"
 	"github.com/ontio/multi-chain/merkle"
-	"github.com/ontio/multi-chain/smartcontract"
-	scommon "github.com/ontio/multi-chain/smartcontract/common"
-	"github.com/ontio/multi-chain/smartcontract/event"
-	"github.com/ontio/multi-chain/smartcontract/service/native/global_params"
-	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
-	"github.com/ontio/multi-chain/smartcontract/service/neovm"
-	sstate "github.com/ontio/multi-chain/smartcontract/states"
-	"github.com/ontio/multi-chain/smartcontract/storage"
+	"github.com/ontio/multi-chain/native"
+	"github.com/ontio/multi-chain/native/event"
+	sstate "github.com/ontio/multi-chain/native/states"
+	"github.com/ontio/multi-chain/native/storage"
 	"github.com/ontio/ontology-crypto/keypair"
 )
 
@@ -216,8 +209,6 @@ func (this *LedgerStoreImp) InitLedgerStoreWithGenesisBlock(genesisBlock *types.
 		}
 		this.lock.Unlock()
 	}
-	// check and fix imcompatible states
-	err = this.stateStore.CheckStorage()
 	return err
 }
 
@@ -639,7 +630,7 @@ func (this *LedgerStoreImp) saveBlockToBlockStore(block *types.Block) error {
 func (this *LedgerStoreImp) executeBlock(block *types.Block) (result store.ExecuteResult, err error) {
 	overlay := this.stateStore.NewOverlayDB()
 	if block.Header.Height != 0 {
-		config := &smartcontract.Config{
+		config := &native.Config{
 			Time:   block.Header.Timestamp,
 			Height: block.Header.Height,
 			Tx:     &types.Transaction{},
@@ -894,14 +885,6 @@ func (this *LedgerStoreImp) handleTransaction(overlay *overlaydb.OverlayDB, cach
 	txHash := tx.Hash()
 	notify := &event.ExecuteNotify{TxHash: txHash, State: event.CONTRACT_STATE_FAIL}
 	switch tx.TxType {
-	case types.Deploy:
-		err := this.stateStore.HandleDeployTransaction(this, overlay, cache, tx, block, notify)
-		if overlay.Error() != nil {
-			return nil, fmt.Errorf("HandleDeployTransaction tx %s error %s", txHash.ToHexString(), overlay.Error())
-		}
-		if err != nil {
-			log.Debugf("HandleDeployTransaction tx %s error %s", txHash.ToHexString(), err)
-		}
 	case types.Invoke:
 		err := this.stateStore.HandleInvokeTransaction(this, overlay, cache, tx, block, notify, crossHashes)
 		if overlay.Error() != nil {
@@ -1025,11 +1008,6 @@ func (this *LedgerStoreImp) GetMerkleProof(proofHeight, rootHeight uint32) ([]co
 	return this.stateStore.GetMerkleProof(proofHeight, rootHeight)
 }
 
-//GetContractState return contract by contract address. Wrap function of StateStore.GetContractState
-func (this *LedgerStoreImp) GetContractState(contractHash common.Address) (*payload.DeployCode, error) {
-	return this.stateStore.GetContractState(contractHash)
-}
-
 //GetStorageItem return the storage value of the key in smart contract. Wrap function of StateStore.GetStorageState
 func (this *LedgerStoreImp) GetStorageItem(key *states.StorageKey) (*states.StorageItem, error) {
 	return this.stateStore.GetStorageState(key)
@@ -1050,7 +1028,7 @@ func (this *LedgerStoreImp) PreExecuteContract(tx *types.Transaction) (*sstate.P
 	height := this.GetCurrentBlockHeight()
 	stf := &sstate.PreExecResult{State: event.CONTRACT_STATE_FAIL, Gas: neovm.MIN_TRANSACTION_GAS, Result: nil}
 
-	config := &smartcontract.Config{
+	config := &native.Config{
 		Time:      uint32(time.Now().Unix()),
 		Height:    height + 1,
 		Tx:        tx,
@@ -1067,7 +1045,7 @@ func (this *LedgerStoreImp) PreExecuteContract(tx *types.Transaction) (*sstate.P
 	if tx.TxType == types.Invoke {
 		invoke := tx.Payload.(*payload.InvokeCode)
 
-		sc := smartcontract.SmartContract{
+		sc := native.SmartContract{
 			Config:      config,
 			Store:       this,
 			CacheDB:     cache,
@@ -1098,49 +1076,6 @@ func (this *LedgerStoreImp) PreExecuteContract(tx *types.Transaction) (*sstate.P
 	} else {
 		return stf, errors.NewErr("transaction type error")
 	}
-}
-
-func (this *LedgerStoreImp) getPreGas(config *smartcontract.Config, cache *storage.CacheDB) (map[string]uint64, error) {
-	bf := new(bytes.Buffer)
-	names := []string{neovm.CONTRACT_CREATE_NAME, neovm.UINT_INVOKE_CODE_LEN_NAME, neovm.UINT_DEPLOY_CODE_LEN_NAME}
-	if err := utils.WriteVarUint(bf, uint64(len(names))); err != nil {
-		return nil, fmt.Errorf("write gas_table_keys length error:%s", err)
-	}
-
-	for _, v := range names {
-		if err := serialization.WriteString(bf, v); err != nil {
-			return nil, fmt.Errorf("serialize param name error:%s", err)
-		}
-	}
-
-	sc := smartcontract.SmartContract{
-		Config:  config,
-		CacheDB: cache,
-		Store:   this,
-		Gas:     math.MaxUint64,
-	}
-
-	service, _ := sc.NewNativeService()
-	result, err := service.NativeCall(utils.ParamContractAddress, "getGlobalParam", bf.Bytes())
-	if err != nil {
-		return nil, err
-	}
-	params := new(global_params.Params)
-	if err := params.Deserialize(bytes.NewBuffer(result.([]byte))); err != nil {
-		return nil, fmt.Errorf("deserialize global params error:%s", err)
-	}
-	m := make(map[string]uint64, 0)
-	for _, v := range names {
-		n, ps := params.GetParam(v)
-		if n != -1 && ps.Value != "" {
-			pu, err := strconv.ParseUint(ps.Value, 10, 64)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse uint %v", err)
-			}
-			m[v] = pu
-		}
-	}
-	return m, nil
 }
 
 //Close ledger store.

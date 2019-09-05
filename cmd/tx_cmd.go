@@ -23,7 +23,7 @@ import (
 	cmdcom "github.com/ontio/multi-chain/cmd/common"
 	"github.com/ontio/multi-chain/cmd/utils"
 	"github.com/ontio/multi-chain/common"
-	nutils "github.com/ontio/multi-chain/smartcontract/service/native/utils"
+	nutils "github.com/ontio/multi-chain/native/service/native/utils"
 	"github.com/urfave/cli"
 	"strconv"
 	"strings"

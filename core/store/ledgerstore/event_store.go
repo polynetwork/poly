@@ -28,7 +28,7 @@ import (
 	"github.com/ontio/multi-chain/common/serialization"
 	scom "github.com/ontio/multi-chain/core/store/common"
 	"github.com/ontio/multi-chain/core/store/leveldbstore"
-	"github.com/ontio/multi-chain/smartcontract/event"
+	"github.com/ontio/multi-chain/native/event"
 )
 
 //Saving event notifies gen by smart contract execution

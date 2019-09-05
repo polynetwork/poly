@@ -30,7 +30,7 @@ import (
 	Err "github.com/ontio/multi-chain/http/base/error"
 	"github.com/ontio/multi-chain/http/base/rest"
 	"github.com/ontio/multi-chain/http/websocket/websocket"
-	"github.com/ontio/multi-chain/smartcontract/event"
+	"github.com/ontio/multi-chain/native/event"
 )
 
 var ws *websocket.WsServer

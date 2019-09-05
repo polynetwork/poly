@@ -22,7 +22,7 @@ import (
 	"errors"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/core/states"
-	"github.com/ontio/multi-chain/smartcontract/event"
+	"github.com/ontio/multi-chain/native/event"
 )
 
 var ErrNotFound = errors.New("not found")

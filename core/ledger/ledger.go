@@ -27,8 +27,8 @@ import (
 	"github.com/ontio/multi-chain/core/store"
 	"github.com/ontio/multi-chain/core/store/ledgerstore"
 	"github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/multi-chain/smartcontract/event"
-	cstate "github.com/ontio/multi-chain/smartcontract/states"
+	"github.com/ontio/multi-chain/native/event"
+	cstate "github.com/ontio/multi-chain/native/states"
 	"github.com/ontio/ontology-crypto/keypair"
 )
 

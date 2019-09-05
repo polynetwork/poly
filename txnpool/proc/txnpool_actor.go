@@ -32,8 +32,8 @@ import (
 	"github.com/ontio/multi-chain/errors"
 	"github.com/ontio/multi-chain/events/message"
 	hComm "github.com/ontio/multi-chain/http/base/common"
-	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
-	"github.com/ontio/multi-chain/smartcontract/service/neovm"
+	"github.com/ontio/multi-chain/native/service/native/utils"
+	"github.com/ontio/multi-chain/native/service/neovm"
 	tc "github.com/ontio/multi-chain/txnpool/common"
 	"github.com/ontio/multi-chain/validator/types"
 )

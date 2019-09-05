@@ -28,7 +28,7 @@ import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/core/payload"
 	"github.com/ontio/multi-chain/core/types"
-	neovm "github.com/ontio/multi-chain/smartcontract/service/neovm"
+	neovm "github.com/ontio/multi-chain/native/service/neovm"
 	vm "github.com/ontio/multi-chain/vm/neovm"
 )
 

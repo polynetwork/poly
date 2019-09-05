@@ -24,7 +24,7 @@ import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/smartcontract/service/native/governance"
+	"github.com/ontio/multi-chain/native/service/native/governance"
 	"github.com/urfave/cli"
 )
 

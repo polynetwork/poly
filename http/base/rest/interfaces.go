@@ -29,7 +29,7 @@ import (
 	bactor "github.com/ontio/multi-chain/http/base/actor"
 	bcomn "github.com/ontio/multi-chain/http/base/common"
 	berr "github.com/ontio/multi-chain/http/base/error"
-	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
+	"github.com/ontio/multi-chain/native/service/native/utils"
 	"strconv"
 )
 

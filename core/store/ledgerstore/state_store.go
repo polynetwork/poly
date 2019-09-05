@@ -21,21 +21,17 @@ package ledgerstore
 import (
 	"bytes"
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"io"
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/common/serialization"
-	"github.com/ontio/multi-chain/core/payload"
 	"github.com/ontio/multi-chain/core/states"
 	scom "github.com/ontio/multi-chain/core/store/common"
 	"github.com/ontio/multi-chain/core/store/leveldbstore"
 	"github.com/ontio/multi-chain/core/store/overlaydb"
 	"github.com/ontio/multi-chain/merkle"
-	"github.com/ontio/multi-chain/smartcontract/service/native/ontid"
-	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
 )
 
 var (
@@ -293,26 +289,6 @@ func (self *StateStore) CommitTo() error {
 	return self.store.BatchCommit()
 }
 
-//GetContractState return contract by contract address
-func (self *StateStore) GetContractState(contractHash common.Address) (*payload.DeployCode, error) {
-	key, err := self.getContractStateKey(contractHash)
-	if err != nil {
-		return nil, err
-	}
-
-	value, err := self.store.Get(key)
-	if err != nil {
-		return nil, err
-	}
-	reader := bytes.NewReader(value)
-	contractState := new(payload.DeployCode)
-	err = contractState.Deserialize(reader)
-	if err != nil {
-		return nil, err
-	}
-	return contractState, nil
-}
-
 //GetBookkeeperState return current book keeper states
 func (self *StateStore) GetBookkeeperState() (*states.BookkeeperState, error) {
 	key, err := self.getBookkeeperKey()
@@ -495,48 +471,4 @@ func (self *StateStore) ClearAll() error {
 func (self *StateStore) Close() error {
 	self.merkleHashStore.Close()
 	return self.store.Close()
-}
-
-func (self *StateStore) CheckStorage() error {
-	db := self.store
-
-	prefix := append([]byte{byte(scom.ST_STORAGE)}, utils.OntIDContractAddress[:]...) //prefix of new storage key
-	flag := append(prefix, ontid.FIELD_VERSION)
-	val, err := db.Get(flag)
-	if err == nil {
-		item := &states.StorageItem{}
-		buf := bytes.NewBuffer(val)
-		err := item.Deserialize(buf)
-		if err == nil && item.Value[0] == ontid.FLAG_VERSION {
-			return nil
-		} else if err == nil {
-			return errors.New("check ontid storage: invalid version flag")
-		} else {
-			return err
-		}
-	}
-
-	prefix1 := []byte{byte(scom.ST_STORAGE), 0x2a, 0x64, 0x69, 0x64} //prefix of old storage key
-
-	iter := db.NewIterator(prefix1)
-	db.NewBatch()
-	for ok := iter.First(); ok; ok = iter.Next() {
-		key := append(prefix, iter.Key()[1:]...)
-		db.BatchPut(key, iter.Value())
-		db.BatchDelete(iter.Key())
-	}
-	iter.Release()
-	err = iter.Error()
-	if err != nil {
-		return err
-	}
-
-	tag := states.StorageItem{}
-	tag.Value = []byte{ontid.FLAG_VERSION}
-	buf := bytes.NewBuffer(nil)
-	tag.Serialize(buf)
-	db.BatchPut(flag, buf.Bytes())
-	err = db.BatchCommit()
-
-	return err
 }

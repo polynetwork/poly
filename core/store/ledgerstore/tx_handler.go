@@ -34,93 +34,12 @@ import (
 	"github.com/ontio/multi-chain/core/store/overlaydb"
 	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/errors"
-	"github.com/ontio/multi-chain/smartcontract"
-	"github.com/ontio/multi-chain/smartcontract/event"
-	"github.com/ontio/multi-chain/smartcontract/service/native/global_params"
-	ninit "github.com/ontio/multi-chain/smartcontract/service/native/init"
-	"github.com/ontio/multi-chain/smartcontract/service/native/ont"
-	"github.com/ontio/multi-chain/smartcontract/service/native/utils"
-	"github.com/ontio/multi-chain/smartcontract/service/neovm"
-	"github.com/ontio/multi-chain/smartcontract/storage"
-	ntypes "github.com/ontio/multi-chain/vm/neovm/types"
+	"github.com/ontio/multi-chain/native"
+	"github.com/ontio/multi-chain/native/event"
+	ninit "github.com/ontio/multi-chain/native/service/native/init"
+	"github.com/ontio/multi-chain/native/service/native/utils"
+	"github.com/ontio/multi-chain/native/storage"
 )
-
-//HandleDeployTransaction deal with smart contract deploy transaction
-func (self *StateStore) HandleDeployTransaction(store store.LedgerStore, overlay *overlaydb.OverlayDB, cache *storage.CacheDB,
-	tx *types.Transaction, block *types.Block, notify *event.ExecuteNotify) error {
-	deploy := tx.Payload.(*payload.DeployCode)
-	var (
-		notifies    []*event.NotifyEventInfo
-		gasConsumed uint64
-		err         error
-	)
-
-	shardID, err := types.NewShardID(block.Header.ShardID)
-	if err != nil {
-		return err
-	}
-
-	if tx.GasPrice != 0 {
-		// init smart contract configuration info
-		config := &smartcontract.Config{
-			ShardID:   shardID,
-			Time:      block.Header.Timestamp,
-			Height:    block.Header.Height,
-			Tx:        tx,
-			BlockHash: block.Hash(),
-		}
-		createGasPrice, ok := neovm.GAS_TABLE.Load(neovm.CONTRACT_CREATE_NAME)
-		if !ok {
-			overlay.SetError(errors.NewErr("[HandleDeployTransaction] get CONTRACT_CREATE_NAME gas failed"))
-			return nil
-		}
-
-		uintCodePrice, ok := neovm.GAS_TABLE.Load(neovm.UINT_DEPLOY_CODE_LEN_NAME)
-		if !ok {
-			overlay.SetError(errors.NewErr("[HandleDeployTransaction] get UINT_DEPLOY_CODE_LEN_NAME gas failed"))
-			return nil
-		}
-
-		gasLimit := createGasPrice.(uint64) + calcGasByCodeLen(len(deploy.Code), uintCodePrice.(uint64))
-		balance, err := isBalanceSufficient(tx.Payer, cache, config, store, gasLimit*tx.GasPrice)
-		if err != nil {
-			if err := costInvalidGas(tx.Payer, balance, config, overlay, store, notify); err != nil {
-				return err
-			}
-			return err
-		}
-		if tx.GasLimit < gasLimit {
-			if err := costInvalidGas(tx.Payer, tx.GasLimit*tx.GasPrice, config, overlay, store, notify); err != nil {
-				return err
-			}
-			return fmt.Errorf("gasLimit insufficient, need:%d actual:%d", gasLimit, tx.GasLimit)
-
-		}
-		gasConsumed = gasLimit * tx.GasPrice
-		notifies, err = chargeCostGas(tx.Payer, gasConsumed, config, cache, store)
-		if err != nil {
-			return err
-		}
-		cache.Commit()
-	}
-
-	address := deploy.Address()
-	log.Infof("deploy contract address:%s", address.ToHexString())
-	// store contract message
-	dep, err := cache.GetContract(address)
-	if err != nil {
-		return err
-	}
-	if dep == nil {
-		cache.PutContract(deploy)
-	}
-	cache.Commit()
-
-	notify.Notify = append(notify.Notify, notifies...)
-	notify.GasConsumed = gasConsumed
-	notify.State = event.CONTRACT_STATE_SUCCESS
-	return nil
-}
 
 //HandleInvokeTransaction deal with smart contract invoke transaction
 func (self *StateStore) HandleInvokeTransaction(store store.LedgerStore, overlay *overlaydb.OverlayDB, cache *storage.CacheDB,
@@ -136,7 +55,7 @@ func (self *StateStore) HandleInvokeTransaction(store store.LedgerStore, overlay
 		return err
 	}
 	// init smart contract configuration info
-	config := &smartcontract.Config{
+	config := &native.Config{
 		ShardID:   shardID,
 		Time:      block.Header.Timestamp,
 		Height:    block.Header.Height,
@@ -199,7 +118,7 @@ func (self *StateStore) HandleInvokeTransaction(store store.LedgerStore, overlay
 	}
 
 	//init smart contract info
-	sc := smartcontract.SmartContract{
+	sc := native.SmartContract{
 		Config:      config,
 		CacheDB:     cache,
 		Store:       store,
@@ -273,7 +192,7 @@ func genNativeTransferCode(from, to common.Address, value uint64) []byte {
 }
 
 // check whether payer ong balance sufficient
-func isBalanceSufficient(payer common.Address, cache *storage.CacheDB, config *smartcontract.Config, store store.LedgerStore, gas uint64) (uint64, error) {
+func isBalanceSufficient(payer common.Address, cache *storage.CacheDB, config *native.Config, store store.LedgerStore, gas uint64) (uint64, error) {
 	balance, err := getBalanceFromNative(config, cache, store, payer)
 	if err != nil {
 		return 0, err
@@ -284,12 +203,12 @@ func isBalanceSufficient(payer common.Address, cache *storage.CacheDB, config *s
 	return balance, nil
 }
 
-func chargeCostGas(payer common.Address, gas uint64, config *smartcontract.Config,
+func chargeCostGas(payer common.Address, gas uint64, config *native.Config,
 	cache *storage.CacheDB, store store.LedgerStore) ([]*event.NotifyEventInfo, error) {
 
 	params := genNativeTransferCode(payer, utils.GovernanceContractAddress, gas)
 
-	sc := smartcontract.SmartContract{
+	sc := native.SmartContract{
 		Config:  config,
 		CacheDB: cache,
 		Store:   store,
@@ -304,7 +223,7 @@ func chargeCostGas(payer common.Address, gas uint64, config *smartcontract.Confi
 	return sc.Notifications, nil
 }
 
-func refreshGlobalParam(config *smartcontract.Config, cache *storage.CacheDB, store store.LedgerStore) error {
+func refreshGlobalParam(config *native.Config, cache *storage.CacheDB, store store.LedgerStore) error {
 	bf := new(bytes.Buffer)
 	if err := utils.WriteVarUint(bf, uint64(len(neovm.GAS_TABLE_KEYS))); err != nil {
 		return fmt.Errorf("write gas_table_keys length error:%s", err)
@@ -315,7 +234,7 @@ func refreshGlobalParam(config *smartcontract.Config, cache *storage.CacheDB, st
 		}
 	}
 
-	sc := smartcontract.SmartContract{
+	sc := native.SmartContract{
 		Config:  config,
 		CacheDB: cache,
 		Store:   store,
@@ -347,12 +266,12 @@ func refreshGlobalParam(config *smartcontract.Config, cache *storage.CacheDB, st
 	return nil
 }
 
-func getBalanceFromNative(config *smartcontract.Config, cache *storage.CacheDB, store store.LedgerStore, address common.Address) (uint64, error) {
+func getBalanceFromNative(config *native.Config, cache *storage.CacheDB, store store.LedgerStore, address common.Address) (uint64, error) {
 	bf := new(bytes.Buffer)
 	if err := utils.WriteAddress(bf, address); err != nil {
 		return 0, err
 	}
-	sc := smartcontract.SmartContract{
+	sc := native.SmartContract{
 		Config:  config,
 		CacheDB: cache,
 		Store:   store,
@@ -367,7 +286,7 @@ func getBalanceFromNative(config *smartcontract.Config, cache *storage.CacheDB, 
 	return ntypes.BigIntFromBytes(result.([]byte)).Uint64(), nil
 }
 
-func costInvalidGas(address common.Address, gas uint64, config *smartcontract.Config, overlay *overlaydb.OverlayDB,
+func costInvalidGas(address common.Address, gas uint64, config *native.Config, overlay *overlaydb.OverlayDB,
 	store store.LedgerStore, notify *event.ExecuteNotify) error {
 	cache := storage.NewCacheDB(overlay)
 	notifies, err := chargeCostGas(address, gas, config, cache, store)
