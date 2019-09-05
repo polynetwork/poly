@@ -29,8 +29,7 @@ import (
 
 type Header struct {
 	Version          uint32
-	ShardID          uint64
-	ParentHeight     uint32
+	ChainID          uint64
 	PrevBlockHash    common.Uint256
 	TransactionsRoot common.Uint256
 	CrossStatesRoot  common.Uint256
@@ -70,13 +69,10 @@ func (bd *Header) serializationUnsigned(sink *common.ZeroCopySink) {
 	if bd.Version > CURR_HEADER_VERSION {
 		panic(fmt.Errorf("invalid header version:%d", bd.Version))
 	}
-	if bd.Version == VERSION_SUPPORT_SHARD {
-		sink.WriteUint64(bd.ShardID)
-		sink.WriteUint32(bd.ParentHeight)
-		sink.WriteHash(bd.CrossStatesRoot)
-	}
+	sink.WriteUint64(bd.ChainID)
 	sink.WriteBytes(bd.PrevBlockHash[:])
 	sink.WriteBytes(bd.TransactionsRoot[:])
+	sink.WriteHash(bd.CrossStatesRoot)
 	sink.WriteBytes(bd.BlockRoot[:])
 	sink.WriteUint32(bd.Timestamp)
 	sink.WriteUint32(bd.Height)
@@ -156,13 +152,10 @@ func (bd *Header) deserializationUnsigned(source *common.ZeroCopySource) error {
 	if bd.Version > CURR_HEADER_VERSION {
 		return common.ErrIrregularData
 	}
-	if bd.Version == VERSION_SUPPORT_SHARD {
-		bd.ShardID, eof = source.NextUint64()
-		bd.ParentHeight, eof = source.NextUint32()
-		bd.CrossStatesRoot, eof = source.NextHash()
-	}
+	bd.ChainID, eof = source.NextUint64()
 	bd.PrevBlockHash, eof = source.NextHash()
 	bd.TransactionsRoot, eof = source.NextHash()
+	bd.CrossStatesRoot, eof = source.NextHash()
 	bd.BlockRoot, eof = source.NextHash()
 	bd.Timestamp, eof = source.NextUint32()
 	bd.Height, eof = source.NextUint32()
