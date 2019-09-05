@@ -143,13 +143,19 @@ func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*cro
 	key = utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_ETH), rawTxValue)
 	service.CacheDB.Put(key, []byte(params.Value))
 
+	destAsset, err := side_chain_manager.GetDestAsset(service, params.SourceChainID, proof.ToChainID, fromContractAddr)
+	if err := proof.Deserialize(params.Value); err != nil {
+		return nil, fmt.Errorf("MakeDepositProposal, GetDestAsset error:%v", err)
+	}
+
+	toAmount := crosscommon.ConverDecimal(proof.Decimal, int(destAsset.Decimal), proof.Amount)
+
 	ret := &crosscommon.MakeTxParam{}
 	ret.ToChainID = proof.ToChainID
 	ret.FromContractAddress = fromContractAddr
 	ret.FromChainID = params.SourceChainID
 	ret.ToAddress = proof.ToAddress
-	ret.Amount = proof.Amount
-	//todo deal with the proof.decimal
+	ret.Amount = toAmount
 
 	return ret, nil
 }
