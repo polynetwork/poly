@@ -59,7 +59,7 @@ type ToMerkleValue struct {
 
 func (this *ToMerkleValue) Serialization(sink *common.ZeroCopySink) {
 	utils.EncodeUint256(sink, this.TxHash)
-	utils.EncodeString(sink, this.ToContractAddress)
+	sink.WriteVarBytes([]byte(this.ToContractAddress))
 	this.MakeTxParam.Serialization(sink)
 }
 
@@ -94,37 +94,37 @@ type CreateCrossChainTxMerkle struct {
 }
 
 func (this *CreateCrossChainTxMerkle) Serialization(sink *common.ZeroCopySink) {
-	utils.EncodeVarUint(sink, this.FromChainID)
-	utils.EncodeString(sink, this.FromContractAddress)
-	utils.EncodeVarUint(sink, this.ToChainID)
-	utils.EncodeVarUint(sink, this.Fee)
-	utils.EncodeString(sink, this.ToAddress)
-	utils.EncodeVarUint(sink, this.Amount)
+	sink.WriteUint64(this.FromChainID)
+	sink.WriteVarBytes([]byte(this.FromContractAddress))
+	sink.WriteUint64(this.ToChainID)
+	sink.WriteUint64(this.Fee)
+	sink.WriteVarBytes([]byte(this.ToAddress))
+	sink.WriteUint64(this.Amount)
 }
 
 func (this *CreateCrossChainTxMerkle) Deserialization(source *common.ZeroCopySource) error {
-	fromChainID, err := utils.DecodeVarUint(source)
-	if err != nil {
+	fromChainID, eof := source.NextUint64()
+	if eof {
 		return fmt.Errorf("CreateCrossChainTxMerkle deserialize fromChainID error:%s", err)
 	}
 	fromContractAddress, err := utils.DecodeString(source)
 	if err != nil {
 		return fmt.Errorf("CreateCrossChainTxMerkle deserialize fromContractAddress error:%s", err)
 	}
-	toChainID, err := utils.DecodeVarUint(source)
-	if err != nil {
+	toChainID, eof := source.NextUint64()
+	if eof {
 		return fmt.Errorf("CreateCrossChainTxMerkle deserialize toChainID error:%s", err)
 	}
-	fee, err := utils.DecodeVarUint(source)
-	if err != nil {
+	fee, eof := source.NextUint64()
+	if eof {
 		return fmt.Errorf("CreateCrossChainTxMerkle deserialize fee error:%s", err)
 	}
 	toAddress, err := utils.DecodeString(source)
 	if err != nil {
 		return fmt.Errorf("CreateCrossChainTxMerkle deserialize toAddress error:%s", err)
 	}
-	amount, err := utils.DecodeVarUint(source)
-	if err != nil {
+	amount, eof := source.NextUint64()
+	if eof {
 		return fmt.Errorf("CreateCrossChainTxMerkle deserialize amount error:%s", err)
 	}
 
