@@ -19,10 +19,7 @@
 package types
 
 import (
-	"errors"
-
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/constants"
 	"github.com/ontio/ontology-crypto/keypair"
 )
 
@@ -32,17 +29,10 @@ func AddressFromPubKey(pubkey keypair.PublicKey) common.Address {
 }
 
 func AddressFromMultiPubKeys(pubkeys []keypair.PublicKey, m int) (common.Address, error) {
-	var addr common.Address
-	n := len(pubkeys)
-	if !(1 <= m && m <= n && n > 1 && n <= constants.MULTI_SIG_MAX_PUBKEY_SIZE) {
-		return addr, errors.New("wrong multi-sig param")
-	}
-
 	sink := common.NewZeroCopySink(nil)
-	for _, v := range pubkeys {
-		sink.WriteVarBytes(keypair.SerializePublicKey(v))
+	if err := EncodeMultiPubKeyProgramInto(sink, pubkeys, uint16(m)); err != nil {
+		return common.ADDRESS_EMPTY, nil
 	}
-
 	return common.AddressFromVmCode(sink.Bytes()), nil
 }
 

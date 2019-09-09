@@ -18,7 +18,6 @@
 package states
 
 import (
-	"bytes"
 	"testing"
 
 	"github.com/ontio/multi-chain/common"
@@ -33,13 +32,11 @@ func TestContract_Serialize_Deserialize(t *testing.T) {
 		Method:  "init",
 		Args:    []byte{2},
 	}
-	bf := new(bytes.Buffer)
-	if err := c.Serialize(bf); err != nil {
-		t.Fatalf("ContractInvokeParam serialize error: %v", err)
-	}
+	sink := common.NewZeroCopySink(nil)
+	c.Serialization(sink)
 
 	v := new(ContractInvokeParam)
-	if err := v.Deserialize(bf); err != nil {
+	if err := v.Deserialization(common.NewZeroCopySource(sink.Bytes())); err != nil {
 		t.Fatalf("ContractInvokeParam deserialize error: %v", err)
 	}
 }

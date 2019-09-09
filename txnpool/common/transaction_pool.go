@@ -236,17 +236,6 @@ func (tp *TXPool) GetUnverifiedTxs(txs []*types.Transaction,
 	return res
 }
 
-// RemoveTxsBelowGasPrice drops all transactions below the gas price
-func (tp *TXPool) RemoveTxsBelowGasPrice(gasPrice uint64) {
-	tp.Lock()
-	defer tp.Unlock()
-	for _, txEntry := range tp.txList {
-		if txEntry.Tx.GasPrice < gasPrice {
-			delete(tp.txList, txEntry.Tx.Hash())
-		}
-	}
-}
-
 // Remain returns the remaining tx list to cleanup
 func (tp *TXPool) Remain() []*types.Transaction {
 	tp.Lock()

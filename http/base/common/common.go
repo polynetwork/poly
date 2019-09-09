@@ -20,27 +20,14 @@
 package common
 
 import (
-	"bytes"
-	"encoding/hex"
-	"fmt"
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/constants"
 	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/common/serialization"
-	"github.com/ontio/multi-chain/core/ledger"
-	"github.com/ontio/multi-chain/core/payload"
 	"github.com/ontio/multi-chain/core/types"
-	cutils "github.com/ontio/multi-chain/core/utils"
 	ontErrors "github.com/ontio/multi-chain/errors"
 	bactor "github.com/ontio/multi-chain/http/base/actor"
 	"github.com/ontio/multi-chain/native/event"
-	"github.com/ontio/multi-chain/native/service/native/ont"
-	"github.com/ontio/multi-chain/native/service/native/utils"
 	cstate "github.com/ontio/multi-chain/native/states"
-	"github.com/ontio/multi-chain/vm/neovm"
 	"github.com/ontio/ontology-crypto/keypair"
-	"strings"
-	"time"
 )
 
 const MAX_SEARCH_HEIGHT uint32 = 100
@@ -174,13 +161,6 @@ type TXNEntryInfo struct {
 	State []TXNAttrInfo // the result from each validator
 }
 
-func GetLogEvent(obj *event.LogEventArgs) (map[string]bool, LogEventArgs) {
-	hash := obj.TxHash
-	addr := obj.ContractAddress.ToHexString()
-	contractAddrs := map[string]bool{addr: true}
-	return contractAddrs, LogEventArgs{hash.ToHexString(), addr, obj.Message}
-}
-
 func GetExecuteNotify(obj *event.ExecuteNotify) (map[string]bool, ExecuteNotify) {
 	evts := []NotifyEventInfo{}
 	var contractAddrs = make(map[string]bool)
@@ -198,35 +178,6 @@ func ConvertPreExecuteResult(obj *cstate.PreExecResult) PreExecuteResult {
 		evts = append(evts, NotifyEventInfo{v.ContractAddress.ToHexString(), v.States})
 	}
 	return PreExecuteResult{obj.State, obj.Gas, obj.Result, evts}
-}
-
-func TransArryByteToHexString(ptx *types.Transaction) *Transactions {
-	trans := new(Transactions)
-	trans.TxType = ptx.TxType
-	trans.Nonce = ptx.Nonce
-	trans.GasLimit = ptx.GasLimit
-	trans.GasPrice = ptx.GasPrice
-	trans.Payer = ptx.Payer.ToBase58()
-	trans.Payload = TransPayloadToHex(ptx.Payload)
-
-	trans.Attributes = make([]TxAttributeInfo, 0)
-	trans.Sigs = []Sig{}
-	for _, sigdata := range ptx.Sigs {
-		sig, _ := sigdata.GetSig()
-		e := Sig{M: sig.M}
-		for i := 0; i < len(sig.PubKeys); i++ {
-			key := keypair.SerializePublicKey(sig.PubKeys[i])
-			e.PubKeys = append(e.PubKeys, common.ToHexString(key))
-		}
-		for i := 0; i < len(sig.SigData); i++ {
-			e.SigData = append(e.SigData, common.ToHexString(sig.SigData[i]))
-		}
-		trans.Sigs = append(trans.Sigs, e)
-	}
-
-	mhash := ptx.Hash()
-	trans.Hash = mhash.ToHexString()
-	return trans
 }
 
 func SendTxToPool(txn *types.Transaction) (ontErrors.ErrCode, string) {
@@ -280,140 +231,29 @@ func GetBlockInfo(block *types.Block) BlockInfo {
 	return b
 }
 
-func GetBalance(address common.Address) (*BalanceOfRsp, error) {
-	ont, err := GetContractBalance(0, utils.OntContractAddress, address)
-	if err != nil {
-		return nil, fmt.Errorf("get ont balance error:%s", err)
-	}
-	ong, err := GetContractBalance(0, utils.OngContractAddress, address)
-	if err != nil {
-		return nil, fmt.Errorf("get ont balance error:%s", err)
-	}
-	return &BalanceOfRsp{
-		Ont: fmt.Sprintf("%d", ont),
-		Ong: fmt.Sprintf("%d", ong),
-	}, nil
-}
+func TransArryByteToHexString(ptx *types.Transaction) *Transactions {
+	trans := new(Transactions)
+	trans.TxType = ptx.TxType
+	trans.Nonce = ptx.Nonce
+	trans.Payload = TransPayloadToHex(ptx.Payload)
 
-func GetGrantOng(addr common.Address) (string, error) {
-	key := append([]byte(ont.UNBOUND_TIME_OFFSET), addr[:]...)
-	value, err := ledger.DefLedger.GetStorageItem(utils.OntContractAddress, key)
-	if err != nil {
-		value = []byte{0, 0, 0, 0}
-	}
-	v, err := serialization.ReadUint32(bytes.NewBuffer(value))
-	if err != nil {
-		return fmt.Sprintf("%v", 0), err
-	}
-	ont, err := GetContractBalance(0, utils.OntContractAddress, addr)
-	if err != nil {
-		return fmt.Sprintf("%v", 0), err
-	}
-	boundong := utils.CalcUnbindOng(ont, v, uint32(time.Now().Unix())-constants.GENESIS_BLOCK_TIMESTAMP)
-	return fmt.Sprintf("%v", boundong), nil
-}
-
-func GetAllowance(asset string, from, to common.Address) (string, error) {
-	var contractAddr common.Address
-	switch strings.ToLower(asset) {
-	case "ont":
-		contractAddr = utils.OntContractAddress
-	case "ong":
-		contractAddr = utils.OngContractAddress
-	default:
-		return "", fmt.Errorf("unsupport asset")
-	}
-	allowance, err := GetContractAllowance(0, contractAddr, from, to)
-	if err != nil {
-		return "", fmt.Errorf("get allowance error:%s", err)
-	}
-	return fmt.Sprintf("%v", allowance), nil
-}
-
-func GetContractBalance(cVersion byte, contractAddr, accAddr common.Address) (uint64, error) {
-	mutable, err := NewNativeInvokeTransaction(0, 0, contractAddr, cVersion, "balanceOf", []interface{}{accAddr[:]})
-	if err != nil {
-		return 0, fmt.Errorf("NewNativeInvokeTransaction error:%s", err)
-	}
-	tx, err := mutable.IntoImmutable()
-	if err != nil {
-		return 0, err
-	}
-	result, err := bactor.PreExecuteContract(tx)
-	if err != nil {
-		return 0, fmt.Errorf("PrepareInvokeContract error:%s", err)
-	}
-	if result.State == 0 {
-		return 0, fmt.Errorf("prepare invoke failed")
-	}
-	data, err := hex.DecodeString(result.Result.(string))
-	if err != nil {
-		return 0, fmt.Errorf("hex.DecodeString error:%s", err)
-	}
-
-	balance := common.BigIntFromNeoBytes(data)
-	return balance.Uint64(), nil
-}
-
-func GetContractAllowance(cVersion byte, contractAddr, fromAddr, toAddr common.Address) (uint64, error) {
-	type allowanceStruct struct {
-		From common.Address
-		To   common.Address
-	}
-	mutable, err := NewNativeInvokeTransaction(0, 0, contractAddr, cVersion, "allowance",
-		[]interface{}{&allowanceStruct{
-			From: fromAddr,
-			To:   toAddr,
-		}})
-	if err != nil {
-		return 0, fmt.Errorf("NewNativeInvokeTransaction error:%s", err)
-	}
-
-	tx, err := mutable.IntoImmutable()
-	if err != nil {
-		return 0, err
-	}
-
-	result, err := bactor.PreExecuteContract(tx)
-	if err != nil {
-		return 0, fmt.Errorf("PrepareInvokeContract error:%s", err)
-	}
-	if result.State == 0 {
-		return 0, fmt.Errorf("prepare invoke failed")
-	}
-	data, err := hex.DecodeString(result.Result.(string))
-	if err != nil {
-		return 0, fmt.Errorf("hex.DecodeString error:%s", err)
-	}
-	allowance := common.BigIntFromNeoBytes(data)
-	return allowance.Uint64(), nil
-}
-
-func GetGasPrice() (map[string]interface{}, error) {
-	start := bactor.GetCurrentBlockHeight()
-	var gasPrice uint64 = 0
-	var height uint32 = 0
-	var end uint32 = 0
-	if start > MAX_SEARCH_HEIGHT {
-		end = start - MAX_SEARCH_HEIGHT
-	}
-	for i := start; i >= end; i-- {
-		head, err := bactor.GetHeaderByHeight(i)
-		if err == nil && head.TransactionsRoot != common.UINT256_EMPTY {
-			height = i
-			blk, err := bactor.GetBlockByHeight(i)
-			if err != nil {
-				return nil, err
-			}
-			for _, v := range blk.Transactions {
-				gasPrice += v.GasPrice
-			}
-			gasPrice = gasPrice / uint64(len(blk.Transactions))
-			break
+	trans.Attributes = make([]TxAttributeInfo, 0)
+	trans.Sigs = []Sig{}
+	for _, sig := range ptx.Sigs {
+		e := Sig{M: sig.M}
+		for i := 0; i < len(sig.PubKeys); i++ {
+			key := keypair.SerializePublicKey(sig.PubKeys[i])
+			e.PubKeys = append(e.PubKeys, common.ToHexString(key))
 		}
+		for i := 0; i < len(sig.SigData); i++ {
+			e.SigData = append(e.SigData, common.ToHexString(sig.SigData[i]))
+		}
+		trans.Sigs = append(trans.Sigs, e)
 	}
-	result := map[string]interface{}{"gasprice": gasPrice, "height": height}
-	return result, nil
+
+	mhash := ptx.Hash()
+	trans.Hash = mhash.ToHexString()
+	return trans
 }
 
 func GetBlockTransactions(block *types.Block) interface{} {
@@ -434,51 +274,6 @@ func GetBlockTransactions(block *types.Block) interface{} {
 		Transactions: trans,
 	}
 	return b
-}
-
-//NewNativeInvokeTransaction return native contract invoke transaction
-func NewNativeInvokeTransaction(gasPirce, gasLimit uint64, contractAddress common.Address, version byte,
-	method string, params []interface{}) (*types.MutableTransaction, error) {
-	invokeCode, err := cutils.BuildNativeInvokeCode(contractAddress, version, method, params)
-	if err != nil {
-		return nil, err
-	}
-	return NewSmartContractTransaction(gasPirce, gasLimit, invokeCode)
-}
-
-func NewNeovmInvokeTransaction(gasPrice, gasLimit uint64, contractAddress common.Address, params []interface{}) (*types.MutableTransaction, error) {
-	invokeCode, err := BuildNeoVMInvokeCode(contractAddress, params)
-	if err != nil {
-		return nil, err
-	}
-	return NewSmartContractTransaction(gasPrice, gasLimit, invokeCode)
-}
-
-func NewSmartContractTransaction(gasPrice, gasLimit uint64, invokeCode []byte) (*types.MutableTransaction, error) {
-	invokePayload := &payload.InvokeCode{
-		Code: invokeCode,
-	}
-	tx := &types.MutableTransaction{
-		GasPrice: gasPrice,
-		GasLimit: gasLimit,
-		TxType:   types.Invoke,
-		Nonce:    uint32(time.Now().Unix()),
-		Payload:  invokePayload,
-		Sigs:     nil,
-	}
-	return tx, nil
-}
-
-//BuildNeoVMInvokeCode build NeoVM Invoke code for params
-func BuildNeoVMInvokeCode(smartContractAddress common.Address, params []interface{}) ([]byte, error) {
-	builder := neovm.NewParamsBuilder(new(bytes.Buffer))
-	err := cutils.BuildNeoVMParam(builder, params)
-	if err != nil {
-		return nil, err
-	}
-	args := append(builder.ToArray(), 0x67)
-	args = append(args, smartContractAddress[:]...)
-	return args, nil
 }
 
 func GetAddress(str string) (common.Address, error) {

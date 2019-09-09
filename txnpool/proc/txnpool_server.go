@@ -31,8 +31,6 @@ import (
 	tx "github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/errors"
 	httpcom "github.com/ontio/multi-chain/http/base/common"
-	params "github.com/ontio/multi-chain/native/service/native/global_params"
-	nutils "github.com/ontio/multi-chain/native/service/native/utils"
 	tc "github.com/ontio/multi-chain/txnpool/common"
 	"github.com/ontio/multi-chain/validator/types"
 	"github.com/ontio/ontology-eventbus/actor"
@@ -96,58 +94,6 @@ func NewTxPoolServer(num uint8, disablePreExec, disableBroadcastNetTx bool) *TXP
 	return s
 }
 
-// getGlobalGasPrice returns a global gas price
-func getGlobalGasPrice() (uint64, error) {
-	mutable, err := httpcom.NewNativeInvokeTransaction(0, 0, nutils.ParamContractAddress, 0, "getGlobalParam", []interface{}{[]interface{}{"gasPrice"}})
-	if err != nil {
-		return 0, fmt.Errorf("NewNativeInvokeTransaction error:%s", err)
-	}
-	tx, err := mutable.IntoImmutable()
-	if err != nil {
-		return 0, err
-	}
-	result, err := ledger.DefLedger.PreExecuteContract(tx)
-	if err != nil {
-		return 0, fmt.Errorf("PreExecuteContract failed %v", err)
-	}
-
-	queriedParams := new(params.Params)
-	data, err := hex.DecodeString(result.Result.(string))
-	if err != nil {
-		return 0, fmt.Errorf("decode result error %v", err)
-	}
-
-	err = queriedParams.Deserialize(bytes.NewBuffer([]byte(data)))
-	if err != nil {
-		return 0, fmt.Errorf("deserialize result error %v", err)
-	}
-	_, param := queriedParams.GetParam("gasPrice")
-	if param.Value == "" {
-		return 0, fmt.Errorf("failed to get param for gasPrice")
-	}
-
-	gasPrice, err := strconv.ParseUint(param.Value, 10, 64)
-	if err != nil {
-		return 0, fmt.Errorf("failed to parse uint %v", err)
-	}
-
-	return gasPrice, nil
-}
-
-// getGasPriceConfig returns the bigger one between global and cmd configured
-func getGasPriceConfig() uint64 {
-	globalGasPrice, err := getGlobalGasPrice()
-	if err != nil {
-		log.Info(err)
-		return 0
-	}
-
-	if globalGasPrice < config.DefConfig.Common.GasPrice {
-		return config.DefConfig.Common.GasPrice
-	}
-	return globalGasPrice
-}
-
 // init initializes the server with the configured settings
 func (s *TXPoolServer) init(num uint8, disablePreExec, disableBroadcastNetTx bool) {
 	// Initial txnPool
@@ -174,9 +120,6 @@ func (s *TXPoolServer) init(num uint8, disablePreExec, disableBroadcastNetTx boo
 	for i := 0; i < tc.MAX_LIMITATION; i++ {
 		s.slots <- struct{}{}
 	}
-
-	s.gasPrice = getGasPriceConfig()
-	log.Infof("tx pool: the current local gas price is %d", s.gasPrice)
 
 	s.disablePreExec = disablePreExec
 	s.disableBroadcastNetTx = disableBroadcastNetTx
@@ -529,23 +472,6 @@ func (s *TXPoolServer) getPendingTxs(byCount bool) []*tx.Transaction {
 func (s *TXPoolServer) cleanTransactionList(txs []*tx.Transaction, height uint32) {
 	s.txPool.CleanTransactionList(txs)
 
-	// Check whether to update the gas price and remove txs below the
-	// threshold
-	if height%tc.UPDATE_FREQUENCY == 0 {
-		gasPrice := getGasPriceConfig()
-		s.mu.Lock()
-		oldGasPrice := s.gasPrice
-		s.gasPrice = gasPrice
-		s.mu.Unlock()
-		if oldGasPrice != gasPrice {
-			log.Infof("Transaction pool price threshold updated from %d to %d",
-				oldGasPrice, gasPrice)
-		}
-
-		if oldGasPrice < gasPrice {
-			s.txPool.RemoveTxsBelowGasPrice(gasPrice)
-		}
-	}
 	// Cleanup tx pool
 	if !s.disablePreExec {
 		remain := s.txPool.Remain()
@@ -693,16 +619,6 @@ func (s *TXPoolServer) verifyBlock(req *tc.VerifyBlockReq, sender *actor.PID) {
 	// Check whether a tx's gas price is lower than the required, if yes,
 	// just return error
 	for _, t := range req.Txs {
-		if t.GasPrice < s.gasPrice {
-			entry := &tc.VerifyTxResult{
-				Height:  s.pendingBlock.height,
-				Tx:      t,
-				ErrCode: errors.ErrGasPrice,
-			}
-			s.pendingBlock.processedTxs[t.Hash()] = entry
-			s.sendBlkResult2Consensus()
-			return
-		}
 		// Check whether double spent
 		if _, ok := txs[t.Hash()]; ok {
 			entry := &tc.VerifyTxResult{

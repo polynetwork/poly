@@ -22,7 +22,6 @@ import (
 	"strings"
 
 	"github.com/ontio/multi-chain/common/config"
-	"github.com/ontio/multi-chain/native/service/neovm"
 	"github.com/urfave/cli"
 )
 
@@ -78,16 +77,6 @@ var (
 		Name:  "max-tx-in-block",
 		Usage: "Max transaction `<number>` in block",
 		Value: config.DEFAULT_MAX_TX_IN_BLOCK,
-	}
-	GasLimitFlag = cli.Uint64Flag{
-		Name:  "gaslimit",
-		Usage: "Min gas limit `<value>` of transaction to be accepted by tx pool.",
-		Value: neovm.MIN_TRANSACTION_GAS,
-	}
-	GasPriceFlag = cli.Uint64Flag{
-		Name:  "gasprice",
-		Usage: "Min gas price `<value>` of transaction to be accepted by tx pool.",
-		Value: config.DEFAULT_GAS_PRICE,
 	}
 
 	//Test Mode setting
@@ -337,37 +326,9 @@ var (
 		Usage: "Get block info by block height",
 	}
 
-	//Transfer setting
-	TransactionAssetFlag = cli.StringFlag{
-		Name:  "asset",
-		Usage: "Asset of ONT or ONG",
-		Value: ASSET_ONT,
-	}
-	TransactionFromFlag = cli.StringFlag{
-		Name:  "from",
-		Usage: "Transfer-out account `<address>`",
-	}
-	TransactionToFlag = cli.StringFlag{
-		Name:  "to",
-		Usage: "Transfer-in account `<address>`",
-	}
-	TransactionAmountFlag = cli.StringFlag{
-		Name:  "amount",
-		Usage: "Transfer `<amount>`. Float number",
-	}
 	TransactionHashFlag = cli.StringFlag{
 		Name:  "hash",
 		Usage: "Transaction `<hash>`",
-	}
-	TransactionGasPriceFlag = cli.Uint64Flag{
-		Name:  "gasprice",
-		Usage: "Gas price of transaction",
-		Value: config.DEFAULT_GAS_PRICE,
-	}
-	TransactionGasLimitFlag = cli.Uint64Flag{
-		Name:  "gaslimit",
-		Usage: "Gas limit of the transaction",
-		Value: neovm.MIN_TRANSACTION_GAS,
 	}
 	TransactionPayerFlag = cli.StringFlag{
 		Name:  "payer",

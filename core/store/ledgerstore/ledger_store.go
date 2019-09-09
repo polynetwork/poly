@@ -22,18 +22,15 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"hash"
-	"math"
 	"os"
 	"sort"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/consensus/vbft/config"
-	"github.com/ontio/multi-chain/core/payload"
 	"github.com/ontio/multi-chain/core/signature"
 	"github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/core/store"
@@ -44,9 +41,7 @@ import (
 	"github.com/ontio/multi-chain/events"
 	"github.com/ontio/multi-chain/events/message"
 	"github.com/ontio/multi-chain/merkle"
-	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/event"
-	sstate "github.com/ontio/multi-chain/native/states"
 	"github.com/ontio/multi-chain/native/storage"
 	"github.com/ontio/ontology-crypto/keypair"
 )
@@ -629,18 +624,6 @@ func (this *LedgerStoreImp) saveBlockToBlockStore(block *types.Block) error {
 
 func (this *LedgerStoreImp) executeBlock(block *types.Block) (result store.ExecuteResult, err error) {
 	overlay := this.stateStore.NewOverlayDB()
-	if block.Header.Height != 0 {
-		config := &native.Config{
-			Time:   block.Header.Timestamp,
-			Height: block.Header.Height,
-			Tx:     &types.Transaction{},
-		}
-
-		err = refreshGlobalParam(config, storage.NewCacheDB(this.stateStore.NewOverlayDB()), this)
-		if err != nil {
-			return
-		}
-	}
 
 	cache := storage.NewCacheDB(overlay)
 	crossHashes := common.NewZeroCopySink(nil)
@@ -1021,61 +1004,6 @@ func (this *LedgerStoreImp) GetEventNotifyByTx(tx common.Uint256) (*event.Execut
 //GetEventNotifyByBlock return the transaction hash which have event notice after execution of smart contract. Wrap function of EventStore.GetEventNotifyByBlock
 func (this *LedgerStoreImp) GetEventNotifyByBlock(height uint32) ([]*event.ExecuteNotify, error) {
 	return this.eventStore.GetEventNotifyByBlock(height)
-}
-
-//PreExecuteContract return the result of smart contract execution without commit to store
-func (this *LedgerStoreImp) PreExecuteContract(tx *types.Transaction) (*sstate.PreExecResult, error) {
-	height := this.GetCurrentBlockHeight()
-	stf := &sstate.PreExecResult{State: event.CONTRACT_STATE_FAIL, Gas: neovm.MIN_TRANSACTION_GAS, Result: nil}
-
-	config := &native.Config{
-		Time:      uint32(time.Now().Unix()),
-		Height:    height + 1,
-		Tx:        tx,
-		BlockHash: this.GetBlockHash(height),
-	}
-
-	overlay := this.stateStore.NewOverlayDB()
-	cache := storage.NewCacheDB(overlay)
-	preGas, err := this.getPreGas(config, cache)
-	if err != nil {
-		return stf, err
-	}
-
-	if tx.TxType == types.Invoke {
-		invoke := tx.Payload.(*payload.InvokeCode)
-
-		sc := native.SmartContract{
-			Config:      config,
-			Store:       this,
-			CacheDB:     cache,
-			Gas:         math.MaxUint64 - calcGasByCodeLen(len(invoke.Code), preGas[neovm.UINT_INVOKE_CODE_LEN_NAME]),
-			PreExec:     true,
-			CrossHashes: common.NewZeroCopySink(nil),
-		}
-
-		//start the smart contract executive function
-		engine, _ := sc.NewExecuteEngine(invoke.Code)
-		result, err := engine.Invoke()
-		if err != nil {
-			return stf, err
-		}
-		gasCost := math.MaxUint64 - sc.Gas
-		mixGas := neovm.MIN_TRANSACTION_GAS
-		if gasCost < mixGas {
-			gasCost = mixGas
-		}
-		cv, err := scommon.ConvertNeoVmTypeHexString(result)
-		if err != nil {
-			return stf, err
-		}
-		return &sstate.PreExecResult{State: event.CONTRACT_STATE_SUCCESS, Gas: gasCost, Result: cv, Notify: sc.Notifications}, nil
-	} else if tx.TxType == types.Deploy {
-		deploy := tx.Payload.(*payload.DeployCode)
-		return &sstate.PreExecResult{State: event.CONTRACT_STATE_SUCCESS, Gas: preGas[neovm.CONTRACT_CREATE_NAME] + calcGasByCodeLen(len(deploy.Code), preGas[neovm.UINT_DEPLOY_CODE_LEN_NAME]), Result: nil}, nil
-	} else {
-		return stf, errors.NewErr("transaction type error")
-	}
 }
 
 //Close ledger store.

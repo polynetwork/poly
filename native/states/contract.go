@@ -19,13 +19,13 @@
 package states
 
 import (
-	"io"
-
+	"errors"
+	"fmt"
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/serialization"
-	"github.com/ontio/multi-chain/errors"
 	"github.com/ontio/multi-chain/native/event"
 )
+
+const MAX_NATIVE_VERSION = 0
 
 // Invoke smart contract struct
 // Param Version: invoke smart contract version, default 0
@@ -39,23 +39,6 @@ type ContractInvokeParam struct {
 	Args    []byte
 }
 
-// Serialize contract
-func (this *ContractInvokeParam) Serialize(w io.Writer) error {
-	if err := serialization.WriteByte(w, this.Version); err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "[ContractInvokeParam] Version serialize error!")
-	}
-	if err := this.Address.Serialize(w); err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "[ContractInvokeParam] Address serialize error!")
-	}
-	if err := serialization.WriteVarBytes(w, []byte(this.Method)); err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "[ContractInvokeParam] Method serialize error!")
-	}
-	if err := serialization.WriteVarBytes(w, this.Args); err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "[ContractInvokeParam] Args serialize error!")
-	}
-	return nil
-}
-
 func (this *ContractInvokeParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteByte(this.Version)
 	sink.WriteAddress(this.Address)
@@ -63,49 +46,31 @@ func (this *ContractInvokeParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteVarBytes([]byte(this.Args))
 }
 
-// Deserialize contract
-func (this *ContractInvokeParam) Deserialize(r io.Reader) error {
-	var err error
-	this.Version, err = serialization.ReadByte(r)
-	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "[ContractInvokeParam] Version deserialize error!")
-	}
-
-	if err := this.Address.Deserialize(r); err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "[ContractInvokeParam] Address deserialize error!")
-	}
-
-	method, err := serialization.ReadVarBytes(r)
-	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "[ContractInvokeParam] Method deserialize error!")
-	}
-	this.Method = string(method)
-
-	this.Args, err = serialization.ReadVarBytes(r)
-	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "[ContractInvokeParam] Args deserialize error!")
-	}
-	return nil
-}
-
 // `ContractInvokeParam.Args` has reference of `source`
 func (this *ContractInvokeParam) Deserialization(source *common.ZeroCopySource) error {
-	var irregular, eof bool
+	var eof bool
 	this.Version, eof = source.NextByte()
+	if eof {
+		return errors.New("[ContractInvokeParam] deserialize version error")
+	}
+	if this.Version > MAX_NATIVE_VERSION {
+		return fmt.Errorf("[ContractInvokeParam] current version %d over max native contract version %d", this.Version, MAX_NATIVE_VERSION)
+	}
+
 	this.Address, eof = source.NextAddress()
+	if eof {
+		return errors.New("[ContractInvokeParam] deserialize address error")
+	}
 	var method []byte
-	method, _, irregular, eof = source.NextVarBytes()
-	if irregular {
-		return common.ErrIrregularData
+	method, eof = source.NextVarBytes()
+	if eof {
+		return errors.New("[ContractInvokeParam] deserialize method error")
 	}
 	this.Method = string(method)
 
-	this.Args, _, irregular, eof = source.NextVarBytes()
-	if irregular {
-		return common.ErrIrregularData
-	}
+	this.Args, eof = source.NextVarBytes()
 	if eof {
-		return io.ErrUnexpectedEOF
+		return errors.New("[ContractInvokeParam] deserialize args error")
 	}
 	return nil
 }

@@ -41,9 +41,9 @@ var (
 // Invoke a native smart contract, new a native service
 type NativeService struct {
 	cacheDB       *storage.CacheDB
+	chainID       uint64
 	serviceMap    map[string]Handler
 	notifications []*event.NotifyEventInfo
-	invokeParam   states.ContractInvokeParam
 	input         []byte
 	tx            *types.Transaction
 	height        uint32
@@ -54,7 +54,7 @@ type NativeService struct {
 }
 
 func NewNativeService(cacheDB *storage.CacheDB, tx *types.Transaction,
-	time, height uint32, blockHash common.Uint256, preExec bool) (*NativeService, error) {
+	time, height uint32, blockHash common.Uint256, chainID uint64, input []byte, preExec bool) *NativeService {
 	service := &NativeService{
 		cacheDB:    cacheDB,
 		tx:         tx,
@@ -62,9 +62,11 @@ func NewNativeService(cacheDB *storage.CacheDB, tx *types.Transaction,
 		height:     height,
 		blockHash:  blockHash,
 		serviceMap: make(map[string]Handler),
+		input:      input,
+		chainID:    chainID,
 		preExec:    preExec,
 	}
-	return service, nil
+	return service
 }
 
 func (this *NativeService) Register(methodName string, handler Handler) {
@@ -72,18 +74,21 @@ func (this *NativeService) Register(methodName string, handler Handler) {
 }
 
 func (this *NativeService) Invoke() (interface{}, error) {
-	contract := this.invokeParam
-	services, ok := Contracts[contract.Address]
+	invokParam := new(states.ContractInvokeParam)
+	if err := invokParam.Deserialization(common.NewZeroCopySource(this.input)); err != nil {
+		return nil, err
+	}
+	services, ok := Contracts[invokParam.Address]
 	if !ok {
 		return false, fmt.Errorf("[Invoke] Native contract address %x haven't been registered.", contract.Address)
 	}
 	services(this)
-	service, ok := this.serviceMap[contract.Method]
+	service, ok := this.serviceMap[invokParam.Method]
 	if !ok {
 		return false, fmt.Errorf("[Invoke] Native contract %x doesn't support this function %s.",
-			contract.Address, contract.Method)
+			invokParam.Address, invokParam.Method)
 	}
-	this.input = contract.Args
+	this.input = invokParam.Args
 	result, err := service(this)
 	if err != nil {
 		return result, fmt.Errorf("[Invoke] Native serivce function execute error!")
@@ -128,4 +133,12 @@ func (this *NativeService) GetTx() *types.Transaction {
 
 func (this *NativeService) GetHeight() uint32 {
 	return this.height
+}
+
+func (this *NativeService) GetChainID() uint64 {
+	return this.chainID
+}
+
+func (this *NativeService) GetNotify() []*event.NotifyEventInfo {
+	return this.notifications
 }
