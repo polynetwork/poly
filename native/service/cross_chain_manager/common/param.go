@@ -110,7 +110,7 @@ func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 		return fmt.Errorf("MakeTxParam deserialize fromContractAddress error:%s", err)
 	}
 	toChainID, eof := source.NextUint64()
-	if eof{
+	if eof {
 		return fmt.Errorf("MakeTxParam deserialize toChainID error")
 	}
 	toAddress, err := utils.DecodeString(source)

@@ -26,14 +26,12 @@ import (
 	"github.com/ontio/multi-chain/merkle"
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/event"
+	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/header_sync"
 	"github.com/ontio/multi-chain/native/service/side_chain_manager"
 	"github.com/ontio/multi-chain/native/service/utils"
 	"github.com/ontio/ontology/common/config"
-	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
-
 )
-
 
 func putDoneTx(native *native.NativeService, txHash common.Uint256, chainID uint64) error {
 	contract := utils.CrossChainContractAddress

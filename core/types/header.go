@@ -20,9 +20,8 @@ package types
 
 import (
 	"crypto/sha256"
+	"errors"
 	"fmt"
-	"io"
-
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/ontology-crypto/keypair"
 )
@@ -97,21 +96,15 @@ func (bd *Header) Deserialization(source *common.ZeroCopySource) error {
 		return err
 	}
 
-	n, _, irregular, eof := source.NextVarUint()
+	n, eof := source.NextVarUint()
 	if eof {
-		return io.ErrUnexpectedEOF
-	}
-	if irregular {
-		return common.ErrIrregularData
+		return errors.New("[Header] deserialize bookkeepers length error")
 	}
 
 	for i := 0; i < int(n); i++ {
-		buf, _, irregular, eof := source.NextVarBytes()
+		buf, eof := source.NextVarBytes()
 		if eof {
-			return io.ErrUnexpectedEOF
-		}
-		if irregular {
-			return common.ErrIrregularData
+			return errors.New("[Header] deserialize bookkeepers public key error")
 		}
 		pubkey, err := keypair.DeserializePublicKey(buf)
 		if err != nil {
@@ -120,21 +113,15 @@ func (bd *Header) Deserialization(source *common.ZeroCopySource) error {
 		bd.Bookkeepers = append(bd.Bookkeepers, pubkey)
 	}
 
-	m, _, irregular, eof := source.NextVarUint()
+	m, eof := source.NextVarUint()
 	if eof {
-		return io.ErrUnexpectedEOF
-	}
-	if irregular {
-		return common.ErrIrregularData
+		return errors.New("[Header] deserialize sigData length error")
 	}
 
 	for i := 0; i < int(m); i++ {
-		sig, _, irregular, eof := source.NextVarBytes()
+		sig, eof := source.NextVarBytes()
 		if eof {
-			return io.ErrUnexpectedEOF
-		}
-		if irregular {
-			return common.ErrIrregularData
+			return errors.New("[Header] deserialize sigData error")
 		}
 		bd.SigData = append(bd.SigData, sig)
 	}
@@ -143,32 +130,53 @@ func (bd *Header) Deserialization(source *common.ZeroCopySource) error {
 }
 
 func (bd *Header) deserializationUnsigned(source *common.ZeroCopySource) error {
-	var irregular, eof bool
-
+	var eof bool
 	bd.Version, eof = source.NextUint32()
 	if eof {
-		return io.ErrUnexpectedEOF
+		return errors.New("[Header] read version error")
 	}
 	if bd.Version > CURR_HEADER_VERSION {
-		return common.ErrIrregularData
+		return fmt.Errorf("[Header] header version %d over max version %d", bd.Version, CURR_HEADER_VERSION)
 	}
 	bd.ChainID, eof = source.NextUint64()
-	bd.PrevBlockHash, eof = source.NextHash()
-	bd.TransactionsRoot, eof = source.NextHash()
-	bd.CrossStatesRoot, eof = source.NextHash()
-	bd.BlockRoot, eof = source.NextHash()
-	bd.Timestamp, eof = source.NextUint32()
-	bd.Height, eof = source.NextUint32()
-	bd.ConsensusData, eof = source.NextUint64()
-
-	bd.ConsensusPayload, _, irregular, eof = source.NextVarBytes()
-	if irregular {
-		return common.ErrIrregularData
+	if eof {
+		return errors.New("[Header] read chainID error")
 	}
-
+	bd.PrevBlockHash, eof = source.NextHash()
+	if eof {
+		return errors.New("[Header] read prevBlockHash error")
+	}
+	bd.TransactionsRoot, eof = source.NextHash()
+	if eof {
+		return errors.New("[Header] read transactionsRoot error")
+	}
+	bd.CrossStatesRoot, eof = source.NextHash()
+	if eof {
+		return errors.New("[Header] read crossStatesRoot error")
+	}
+	bd.BlockRoot, eof = source.NextHash()
+	if eof {
+		return errors.New("[Header] read blockRoot error")
+	}
+	bd.Timestamp, eof = source.NextUint32()
+	if eof {
+		return errors.New("[Header] read timestamp error")
+	}
+	bd.Height, eof = source.NextUint32()
+	if eof {
+		return errors.New("[Header] read height error")
+	}
+	bd.ConsensusData, eof = source.NextUint64()
+	if eof {
+		return errors.New("[Header] read consensusData error")
+	}
+	bd.ConsensusPayload, eof = source.NextVarBytes()
+	if eof {
+		return errors.New("[Header] read consensusPayload error")
+	}
 	bd.NextBookkeeper, eof = source.NextAddress()
 	if eof {
-		return io.ErrUnexpectedEOF
+		return errors.New("[Header] read nextBookkeeper error")
 	}
 	return nil
 }

@@ -20,10 +20,7 @@ package common
 
 import (
 	"encoding/binary"
-	"errors"
 )
-
-var ErrIrregularData = errors.New("irregular data")
 
 type ZeroCopySource struct {
 	s   []byte
@@ -38,6 +35,10 @@ func (self *ZeroCopySource) Len() uint64 {
 		return 0
 	}
 	return length - self.off
+}
+
+func (self *ZeroCopySource) Bytes() []byte {
+	return self.s
 }
 
 func (self *ZeroCopySource) Pos() uint64 {
@@ -161,13 +162,12 @@ func (self *ZeroCopySource) NextInt16() (data int16, eof bool) {
 	return int16(val), eof
 }
 
-func (self *ZeroCopySource) NextVarBytes() (data []byte, size uint64, irregular bool, eof bool) {
-	var count uint64
-	count, size, irregular, eof = self.NextVarUint()
-	size += count
-
+func (self *ZeroCopySource) NextVarBytes() (data []byte, eof bool) {
+	count, eof := self.NextVarUint()
+	if eof {
+		return
+	}
 	data, eof = self.NextBytes(count)
-
 	return
 }
 
@@ -195,12 +195,12 @@ func (self *ZeroCopySource) NextHash() (data Uint256, eof bool) {
 
 func (self *ZeroCopySource) NextString() (data string, size uint64, irregular bool, eof bool) {
 	var val []byte
-	val, size, irregular, eof = self.NextVarBytes()
+	val, eof = self.NextVarBytes()
 	data = string(val)
 	return
 }
 
-func (self *ZeroCopySource) NextVarUint() (data uint64, size uint64, irregular bool, eof bool) {
+func (self *ZeroCopySource) NextVarUint() (data uint64, eof bool) {
 	var fb byte
 	fb, eof = self.NextByte()
 	if eof {
@@ -211,44 +211,28 @@ func (self *ZeroCopySource) NextVarUint() (data uint64, size uint64, irregular b
 	case 0xFD:
 		val, e := self.NextUint16()
 		if e {
+			eof = e
 			return
 		}
 		data = uint64(val)
-		size = 3
 	case 0xFE:
 		val, e := self.NextUint32()
 		if e {
+			eof = e
 			return
 		}
 		data = uint64(val)
-		size = 5
 	case 0xFF:
 		val, e := self.NextUint64()
 		if e {
+			eof = e
 			return
 		}
 		data = uint64(val)
-		size = 9
 	default:
 		data = uint64(fb)
-		size = 1
 	}
-
-	irregular = size != getVarUintSize(data)
-
 	return
-}
-
-func getVarUintSize(value uint64) uint64 {
-	if value < 0xfd {
-		return 1
-	} else if value <= 0xffff {
-		return 3
-	} else if value <= 0xFFFFFFFF {
-		return 5
-	} else {
-		return 9
-	}
 }
 
 // NewReader returns a new ZeroCopySource reading from b.

@@ -32,8 +32,7 @@ import (
 	"github.com/ontio/multi-chain/errors"
 	"github.com/ontio/multi-chain/events/message"
 	hComm "github.com/ontio/multi-chain/http/base/common"
-	"github.com/ontio/multi-chain/native/service/native/utils"
-	"github.com/ontio/multi-chain/native/service/neovm"
+	"github.com/ontio/multi-chain/native/service/utils"
 	tc "github.com/ontio/multi-chain/txnpool/common"
 	"github.com/ontio/multi-chain/validator/types"
 )
@@ -170,17 +169,6 @@ func (ta *TxActor) handleTransaction(sender tc.SenderType, self *actor.PID,
 				replyTxResult(txResultCh, txn.Hash(), errors.ErrUnknown,
 					fmt.Sprintf("Please input gasLimit >= %d and gasPrice >= %d",
 						gasLimitConfig, gasPriceConfig))
-			}
-			return
-		}
-
-		if txn.TxType == tx.Deploy && txn.GasLimit < neovm.CONTRACT_CREATE_GAS {
-			log.Debugf("handleTransaction: deploy tx invalid gasLimit %v, gasPrice %v",
-				txn.GasLimit, txn.GasPrice)
-			if sender == tc.HttpSender && txResultCh != nil {
-				replyTxResult(txResultCh, txn.Hash(), errors.ErrUnknown,
-					fmt.Sprintf("Deploy tx gaslimit should >= %d",
-						neovm.CONTRACT_CREATE_GAS))
 			}
 			return
 		}

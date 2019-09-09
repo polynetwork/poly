@@ -65,7 +65,6 @@ func DecodeVarBytes(source *common.ZeroCopySource) ([]byte, error) {
 	return v, nil
 }
 
-
 func DecodeString(source *common.ZeroCopySource) (string, error) {
 	str, _, irregular, eof := source.NextString()
 	if eof {

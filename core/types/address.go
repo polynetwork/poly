@@ -23,14 +23,12 @@ import (
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/constants"
-	"github.com/ontio/multi-chain/core/program"
 	"github.com/ontio/ontology-crypto/keypair"
 )
 
 func AddressFromPubKey(pubkey keypair.PublicKey) common.Address {
-	prog := program.ProgramFromPubKey(pubkey)
-
-	return common.AddressFromVmCode(prog)
+	buf := keypair.SerializePublicKey(pubkey)
+	return common.AddressFromVmCode(buf)
 }
 
 func AddressFromMultiPubKeys(pubkeys []keypair.PublicKey, m int) (common.Address, error) {
@@ -40,12 +38,12 @@ func AddressFromMultiPubKeys(pubkeys []keypair.PublicKey, m int) (common.Address
 		return addr, errors.New("wrong multi-sig param")
 	}
 
-	prog, err := program.ProgramFromMultiPubKey(pubkeys, m)
-	if err != nil {
-		return addr, err
+	sink := common.NewZeroCopySink(nil)
+	for _, v := range pubkeys {
+		sink.WriteVarBytes(keypair.SerializePublicKey(v))
 	}
 
-	return common.AddressFromVmCode(prog), nil
+	return common.AddressFromVmCode(sink.Bytes()), nil
 }
 
 func AddressFromBookkeepers(bookkeepers []keypair.PublicKey) (common.Address, error) {

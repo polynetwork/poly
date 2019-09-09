@@ -49,12 +49,9 @@ func (self *InvokeCode) Deserialize(r io.Reader) error {
 
 //note: InvokeCode.Code has data reference of param source
 func (self *InvokeCode) Deserialization(source *common.ZeroCopySource) error {
-	code, _, irregular, eof := source.NextVarBytes()
+	code, eof := source.NextVarBytes()
 	if eof {
-		return io.ErrUnexpectedEOF
-	}
-	if irregular {
-		return common.ErrIrregularData
+		return fmt.Errorf("[InvokeCode] deserialize code error")
 	}
 
 	self.Code = code
