@@ -21,7 +21,6 @@ import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/core/payload"
 	"github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/ontology-crypto/keypair"
 )
 
 type PayloadInfo interface{}
@@ -78,21 +77,6 @@ type VoteInfo struct {
 //get tranasction payload data
 func TransPayloadToHex(p types.Payload) PayloadInfo {
 	switch object := p.(type) {
-	case *payload.Bookkeeper:
-		obj := new(BookkeeperInfo)
-		pubKeyBytes := keypair.SerializePublicKey(object.PubKey)
-		obj.PubKey = common.ToHexString(pubKeyBytes)
-		if object.Action == payload.BookkeeperAction_ADD {
-			obj.Action = "add"
-		} else if object.Action == payload.BookkeeperAction_SUB {
-			obj.Action = "sub"
-		} else {
-			obj.Action = "nil"
-		}
-		pubKeyBytes = keypair.SerializePublicKey(object.Issuer)
-		obj.Issuer = common.ToHexString(pubKeyBytes)
-
-		return obj
 	case *payload.InvokeCode:
 		obj := new(InvokeCodeInfo)
 		obj.Code = common.ToHexString(object.Code)

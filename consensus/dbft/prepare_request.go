@@ -65,7 +65,7 @@ func (pr *PrepareRequest) Deserialization(source *common.ZeroCopySource) error {
 	pr.NextBookkeeper, eof = source.NextAddress()
 
 	var length uint64
-	length,  eof = source.NextVarUint()
+	length, eof = source.NextVarUint()
 
 	for i := 0; i < int(length); i++ {
 		var t types.Transaction

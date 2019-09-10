@@ -143,6 +143,12 @@ func startOntology(ctx *cli.Context) {
 
 	setMaxOpenFiles()
 
+	_, err := initConfig(ctx)
+	if err != nil {
+		log.Errorf("initConfig error: %s", err)
+		return
+	}
+
 	acc, err := initAccount(ctx)
 	if err != nil {
 		log.Errorf("initWallet error:%s", err)

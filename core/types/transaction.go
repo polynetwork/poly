@@ -22,7 +22,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ontio/multi-chain/common/constants"
-	"io"
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/core/payload"
@@ -61,10 +60,7 @@ func (tx *Transaction) SerializeUnsigned(sink *common.ZeroCopySink) error {
 	}
 	switch pl := tx.Payload.(type) {
 	case *payload.InvokeCode:
-		err := pl.Serialization(sink)
-		if err != nil {
-			return err
-		}
+		pl.Serialization(sink)
 	default:
 		return errors.New("wrong transaction payload type")
 	}
@@ -72,7 +68,6 @@ func (tx *Transaction) SerializeUnsigned(sink *common.ZeroCopySink) error {
 		return fmt.Errorf("attributes length %d over max length %d", tx.Attributes, MAX_ATTRIBUTES_LEN)
 	}
 	sink.WriteVarBytes(tx.Attributes)
-
 	return nil
 }
 
@@ -261,10 +256,9 @@ const (
 // Payload define the func for loading the payload data
 // base on payload type which have different structure
 type Payload interface {
-	//Serialize payload data
-	Serialize(w io.Writer) error
+	Deserialization(source *common.ZeroCopySource) error
 
-	Deserialize(r io.Reader) error
+	Serialization(sink *common.ZeroCopySink)
 }
 
 func (tx *Transaction) ToArray() []byte {

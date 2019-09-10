@@ -64,10 +64,10 @@ func (bd *Header) Serialization(sink *common.ZeroCopySink) error {
 
 //Serialize the blockheader data without program
 func (bd *Header) serializationUnsigned(sink *common.ZeroCopySink) {
-	sink.WriteUint32(bd.Version)
 	if bd.Version > CURR_HEADER_VERSION {
-		panic(fmt.Errorf("invalid header version:%d", bd.Version))
+		panic(fmt.Errorf("invalid header %d over max version:%d", bd.Version, CURR_HEADER_VERSION))
 	}
+	sink.WriteUint32(bd.Version)
 	sink.WriteUint64(bd.ChainID)
 	sink.WriteBytes(bd.PrevBlockHash[:])
 	sink.WriteBytes(bd.TransactionsRoot[:])

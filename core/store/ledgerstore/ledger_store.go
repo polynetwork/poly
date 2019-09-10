@@ -42,9 +42,9 @@ import (
 	"github.com/ontio/multi-chain/events/message"
 	"github.com/ontio/multi-chain/merkle"
 	"github.com/ontio/multi-chain/native/event"
+	cstates "github.com/ontio/multi-chain/native/states"
 	"github.com/ontio/multi-chain/native/storage"
 	"github.com/ontio/ontology-crypto/keypair"
-	cstates "github.com/ontio/multi-chain/native/states"
 )
 
 const (
@@ -896,7 +896,6 @@ func (this *LedgerStoreImp) saveHeaderIndexList() error {
 func (this *LedgerStoreImp) PreExecuteContract(tx *types.Transaction) (*cstates.PreExecResult, error) {
 	return nil, nil
 }
-
 
 //IsContainBlock return whether the block is in store
 func (this *LedgerStoreImp) IsContainBlock(blockHash common.Uint256) (bool, error) {

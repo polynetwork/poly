@@ -57,9 +57,9 @@ func NewStateStore(dbDir, merklePath string) (*StateStore, error) {
 		return nil, err
 	}
 	stateStore := &StateStore{
-		dbDir:                dbDir,
-		store:                store,
-		merklePath:           merklePath,
+		dbDir:      dbDir,
+		store:      store,
+		merklePath: merklePath,
 	}
 	_, height, err := stateStore.GetCurrentBlock()
 	if err != nil && err != scom.ErrNotFound {

@@ -34,9 +34,9 @@ import (
 
 func shuffle_hash(height uint32, id string, idx int) (uint64, error) {
 	data, err := json.Marshal(struct {
-		Height uint32         `json:"height"`
-		NodeID string         `json:"node_id"`
-		Index  int            `json:"index"`
+		Height uint32 `json:"height"`
+		NodeID string `json:"node_id"`
+		Index  int    `json:"index"`
 	}{height, id, idx})
 	if err != nil {
 		return 0, err
