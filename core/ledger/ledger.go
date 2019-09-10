@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/core/payload"
 	"github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/core/store"
 	"github.com/ontio/multi-chain/core/store/ledgerstore"
@@ -38,8 +37,8 @@ type Ledger struct {
 	ldgStore store.LedgerStore
 }
 
-func NewLedger(dataDir string, stateHashHeight uint32) (*Ledger, error) {
-	ldgStore, err := ledgerstore.NewLedgerStore(dataDir, stateHashHeight)
+func NewLedger(dataDir string) (*Ledger, error) {
+	ldgStore, err := ledgerstore.NewLedgerStore(dataDir)
 	if err != nil {
 		return nil, fmt.Errorf("NewLedgerStore error %s", err)
 	}
@@ -166,10 +165,6 @@ func (self *Ledger) GetStorageItem(codeHash common.Address, key []byte) ([]byte,
 		return nil, nil
 	}
 	return storageItem.Value, nil
-}
-
-func (self *Ledger) GetContractState(contractHash common.Address) (*payload.DeployCode, error) {
-	return self.ldgStore.GetContractState(contractHash)
 }
 
 func (self *Ledger) GetMerkleProof(proofHeight, rootHeight uint32) ([]common.Uint256, error) {

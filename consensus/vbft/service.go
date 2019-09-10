@@ -32,7 +32,6 @@ import (
 	actorTypes "github.com/ontio/multi-chain/consensus/actor"
 	"github.com/ontio/multi-chain/consensus/vbft/config"
 	"github.com/ontio/multi-chain/core/ledger"
-	"github.com/ontio/multi-chain/core/payload"
 	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/events"
 	"github.com/ontio/multi-chain/events/message"
@@ -2067,14 +2066,6 @@ func (self *Server) msgSendLoop() {
 	}
 }
 
-//creategovernaceTransaction invoke governance native contract commit_pos
-func (self *Server) creategovernaceTransaction(blkNum uint32) (*types.Transaction, error) {
-	mutable := utils.BuildNativeTransaction(nutils.GovernanceContractAddress, gover.COMMIT_DPOS, []byte{})
-	mutable.Nonce = blkNum
-	tx, err := mutable.IntoImmutable()
-	return tx, err
-}
-
 //checkNeedUpdateChainConfig use blockcount
 func (self *Server) checkNeedUpdateChainConfig(blockNum uint32) bool {
 	prevBlk, _ := self.blockPool.getSealedBlock(blockNum - 1)
@@ -2113,16 +2104,6 @@ func (self *Server) validHeight(blkNum uint32) uint32 {
 }
 
 func (self *Server) nonSystxs(sysTxs []*types.Transaction, blkNum uint32) bool {
-	if self.checkNeedUpdateChainConfig(blkNum) && len(sysTxs) == 1 {
-		invoke := sysTxs[0].Payload.(*payload.InvokeCode)
-		if invoke == nil {
-			log.Errorf("nonSystxs invoke is nil,blocknum:%d", blkNum)
-			return true
-		}
-		if bytes.Compare(invoke.Code, ninit.COMMIT_DPOS_BYTES) == 0 {
-			return false
-		}
-	}
 	return true
 }
 
@@ -2139,23 +2120,7 @@ func (self *Server) makeProposal(blkNum uint32, forEmpty bool) error {
 	//check need upate chainconfig
 	cfg := &vconfig.ChainConfig{}
 	cfg = nil
-	if self.checkNeedUpdateChainConfig(blkNum) || self.checkUpdateChainConfig(blkNum) {
-		chainconfig, err := getChainConfig(self.chainStore.GetExecWriteSet(blkNum-1), blkNum)
-		if err != nil {
-			return fmt.Errorf("getChainConfig failed:%s", err)
-		}
-		//add transaction invoke governance native commit_pos contract
-		if self.checkNeedUpdateChainConfig(blkNum) {
-			tx, err := self.creategovernaceTransaction(blkNum)
-			if err != nil {
-				return fmt.Errorf("construct governace transaction error: %v", err)
-			}
-			sysTxs = append(sysTxs, tx)
-			chainconfig.View++
-		}
-		forEmpty = true
-		cfg = chainconfig
-	}
+
 	if self.nonConsensusNode() {
 		return fmt.Errorf("%d quit consensus node", self.Index)
 	}

@@ -340,9 +340,10 @@ func (this *BlockStore) putTransaction(tx *types.Transaction, height uint32) err
 	txHash := tx.Hash()
 	key := this.getTransactionKey(txHash)
 	value := bytes.NewBuffer(nil)
-	serialization.WriteUint32(value, height)
-	err := tx.Serialize(value)
-	if err != nil {
+	if err := serialization.WriteUint32(value, height); err != nil {
+		return err
+	}
+	if err := serialization.WriteVarBytes(value, tx.Raw); err != nil {
 		return err
 	}
 	this.store.BatchPut(key, value.Bytes())
@@ -383,6 +384,7 @@ func (this *BlockStore) loadTransaction(txHash common.Uint256) (*types.Transacti
 		return nil, 0, io.ErrUnexpectedEOF
 	}
 	tx = new(types.Transaction)
+	tx.Raw = source.OffBytes()
 	err = tx.Deserialization(source)
 	if err != nil {
 		return nil, 0, fmt.Errorf("transaction deserialize error %s", err)

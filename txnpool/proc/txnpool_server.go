@@ -21,21 +21,14 @@
 package proc
 
 import (
-	"bytes"
-	"encoding/hex"
-	"fmt"
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/core/ledger"
 	tx "github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/errors"
-	httpcom "github.com/ontio/multi-chain/http/base/common"
 	tc "github.com/ontio/multi-chain/txnpool/common"
 	"github.com/ontio/multi-chain/validator/types"
 	"github.com/ontio/ontology-eventbus/actor"
 	"sort"
-	"strconv"
 	"sync"
 )
 
@@ -476,10 +469,6 @@ func (s *TXPoolServer) cleanTransactionList(txs []*tx.Transaction, height uint32
 	if !s.disablePreExec {
 		remain := s.txPool.Remain()
 		for _, t := range remain {
-			if ok, _ := preExecCheck(t); !ok {
-				log.Debugf("cleanTransactionList: preExecCheck tx %x failed", t.Hash())
-				continue
-			}
 			s.reVerifyStateful(t, tc.NilSender)
 		}
 	}

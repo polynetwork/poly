@@ -97,16 +97,6 @@ func TransPayloadToHex(p types.Payload) PayloadInfo {
 		obj := new(InvokeCodeInfo)
 		obj.Code = common.ToHexString(object.Code)
 		return obj
-	case *payload.DeployCode:
-		obj := new(DeployCodeInfo)
-		obj.Code = common.ToHexString(object.Code)
-		obj.NeedStorage = object.NeedStorage
-		obj.Name = object.Name
-		obj.CodeVersion = object.Version
-		obj.Author = object.Author
-		obj.Email = object.Email
-		obj.Description = object.Description
-		return obj
 	}
 	return nil
 }

@@ -136,8 +136,6 @@ var AppHelpFlagGroups = []flagGroup{
 	{
 		Name: "TXPOOL",
 		Flags: []cli.Flag{
-			utils.GasPriceFlag,
-			utils.GasLimitFlag,
 			utils.TxpoolPreExecDisableFlag,
 			utils.DisableSyncVerifyTxFlag,
 			utils.DisableBroadcastNetTxFlag,
@@ -209,12 +207,6 @@ var AppHelpFlagGroups = []flagGroup{
 	{
 		Name: "TRANSACTION",
 		Flags: []cli.Flag{
-			utils.TransactionGasLimitFlag,
-			utils.TransactionGasPriceFlag,
-			utils.TransactionAssetFlag,
-			utils.TransactionFromFlag,
-			utils.TransactionToFlag,
-			utils.TransactionAmountFlag,
 			utils.TransactionHashFlag,
 			utils.TransferFromSenderFlag,
 			utils.ApproveAssetFlag,

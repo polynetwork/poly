@@ -41,6 +41,10 @@ func (self *ZeroCopySource) Bytes() []byte {
 	return self.s
 }
 
+func (self *ZeroCopySource) OffBytes() []byte {
+	return self.s[self.off:]
+}
+
 func (self *ZeroCopySource) Pos() uint64 {
 	return self.off
 }
@@ -94,17 +98,15 @@ func (self *ZeroCopySource) NextUint8() (data uint8, eof bool) {
 	return uint8(val), eof
 }
 
-func (self *ZeroCopySource) NextBool() (data bool, irregular bool, eof bool) {
+func (self *ZeroCopySource) NextBool() (data bool, eof bool) {
 	val, eof := self.NextByte()
 	if val == 0 {
 		data = false
 	} else if val == 1 {
 		data = true
 	} else {
-		data = true
-		irregular = true
+		eof = true
 	}
-
 	return
 }
 
@@ -193,7 +195,7 @@ func (self *ZeroCopySource) NextHash() (data Uint256, eof bool) {
 	return
 }
 
-func (self *ZeroCopySource) NextString() (data string, size uint64, irregular bool, eof bool) {
+func (self *ZeroCopySource) NextString() (data string, eof bool) {
 	var val []byte
 	val, eof = self.NextVarBytes()
 	data = string(val)

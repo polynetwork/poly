@@ -49,7 +49,7 @@ func SetOntologyConfig(ctx *cli.Context) (*config.OntologyConfig, error) {
 		cfg.Common.GasPrice = 0
 	}
 	if cfg.P2PNode.NetworkId == config.NETWORK_ID_MAIN_NET ||
-		cfg.P2PNode.NetworkId == config.NETWORK_ID_POLARIS_NET {
+		cfg.P2PNode.NetworkId == config.NETWORK_ID_TEST_NET {
 		defNetworkId, err := cfg.GetDefaultNetworkId()
 		if err != nil {
 			return nil, fmt.Errorf("GetDefaultNetworkId error:%s", err)
@@ -68,7 +68,7 @@ func setGenesis(ctx *cli.Context, cfg *config.OntologyConfig) error {
 	switch netWorkId {
 	case config.NETWORK_ID_MAIN_NET:
 		cfg.Genesis = config.MainNetConfig
-	case config.NETWORK_ID_POLARIS_NET:
+	case config.NETWORK_ID_TEST_NET:
 		cfg.Genesis = config.PolarisConfig
 	}
 
@@ -107,10 +107,6 @@ func setGenesis(ctx *cli.Context, cfg *config.OntologyConfig) error {
 			cfg.Genesis.DBFT.GenBlockTime = config.DEFAULT_GEN_BLOCK_TIME
 		}
 	case config.CONSENSUS_TYPE_VBFT:
-		err = governance.CheckVBFTConfig(cfg.Genesis.VBFT)
-		if err != nil {
-			return fmt.Errorf("VBFT config error %v", err)
-		}
 		if len(cfg.Genesis.VBFT.Peers) < config.VBFT_MIN_NODE_NUM {
 			return fmt.Errorf("VBFT consensus at least need %d peers in config", config.VBFT_MIN_NODE_NUM)
 		}

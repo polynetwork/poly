@@ -20,82 +20,22 @@ package utils
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"github.com/ontio/multi-chain/common/constants"
+	"github.com/ontio/multi-chain/core/signature"
 	"io/ioutil"
-	"math"
-	"math/big"
 	"os"
+	"sort"
 	"strings"
+
+	"github.com/ontio/multi-chain/account"
+	"github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/multi-chain/native/states"
+	"github.com/ontio/ontology-crypto/keypair"
+	sig "github.com/ontio/ontology-crypto/signature"
 )
-
-const (
-	PRECISION_ONG = 9
-	PRECISION_ONT = 0
-)
-
-//FormatAssetAmount return asset amount multiplied by math.Pow10(precision) to raw float string
-//For example 1000000000123456789 => 1000000000.123456789
-func FormatAssetAmount(amount uint64, precision byte) string {
-	if precision == 0 {
-		return fmt.Sprintf("%d", amount)
-	}
-	divisor := math.Pow10(int(precision))
-	intPart := amount / uint64(divisor)
-	fracPart := amount - intPart*uint64(divisor)
-	if fracPart == 0 {
-		return fmt.Sprintf("%d", intPart)
-	}
-	bf := new(big.Float).SetUint64(fracPart)
-	bf.Quo(bf, new(big.Float).SetFloat64(math.Pow10(int(precision))))
-	bf.Add(bf, new(big.Float).SetUint64(intPart))
-	return bf.Text('f', -1)
-}
-
-//ParseAssetAmount return raw float string to uint64 multiplied by math.Pow10(precision)
-//For example 1000000000.123456789 => 1000000000123456789
-func ParseAssetAmount(rawAmount string, precision byte) uint64 {
-	bf, ok := new(big.Float).SetString(rawAmount)
-	if !ok {
-		return 0
-	}
-	bf.Mul(bf, new(big.Float).SetFloat64(math.Pow10(int(precision))))
-	amount, _ := bf.Uint64()
-	return amount
-}
-
-func FormatOng(amount uint64) string {
-	return FormatAssetAmount(amount, PRECISION_ONG)
-}
-
-func ParseOng(rawAmount string) uint64 {
-	return ParseAssetAmount(rawAmount, PRECISION_ONG)
-}
-
-func FormatOnt(amount uint64) string {
-	return FormatAssetAmount(amount, PRECISION_ONT)
-}
-
-func ParseOnt(rawAmount string) uint64 {
-	return ParseAssetAmount(rawAmount, PRECISION_ONT)
-}
-
-func CheckAssetAmount(asset string, amount uint64) error {
-	switch strings.ToLower(asset) {
-	case "ont":
-		if amount > constants.ONT_TOTAL_SUPPLY {
-			return fmt.Errorf("amount:%d larger than ONT total supply:%d", amount, constants.ONT_TOTAL_SUPPLY)
-		}
-	case "ong":
-		if amount > constants.ONG_TOTAL_SUPPLY {
-			return fmt.Errorf("amount:%d larger than ONG total supply:%d", amount, constants.ONG_TOTAL_SUPPLY)
-		}
-	default:
-		return fmt.Errorf("unknown asset:%s", asset)
-	}
-	return nil
-}
 
 func GetJsonObjectFromFile(filePath string, jsonObject interface{}) error {
 	data, err := ioutil.ReadFile(filePath)
@@ -133,4 +73,256 @@ func GenExportBlocksFileName(name string, start, end uint32) string {
 		fileName = fileName + "." + fileExt
 	}
 	return fileName
+}
+
+func SendRawTransactionData(txData string) (string, error) {
+	data, ontErr := sendRpcRequest("sendrawtransaction", []interface{}{txData})
+	if ontErr != nil {
+		return "", ontErr.Error
+	}
+	hexHash := ""
+	err := json.Unmarshal(data, &hexHash)
+	if err != nil {
+		return "", fmt.Errorf("json.Unmarshal hash:%s error:%s", data, err)
+	}
+	return hexHash, nil
+}
+
+func PrepareSendRawTransaction(txData string) (*states.PreExecResult, error) {
+	data, ontErr := sendRpcRequest("sendrawtransaction", []interface{}{txData, 1})
+	if ontErr != nil {
+		return nil, ontErr.Error
+	}
+	preResult := &states.PreExecResult{}
+	err := json.Unmarshal(data, &preResult)
+	if err != nil {
+		return nil, fmt.Errorf("json.Unmarshal PreExecResult:%s error:%s", data, err)
+	}
+	return preResult, nil
+}
+
+func GetRawTransaction(txHash string) ([]byte, error) {
+	data, ontErr := sendRpcRequest("getrawtransaction", []interface{}{txHash, 1})
+	if ontErr == nil {
+		return data, nil
+	}
+	switch ontErr.ErrorCode {
+	case ERROR_INVALID_PARAMS:
+		return nil, fmt.Errorf("invalid TxHash:%s", txHash)
+	}
+	return nil, ontErr.Error
+}
+
+func GetBlock(hashOrHeight interface{}) ([]byte, error) {
+	data, ontErr := sendRpcRequest("getblock", []interface{}{hashOrHeight, 1})
+	if ontErr == nil {
+		return data, nil
+	}
+	switch ontErr.ErrorCode {
+	case ERROR_INVALID_PARAMS:
+		return nil, fmt.Errorf("invalid block hash or block height:%v", hashOrHeight)
+	}
+	return nil, ontErr.Error
+}
+
+func GetNetworkId() (uint32, error) {
+	data, ontErr := sendRpcRequest("getnetworkid", []interface{}{})
+	if ontErr != nil {
+		return 0, ontErr.Error
+	}
+	var networkId uint32
+	err := json.Unmarshal(data, &networkId)
+	if err != nil {
+		return 0, fmt.Errorf("json.Unmarshal networkId error:%s", err)
+	}
+	return networkId, nil
+}
+
+func GetBlockData(hashOrHeight interface{}) ([]byte, error) {
+	data, ontErr := sendRpcRequest("getblock", []interface{}{hashOrHeight})
+	if ontErr != nil {
+		switch ontErr.ErrorCode {
+		case ERROR_INVALID_PARAMS:
+			return nil, fmt.Errorf("invalid block hash or block height:%v", hashOrHeight)
+		}
+		return nil, ontErr.Error
+	}
+	hexStr := ""
+	err := json.Unmarshal(data, &hexStr)
+	if err != nil {
+		return nil, fmt.Errorf("json.Unmarshal error:%s", err)
+	}
+	blockData, err := hex.DecodeString(hexStr)
+	if err != nil {
+		return nil, fmt.Errorf("hex.DecodeString error:%s", err)
+	}
+	return blockData, nil
+}
+
+func GetBlockCount() (uint32, error) {
+	data, ontErr := sendRpcRequest("getblockcount", []interface{}{})
+	if ontErr != nil {
+		return 0, ontErr.Error
+	}
+	num := uint32(0)
+	err := json.Unmarshal(data, &num)
+	if err != nil {
+		return 0, fmt.Errorf("json.Unmarshal:%s error:%s", data, err)
+	}
+	return num, nil
+}
+
+func GetTxHeight(txHash string) (uint32, error) {
+	data, ontErr := sendRpcRequest("getblockheightbytxhash", []interface{}{txHash})
+	if ontErr != nil {
+		switch ontErr.ErrorCode {
+		case ERROR_INVALID_PARAMS:
+			return 0, fmt.Errorf("cannot find tx by:%s", txHash)
+		}
+		return 0, ontErr.Error
+	}
+	height := uint32(0)
+	err := json.Unmarshal(data, &height)
+	if err != nil {
+		return 0, fmt.Errorf("json.Unmarshal error:%s", err)
+	}
+	return height, nil
+}
+
+func SignTransaction(signer *account.Account, tx *types.Transaction) error {
+	txHash := tx.Hash()
+	sigData, err := Sign(txHash.ToArray(), signer)
+	if err != nil {
+		return fmt.Errorf("sign error:%s", err)
+	}
+	hasSig := false
+	for i, sig := range tx.Sigs {
+		if len(sig.PubKeys) == 1 && pubKeysEqual(sig.PubKeys, []keypair.PublicKey{signer.PublicKey}) {
+			if hasAlreadySig(txHash.ToArray(), signer.PublicKey, sig.SigData) {
+				//has already signed
+				return nil
+			}
+			hasSig = true
+			//replace
+			tx.Sigs[i].SigData = [][]byte{sigData}
+		}
+	}
+	if !hasSig {
+		tx.Sigs = append(tx.Sigs, types.Sig{
+			PubKeys: []keypair.PublicKey{signer.PublicKey},
+			M:       1,
+			SigData: [][]byte{sigData},
+		})
+	}
+	return nil
+}
+
+func MultiSigTransaction(mutTx *types.Transaction, m uint16, pubKeys []keypair.PublicKey, signer *account.Account) error {
+	pkSize := len(pubKeys)
+	if m == 0 || int(m) > pkSize || pkSize > constants.MULTI_SIG_MAX_PUBKEY_SIZE {
+		return fmt.Errorf("invalid params")
+	}
+	validPubKey := false
+	for _, pk := range pubKeys {
+		if keypair.ComparePublicKey(pk, signer.PublicKey) {
+			validPubKey = true
+			break
+		}
+	}
+	if !validPubKey {
+		return fmt.Errorf("invalid signer")
+	}
+
+	if len(mutTx.Sigs) == 0 {
+		mutTx.Sigs = make([]types.Sig, 0)
+	}
+
+	txHash := mutTx.Hash()
+	sigData, err := Sign(txHash.ToArray(), signer)
+	if err != nil {
+		return fmt.Errorf("sign error:%s", err)
+	}
+
+	hasMutilSig := false
+	for i, sigs := range mutTx.Sigs {
+		if !pubKeysEqual(sigs.PubKeys, pubKeys) {
+			continue
+		}
+		hasMutilSig = true
+		if hasAlreadySig(txHash.ToArray(), signer.PublicKey, sigs.SigData) {
+			break
+		}
+		sigs.SigData = append(sigs.SigData, sigData)
+		mutTx.Sigs[i] = sigs
+		break
+	}
+	if !hasMutilSig {
+		mutTx.Sigs = append(mutTx.Sigs, types.Sig{
+			PubKeys: pubKeys,
+			M:       uint16(m),
+			SigData: [][]byte{sigData},
+		})
+	}
+	return nil
+}
+
+func GetSmartContractEventInfo(txHash string) ([]byte, error) {
+	data, ontErr := sendRpcRequest("getsmartcodeevent", []interface{}{txHash})
+	if ontErr == nil {
+		return data, nil
+	}
+	switch ontErr.ErrorCode {
+	case ERROR_INVALID_PARAMS:
+		return nil, fmt.Errorf("invalid TxHash:%s", txHash)
+	}
+	return nil, ontErr.Error
+}
+
+func hasAlreadySig(data []byte, pk keypair.PublicKey, sigDatas [][]byte) bool {
+	for _, sigData := range sigDatas {
+		err := signature.Verify(pk, data, sigData)
+		if err == nil {
+			return true
+		}
+	}
+	return false
+}
+
+func pubKeysEqual(pks1, pks2 []keypair.PublicKey) bool {
+	if len(pks1) != len(pks2) {
+		return false
+	}
+	size := len(pks1)
+	if size == 0 {
+		return true
+	}
+	pkstr1 := make([]string, 0, size)
+	for _, pk := range pks1 {
+		pkstr1 = append(pkstr1, hex.EncodeToString(keypair.SerializePublicKey(pk)))
+	}
+	pkstr2 := make([]string, 0, size)
+	for _, pk := range pks2 {
+		pkstr2 = append(pkstr2, hex.EncodeToString(keypair.SerializePublicKey(pk)))
+	}
+	sort.Strings(pkstr1)
+	sort.Strings(pkstr2)
+	for i := 0; i < size; i++ {
+		if pkstr1[i] != pkstr2[i] {
+			return false
+		}
+	}
+	return true
+}
+
+//Sign sign return the signature to the data of private key
+func Sign(data []byte, signer *account.Account) ([]byte, error) {
+	s, err := sig.Sign(signer.SigScheme, signer.PrivateKey, data, nil)
+	if err != nil {
+		return nil, err
+	}
+	sigData, err := sig.Serialize(s)
+	if err != nil {
+		return nil, fmt.Errorf("sig.Serialize error:%s", err)
+	}
+	return sigData, nil
 }

@@ -41,14 +41,10 @@ func (this *VerACK) CmdType() string {
 
 //Deserialize message payload
 func (this *VerACK) Deserialization(source *comm.ZeroCopySource) error {
-	var irregular, eof bool
-	this.IsConsensus, irregular, eof = source.NextBool()
+	var eof bool
+	this.IsConsensus, eof = source.NextBool()
 	if eof {
 		return io.ErrUnexpectedEOF
 	}
-	if irregular {
-		return comm.ErrIrregularData
-	}
-
 	return nil
 }

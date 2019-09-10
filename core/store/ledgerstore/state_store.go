@@ -50,7 +50,7 @@ type StateStore struct {
 }
 
 //NewStateStore return state store instance
-func NewStateStore(dbDir, merklePath string, stateHashCheckHeight uint32) (*StateStore, error) {
+func NewStateStore(dbDir, merklePath string) (*StateStore, error) {
 	var err error
 	store, err := leveldbstore.NewLevelDBStore(dbDir)
 	if err != nil {
@@ -60,7 +60,6 @@ func NewStateStore(dbDir, merklePath string, stateHashCheckHeight uint32) (*Stat
 		dbDir:                dbDir,
 		store:                store,
 		merklePath:           merklePath,
-		stateHashCheckHeight: stateHashCheckHeight,
 	}
 	_, height, err := stateStore.GetCurrentBlock()
 	if err != nil && err != scom.ErrNotFound {

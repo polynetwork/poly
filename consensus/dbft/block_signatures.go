@@ -52,10 +52,7 @@ func (self *BlockSignatures) Deserialization(source *common.ZeroCopySource) erro
 		return err
 	}
 
-	length, _, irregular, eof := source.NextVarUint()
-	if irregular {
-		return common.ErrIrregularData
-	}
+	length,  eof := source.NextVarUint()
 	if eof {
 		return io.ErrUnexpectedEOF
 	}
@@ -63,10 +60,7 @@ func (self *BlockSignatures) Deserialization(source *common.ZeroCopySource) erro
 	for i := uint64(0); i < length; i++ {
 		sig := SignaturesData{}
 
-		sig.Signature, _, irregular, eof = source.NextVarBytes()
-		if irregular {
-			return common.ErrIrregularData
-		}
+		sig.Signature,  eof = source.NextVarBytes()
 
 		sig.Index, eof = source.NextUint16()
 		if eof {

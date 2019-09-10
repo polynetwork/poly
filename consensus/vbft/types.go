@@ -93,11 +93,7 @@ func (blk *Block) Serialize() ([]byte, error) {
 
 func (blk *Block) Deserialize(data []byte) error {
 	source := common.NewZeroCopySource(data)
-	//buf := bytes.NewBuffer(data)
-	buf1, _, irregular, eof := source.NextVarBytes()
-	if irregular {
-		return common.ErrIrregularData
-	}
+	buf1, eof := source.NextVarBytes()
 	if eof {
 		return io.ErrUnexpectedEOF
 	}
@@ -114,12 +110,13 @@ func (blk *Block) Deserialize(data []byte) error {
 
 	var emptyBlock *types.Block
 	if source.Len() > 0 {
-		buf2, _, irregular, eof := source.NextVarBytes()
-		if irregular == false && eof == false {
-			block2, err := types.BlockFromRawBytes(buf2)
-			if err == nil {
-				emptyBlock = block2
-			}
+		buf2, eof := source.NextVarBytes()
+		if eof {
+			return io.ErrUnexpectedEOF
+		}
+		block2, err := types.BlockFromRawBytes(buf2)
+		if err == nil {
+			emptyBlock = block2
 		}
 	}
 	var merkleRoot common.Uint256

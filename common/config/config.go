@@ -76,24 +76,24 @@ const (
 )
 
 const (
-	NETWORK_ID_MAIN_NET      = 1
-	NETWORK_ID_POLARIS_NET   = 2
-	NETWORK_ID_SOLO_NET      = 3
-	NETWORK_NAME_MAIN_NET    = "ontology"
-	NETWORK_NAME_POLARIS_NET = "polaris"
-	NETWORK_NAME_SOLO_NET    = "testmode"
+	NETWORK_ID_MAIN_NET   = 1
+	NETWORK_ID_TEST_NET   = 2
+	NETWORK_ID_SOLO_NET   = 3
+	NETWORK_NAME_MAIN_NET = "main"
+	NETWORK_NAME_TEST_NET = "test"
+	NETWORK_NAME_SOLO_NET = "testmode"
 )
 
 var NETWORK_MAGIC = map[uint32]uint32{
-	NETWORK_ID_MAIN_NET:    constants.NETWORK_MAGIC_MAINNET, //Network main
-	NETWORK_ID_POLARIS_NET: constants.NETWORK_MAGIC_POLARIS, //Network polaris
-	NETWORK_ID_SOLO_NET:    0,                               //Network solo
+	NETWORK_ID_MAIN_NET: constants.NETWORK_MAGIC_MAINNET, //Network main
+	NETWORK_ID_TEST_NET: constants.NETWORK_MAGIC_TESTNET, //Network test
+	NETWORK_ID_SOLO_NET: 0,                               //Network solo
 }
 
 var NETWORK_NAME = map[uint32]string{
-	NETWORK_ID_MAIN_NET:    NETWORK_NAME_MAIN_NET,
-	NETWORK_ID_POLARIS_NET: NETWORK_NAME_POLARIS_NET,
-	NETWORK_ID_SOLO_NET:    NETWORK_NAME_SOLO_NET,
+	NETWORK_ID_MAIN_NET: NETWORK_NAME_MAIN_NET,
+	NETWORK_ID_TEST_NET: NETWORK_NAME_TEST_NET,
+	NETWORK_ID_SOLO_NET: NETWORK_NAME_SOLO_NET,
 }
 
 func GetNetworkMagic(id uint32) uint32 {
@@ -102,16 +102,6 @@ func GetNetworkMagic(id uint32) uint32 {
 		return nid
 	}
 	return id
-}
-
-var STATE_HASH_CHECK_HEIGHT = map[uint32]uint32{
-	NETWORK_ID_MAIN_NET:    constants.STATE_HASH_HEIGHT_MAINNET, //Network main
-	NETWORK_ID_POLARIS_NET: constants.STATE_HASH_HEIGHT_POLARIS, //Network polaris
-	NETWORK_ID_SOLO_NET:    0,                                   //Network solo
-}
-
-func GetStateHashCheckHeight(id uint32) uint32 {
-	return STATE_HASH_CHECK_HEIGHT[id]
 }
 
 func GetNetworkName(id uint32) string {
@@ -638,15 +628,15 @@ func (this *OntologyConfig) GetDefaultNetworkId() (uint32, error) {
 	if err != nil {
 		return 0, err
 	}
-	polaridId, err := this.getDefNetworkIDFromGenesisConfig(PolarisConfig)
+	testnetId, err := this.getDefNetworkIDFromGenesisConfig(PolarisConfig)
 	if err != nil {
 		return 0, err
 	}
 	switch defaultNetworkId {
 	case mainNetId:
 		return NETWORK_ID_MAIN_NET, nil
-	case polaridId:
-		return NETWORK_ID_POLARIS_NET, nil
+	case testnetId:
+		return NETWORK_ID_TEST_NET, nil
 	}
 	return defaultNetworkId, nil
 }

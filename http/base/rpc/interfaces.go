@@ -19,19 +19,16 @@
 package rpc
 
 import (
-	"bytes"
 	"encoding/hex"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/core/payload"
 	scom "github.com/ontio/multi-chain/core/store/common"
 	"github.com/ontio/multi-chain/core/types"
 	ontErrors "github.com/ontio/multi-chain/errors"
 	bactor "github.com/ontio/multi-chain/http/base/actor"
 	bcomn "github.com/ontio/multi-chain/http/base/common"
 	berr "github.com/ontio/multi-chain/http/base/error"
-	"github.com/ontio/multi-chain/native/service/native/utils"
 )
 
 //get best block hash
@@ -209,9 +206,7 @@ func GetRawTransaction(params []interface{}) map[string]interface{} {
 			return responsePack(berr.INVALID_PARAMS, "")
 		}
 	}
-	w := bytes.NewBuffer(nil)
-	tx.Serialize(w)
-	return responseSuccess(common.ToHexString(w.Bytes()))
+	return responseSuccess(common.ToHexString(tx.Raw))
 }
 
 //get storage from contract
@@ -277,7 +272,7 @@ func SendRawTransaction(params []interface{}) map[string]interface{} {
 		}
 		hash = txn.Hash()
 		log.Debugf("SendRawTransaction recv %s", hash.ToHexString())
-		if txn.TxType == types.Invoke || txn.TxType == types.Deploy {
+		if txn.TxType == types.Invoke {
 			if len(params) > 1 {
 				preExec, ok := params[1].(float64)
 				if ok && preExec == 1 {
@@ -311,43 +306,6 @@ func GetNodeVersion(params []interface{}) map[string]interface{} {
 // get networkid
 func GetNetworkId(params []interface{}) map[string]interface{} {
 	return responseSuccess(config.DefConfig.P2PNode.NetworkId)
-}
-
-//get contract state
-func GetContractState(params []interface{}) map[string]interface{} {
-	if len(params) < 1 {
-		return responsePack(berr.INVALID_PARAMS, nil)
-	}
-	var contract *payload.DeployCode
-	switch params[0].(type) {
-	case string:
-		str := params[0].(string)
-		address, err := bcomn.GetAddress(str)
-		if err != nil {
-			return responsePack(berr.INVALID_PARAMS, "")
-		}
-		c, err := bactor.GetContractStateFromStore(address)
-		if err != nil {
-			return responsePack(berr.UNKNOWN_CONTRACT, "unknow contract")
-		}
-		contract = c
-	default:
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	if len(params) >= 2 {
-		switch (params[1]).(type) {
-		case float64:
-			json := uint32(params[1].(float64))
-			if json == 1 {
-				return responseSuccess(bcomn.TransPayloadToHex(contract))
-			}
-		default:
-			return responsePack(berr.INVALID_PARAMS, "")
-		}
-	}
-	w := bytes.NewBuffer(nil)
-	contract.Serialize(w)
-	return responseSuccess(common.ToHexString(w.Bytes()))
 }
 
 //get smartconstract event
@@ -421,58 +379,6 @@ func GetBlockHeightByTxHash(params []interface{}) map[string]interface{} {
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
 	return responsePack(berr.INVALID_PARAMS, "")
-}
-
-//get balance of address
-func GetBalance(params []interface{}) map[string]interface{} {
-	if len(params) < 1 {
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	addrBase58, ok := params[0].(string)
-	if !ok {
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	address, err := common.AddressFromBase58(addrBase58)
-	if err != nil {
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	rsp, err := bcomn.GetBalance(address)
-	if err != nil {
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	return responseSuccess(rsp)
-}
-
-//get allowance
-func GetAllowance(params []interface{}) map[string]interface{} {
-	if len(params) < 3 {
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	asset, ok := params[0].(string)
-	if !ok {
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	fromAddrStr, ok := params[1].(string)
-	if !ok {
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	fromAddr, err := bcomn.GetAddress(fromAddrStr)
-	if err != nil {
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	toAddrStr, ok := params[2].(string)
-	if !ok {
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	toAddr, err := bcomn.GetAddress(toAddrStr)
-	if err != nil {
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	rsp, err := bcomn.GetAllowance(asset, fromAddr, toAddr)
-	if err != nil {
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	return responseSuccess(rsp)
 }
 
 //get merkle proof by transaction hash
@@ -558,54 +464,4 @@ func GetBlockTxsByHeight(params []interface{}) map[string]interface{} {
 	default:
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
-}
-
-//get gas price in block
-func GetGasPrice(params []interface{}) map[string]interface{} {
-	result, err := bcomn.GetGasPrice()
-	if err != nil {
-		return responsePack(berr.INTERNAL_ERROR, "")
-	}
-	return responseSuccess(result)
-}
-
-// get unbound ong of address
-func GetUnboundOng(params []interface{}) map[string]interface{} {
-	if len(params) < 1 {
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	str, ok := params[0].(string)
-	if !ok {
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	toAddr, err := common.AddressFromBase58(str)
-	if err != nil {
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	fromAddr := utils.OntContractAddress
-	rsp, err := bcomn.GetAllowance("ong", fromAddr, toAddr)
-	if err != nil {
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	return responseSuccess(rsp)
-}
-
-// get grant ong of address
-func GetGrantOng(params []interface{}) map[string]interface{} {
-	if len(params) < 1 {
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	str, ok := params[0].(string)
-	if !ok {
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	toAddr, err := common.AddressFromBase58(str)
-	if err != nil {
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	rsp, err := bcomn.GetGrantOng(toAddr)
-	if err != nil {
-		return responsePack(berr.INTERNAL_ERROR, "")
-	}
-	return responseSuccess(rsp)
 }

@@ -21,7 +21,6 @@ package actor
 import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/core/ledger"
-	"github.com/ontio/multi-chain/core/payload"
 	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/native/event"
 	cstate "github.com/ontio/multi-chain/native/states"
@@ -70,12 +69,6 @@ func GetTransaction(hash common.Uint256) (*types.Transaction, error) {
 //GetStorageItem from ledger
 func GetStorageItem(address common.Address, key []byte) ([]byte, error) {
 	return ledger.DefLedger.GetStorageItem(address, key)
-}
-
-//GetContractStateFromStore from ledger
-func GetContractStateFromStore(hash common.Address) (*payload.DeployCode, error) {
-	hash = updateNativeSCAddr(hash)
-	return ledger.DefLedger.GetContractState(hash)
 }
 
 //GetTxnWithHeightByTxHash from ledger

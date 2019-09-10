@@ -165,9 +165,12 @@ func (self *Store) saveTransaction(tx *types.Transaction, height uint32) error {
 	value := valuePool.Get()
 	defer valuePool.Put(value)
 
-	serialization.WriteUint32(value, height)
-	tx.Serialize(value)
-
+	if err := serialization.WriteUint32(value, height); err != nil {
+		return err
+	}
+	if err := serialization.WriteVarBytes(value, tx.Raw); err != nil {
+		return err
+	}
 	// put value
 	self.db.BatchPut(key.Bytes(), value.Bytes())
 	return nil

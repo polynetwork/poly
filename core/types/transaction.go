@@ -92,11 +92,22 @@ func (tx *Transaction) Serialization(sink *common.ZeroCopySink) error {
 	return nil
 }
 
+// if no error, ownership of param raw is transfered to Transaction
+func TransactionFromRawBytes(raw []byte) (*Transaction, error) {
+	if len(raw) > MAX_TX_SIZE {
+		return nil, errors.New("execced max transaction size")
+	}
+	source := common.NewZeroCopySource(raw)
+	tx := &Transaction{Raw: raw}
+	err := tx.Deserialization(source)
+	if err != nil {
+		return nil, err
+	}
+	return tx, nil
+}
+
 // Transaction has internal reference of param `source`
 func (tx *Transaction) Deserialization(source *common.ZeroCopySource) error {
-	if source.Len() > MAX_TX_SIZE {
-		return fmt.Errorf("[Deserialization] tx length %d over max tx size %d", source.Len(), MAX_TX_SIZE)
-	}
 	tx.Raw = source.Bytes()
 	if err := tx.DeserializationUnsigned(source); err != nil {
 		return err

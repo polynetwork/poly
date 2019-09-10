@@ -28,18 +28,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/common/log"
 )
 
-func shuffle_hash(txid common.Uint256, height uint32, id string, idx int) (uint64, error) {
+func shuffle_hash(height uint32, id string, idx int) (uint64, error) {
 	data, err := json.Marshal(struct {
-		Txid   common.Uint256 `json:"txid"`
 		Height uint32         `json:"height"`
 		NodeID string         `json:"node_id"`
 		Index  int            `json:"index"`
-	}{txid, height, id, idx})
+	}{height, id, idx})
 	if err != nil {
 		return 0, err
 	}
@@ -63,7 +61,7 @@ func deepCopy(peersInfo []*config.VBFTPeerStakeInfo) ([]*config.VBFTPeerStakeInf
 	return peers, nil
 }
 
-func genConsensusPayload(cfg *config.VBFTConfig, txhash common.Uint256, height uint32) ([]byte, error) {
+func genConsensusPayload(cfg *config.VBFTConfig, height uint32) ([]byte, error) {
 	if cfg.C == 0 {
 		return nil, fmt.Errorf("C must larger than zero")
 	}
@@ -82,7 +80,7 @@ func genConsensusPayload(cfg *config.VBFTConfig, txhash common.Uint256, height u
 		return nil, err
 	}
 
-	chainConfig, err := GenesisChainConfig(cfg, peers, txhash, height)
+	chainConfig, err := GenesisChainConfig(cfg, peers, height)
 	if err != nil {
 		return nil, err
 	}
@@ -113,7 +111,7 @@ func genConsensusPayload(cfg *config.VBFTConfig, txhash common.Uint256, height u
 }
 
 //GenesisChainConfig return chainconfig
-func GenesisChainConfig(conf *config.VBFTConfig, peers []*config.VBFTPeerStakeInfo, txhash common.Uint256, height uint32) (*ChainConfig, error) {
+func GenesisChainConfig(conf *config.VBFTConfig, peers []*config.VBFTPeerStakeInfo, height uint32) (*ChainConfig, error) {
 	sort.SliceStable(peers, func(i, j int) bool {
 		if peers[i].InitPos > peers[j].InitPos {
 			return true
@@ -164,7 +162,7 @@ func GenesisChainConfig(conf *config.VBFTConfig, peers []*config.VBFTPeerStakeIn
 	}
 	// shuffle
 	for i := len(posTable) - 1; i > 0; i-- {
-		h, err := shuffle_hash(txhash, height, chainPeers[posTable[i]].ID, i)
+		h, err := shuffle_hash(height, chainPeers[posTable[i]].ID, i)
 		if err != nil {
 			return nil, fmt.Errorf("failed to calculate hash value: %s", err)
 		}
@@ -194,12 +192,12 @@ func GenesisChainConfig(conf *config.VBFTConfig, peers []*config.VBFTPeerStakeIn
 	return chainConfig, nil
 }
 
-func GenesisConsensusPayload(txhash common.Uint256, height uint32) ([]byte, error) {
+func GenesisConsensusPayload(height uint32) ([]byte, error) {
 	consensusType := strings.ToLower(config.DefConfig.Genesis.ConsensusType)
 
 	switch consensusType {
 	case "vbft":
-		return genConsensusPayload(config.DefConfig.Genesis.VBFT, txhash, height)
+		return genConsensusPayload(config.DefConfig.Genesis.VBFT, height)
 	}
 	return nil, nil
 }

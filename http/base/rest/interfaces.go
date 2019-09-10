@@ -19,7 +19,6 @@
 package rest
 
 import (
-	"bytes"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/common/log"
@@ -29,7 +28,6 @@ import (
 	bactor "github.com/ontio/multi-chain/http/base/actor"
 	bcomn "github.com/ontio/multi-chain/http/base/common"
 	berr "github.com/ontio/multi-chain/http/base/error"
-	"github.com/ontio/multi-chain/native/service/native/utils"
 	"strconv"
 )
 
@@ -231,9 +229,7 @@ func GetTransactionByHash(cmd map[string]interface{}) map[string]interface{} {
 		return ResponsePack(berr.UNKNOWN_TRANSACTION)
 	}
 	if raw, ok := cmd["Raw"].(string); ok && raw == "1" {
-		w := bytes.NewBuffer(nil)
-		tx.Serialize(w)
-		resp["Result"] = common.ToHexString(w.Bytes())
+		resp["Result"] = common.ToHexString(tx.Raw)
 		return resp
 	}
 	tran := bcomn.TransArryByteToHexString(tx)
@@ -350,34 +346,6 @@ func GetSmartCodeEventByTxHash(cmd map[string]interface{}) map[string]interface{
 	return resp
 }
 
-//get contract state
-func GetContractState(cmd map[string]interface{}) map[string]interface{} {
-	resp := ResponsePack(berr.SUCCESS)
-	str, ok := cmd["Hash"].(string)
-	if !ok {
-		return ResponsePack(berr.INVALID_PARAMS)
-	}
-	address, err := bcomn.GetAddress(str)
-	if err != nil {
-		return ResponsePack(berr.INVALID_PARAMS)
-	}
-	contract, err := bactor.GetContractStateFromStore(address)
-	if err != nil {
-		return ResponsePack(berr.INTERNAL_ERROR)
-	}
-	if contract == nil {
-		return ResponsePack(berr.UNKNOWN_CONTRACT)
-	}
-	if raw, ok := cmd["Raw"].(string); ok && raw == "1" {
-		w := bytes.NewBuffer(nil)
-		contract.Serialize(w)
-		resp["Result"] = common.ToHexString(w.Bytes())
-		return resp
-	}
-	resp["Result"] = bcomn.TransPayloadToHex(contract)
-	return resp
-}
-
 //get storage from contract
 func GetStorage(cmd map[string]interface{}) map[string]interface{} {
 	resp := ResponsePack(berr.SUCCESS)
@@ -402,25 +370,6 @@ func GetStorage(cmd map[string]interface{}) map[string]interface{} {
 		return ResponsePack(berr.INTERNAL_ERROR)
 	}
 	resp["Result"] = common.ToHexString(value)
-	return resp
-}
-
-//get balance of address
-func GetBalance(cmd map[string]interface{}) map[string]interface{} {
-	resp := ResponsePack(berr.SUCCESS)
-	addrBase58, ok := cmd["Addr"].(string)
-	if !ok {
-		return ResponsePack(berr.INVALID_PARAMS)
-	}
-	address, err := common.AddressFromBase58(addrBase58)
-	if err != nil {
-		return ResponsePack(berr.INVALID_PARAMS)
-	}
-	balance, err := bcomn.GetBalance(address)
-	if err != nil {
-		return ResponsePack(berr.INVALID_PARAMS)
-	}
-	resp["Result"] = balance
 	return resp
 }
 
@@ -462,88 +411,6 @@ func GetMerkleProof(cmd map[string]interface{}) map[string]interface{} {
 	}
 	resp["Result"] = bcomn.MerkleProof{"MerkleProof", header.TransactionsRoot.ToHexString(), height,
 		curHeader.BlockRoot.ToHexString(), curHeight, hashes}
-	return resp
-}
-
-//get avg gas price in block
-func GetGasPrice(cmd map[string]interface{}) map[string]interface{} {
-	result, err := bcomn.GetGasPrice()
-	if err != nil {
-		return ResponsePack(berr.INTERNAL_ERROR)
-	}
-	resp := ResponsePack(berr.SUCCESS)
-	resp["Result"] = result
-	return resp
-}
-
-//get allowance
-func GetAllowance(cmd map[string]interface{}) map[string]interface{} {
-	resp := ResponsePack(berr.SUCCESS)
-	asset, ok := cmd["Asset"].(string)
-	if !ok {
-		return ResponsePack(berr.INVALID_PARAMS)
-	}
-	fromAddrStr, ok := cmd["From"].(string)
-	if !ok {
-		return ResponsePack(berr.INVALID_PARAMS)
-	}
-	toAddrStr, ok := cmd["To"].(string)
-	if !ok {
-		return ResponsePack(berr.INVALID_PARAMS)
-	}
-	fromAddr, err := bcomn.GetAddress(fromAddrStr)
-	if err != nil {
-		return ResponsePack(berr.INVALID_PARAMS)
-	}
-	toAddr, err := bcomn.GetAddress(toAddrStr)
-	if err != nil {
-		return ResponsePack(berr.INVALID_PARAMS)
-	}
-	rsp, err := bcomn.GetAllowance(asset, fromAddr, toAddr)
-	if err != nil {
-		return ResponsePack(berr.INVALID_PARAMS)
-	}
-	resp["Result"] = rsp
-	return resp
-}
-
-//get unbound ong
-func GetUnboundOng(cmd map[string]interface{}) map[string]interface{} {
-	resp := ResponsePack(berr.SUCCESS)
-	toAddrStr, ok := cmd["Addr"].(string)
-	if !ok {
-		return ResponsePack(berr.INVALID_PARAMS)
-	}
-	toAddr, err := bcomn.GetAddress(toAddrStr)
-	if err != nil {
-		return ResponsePack(berr.INVALID_PARAMS)
-	}
-	fromAddr := utils.OntContractAddress
-	rsp, err := bcomn.GetAllowance("ong", fromAddr, toAddr)
-	if err != nil {
-		return ResponsePack(berr.INVALID_PARAMS)
-	}
-	bcomn.GetGrantOng(toAddr)
-	resp["Result"] = rsp
-	return resp
-}
-
-//get grant ong
-func GetGrantOng(cmd map[string]interface{}) map[string]interface{} {
-	resp := ResponsePack(berr.SUCCESS)
-	toAddrStr, ok := cmd["Addr"].(string)
-	if !ok {
-		return ResponsePack(berr.INVALID_PARAMS)
-	}
-	toAddr, err := bcomn.GetAddress(toAddrStr)
-	if err != nil {
-		return ResponsePack(berr.INVALID_PARAMS)
-	}
-	rsp, err := bcomn.GetGrantOng(toAddr)
-	if err != nil {
-		return ResponsePack(berr.INTERNAL_ERROR)
-	}
-	resp["Result"] = rsp
 	return resp
 }
 

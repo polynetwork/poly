@@ -68,7 +68,7 @@ func (this *Version) CmdType() string {
 
 //Deserialize message payload
 func (this *Version) Deserialization(source *comm.ZeroCopySource) error {
-	var irregular, eof bool
+	var eof bool
 	this.P.Version, eof = source.NextUint32()
 	this.P.Services, eof = source.NextUint64()
 	this.P.TimeStamp, eof = source.NextInt64()
@@ -82,16 +82,12 @@ func (this *Version) Deserialization(source *comm.ZeroCopySource) error {
 	this.P.Nonce, eof = source.NextUint64()
 	this.P.StartHeight, eof = source.NextUint64()
 	this.P.Relay, eof = source.NextUint8()
-	this.P.IsConsensus, irregular, eof = source.NextBool()
+	this.P.IsConsensus, eof = source.NextBool()
 	if eof {
 		return io.ErrUnexpectedEOF
 	}
-	if irregular {
-		return comm.ErrIrregularData
-	}
-
-	this.P.SoftVersion, _, irregular, eof = source.NextString()
-	if eof || irregular {
+	this.P.SoftVersion, eof = source.NextString()
+	if eof {
 		this.P.SoftVersion = ""
 	}
 

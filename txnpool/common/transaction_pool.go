@@ -20,7 +20,6 @@
 package common
 
 import (
-	"sort"
 	"sync"
 
 	"github.com/ontio/multi-chain/common"
@@ -131,7 +130,6 @@ func (tp *TXPool) GetTxPool(byCount bool, height uint32) ([]*TXEntry,
 	for _, txEntry := range tp.txList {
 		orderByFee = append(orderByFee, txEntry)
 	}
-	sort.Sort(OrderByNetWorkFee(orderByFee))
 
 	count := int(config.DefConfig.Consensus.MaxTxInBlock)
 	if count <= 0 {

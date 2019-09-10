@@ -41,11 +41,7 @@ func (pres *PrepareResponse) Deserialization(source *common.ZeroCopySource) erro
 	if err != nil {
 		return err
 	}
-
-	sign, _, irregular, eof := source.NextVarBytes()
-	if irregular {
-		return common.ErrIrregularData
-	}
+	sign, eof := source.NextVarBytes()
 	if eof {
 		return io.ErrUnexpectedEOF
 	}

@@ -61,12 +61,7 @@ func checkTransactionSignatures(tx *types.Transaction) error {
 	}
 
 	address := make(map[common.Address]bool, len(tx.Sigs))
-	for _, sigdata := range tx.Sigs {
-		sig, err := sigdata.GetSig()
-		if err != nil {
-			return err
-		}
-
+	for _, sig := range tx.Sigs {
 		m := int(sig.M)
 		kn := len(sig.PubKeys)
 		sn := len(sig.SigData)
@@ -95,11 +90,6 @@ func checkTransactionSignatures(tx *types.Transaction) error {
 		}
 	}
 
-	// check payer in address
-	if address[tx.Payer] == false {
-		return errors.New("signature missing for payer: " + tx.Payer.ToBase58())
-	}
-
 	addrList := make([]common.Address, 0, len(address))
 	for addr := range address {
 		addrList = append(addrList, addr)
@@ -111,10 +101,7 @@ func checkTransactionSignatures(tx *types.Transaction) error {
 }
 
 func checkTransactionPayload(tx *types.Transaction) error {
-
 	switch pld := tx.Payload.(type) {
-	case *payload.DeployCode:
-		return nil
 	case *payload.InvokeCode:
 		return nil
 	default:

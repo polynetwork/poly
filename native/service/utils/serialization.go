@@ -42,36 +42,26 @@ func ReadAddress(r io.Reader) (common.Address, error) {
 }
 
 func DecodeAddress(source *common.ZeroCopySource) (common.Address, error) {
-	from, _, irregular, eof := source.NextVarBytes()
+	from, eof := source.NextVarBytes()
 	if eof {
 		return common.Address{}, io.ErrUnexpectedEOF
-	}
-	if irregular {
-		return common.Address{}, common.ErrIrregularData
 	}
 
 	return common.AddressParseFromBytes(from)
 }
 
 func DecodeVarBytes(source *common.ZeroCopySource) ([]byte, error) {
-	v, _, irregular, eof := source.NextVarBytes()
+	v, eof := source.NextVarBytes()
 	if eof {
 		return nil, io.ErrUnexpectedEOF
 	}
-	if irregular {
-		return nil, common.ErrIrregularData
-	}
-
 	return v, nil
 }
 
 func DecodeString(source *common.ZeroCopySource) (string, error) {
-	str, _, irregular, eof := source.NextString()
+	str, eof := source.NextString()
 	if eof {
 		return "", io.ErrUnexpectedEOF
-	}
-	if irregular {
-		return "", common.ErrIrregularData
 	}
 
 	return str, nil
@@ -82,12 +72,9 @@ func EncodeUint256(sink *common.ZeroCopySink, hash common.Uint256) (size uint64)
 }
 
 func DecodeUint256(source *common.ZeroCopySource) (common.Uint256, error) {
-	from, _, irregular, eof := source.NextVarBytes()
+	from, eof := source.NextVarBytes()
 	if eof {
 		return common.Uint256{}, io.ErrUnexpectedEOF
-	}
-	if irregular {
-		return common.Uint256{}, common.ErrIrregularData
 	}
 
 	return common.Uint256ParseFromBytes(from)

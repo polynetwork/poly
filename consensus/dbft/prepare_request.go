@@ -57,10 +57,7 @@ func (pr *PrepareRequest) Deserialization(source *common.ZeroCopySource) error {
 		return err
 	}
 
-	nonce, _, irregular, eof := source.NextVarUint()
-	if irregular {
-		return common.ErrIrregularData
-	}
+	nonce, eof := source.NextVarUint()
 	if eof {
 		return io.ErrUnexpectedEOF
 	}
@@ -68,10 +65,7 @@ func (pr *PrepareRequest) Deserialization(source *common.ZeroCopySource) error {
 	pr.NextBookkeeper, eof = source.NextAddress()
 
 	var length uint64
-	length, _, irregular, eof = source.NextVarUint()
-	if irregular {
-		return common.ErrIrregularData
-	}
+	length,  eof = source.NextVarUint()
 
 	for i := 0; i < int(length); i++ {
 		var t types.Transaction
@@ -81,10 +75,7 @@ func (pr *PrepareRequest) Deserialization(source *common.ZeroCopySource) error {
 		pr.Transactions = append(pr.Transactions, &t)
 	}
 
-	pr.Signature, _, irregular, eof = source.NextVarBytes()
-	if irregular {
-		return common.ErrIrregularData
-	}
+	pr.Signature, eof = source.NextVarBytes()
 
 	if eof {
 		return io.ErrUnexpectedEOF

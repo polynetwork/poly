@@ -56,15 +56,14 @@ func BuildGenesisBlock(defaultBookkeeper []keypair.PublicKey, genesisConfig *con
 	if genesisConfig.VBFT != nil {
 		genesisConfig.VBFT.Serialize(conf)
 	}
-	govConfig := newGoverConfigInit(conf.Bytes())
-	consensusPayload, err := vconfig.GenesisConsensusPayload(govConfig.Hash(), 0)
+	consensusPayload, err := vconfig.GenesisConsensusPayload(0)
 	if err != nil {
 		return nil, fmt.Errorf("consensus genesis init failed: %s", err)
 	}
+
 	//blockdata
 	genesisHeader := &types.Header{
 		Version:          types.VERSION_SUPPORT_SHARD,
-		ShardID:          types.SHARD_ID,
 		PrevBlockHash:    common.Uint256{},
 		TransactionsRoot: common.Uint256{},
 		Timestamp:        constants.GENESIS_BLOCK_TIMESTAMP,
@@ -75,6 +74,12 @@ func BuildGenesisBlock(defaultBookkeeper []keypair.PublicKey, genesisConfig *con
 
 		Bookkeepers: nil,
 		SigData:     nil,
+	}
+
+	if config.DefConfig.P2PNode.NetworkId == config.NETWORK_ID_MAIN_NET {
+		genesisHeader.ChainID = types.MAIN_CHAIN_ID
+	} else if config.DefConfig.P2PNode.NetworkId == config.NETWORK_ID_TEST_NET {
+		genesisHeader.ChainID = types.TESTNET_CHAIN_ID
 	}
 
 	genesisBlock := &types.Block{

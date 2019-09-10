@@ -170,24 +170,15 @@ func multiSigToTx(ctx *cli.Context) error {
 		return fmt.Errorf("TransactionFromRawBytes error:%s", err)
 	}
 
-	mutTx, err := tx.IntoMutable()
-	if err != nil {
-		return fmt.Errorf("IntoMutable error:%s", err)
-	}
-
 	acc, err := cmdcom.GetAccount(ctx)
 	if err != nil {
 		return fmt.Errorf("GetAccount error:%s", err)
 	}
-	err = utils.MultiSigTransaction(mutTx, uint16(m), pubKeys, acc)
+	err = utils.MultiSigTransaction(tx, uint16(m), pubKeys, acc)
 	if err != nil {
 		return fmt.Errorf("MultiSigTransaction error:%s", err)
 	}
 
-	tx, err = mutTx.IntoImmutable()
-	if err != nil {
-		return fmt.Errorf("IntoImmutable error:%s", err)
-	}
 	sink := common.ZeroCopySink{}
 	err = tx.Serialization(&sink)
 	if err != nil {
@@ -243,25 +234,16 @@ func sigToTx(ctx *cli.Context) error {
 		return fmt.Errorf("TransactionFromRawBytes error:%s", err)
 	}
 
-	mutTx, err := tx.IntoMutable()
-	if err != nil {
-		return fmt.Errorf("IntoMutable error:%s", err)
-	}
-
 	acc, err := cmdcom.GetAccount(ctx)
 	if err != nil {
 		return fmt.Errorf("GetAccount error:%s", err)
 	}
 
-	err = utils.SignTransaction(acc, mutTx)
+	err = utils.SignTransaction(acc, tx)
 	if err != nil {
 		return fmt.Errorf("SignTransaction error:%s", err)
 	}
 
-	tx, err = mutTx.IntoImmutable()
-	if err != nil {
-		return fmt.Errorf("IntoImmutable error:%s", err)
-	}
 	sink := common.ZeroCopySink{}
 	err = tx.Serialization(&sink)
 	if err != nil {
