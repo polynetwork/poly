@@ -59,37 +59,6 @@ func (this *SyncBlockHeaderParam) Deserialization(source *common.ZeroCopySource)
 	return nil
 }
 
-type SyncConsensusPeerParam struct {
-	Address common.Address
-	Header  []byte
-	Proof   string
-}
-
-func (this *SyncConsensusPeerParam) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteAddress(this.Address)
-	sink.WriteVarBytes(this.Header)
-	sink.WriteVarBytes([]byte(this.Proof))
-}
-
-func (this *SyncConsensusPeerParam) Deserialization(source *common.ZeroCopySource) error {
-	address, err := utils.DecodeAddress(source)
-	if err != nil {
-		return fmt.Errorf("utils.DecodeAddress, deserialize address error:%s", err)
-	}
-	header, err := utils.DecodeVarBytes(source)
-	if err != nil {
-		return fmt.Errorf("utils.DecodeVarBytes, deserialize header error:%s", err)
-	}
-	proof, err := utils.DecodeString(source)
-	if err != nil {
-		return fmt.Errorf("utils.DecodeString, deserialize proof count error:%s", err)
-	}
-	this.Address = address
-	this.Header = header
-	this.Proof = proof
-	return nil
-}
-
 type SyncGenesisHeaderParam struct {
 	GenesisHeader []byte
 }

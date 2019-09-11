@@ -23,15 +23,14 @@ func TestBtcProof(t *testing.T) {
 	assert.Equal(t, proof, p)
 }
 
-
 func TestUTXO(t *testing.T) {
 	utxo := Utxo{
 		Op: &OutPoint{
-			Hash: []byte{1, 2, 3, 4, 5},
+			Hash:  []byte{1, 2, 3, 4, 5},
 			Index: 123,
 		},
-		AtHeight: 12,
-		Value: 1111,
+		AtHeight:     12,
+		Value:        1111,
 		ScriptPubkey: []byte{1, 2, 3, 4},
 	}
 	sink := common.NewZeroCopySink(nil)
@@ -44,5 +43,3 @@ func TestUTXO(t *testing.T) {
 
 	assert.Equal(t, utxo, u)
 }
-
-
