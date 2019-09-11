@@ -47,6 +47,7 @@ import (
 	"github.com/ontio/multi-chain/http/nodeinfo"
 	"github.com/ontio/multi-chain/http/restful"
 	"github.com/ontio/multi-chain/http/websocket"
+	_ "github.com/ontio/multi-chain/native/service"
 	"github.com/ontio/multi-chain/p2pserver"
 	netreqactor "github.com/ontio/multi-chain/p2pserver/actor/req"
 	p2pactor "github.com/ontio/multi-chain/p2pserver/actor/server"
@@ -59,7 +60,6 @@ import (
 	"github.com/ontio/ontology-eventbus/actor"
 	alog "github.com/ontio/ontology-eventbus/log"
 	"github.com/urfave/cli"
-	_ "github.com/ontio/multi-chain/native/service"
 )
 
 func setupAPP() *cli.App {

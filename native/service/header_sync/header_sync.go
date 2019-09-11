@@ -171,4 +171,3 @@ func SyncConsensusPeers(native *native.NativeService) ([]byte, error) {
 
 	return utils.BYTE_TRUE, nil
 }
-

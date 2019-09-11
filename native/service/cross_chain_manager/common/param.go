@@ -2,7 +2,6 @@ package common
 
 import (
 	"fmt"
-	"math/big"
 	"sort"
 
 	"github.com/ontio/multi-chain/common"
@@ -85,22 +84,28 @@ func (this *EntranceParam) Serialization(sink *common.ZeroCopySink) {
 }
 
 type MakeTxParam struct {
+	TxHash              string
 	FromChainID         uint64
 	FromContractAddress string
 	ToChainID           uint64
-	ToAddress           string
-	Amount              *big.Int
+	Method              string
+	Args                []byte
 }
 
 func (this *MakeTxParam) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteVarBytes([]byte(this.TxHash))
 	sink.WriteUint64(this.FromChainID)
 	sink.WriteVarBytes([]byte(this.FromContractAddress))
 	sink.WriteUint64(this.ToChainID)
-	sink.WriteVarBytes([]byte(this.ToAddress))
-	sink.WriteVarBytes([]byte(this.Amount.Bytes()))
+	sink.WriteVarBytes([]byte(this.Method))
+	sink.WriteVarBytes([]byte(this.Args))
 }
 
 func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
+	txHash, err := utils.DecodeString(source)
+	if err != nil {
+		return fmt.Errorf("MakeTxParam deserialize txHash error:%s", err)
+	}
 	fromChainID, eof := source.NextUint64()
 	if eof {
 		return fmt.Errorf("MakeTxParam deserialize fromChainID error")
@@ -113,20 +118,21 @@ func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 	if eof {
 		return fmt.Errorf("MakeTxParam deserialize toChainID error")
 	}
-	toAddress, err := utils.DecodeString(source)
+	method, err := utils.DecodeString(source)
 	if err != nil {
-		return fmt.Errorf("MakeTxParam deserialize toAddress error:%s", err)
+		return fmt.Errorf("MakeTxParam deserialize method error:%s", err)
 	}
-	amount, err := utils.DecodeVarBytes(source)
+	args, err := utils.DecodeVarBytes(source)
 	if err != nil {
-		return fmt.Errorf("MakeTxParam deserialize amount error:%s", err)
+		return fmt.Errorf("MakeTxParam deserialize args error:%s", err)
 	}
 
+	this.TxHash = txHash
 	this.FromChainID = fromChainID
 	this.FromContractAddress = fromContractAddress
 	this.ToChainID = toChainID
-	this.ToAddress = toAddress
-	this.Amount = new(big.Int).SetBytes(amount)
+	this.Method = method
+	this.Args = args
 	return nil
 }
 

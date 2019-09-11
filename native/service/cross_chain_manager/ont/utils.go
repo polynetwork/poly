@@ -22,6 +22,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/config"
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/merkle"
 	"github.com/ontio/multi-chain/native"
@@ -30,7 +31,6 @@ import (
 	"github.com/ontio/multi-chain/native/service/header_sync"
 	"github.com/ontio/multi-chain/native/service/side_chain_manager"
 	"github.com/ontio/multi-chain/native/service/utils"
-	"github.com/ontio/multi-chain/common/config"
 )
 
 func putDoneTx(native *native.NativeService, txHash common.Uint256, chainID uint64) error {

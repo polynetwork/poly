@@ -89,8 +89,8 @@ type CreateCrossChainTxMerkle struct {
 	FromContractAddress string
 	ToChainID           uint64
 	Fee                 uint64
-	ToAddress           string
-	Amount              uint64
+	Method              string
+	Args                []byte
 }
 
 func (this *CreateCrossChainTxMerkle) Serialization(sink *common.ZeroCopySink) {
@@ -98,8 +98,8 @@ func (this *CreateCrossChainTxMerkle) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteVarBytes([]byte(this.FromContractAddress))
 	sink.WriteUint64(this.ToChainID)
 	sink.WriteUint64(this.Fee)
-	sink.WriteVarBytes([]byte(this.ToAddress))
-	sink.WriteUint64(this.Amount)
+	sink.WriteVarBytes([]byte(this.Method))
+	sink.WriteVarBytes(this.Args)
 }
 
 func (this *CreateCrossChainTxMerkle) Deserialization(source *common.ZeroCopySource) error {
@@ -109,30 +109,30 @@ func (this *CreateCrossChainTxMerkle) Deserialization(source *common.ZeroCopySou
 	}
 	fromContractAddress, err := utils.DecodeString(source)
 	if err != nil {
-		return fmt.Errorf("CreateCrossChainTxMerkle deserialize fromContractAddress error:%s", err)
+		return fmt.Errorf("CreateCrossChainTxMerkle deserialize fromContractAddress error")
 	}
 	toChainID, eof := source.NextUint64()
 	if eof {
-		return fmt.Errorf("CreateCrossChainTxMerkle deserialize toChainID error:%s", err)
+		return fmt.Errorf("CreateCrossChainTxMerkle deserialize toChainID error")
 	}
 	fee, eof := source.NextUint64()
 	if eof {
-		return fmt.Errorf("CreateCrossChainTxMerkle deserialize fee error:%s", err)
+		return fmt.Errorf("CreateCrossChainTxMerkle deserialize fee error")
 	}
-	toAddress, err := utils.DecodeString(source)
+	method, err := utils.DecodeString(source)
 	if err != nil {
-		return fmt.Errorf("CreateCrossChainTxMerkle deserialize toAddress error:%s", err)
+		return fmt.Errorf("CreateCrossChainTxMerkle deserialize method error:%s", err)
 	}
-	amount, eof := source.NextUint64()
-	if eof {
-		return fmt.Errorf("CreateCrossChainTxMerkle deserialize amount error:%s", err)
+	args, err := utils.DecodeVarBytes(source)
+	if err != nil {
+		return fmt.Errorf("CreateCrossChainTxMerkle deserialize args error:%s", err)
 	}
 
 	this.FromChainID = fromChainID
 	this.FromContractAddress = fromContractAddress
 	this.ToChainID = toChainID
 	this.Fee = fee
-	this.ToAddress = toAddress
-	this.Amount = amount
+	this.Method = method
+	this.Args = args
 	return nil
 }

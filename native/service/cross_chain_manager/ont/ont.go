@@ -21,18 +21,14 @@ package ont
 import (
 	"encoding/hex"
 	"fmt"
-	"math/big"
-
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native"
 	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 )
 
 const (
-	CREATE_CROSS_CHAIN_TX  = "createCrossChainTx"
-	PROCESS_CROSS_CHAIN_TX = "processCrossChainTx"
-	MAKE_FROM_ONT_PROOF    = "makeFromOntProof"
-	MAKE_TO_ONT_PROOF      = "makeToOntProof"
+	VERIFY_FROM_ONT_PROOF = "verifyFromOntProof"
+	MAKE_TO_ONT_PROOF     = "makeToOntProof"
 
 	//key prefix
 	DONE_TX = "doneTx"
@@ -66,11 +62,12 @@ func (this *ONTHandler) MakeDepositProposal(service *native.NativeService) (*cro
 	}
 
 	makeTxParam := &crosscommon.MakeTxParam{
+		TxHash:              merkleValue.TxHash.ToHexString(),
 		FromChainID:         merkleValue.CreateCrossChainTxMerkle.FromChainID,
 		FromContractAddress: merkleValue.CreateCrossChainTxMerkle.FromContractAddress,
 		ToChainID:           merkleValue.CreateCrossChainTxMerkle.ToChainID,
-		ToAddress:           merkleValue.CreateCrossChainTxMerkle.ToAddress,
-		Amount:              new(big.Int).SetUint64(merkleValue.CreateCrossChainTxMerkle.Amount),
+		Method:              merkleValue.CreateCrossChainTxMerkle.Method,
+		Args:                merkleValue.CreateCrossChainTxMerkle.Args,
 	}
 	return makeTxParam, nil
 }
