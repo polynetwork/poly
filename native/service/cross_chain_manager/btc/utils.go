@@ -72,9 +72,14 @@ func (p *targetChainParam) resolve(amount int64, paramOutput *wire.TxOut) error 
 	if amount < p.Fee && p.Fee >= 0 {
 		return errors.New("The transfer amount cannot be less than the transaction fee")
 	}
-	valb := make([]byte, 8)
-	binary.BigEndian.PutUint64(valb, uint64(amount))
-	p.AddrAndVal = append(script[19:], valb...)
+	toAddr, err := common.AddressParseFromBytes(script[19:])
+	if err != nil {
+		return fmt.Errorf("Failed to parse address from bytes: %v", err)
+	}
+	sink := common.NewZeroCopySink(nil)
+	sink.WriteVarBytes([]byte(toAddr.ToBase58()))
+	sink.WriteInt64(amount)
+	p.AddrAndVal = sink.Bytes()
 	return nil
 }
 
@@ -378,13 +383,13 @@ func getUtxos(native *native.NativeService, chainID uint64) (*Utxos, error) {
 	return utxos, nil
 }
 
-func notifyBtcProof(native *native.NativeService, btcProof string) {
+func notifyBtcProof(native *native.NativeService, txid, btcProof string) {
 	if !config.DefConfig.Common.EnableEventLog {
 		return
 	}
 	native.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
-			States:          []interface{}{NOTIFY_BTC_PROOF, btcProof},
+			States:          []interface{}{NOTIFY_BTC_PROOF, txid, btcProof},
 		})
 }

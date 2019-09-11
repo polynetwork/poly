@@ -49,16 +49,16 @@ func (this *NEOHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 func (this *NEOHandler) MakeDepositProposal(service *native.NativeService) (*crosscommon.MakeTxParam, error) {
 	params := new(crosscommon.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
-		return nil, fmt.Errorf("ont Verify, contract params deserialize error: %v", err)
+		return nil, fmt.Errorf("neo MakeDepositProposal, contract params deserialize error: %v", err)
 	}
 
 	proof, err := hex.DecodeString(params.Proof)
 	if err != nil {
-		return nil, fmt.Errorf("ont Verify, hex.DecodeString proof error: %v", err)
+		return nil, fmt.Errorf("neo MakeDepositProposal, hex.DecodeString proof error: %v", err)
 	}
 	merkleValue, err := VerifyFromNeoTx(service, proof, params.SourceChainID, params.Height)
 	if err != nil {
-		return nil, fmt.Errorf("ont Verify, VerifyOntTx error: %v", err)
+		return nil, fmt.Errorf("neo MakeDepositProposal, VerifyOntTx error: %v", err)
 	}
 
 	makeTxParam := &crosscommon.MakeTxParam{
@@ -75,7 +75,7 @@ func (this *NEOHandler) MakeDepositProposal(service *native.NativeService) (*cro
 func (this *NEOHandler) MakeTransaction(service *native.NativeService, param *crosscommon.MakeTxParam) error {
 	err := MakeToNeoProof(service, param)
 	if err != nil {
-		return fmt.Errorf("ont MakeTransaction, MakeToOntProof error: %v", err)
+		return fmt.Errorf("neo MakeTransaction, MakeToNeoProof error: %v", err)
 	}
 	return nil
 }

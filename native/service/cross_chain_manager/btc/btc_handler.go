@@ -108,9 +108,11 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 	}
 
 	return true, &crosscommon.MakeTxParam{
+		TxHash:              mtx.TxHash().String(),
 		FromChainID:         params.FromChainID,
 		FromContractAddress: BTC_ADDRESS,
 		ToChainID:           p.ChainId,
+		Method:              "unlock",
 		Args:                p.AddrAndVal,
 	}, nil
 }
@@ -118,22 +120,22 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*crosscommon.MakeTxParam, error) {
 	params := new(crosscommon.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
-		return nil, fmt.Errorf("btc Verify, contract params deserialize error: %v", err)
+		return nil, fmt.Errorf("btc MakeDepositProposal, contract params deserialize error: %v", err)
 	}
 	if params.Proof == "" || params.TxData == "" {
-		return nil, fmt.Errorf("btc Verify, GetInput() data can't be empty")
+		return nil, fmt.Errorf("btc MakeDepositProposal, GetInput() data can't be empty")
 	}
 	tx, err := hex.DecodeString(params.TxData)
 	if err != nil {
-		return nil, fmt.Errorf("btc Verify, failed to decode transaction from string to bytes: %v", err)
+		return nil, fmt.Errorf("btc MakeDepositProposal, failed to decode transaction from string to bytes: %v", err)
 	}
 	proof, err := hex.DecodeString(params.Proof)
 	if err != nil {
-		return nil, fmt.Errorf("btc Verify, failed to decode proof from string to bytes: %v", err)
+		return nil, fmt.Errorf("btc MakeDepositProposal, failed to decode proof from string to bytes: %v", err)
 	}
 	err = notifyBtcTx(service, proof, tx, params.Height, params.SourceChainID)
 	if err != nil {
-		return nil, fmt.Errorf("btc Verify, failed to verify: %v", err)
+		return nil, fmt.Errorf("btc MakeDepositProposal, failed to verify: %v", err)
 	}
 
 	return nil, nil
@@ -142,11 +144,15 @@ func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*cro
 func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *crosscommon.MakeTxParam) error {
 	amounts := make(map[string]int64)
 
-	//toAddr := hex.EncodeToString(param.Args[:26])
-	//amount := binary.BigEndian.Uint64(param.Args[26:])
-
-	//amounts[toAddr] = int64(amount) // ??
-	amounts["mjEoyyCPsLzJ23xMX6Mti13zMyN36kzn57"] = int64(1) // ??
+	toAddr, err := utils.DecodeString(common.NewZeroCopySource(param.Args))
+	if err != nil {
+		return fmt.Errorf("btc MakeTransaction, utils.DecodeString toAddr error: %v", err)
+	}
+	amount, eof := common.NewZeroCopySource(param.Args).NextInt64()
+	if eof {
+		return fmt.Errorf("btc MakeTransaction, deserialize amount error")
+	}
+	amounts[toAddr] = int64(amount)
 
 	destAsset, err := side_chain_manager.GetDestAsset(service, param.FromChainID,
 		param.ToChainID, param.FromContractAddress)
@@ -206,7 +212,7 @@ func notifyBtcTx(native *native.NativeService, proof, tx []byte, height uint32, 
 
 	putBtcProof(native, txid[:], sink.Bytes())
 
-	notifyBtcProof(native, hex.EncodeToString(sink.Bytes()))
+	notifyBtcProof(native, txid.String(), hex.EncodeToString(sink.Bytes()))
 	return nil
 }
 

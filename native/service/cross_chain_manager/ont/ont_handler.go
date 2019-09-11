@@ -49,16 +49,16 @@ func (this *ONTHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 func (this *ONTHandler) MakeDepositProposal(service *native.NativeService) (*crosscommon.MakeTxParam, error) {
 	params := new(crosscommon.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
-		return nil, fmt.Errorf("ont Verify, contract params deserialize error: %v", err)
+		return nil, fmt.Errorf("ont MakeDepositProposal, contract params deserialize error: %v", err)
 	}
 
 	proof, err := hex.DecodeString(params.Proof)
 	if err != nil {
-		return nil, fmt.Errorf("ont Verify, hex.DecodeString proof error: %v", err)
+		return nil, fmt.Errorf("ont MakeDepositProposal, hex.DecodeString proof error: %v", err)
 	}
 	merkleValue, err := VerifyFromOntTx(service, proof, params.SourceChainID, params.Height)
 	if err != nil {
-		return nil, fmt.Errorf("ont Verify, VerifyOntTx error: %v", err)
+		return nil, fmt.Errorf("ont MakeDepositProposal, VerifyOntTx error: %v", err)
 	}
 
 	makeTxParam := &crosscommon.MakeTxParam{
