@@ -51,10 +51,9 @@ var priv7 = "cUZdDF9sL11ya5civzMRYVYojoojjHbmWWm1yC5uRzfBRePVbQTZ"
 
 // not sure now
 type targetChainParam struct {
-	ChainId uint64
-	Fee     int64
-	Addr    common.Address
-	Value   int64
+	ChainId    uint64
+	Fee        int64
+	AddrAndVal []byte
 }
 
 // func about OP_RETURN
@@ -70,15 +69,12 @@ func (p *targetChainParam) resolve(amount int64, paramOutput *wire.TxOut) error 
 	p.ChainId = binary.BigEndian.Uint64(script[3:11])
 	p.Fee = int64(binary.BigEndian.Uint64(script[11:19]))
 	// TODO:need to check the addr format?
-	toAddr, err := common.AddressParseFromBytes(script[19:])
-	if err != nil {
-		return fmt.Errorf("Failed to parse address from bytes: %v", err)
-	}
-	p.Addr = toAddr
-	p.Value = amount
-	if p.Value < p.Fee && p.Fee >= 0 {
+	if amount < p.Fee && p.Fee >= 0 {
 		return errors.New("The transfer amount cannot be less than the transaction fee")
 	}
+	valb := make([]byte, 8)
+	binary.BigEndian.PutUint64(valb, uint64(amount))
+	p.AddrAndVal = append(script[19:], valb...)
 	return nil
 }
 

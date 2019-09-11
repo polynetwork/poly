@@ -22,8 +22,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"math/big"
-
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
@@ -113,8 +111,7 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 		FromChainID:         params.FromChainID,
 		FromContractAddress: BTC_ADDRESS,
 		ToChainID:           p.ChainId,
-		ToAddress:           p.Addr.ToBase58(),
-		Amount:              new(big.Int).SetInt64(p.Value),
+		Args:                p.AddrAndVal,
 	}, nil
 }
 
@@ -144,7 +141,12 @@ func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*cro
 
 func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *crosscommon.MakeTxParam) error {
 	amounts := make(map[string]int64)
-	amounts[param.ToAddress] = param.Amount.Int64() // ??
+
+	//toAddr := hex.EncodeToString(param.Args[:26])
+	//amount := binary.BigEndian.Uint64(param.Args[26:])
+
+	//amounts[toAddr] = int64(amount) // ??
+	amounts["mjEoyyCPsLzJ23xMX6Mti13zMyN36kzn57"] = int64(1) // ??
 
 	destAsset, err := side_chain_manager.GetDestAsset(service, param.FromChainID,
 		param.ToChainID, param.FromContractAddress)
