@@ -83,7 +83,7 @@ func (this *AssetMap) Serialization(sink *common.ZeroCopySink) error {
 func (this *AssetMap) Deserialization(source *common.ZeroCopySource) error {
 	n, eof := source.NextUint64()
 	if eof {
-		return fmt.Errorf("utils.DecodeVarUint, deserialize length error: %v", err)
+		return fmt.Errorf("utils.DecodeVarUint, deserialize length error")
 	}
 	assetMap := make(map[uint64]*Asset)
 	for i := 0; uint64(i) < n; i++ {

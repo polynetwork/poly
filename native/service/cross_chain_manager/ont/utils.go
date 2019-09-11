@@ -30,7 +30,7 @@ import (
 	"github.com/ontio/multi-chain/native/service/header_sync"
 	"github.com/ontio/multi-chain/native/service/side_chain_manager"
 	"github.com/ontio/multi-chain/native/service/utils"
-	"github.com/ontio/ontology/common/config"
+	"github.com/ontio/multi-chain/common/config"
 )
 
 func putDoneTx(native *native.NativeService, txHash common.Uint256, chainID uint64) error {
@@ -141,6 +141,6 @@ func notifyMakeToOntProof(native *native.NativeService, toChainID uint64, key st
 	native.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
-			States:          []interface{}{MAKE_TO_ONT_PROOF, toChainID, native.Height, key},
+			States:          []interface{}{MAKE_TO_ONT_PROOF, toChainID, native.GetHeight(), key},
 		})
 }

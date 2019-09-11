@@ -22,10 +22,10 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/core/genesis"
 	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/merkle"
 	"github.com/ontio/multi-chain/native"
-	"github.com/ontio/multi-chain/native/service/global_params"
 	"github.com/ontio/multi-chain/native/service/utils"
 )
 
@@ -64,10 +64,9 @@ func SyncGenesisHeader(native *native.NativeService) ([]byte, error) {
 	}
 
 	// get operator from database
-	operatorAddress, err := global_params.GetStorageRole(native,
-		global_params.GenerateOperatorKey(utils.ParamContractAddress))
+	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("SyncGenesisHeader, get admin error: %v", err)
+		return utils.BYTE_FALSE, err
 	}
 
 	//check witness
@@ -172,3 +171,4 @@ func SyncConsensusPeers(native *native.NativeService) ([]byte, error) {
 
 	return utils.BYTE_TRUE, nil
 }
+

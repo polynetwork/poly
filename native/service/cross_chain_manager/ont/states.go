@@ -105,7 +105,7 @@ func (this *CreateCrossChainTxMerkle) Serialization(sink *common.ZeroCopySink) {
 func (this *CreateCrossChainTxMerkle) Deserialization(source *common.ZeroCopySource) error {
 	fromChainID, eof := source.NextUint64()
 	if eof {
-		return fmt.Errorf("CreateCrossChainTxMerkle deserialize fromChainID error:%s", err)
+		return fmt.Errorf("CreateCrossChainTxMerkle deserialize fromChainID error")
 	}
 	fromContractAddress, err := utils.DecodeString(source)
 	if err != nil {

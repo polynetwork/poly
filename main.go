@@ -59,6 +59,7 @@ import (
 	"github.com/ontio/ontology-eventbus/actor"
 	alog "github.com/ontio/ontology-eventbus/log"
 	"github.com/urfave/cli"
+	_ "github.com/ontio/multi-chain/native/service"
 )
 
 func setupAPP() *cli.App {
