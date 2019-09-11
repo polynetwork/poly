@@ -2,6 +2,7 @@ package cross_chain_manager
 
 import (
 	"fmt"
+	"github.com/ontio/multi-chain/native/service/cross_chain_manager/neo"
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native"
@@ -35,6 +36,8 @@ func GetChainHandler(chainid uint64) (crosscommon.ChainHandler, error) {
 		return eth.NewETHHandler(), nil
 	case 2:
 		return ont.NewONTHandler(), nil
+	case 3:
+		return neo.NewNEOHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported chainid:%d", chainid)
 	}
@@ -69,7 +72,7 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, err
 	}
 	//1. verify tx
-	if chainID == 2 {
+	if chainID == 2 || chainID == 3 {
 		txParam, err := handler.MakeDepositProposal(native)
 		if err != nil {
 			return utils.BYTE_FALSE, err

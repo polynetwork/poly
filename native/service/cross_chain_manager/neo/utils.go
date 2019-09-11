@@ -16,7 +16,7 @@
  * along with The ontology.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package ont
+package neo
 
 import (
 	"encoding/hex"
@@ -72,45 +72,45 @@ func putRequest(native *native.NativeService, txHash common.Uint256, chainID uin
 	return nil
 }
 
-func VerifyFromOntTx(native *native.NativeService, proof []byte, fromChainid uint64, height uint32) (*FromMerkleValue, error) {
+func VerifyFromNeoTx(native *native.NativeService, proof []byte, fromChainid uint64, height uint32) (*FromMerkleValue, error) {
 	//get block header
 	header, err := header_sync.GetHeaderByHeight(native, fromChainid, height)
 	if err != nil {
-		return nil, fmt.Errorf("VerifyFromOntTx, get header by height %d from chain %d error: %v",
+		return nil, fmt.Errorf("VerifyFromNeoTx, get header by height %d from chain %d error: %v",
 			height, fromChainid, err)
 	}
 
 	v := merkle.MerkleProve(proof, header.CrossStatesRoot)
 	if v == nil {
-		return nil, fmt.Errorf("VerifyFromOntTx, merkle.MerkleProve verify merkle proof error")
+		return nil, fmt.Errorf("VerifyFromNeoTx, merkle.MerkleProve verify merkle proof error")
 	}
 
 	s := common.NewZeroCopySource(v)
 	merkleValue := new(FromMerkleValue)
 	if err := merkleValue.Deserialization(s); err != nil {
-		return nil, fmt.Errorf("VerifyFromOntTx, deserialize merkleValue error:%s", err)
+		return nil, fmt.Errorf("VerifyFromNeoTx, deserialize merkleValue error:%s", err)
 	}
 
 	//record done cross chain tx
 	err = checkDoneTx(native, merkleValue.TxHash, fromChainid)
 	if err != nil {
-		return nil, fmt.Errorf("VerifyFromOntTx, checkDoneTx error:%s", err)
+		return nil, fmt.Errorf("VerifyFromNeoTx, checkDoneTx error:%s", err)
 	}
 	err = putDoneTx(native, merkleValue.TxHash, fromChainid)
 	if err != nil {
-		return nil, fmt.Errorf("VerifyFromOntTx, putDoneTx error:%s", err)
+		return nil, fmt.Errorf("VerifyFromNeoTx, putDoneTx error:%s", err)
 	}
 
-	notifyVerifyFromOntProof(native, merkleValue.TxHash.ToHexString(), merkleValue.CreateCrossChainTxMerkle.ToChainID)
+	notifyVerifyFromNeoProof(native, merkleValue.TxHash.ToHexString(), merkleValue.CreateCrossChainTxMerkle.ToChainID)
 	return merkleValue, nil
 }
 
-func MakeToOntProof(native *native.NativeService, params *crosscommon.MakeTxParam) error {
+func MakeToNeoProof(native *native.NativeService, params *crosscommon.MakeTxParam) error {
 	//record cross chain tx
 	destAsset, err := side_chain_manager.GetDestAsset(native, params.FromChainID,
 		params.ToChainID, params.FromContractAddress)
 	if err != nil {
-		return fmt.Errorf("MakeToOntProof, side_chain_manager.GetAssetContractAddress error: %v", err)
+		return fmt.Errorf("MakeToNeoProof, side_chain_manager.GetAssetContractAddress error: %v", err)
 	}
 
 	merkleValue := &ToMerkleValue{
@@ -122,37 +122,37 @@ func MakeToOntProof(native *native.NativeService, params *crosscommon.MakeTxPara
 	merkleValue.Serialization(sink)
 	err = putRequest(native, merkleValue.TxHash, params.ToChainID, sink.Bytes())
 	if err != nil {
-		return fmt.Errorf("MakeToOntProof, putRequest error:%s", err)
+		return fmt.Errorf("MakeToNeoProof, putRequest error:%s", err)
 	}
 	native.PutMerkleVal(sink.Bytes())
 	prefix := merkleValue.TxHash.ToArray()
 	chainIDBytes, err := utils.GetUint64Bytes(params.ToChainID)
 	if err != nil {
-		return fmt.Errorf("MakeToOntProof, get chainIDBytes error: %v", err)
+		return fmt.Errorf("MakeToNeoProof, get chainIDBytes error: %v", err)
 	}
 	key := hex.EncodeToString(utils.ConcatKey(utils.CrossChainContractAddress, []byte(REQUEST), chainIDBytes, prefix))
-	notifyMakeToOntProof(native, params.TxHash, params.ToChainID, key)
+	notifyMakeToNeoProof(native, params.TxHash, params.ToChainID, key)
 	return nil
 }
 
-func notifyVerifyFromOntProof(native *native.NativeService, txHash string, toChainID uint64) {
+func notifyVerifyFromNeoProof(native *native.NativeService, txHash string, toChainID uint64) {
 	if !config.DefConfig.Common.EnableEventLog {
 		return
 	}
 	native.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
-			States:          []interface{}{VERIFY_FROM_ONT_PROOF, txHash, toChainID, native.GetHeight()},
+			States:          []interface{}{VERIFY_FROM_NEO_PROOF, txHash, toChainID, native.GetHeight()},
 		})
 }
 
-func notifyMakeToOntProof(native *native.NativeService, txHash string, toChainID uint64, key string) {
+func notifyMakeToNeoProof(native *native.NativeService, txHash string, toChainID uint64, key string) {
 	if !config.DefConfig.Common.EnableEventLog {
 		return
 	}
 	native.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
-			States:          []interface{}{MAKE_TO_ONT_PROOF, txHash, toChainID, native.GetHeight(), key},
+			States:          []interface{}{MAKE_TO_NEO_PROOF, txHash, toChainID, native.GetHeight(), key},
 		})
 }
