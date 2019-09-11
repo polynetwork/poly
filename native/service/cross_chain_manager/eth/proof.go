@@ -17,8 +17,7 @@ type Proof struct {
 	FromAddress  string
 	ToChainID    uint64
 	ToAddress    string
-	Amount       *big.Int
-	Decimal      int
+	Args         []byte
 }
 
 type StorageProof struct {
@@ -93,12 +92,13 @@ func (this *Proof) Deserialize(raw string) error {
 	if !b {
 		return fmt.Errorf("amount is not correct")
 	}
-	this.Amount = amt
-	decimal, err := strconv.Atoi(vals[5])
-	if err != nil {
-		return fmt.Errorf("decimal is not correct")
-	}
-	this.Decimal = decimal
+	this.Args = []byte(vals[5])
+	//this.Amount = amt
+	//decimal, err := strconv.Atoi(vals[5])
+	//if err != nil {
+	//	return fmt.Errorf("decimal is not correct")
+	//}
+	//this.Decimal = decimal
 
 	return nil
 }

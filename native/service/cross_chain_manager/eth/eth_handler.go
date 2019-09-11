@@ -20,8 +20,11 @@ import (
 	"github.com/ontio/multi-chain/native/event"
 	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/cross_chain_manager/eth/locker"
-	"github.com/ontio/multi-chain/native/service/side_chain_manager"
 	"github.com/ontio/multi-chain/native/service/utils"
+)
+
+const (
+	NOTIFY_ETH_PROOF = "notifyEthProof"
 )
 
 type ETHHandler struct {
@@ -76,8 +79,8 @@ func (this *ETHHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 		FromChainID:         params.FromChainID,
 		FromContractAddress: proof.FromAddress,
 		ToChainID:           proof.ToChainID,
-		ToAddress:           proof.ToAddress,
-		Amount:              proof.Amount,
+		Method:              "unlock",
+		Args:                proof.Args,
 	}, nil
 }
 
@@ -137,27 +140,13 @@ func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*cro
 		return nil, fmt.Errorf("MakeDepositProposal, eth proof deserialize error:%v", err)
 	}
 
-	fromContractAddr := strings.Split(params.Value, "#")[0]
-
 	rawTxValue := crypto.Keccak256([]byte(params.Value))
 	key = utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_ETH), rawTxValue)
 	service.GetCacheDB().Put(key, []byte(params.Value))
 
-	destAsset, err := side_chain_manager.GetDestAsset(service, params.SourceChainID, proof.ToChainID, fromContractAddr)
-	if err := proof.Deserialize(params.Value); err != nil {
-		return nil, fmt.Errorf("MakeDepositProposal, GetDestAsset error:%v", err)
-	}
+	notifyEthroof(service, hex.EncodeToString([]byte(params.Value)))
 
-	toAmount := crosscommon.ConverDecimal(proof.Decimal, int(destAsset.Decimal), proof.Amount)
-
-	ret := &crosscommon.MakeTxParam{}
-	ret.ToChainID = proof.ToChainID
-	ret.FromContractAddress = fromContractAddr
-	ret.FromChainID = params.SourceChainID
-	ret.ToAddress = proof.ToAddress
-	ret.Amount = toAmount
-
-	return ret, nil
+	return nil, nil
 }
 
 func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *crosscommon.MakeTxParam) error {
@@ -169,22 +158,7 @@ func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *cr
 		return err
 	}
 
-	bindaddr := ethcommon.HexToAddress(param.ToAddress)
-	amount := param.Amount
-	//lockAddress := ethComm.HexToAddress(LOCKER_CONTRACT_ADDR)
-
-	targetAsset, err := side_chain_manager.GetDestAsset(service, param.FromChainID, param.ToChainID, param.FromContractAddress)
-	if err != nil {
-		return err
-	}
-
-	tokenAddress := ethcommon.HexToAddress(targetAsset.ContractAddress)
-
-	txid := "1"
-	v := []uint8{0}
-	r := [][32]byte{[32]byte{0}}
-	s := [][32]byte{[32]byte{0}}
-	txData, err := contractabi.Pack("Withdraw", tokenAddress, txid, bindaddr, amount, v, r, s)
+	txData, err := contractabi.Pack(param.Method, param.Args)
 	if err != nil {
 		return err
 	}

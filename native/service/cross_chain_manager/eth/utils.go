@@ -4,8 +4,10 @@ import (
 	"fmt"
 
 	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/native"
+	"github.com/ontio/multi-chain/native/event"
 	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/utils"
 )
@@ -59,4 +61,15 @@ func getEthVote(native *native.NativeService, txHash []byte) (*crosscommon.Vote,
 		}
 	}
 	return vote, nil
+}
+
+func notifyEthroof(native *native.NativeService, btcProof string) {
+	if !config.DefConfig.Common.EnableEventLog {
+		return
+	}
+	native.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.CrossChainManagerContractAddress,
+			States:          []interface{}{NOTIFY_ETH_PROOF, btcProof},
+		})
 }
