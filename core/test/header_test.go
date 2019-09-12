@@ -13,19 +13,19 @@ import (
 func TestTransaction(t *testing.T) {
 	acc := account.NewAccount("123")
 	header := types.Header{
-		Version:    0,
-		ChainID:   0,
-		PrevBlockHash: common.UINT256_EMPTY,
+		Version:          0,
+		ChainID:          0,
+		PrevBlockHash:    common.UINT256_EMPTY,
 		TransactionsRoot: common.UINT256_EMPTY,
-		CrossStatesRoot: common.UINT256_EMPTY,
-		BlockRoot: common.UINT256_EMPTY,
-		Timestamp: 12,
-		Height: 12,
-		ConsensusData: 12,
+		CrossStatesRoot:  common.UINT256_EMPTY,
+		BlockRoot:        common.UINT256_EMPTY,
+		Timestamp:        12,
+		Height:           12,
+		ConsensusData:    12,
 		ConsensusPayload: []byte{1, 2},
-		NextBookkeeper: common.ADDRESS_EMPTY,
-		Bookkeepers: []keypair.PublicKey{acc.PublicKey},
-		SigData: [][]byte{{1, 2, 3}},
+		NextBookkeeper:   common.ADDRESS_EMPTY,
+		Bookkeepers:      []keypair.PublicKey{acc.PublicKey},
+		SigData:          [][]byte{{1, 2, 3}},
 	}
 
 	buf := bytes.NewBuffer(nil)
@@ -40,4 +40,3 @@ func TestTransaction(t *testing.T) {
 
 	assert.Equal(t, header, h)
 }
-

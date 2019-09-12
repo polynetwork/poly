@@ -16,7 +16,7 @@
  * along with The ontology.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package header_sync
+package neo
 
 import (
 	"fmt"

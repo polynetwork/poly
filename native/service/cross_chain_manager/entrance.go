@@ -21,8 +21,6 @@ const (
 	VOTE_NAME                  = "Vote"
 )
 
-type CrossChainHandler func(native *native.NativeService) ([]byte, error)
-
 func RegisterCrossChainManagerContract(native *native.NativeService) {
 	native.Register(IMPORT_OUTER_TRANSFER_NAME, ImportExTransfer)
 	native.Register(VOTE_NAME, Vote)
