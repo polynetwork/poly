@@ -23,7 +23,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/serialization"
 	"github.com/ontio/ontology-crypto/keypair"
+	"io"
 )
 
 type Header struct {
@@ -71,13 +73,78 @@ func (bd *Header) serializationUnsigned(sink *common.ZeroCopySink) {
 	sink.WriteUint64(bd.ChainID)
 	sink.WriteBytes(bd.PrevBlockHash[:])
 	sink.WriteBytes(bd.TransactionsRoot[:])
-	sink.WriteHash(bd.CrossStatesRoot)
+	sink.WriteBytes(bd.CrossStatesRoot[:])
 	sink.WriteBytes(bd.BlockRoot[:])
 	sink.WriteUint32(bd.Timestamp)
 	sink.WriteUint32(bd.Height)
 	sink.WriteUint64(bd.ConsensusData)
 	sink.WriteVarBytes(bd.ConsensusPayload)
 	sink.WriteBytes(bd.NextBookkeeper[:])
+}
+
+func (bd *Header) Serialize(w io.Writer) error {
+	if err := bd.serializeUnsigned(w); err != nil {
+		return err
+	}
+	if err := serialization.WriteVarUint(w, uint64(len(bd.Bookkeepers))); err != nil {
+		return err
+	}
+
+	for _, pubkey := range bd.Bookkeepers {
+		if err := serialization.WriteVarBytes(w, keypair.SerializePublicKey(pubkey)); err != nil {
+			return err
+		}
+	}
+
+	if err := serialization.WriteVarUint(w, uint64(len(bd.SigData))); err != nil {
+		return err
+	}
+	for _, sig := range bd.SigData {
+		if err := serialization.WriteVarBytes(w, sig); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (bd *Header) serializeUnsigned(w io.Writer) error {
+	if bd.Version > CURR_HEADER_VERSION {
+		panic(fmt.Errorf("invalid header %d over max version:%d", bd.Version, CURR_HEADER_VERSION))
+	}
+	if err := serialization.WriteUint32(w, bd.Version); err != nil {
+		return err
+	}
+	if err := serialization.WriteUint64(w, bd.ChainID); err != nil {
+		return err
+	}
+	if err := serialization.WriteVarBytes(w, bd.PrevBlockHash[:]); err != nil {
+		return err
+	}
+	if err := serialization.WriteVarBytes(w, bd.TransactionsRoot[:]); err != nil {
+		return err
+	}
+	if err := serialization.WriteVarBytes(w, bd.CrossStatesRoot[:]); err != nil {
+		return err
+	}
+	if err := serialization.WriteVarBytes(w, bd.BlockRoot[:]); err != nil {
+		return err
+	}
+	if err := serialization.WriteUint32(w, bd.Timestamp); err != nil {
+		return err
+	}
+	if err := serialization.WriteUint32(w, bd.Height); err != nil {
+		return err
+	}
+	if err := serialization.WriteUint64(w, bd.ConsensusData); err != nil {
+		return err
+	}
+	if err := serialization.WriteVarBytes(w, bd.ConsensusPayload); err != nil {
+		return err
+	}
+	if err := serialization.WriteVarBytes(w, bd.NextBookkeeper[:]); err != nil {
+		return err
+	}
+	return nil
 }
 
 func HeaderFromRawBytes(raw []byte) (*Header, error) {
@@ -176,6 +243,96 @@ func (bd *Header) deserializationUnsigned(source *common.ZeroCopySource) error {
 	}
 	bd.NextBookkeeper, eof = source.NextAddress()
 	if eof {
+		return errors.New("[Header] read nextBookkeeper error")
+	}
+	return nil
+}
+
+func (bd *Header) Deserialize(w io.Reader) error {
+	err := bd.deserializeUnsigned(w)
+	if err != nil {
+		return err
+	}
+
+	n, err := serialization.ReadVarUint(w, 0)
+	if err != nil {
+		return errors.New("[Header] deserialize bookkeepers length error")
+	}
+
+	for i := 0; i < int(n); i++ {
+		buf, err := serialization.ReadVarBytes(w)
+		if err != nil {
+			return errors.New("[Header] deserialize bookkeepers public key error")
+		}
+		pubkey, err := keypair.DeserializePublicKey(buf)
+		if err != nil {
+			return err
+		}
+		bd.Bookkeepers = append(bd.Bookkeepers, pubkey)
+	}
+
+	m, err := serialization.ReadVarUint(w, 0)
+	if err != nil {
+		return errors.New("[Header] deserialize sigData length error")
+	}
+
+	for i := 0; i < int(m); i++ {
+		sig, err := serialization.ReadVarBytes(w)
+		if err != nil {
+			return errors.New("[Header] deserialize sigData error")
+		}
+		bd.SigData = append(bd.SigData, sig)
+	}
+	return nil
+}
+
+func (bd *Header) deserializeUnsigned(w io.Reader) error {
+	var err error
+	bd.Version, err = serialization.ReadUint32(w)
+	if err != nil {
+		return errors.New("[Header] read version error")
+	}
+	if bd.Version > CURR_HEADER_VERSION {
+		return fmt.Errorf("[Header] header version %d over max version %d", bd.Version, CURR_HEADER_VERSION)
+	}
+	bd.ChainID, err = serialization.ReadUint64(w)
+	if err != nil {
+		return errors.New("[Header] read chainID error")
+	}
+	bd.PrevBlockHash, err = serialization.ReadHash(w)
+	if err != nil {
+		return errors.New("[Header] read prevBlockHash error")
+	}
+	bd.TransactionsRoot, err = serialization.ReadHash(w)
+	if err != nil {
+		return errors.New("[Header] read transactionsRoot error")
+	}
+	bd.CrossStatesRoot, err = serialization.ReadHash(w)
+	if err != nil {
+		return errors.New("[Header] read crossStatesRoot error")
+	}
+	bd.BlockRoot, err = serialization.ReadHash(w)
+	if err != nil {
+		return errors.New("[Header] read blockRoot error")
+	}
+	bd.Timestamp, err = serialization.ReadUint32(w)
+	if err != nil {
+		return errors.New("[Header] read timestamp error")
+	}
+	bd.Height, err = serialization.ReadUint32(w)
+	if err != nil {
+		return errors.New("[Header] read height error")
+	}
+	bd.ConsensusData, err = serialization.ReadUint64(w)
+	if err != nil {
+		return errors.New("[Header] read consensusData error")
+	}
+	bd.ConsensusPayload, err = serialization.ReadVarBytes(w)
+	if err != nil {
+		return errors.New("[Header] read consensusPayload error")
+	}
+	bd.NextBookkeeper, err = serialization.ReadAddress(w)
+	if err != nil {
 		return errors.New("[Header] read nextBookkeeper error")
 	}
 	return nil

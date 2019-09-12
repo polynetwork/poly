@@ -22,6 +22,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
+	"github.com/ontio/multi-chain/common"
 	"io"
 	"math"
 )
@@ -155,6 +156,22 @@ func ReadVarBytes(reader io.Reader) ([]byte, error) {
 		return nil, err
 	}
 	return str, nil
+}
+
+func ReadHash(reader io.Reader) (common.Uint256, error) {
+	val, err := ReadVarBytes(reader)
+	if err != nil {
+		return common.UINT256_EMPTY, err
+	}
+	return common.Uint256ParseFromBytes(val)
+}
+
+func ReadAddress(reader io.Reader) (common.Address, error) {
+	val, err := ReadVarBytes(reader)
+	if err != nil {
+		return common.ADDRESS_EMPTY, err
+	}
+	return common.AddressParseFromBytes(val)
 }
 
 func ReadString(reader io.Reader) (string, error) {
