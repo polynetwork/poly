@@ -33,9 +33,9 @@ type RegisterSideChainParam struct {
 
 func (this *RegisterSideChainParam) Serialization(sink *common.ZeroCopySink) error {
 	sink.WriteVarBytes([]byte(this.Address))
-	sink.WriteVarUint(this.ChainId)
+	sink.WriteUint64(this.ChainId)
 	sink.WriteVarBytes([]byte(this.Name))
-	sink.WriteVarUint(this.BlocksToWait)
+	sink.WriteUint64(this.BlocksToWait)
 	return nil
 }
 
