@@ -384,7 +384,7 @@ func (this *BlockStore) loadTransaction(txHash common.Uint256) (*types.Transacti
 		return nil, 0, io.ErrUnexpectedEOF
 	}
 	tx = new(types.Transaction)
-	tx.Raw = source.OffBytes()
+	tx.Raw = source.LastBytes()
 	err = tx.Deserialization(source)
 	if err != nil {
 		return nil, 0, fmt.Errorf("transaction deserialize error %s", err)

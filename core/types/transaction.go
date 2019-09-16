@@ -19,6 +19,7 @@
 package types
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"github.com/ontio/multi-chain/common/constants"
@@ -39,7 +40,8 @@ type Transaction struct {
 	Attributes []byte //this must be 0 now, Attribute Array length use VarUint encoding, so byte is enough for extension
 	Sigs       []Sig
 
-	Raw []byte // raw transaction data
+	UnSignRaw []byte
+	Raw       []byte // raw transaction data
 
 	hash       common.Uint256
 	SignedAddr []common.Address // this is assigned when passed signature verification
@@ -98,15 +100,18 @@ func TransactionFromRawBytes(raw []byte) (*Transaction, error) {
 	if err != nil {
 		return nil, err
 	}
+	temp := sha256.Sum256(tx.UnSignRaw)
+	hash := common.Uint256(sha256.Sum256(temp[:]))
+	tx.hash = hash
 	return tx, nil
 }
 
 // Transaction has internal reference of param `source`
 func (tx *Transaction) Deserialization(source *common.ZeroCopySource) error {
-	tx.Raw = source.Bytes()
 	if err := tx.DeserializationUnsigned(source); err != nil {
 		return err
 	}
+	tx.UnSignRaw = source.PrevBytes()
 	l, eof := source.NextVarUint()
 	if eof {
 		return errors.New("[Deserialization] read sigs length error")

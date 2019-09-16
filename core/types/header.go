@@ -22,10 +22,11 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
+
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/serialization"
 	"github.com/ontio/ontology-crypto/keypair"
-	"io"
 )
 
 type Header struct {
@@ -157,6 +158,7 @@ func HeaderFromRawBytes(raw []byte) (*Header, error) {
 	return header, nil
 
 }
+
 func (bd *Header) Deserialization(source *common.ZeroCopySource) error {
 	err := bd.deserializationUnsigned(source)
 	if err != nil {
