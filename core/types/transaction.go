@@ -95,23 +95,28 @@ func TransactionFromRawBytes(raw []byte) (*Transaction, error) {
 		return nil, errors.New("execced max transaction size")
 	}
 	source := common.NewZeroCopySource(raw)
-	tx := &Transaction{Raw: raw}
+	tx := &Transaction{}
 	err := tx.Deserialization(source)
 	if err != nil {
 		return nil, err
 	}
-	temp := sha256.Sum256(tx.UnSignRaw)
-	hash := common.Uint256(sha256.Sum256(temp[:]))
-	tx.hash = hash
 	return tx, nil
 }
 
 // Transaction has internal reference of param `source`
 func (tx *Transaction) Deserialization(source *common.ZeroCopySource) error {
+	pstart := source.Pos()
 	if err := tx.DeserializationUnsigned(source); err != nil {
 		return err
 	}
-	tx.UnSignRaw = source.PrevBytes()
+	pos := source.Pos()
+	lenUnsigned := pos - pstart
+	source.BackUp(lenUnsigned)
+	rawUnsigned, _ := source.NextBytes(lenUnsigned)
+	temp := sha256.Sum256(rawUnsigned)
+	tx.hash = common.Uint256(sha256.Sum256(temp[:]))
+	tx.UnSignRaw = rawUnsigned
+
 	l, eof := source.NextVarUint()
 	if eof {
 		return errors.New("[Deserialization] read sigs length error")
@@ -124,6 +129,7 @@ func (tx *Transaction) Deserialization(source *common.ZeroCopySource) error {
 		}
 		sigs[i] = sig
 	}
+	tx.Raw = source.Bytes()
 	return nil
 }
 

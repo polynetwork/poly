@@ -41,12 +41,8 @@ func (self *ZeroCopySource) Bytes() []byte {
 	return self.s
 }
 
-func (self *ZeroCopySource) LastBytes() []byte {
+func (self *ZeroCopySource) OffBytes() []byte {
 	return self.s[self.off:]
-}
-
-func (self *ZeroCopySource) PrevBytes() []byte {
-	return self.s[:self.off]
 }
 
 func (self *ZeroCopySource) Pos() uint64 {
