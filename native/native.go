@@ -91,7 +91,7 @@ func (this *NativeService) Invoke() (interface{}, error) {
 	this.input = invokParam.Args
 	result, err := service(this)
 	if err != nil {
-		return result, fmt.Errorf("[Invoke] Native serivce function execute error!")
+		return result, fmt.Errorf("[Invoke] Native serivce function execute error:%s", err)
 	}
 	return result, nil
 }
