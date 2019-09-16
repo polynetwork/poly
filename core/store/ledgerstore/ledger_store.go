@@ -21,18 +21,21 @@ package ledgerstore
 import (
 	"crypto/sha256"
 	"fmt"
+	"github.com/ontio/multi-chain/core/payload"
+	"github.com/ontio/multi-chain/core/states"
+	"github.com/ontio/multi-chain/native"
 	"hash"
 	"os"
 	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/consensus/vbft/config"
 	"github.com/ontio/multi-chain/core/signature"
-	"github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/core/store"
 	scom "github.com/ontio/multi-chain/core/store/common"
 	"github.com/ontio/multi-chain/core/store/overlaydb"
@@ -43,6 +46,7 @@ import (
 	"github.com/ontio/multi-chain/merkle"
 	"github.com/ontio/multi-chain/native/event"
 	cstates "github.com/ontio/multi-chain/native/states"
+	sstate "github.com/ontio/multi-chain/native/states"
 	"github.com/ontio/multi-chain/native/storage"
 	"github.com/ontio/ontology-crypto/keypair"
 )
@@ -894,7 +898,25 @@ func (this *LedgerStoreImp) saveHeaderIndexList() error {
 }
 
 func (this *LedgerStoreImp) PreExecuteContract(tx *types.Transaction) (*cstates.PreExecResult, error) {
-	return nil, nil
+	result := &sstate.PreExecResult{State: event.CONTRACT_STATE_FAIL, Result: nil}
+	if _, ok := tx.Payload.(*payload.InvokeCode); !ok {
+		return result, fmt.Errorf("transaction payload type error")
+	}
+	hash := this.GetCurrentBlockHash()
+	block, err := this.GetBlockByHash(hash)
+	if err != nil {
+		return result, fmt.Errorf("get current block error")
+	}
+	overlay := this.stateStore.NewOverlayDB()
+	cache := storage.NewCacheDB(overlay)
+
+	service := native.NewNativeService(cache, tx, uint32(time.Now().Unix()), block.Header.Height,
+		hash, block.Header.ChainID, tx.Payload.(*payload.InvokeCode).Code, true)
+
+	if _, err := service.Invoke(); err != nil {
+		return result, err
+	}
+	return &sstate.PreExecResult{State: event.CONTRACT_STATE_SUCCESS, Result: nil, Notify: service.GetNotify()}, nil
 }
 
 //IsContainBlock return whether the block is in store

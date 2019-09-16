@@ -66,7 +66,6 @@ type ExecuteNotify struct {
 
 type PreExecuteResult struct {
 	State  byte
-	Gas    uint64
 	Result interface{}
 	Notify []NotifyEventInfo
 }
@@ -177,7 +176,7 @@ func ConvertPreExecuteResult(obj *cstate.PreExecResult) PreExecuteResult {
 	for _, v := range obj.Notify {
 		evts = append(evts, NotifyEventInfo{v.ContractAddress.ToHexString(), v.States})
 	}
-	return PreExecuteResult{obj.State, obj.Gas, obj.Result, evts}
+	return PreExecuteResult{obj.State, obj.Result, evts}
 }
 
 func SendTxToPool(txn *types.Transaction) (ontErrors.ErrCode, string) {

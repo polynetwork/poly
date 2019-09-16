@@ -54,7 +54,6 @@ func sendTx(ctx *cli.Context) error {
 			return fmt.Errorf("prepare execute transaction failed. %v", preResult)
 		}
 		PrintInfoMsg("Prepare execute transaction success.")
-		PrintInfoMsg("Gas limit:%d", preResult.Gas)
 		PrintInfoMsg("Result:%v", preResult.Result)
 		return nil
 	}

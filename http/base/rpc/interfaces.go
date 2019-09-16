@@ -20,6 +20,7 @@ package rpc
 
 import (
 	"encoding/hex"
+	"fmt"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/common/log"
@@ -185,7 +186,7 @@ func GetRawTransaction(params []interface{}) map[string]interface{} {
 		}
 		h, t, err := bactor.GetTxnWithHeightByTxHash(hash)
 		if err != nil {
-			return responsePack(berr.UNKNOWN_TRANSACTION, "unknown transaction")
+			return responsePack(berr.UNKNOWN_TRANSACTION, fmt.Sprintf("unknown transaction:%s", err))
 		}
 		height = h
 		tx = t

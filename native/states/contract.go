@@ -77,7 +77,6 @@ func (this *ContractInvokeParam) Deserialization(source *common.ZeroCopySource) 
 
 type PreExecResult struct {
 	State  byte
-	Gas    uint64
 	Result interface{}
 	Notify []*event.NotifyEventInfo
 }
