@@ -64,6 +64,7 @@ func BuildGenesisBlock(defaultBookkeeper []keypair.PublicKey, genesisConfig *con
 	//blockdata
 	genesisHeader := &types.Header{
 		Version:          types.VERSION_SUPPORT_SHARD,
+		ChainID:          types.MAIN_CHAIN_ID,
 		PrevBlockHash:    common.Uint256{},
 		TransactionsRoot: common.Uint256{},
 		Timestamp:        constants.GENESIS_BLOCK_TIMESTAMP,
