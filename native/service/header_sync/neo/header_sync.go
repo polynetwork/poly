@@ -26,7 +26,6 @@ import (
 	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/native"
 	hscommon "github.com/ontio/multi-chain/native/service/header_sync/common"
-	"github.com/ontio/multi-chain/native/service/utils"
 	ntypes "github.com/ontio/ontology/core/types"
 )
 
@@ -49,11 +48,11 @@ func (this *NEOHandler) SyncGenesisHeader(native *native.NativeService) error {
 		return err
 	}
 
-	//check witness
-	err = utils.ValidateOwner(native, operatorAddress)
-	if err != nil {
-		return fmt.Errorf("SyncGenesisHeader, checkWitness error: %v", err)
-	}
+	////check witness
+	//err = utils.ValidateOwner(native, operatorAddress)
+	//if err != nil {
+	//	return fmt.Errorf("SyncGenesisHeader, checkWitness error: %v", err)
+	//}
 
 	header, err := ntypes.HeaderFromRawBytes(params.GenesisHeader)
 	if err != nil {

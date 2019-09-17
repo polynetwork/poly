@@ -23,6 +23,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/ontio/multi-chain/common/config"
+	"github.com/ontio/multi-chain/native/event"
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/consensus/vbft/config"
@@ -56,6 +58,7 @@ func PutBlockHeader(native *native.NativeService, blockHeader *otypes.Header) er
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(hscommon.HEADER_INDEX), chainIDBytes, heightBytes),
 		cstates.GenRawStorageItem(blockHash.ToArray()))
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(hscommon.CURRENT_HEIGHT), chainIDBytes), cstates.GenRawStorageItem(heightBytes))
+	notifyPutHeader(native, blockHeader.ShardID, blockHeader.Height, blockHash.ToHexString())
 	return nil
 }
 
@@ -291,4 +294,15 @@ func findKeyHeight(native *native.NativeService, height uint32, chainID uint64) 
 		}
 	}
 	return 0, fmt.Errorf("findKeyHeight, can not find key height with height %d", height)
+}
+
+func notifyPutHeader(native *native.NativeService, chainID uint64, height uint32, blockHash string) {
+	if !config.DefConfig.Common.EnableEventLog {
+		return
+	}
+	native.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.HeaderSyncContractAddress,
+			States:          []interface{}{chainID, height, blockHash, native.GetHeight()},
+		})
 }
