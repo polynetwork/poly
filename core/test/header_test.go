@@ -263,4 +263,3 @@ func (bd *Header) deserializationUnsigned(source *ZeroCopy) error {
 	}
 	return nil
 }
-

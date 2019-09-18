@@ -26,10 +26,9 @@ type SyncGenesisHeaderParam struct {
 	GenesisHeader []byte
 }
 
-func (this *SyncGenesisHeaderParam) Serialization(sink *common.ZeroCopySink) error {
+func (this *SyncGenesisHeaderParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteUint64(this.ChainID)
 	sink.WriteVarBytes(this.GenesisHeader)
-	return nil
 }
 
 func (this *SyncGenesisHeaderParam) Deserialization(source *common.ZeroCopySource) error {

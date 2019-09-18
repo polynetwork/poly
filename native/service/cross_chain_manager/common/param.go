@@ -38,7 +38,7 @@ func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error 
 		return fmt.Errorf("EntranceParam deserialize sourcechainid error")
 	}
 	txData, eof := source.NextString()
-	if eof{
+	if eof {
 		return fmt.Errorf("EntranceParam deserialize txdata error")
 	}
 	height, eof := source.NextUint32()
@@ -49,7 +49,7 @@ func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error 
 	if eof {
 		return fmt.Errorf("EntranceParam deserialize proof error")
 	}
-	relayerAddr,  eof := source.NextString()
+	relayerAddr, eof := source.NextString()
 	if eof {
 		return fmt.Errorf("EntranceParam deserialize relayerAddr error")
 	}
@@ -57,7 +57,7 @@ func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error 
 	if eof {
 		return fmt.Errorf("EntranceParam deserialize targetchainid error")
 	}
-	value,  eof := source.NextString()
+	value, eof := source.NextString()
 	if eof {
 		return fmt.Errorf("EntranceParam deserialize value error")
 	}

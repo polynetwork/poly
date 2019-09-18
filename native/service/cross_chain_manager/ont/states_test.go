@@ -8,15 +8,15 @@ import (
 )
 
 func TestFromMerkleValue(t *testing.T) {
-	m := FromMerkleValue {
+	m := FromMerkleValue{
 		TxHash: common.UINT256_EMPTY,
 		CreateCrossChainTxMerkle: &CreateCrossChainTxMerkle{
-			FromChainID: 123,
+			FromChainID:         123,
 			FromContractAddress: "123",
-			ToChainID: 123,
-			Fee: 123,
-			Method: "123",
-			Args: []byte{1, 2, 3},
+			ToChainID:           123,
+			Fee:                 123,
+			Method:              "123",
+			Args:                []byte{1, 2, 3},
 		},
 	}
 
@@ -28,18 +28,17 @@ func TestFromMerkleValue(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-
 func TestToMerkleValue(t *testing.T) {
-	m := ToMerkleValue {
-		TxHash: common.UINT256_EMPTY,
+	m := ToMerkleValue{
+		TxHash:            common.UINT256_EMPTY,
 		ToContractAddress: "123",
 		MakeTxParam: &crosscommon.MakeTxParam{
-			TxHash: "123",
-			FromChainID: 123,
+			TxHash:              "123",
+			FromChainID:         123,
 			FromContractAddress: "123",
-			ToChainID: 123,
-			Method: "123",
-			Args: []byte{1, 2, 3},
+			ToChainID:           123,
+			Method:              "123",
+			Args:                []byte{1, 2, 3},
 		},
 	}
 	sink := common.NewZeroCopySink(nil)

@@ -109,7 +109,7 @@ func (this *Utxo) Deserialization(source *common.ZeroCopySource) error {
 	if eof {
 		return fmt.Errorf("OutPoint deserialize value error")
 	}
-	scriptPubkey,  eof := source.NextVarBytes()
+	scriptPubkey, eof := source.NextVarBytes()
 	if eof {
 		return fmt.Errorf("OutPoint deserialize scriptPubkey error")
 	}

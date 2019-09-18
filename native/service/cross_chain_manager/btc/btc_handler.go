@@ -144,7 +144,7 @@ func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*cro
 func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *crosscommon.MakeTxParam) error {
 	amounts := make(map[string]int64)
 
-	toAddr, eof :=common.NewZeroCopySource(param.Args).NextString()
+	toAddr, eof := common.NewZeroCopySource(param.Args).NextString()
 	if eof {
 		return fmt.Errorf("btc MakeTransaction, utils.DecodeString toAddr error")
 	}

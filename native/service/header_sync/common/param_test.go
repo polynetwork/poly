@@ -6,6 +6,22 @@ import (
 	"testing"
 )
 
+func TestSyncGenesisHeaderParam(t *testing.T) {
+	param := SyncGenesisHeaderParam{
+		ChainID:       123,
+		GenesisHeader: []byte{1, 2, 3},
+	}
+
+	sink := common.NewZeroCopySink(nil)
+	param.Serialization(sink)
+
+	var p SyncGenesisHeaderParam
+	err := p.Deserialization(common.NewZeroCopySource(sink.Bytes()))
+	assert.NoError(t, err)
+
+	assert.Equal(t, p, param)
+}
+
 func TestSyncBlockHeaderParam(t *testing.T) {
 	p := SyncBlockHeaderParam{
 		ChainID: 123,
