@@ -54,17 +54,18 @@ type NativeService struct {
 }
 
 func NewNativeService(cacheDB *storage.CacheDB, tx *types.Transaction,
-	time, height uint32, blockHash common.Uint256, chainID uint64, input []byte, preExec bool) *NativeService {
+	time, height uint32, blockHash common.Uint256, chainID uint64, input []byte, preExec bool, crossHashes *common.ZeroCopySink) *NativeService {
 	service := &NativeService{
-		cacheDB:    cacheDB,
-		tx:         tx,
-		time:       time,
-		height:     height,
-		blockHash:  blockHash,
-		serviceMap: make(map[string]Handler),
-		input:      input,
-		chainID:    chainID,
-		preExec:    preExec,
+		cacheDB:     cacheDB,
+		tx:          tx,
+		time:        time,
+		height:      height,
+		blockHash:   blockHash,
+		serviceMap:  make(map[string]Handler),
+		input:       input,
+		chainID:     chainID,
+		preExec:     preExec,
+		crossHashes: crossHashes,
 	}
 	return service
 }
