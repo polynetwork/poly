@@ -66,9 +66,8 @@ type ChainidParam struct {
 	Chainid uint64
 }
 
-func (this *ChainidParam) Serialization(sink *common.ZeroCopySink) error {
+func (this *ChainidParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteUint64(this.Chainid)
-	return nil
 }
 
 func (this *ChainidParam) Deserialization(source *common.ZeroCopySource) error {

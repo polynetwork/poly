@@ -24,3 +24,18 @@ func TestRegisterSideChain(t *testing.T) {
 
 	assert.Equal(t, param, p)
 }
+
+func TestChainidParam(t *testing.T) {
+	p := ChainidParam{
+		Chainid: 123,
+	}
+
+	sink := common.NewZeroCopySink(nil)
+	p.Serialization(sink)
+
+	var param ChainidParam
+	err := param.Deserialization(common.NewZeroCopySource(sink.Bytes()))
+	assert.NoError(t, err)
+
+	assert.Equal(t, p, param)
+}

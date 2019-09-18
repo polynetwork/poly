@@ -64,7 +64,8 @@ func BenchmarkT1(b *testing.B) {
 	header.Serialization(buf)
 	for i := 0; i < b.N; i++ {
 		var h Header
-		h.Deserialization(NewZeroCopy(buf.Bytes()))
+		err := h.Deserialization(NewZeroCopy(buf.Bytes()))
+		assert.NoError(b, err)
 	}
 }
 
