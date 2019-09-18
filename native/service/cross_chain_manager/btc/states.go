@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/native/service/utils"
 )
 
 type BtcProof struct {
@@ -22,21 +21,21 @@ func (this *BtcProof) Serialization(sink *common.ZeroCopySink) {
 }
 
 func (this *BtcProof) Deserialization(source *common.ZeroCopySource) error {
-	tx, err := utils.DecodeVarBytes(source)
-	if err != nil {
-		return fmt.Errorf("BtcProof deserialize tx error:%s", err)
+	tx, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("BtcProof deserialize tx error")
 	}
-	proof, err := utils.DecodeVarBytes(source)
-	if err != nil {
-		return fmt.Errorf("BtcProof deserialize proof error:%s", err)
+	proof, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("BtcProof deserialize proof error")
 	}
 	height, eof := source.NextUint32()
 	if eof {
-		return fmt.Errorf("BtcProof deserialize height error:%s", err)
+		return fmt.Errorf("BtcProof deserialize height error")
 	}
 	blocksToWait, eof := source.NextUint64()
 	if eof {
-		return fmt.Errorf("BtcProof deserialize blocksToWait error:%s", err)
+		return fmt.Errorf("BtcProof deserialize blocksToWait error:")
 	}
 
 	this.Tx = tx
@@ -104,15 +103,15 @@ func (this *Utxo) Deserialization(source *common.ZeroCopySource) error {
 	}
 	atHeight, eof := source.NextUint32()
 	if eof {
-		return fmt.Errorf("OutPoint deserialize atHeight error:%s", err)
+		return fmt.Errorf("OutPoint deserialize atHeight error")
 	}
 	value, eof := source.NextUint64()
 	if eof {
-		return fmt.Errorf("OutPoint deserialize value error:%s", err)
+		return fmt.Errorf("OutPoint deserialize value error")
 	}
-	scriptPubkey, err := utils.DecodeVarBytes(source)
-	if err != nil {
-		return fmt.Errorf("OutPoint deserialize scriptPubkey error:%s", err)
+	scriptPubkey,  eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("OutPoint deserialize scriptPubkey error")
 	}
 
 	this.Op = op
@@ -133,13 +132,13 @@ func (this *OutPoint) Serialization(sink *common.ZeroCopySink) {
 }
 
 func (this *OutPoint) Deserialization(source *common.ZeroCopySource) error {
-	hash, err := utils.DecodeVarBytes(source)
-	if err != nil {
-		return fmt.Errorf("OutPoint deserialize hash error:%s", err)
+	hash, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("OutPoint deserialize hash error")
 	}
 	index, eof := source.NextUint32()
 	if eof {
-		return fmt.Errorf("OutPoint deserialize height error:%s", err)
+		return fmt.Errorf("OutPoint deserialize height error")
 	}
 
 	this.Hash = hash

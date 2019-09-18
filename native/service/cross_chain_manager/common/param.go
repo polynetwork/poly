@@ -6,7 +6,6 @@ import (
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native"
-	"github.com/ontio/multi-chain/native/service/utils"
 )
 
 var (
@@ -38,29 +37,29 @@ func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error 
 	if eof {
 		return fmt.Errorf("EntranceParam deserialize sourcechainid error")
 	}
-	txData, err := utils.DecodeString(source)
-	if err != nil {
-		return fmt.Errorf("EntranceParam deserialize txdata error:%s", err)
+	txData, eof := source.NextString()
+	if eof{
+		return fmt.Errorf("EntranceParam deserialize txdata error")
 	}
 	height, eof := source.NextUint32()
 	if eof {
-		return fmt.Errorf("EntranceParam deserialize height error:%s", err)
+		return fmt.Errorf("EntranceParam deserialize height error")
 	}
-	proof, err := utils.DecodeString(source)
-	if err != nil {
-		return fmt.Errorf("EntranceParam deserialize proof error:%s", err)
+	proof, eof := source.NextString()
+	if eof {
+		return fmt.Errorf("EntranceParam deserialize proof error")
 	}
-	relayerAddr, err := utils.DecodeString(source)
-	if err != nil {
-		return fmt.Errorf("EntranceParam deserialize relayerAddr error:%s", err)
+	relayerAddr,  eof := source.NextString()
+	if eof {
+		return fmt.Errorf("EntranceParam deserialize relayerAddr error")
 	}
 	targetChainID, eof := source.NextUint64()
 	if eof {
-		return fmt.Errorf("EntranceParam deserialize targetchainid error:%s", err)
+		return fmt.Errorf("EntranceParam deserialize targetchainid error")
 	}
-	value, err := utils.DecodeString(source)
-	if err != nil {
-		return fmt.Errorf("EntranceParam deserialize value error:%s", err)
+	value,  eof := source.NextString()
+	if eof {
+		return fmt.Errorf("EntranceParam deserialize value error")
 	}
 
 	this.SourceChainID = sourceChainID
@@ -102,29 +101,29 @@ func (this *MakeTxParam) Serialization(sink *common.ZeroCopySink) {
 }
 
 func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
-	txHash, err := utils.DecodeString(source)
-	if err != nil {
-		return fmt.Errorf("MakeTxParam deserialize txHash error:%s", err)
+	txHash, eof := source.NextString()
+	if eof {
+		return fmt.Errorf("MakeTxParam deserialize txHash error")
 	}
 	fromChainID, eof := source.NextUint64()
 	if eof {
 		return fmt.Errorf("MakeTxParam deserialize fromChainID error")
 	}
-	fromContractAddress, err := utils.DecodeString(source)
-	if err != nil {
-		return fmt.Errorf("MakeTxParam deserialize fromContractAddress error:%s", err)
+	fromContractAddress, eof := source.NextString()
+	if eof {
+		return fmt.Errorf("MakeTxParam deserialize fromContractAddress error")
 	}
 	toChainID, eof := source.NextUint64()
 	if eof {
 		return fmt.Errorf("MakeTxParam deserialize toChainID error")
 	}
-	method, err := utils.DecodeString(source)
-	if err != nil {
-		return fmt.Errorf("MakeTxParam deserialize method error:%s", err)
+	method, eof := source.NextString()
+	if eof {
+		return fmt.Errorf("MakeTxParam deserialize method error")
 	}
-	args, err := utils.DecodeVarBytes(source)
-	if err != nil {
-		return fmt.Errorf("MakeTxParam deserialize args error:%s", err)
+	args, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("MakeTxParam deserialize args error")
 	}
 
 	this.TxHash = txHash
@@ -153,13 +152,13 @@ func (this *VoteParam) Deserialization(source *common.ZeroCopySource) error {
 	if eof {
 		return fmt.Errorf("VoteParam deserialize fromChainID error")
 	}
-	address, err := utils.DecodeString(source)
-	if err != nil {
-		return fmt.Errorf("VoteParam deserialize address error:%s", err)
+	address, eof := source.NextString()
+	if eof {
+		return fmt.Errorf("VoteParam deserialize address error")
 	}
-	txHash, err := utils.DecodeVarBytes(source)
-	if err != nil {
-		return fmt.Errorf("VoteParam deserialize txHash error:%s", err)
+	txHash, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("VoteParam deserialize txHash error")
 	}
 
 	this.FromChainID = fromChainID
@@ -193,9 +192,9 @@ func (this *Vote) Deserialization(source *common.ZeroCopySource) error {
 	}
 	voteMap := make(map[string]string)
 	for i := 0; uint64(i) < n; i++ {
-		v, err := utils.DecodeString(source)
-		if err != nil {
-			return fmt.Errorf("deserialize VoteMap error: %v", err)
+		v, eof := source.NextString()
+		if eof {
+			return fmt.Errorf("deserialize VoteMap error")
 		}
 		voteMap[v] = v
 	}

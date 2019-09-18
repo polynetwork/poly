@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native"
-	"github.com/ontio/multi-chain/native/service/utils"
 )
 
 const (
@@ -38,9 +37,9 @@ func (this *SyncGenesisHeaderParam) Deserialization(source *common.ZeroCopySourc
 	if eof {
 		return fmt.Errorf("SyncGenesisHeaderParam deserialize chainID error")
 	}
-	genesisHeader, err := utils.DecodeVarBytes(source)
-	if err != nil {
-		return fmt.Errorf("utils.DecodeVarBytes, deserialize genesisHeader count error:%s", err)
+	genesisHeader, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("utils.DecodeVarBytes, deserialize genesisHeader count error")
 	}
 	this.ChainID = chainID
 	this.GenesisHeader = genesisHeader
@@ -67,9 +66,9 @@ func (this *SyncBlockHeaderParam) Deserialization(source *common.ZeroCopySource)
 	if eof {
 		return fmt.Errorf("SyncGenesisHeaderParam deserialize chainID error")
 	}
-	address, err := utils.DecodeAddress(source)
-	if err != nil {
-		return fmt.Errorf("utils.DecodeAddress, deserialize address error:%s", err)
+	address, eof := source.NextAddress()
+	if eof {
+		return fmt.Errorf("utils.DecodeAddress, deserialize address error")
 	}
 	n, eof := source.NextUint64()
 	if eof {
@@ -77,9 +76,10 @@ func (this *SyncBlockHeaderParam) Deserialization(source *common.ZeroCopySource)
 	}
 	var headers [][]byte
 	for i := 0; uint64(i) < n; i++ {
-		header, err := utils.DecodeVarBytes(source)
-		if err != nil {
-			return fmt.Errorf("utils.DecodeVarBytes, deserialize header error: %v", err)
+		header, eof := source.NextVarBytes()
+		if eof {
+
+			return fmt.Errorf("utils.DecodeVarBytes, deserialize header error")
 		}
 		headers = append(headers, header)
 	}

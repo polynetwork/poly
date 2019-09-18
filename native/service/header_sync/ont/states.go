@@ -21,7 +21,6 @@ package ont
 import (
 	"fmt"
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/native/service/utils"
 	"math"
 	"sort"
 )
@@ -44,9 +43,9 @@ func (this *Peer) Deserialization(source *common.ZeroCopySource) error {
 	if index > math.MaxUint32 {
 		return fmt.Errorf("deserialize index error: index more than max uint32")
 	}
-	peerPubkey, err := utils.DecodeString(source)
-	if err != nil {
-		return fmt.Errorf("utils.DecodeString, deserialize peerPubkey error: %v", err)
+	peerPubkey, eof := source.NextString()
+	if eof {
+		return fmt.Errorf("utils.DecodeString, deserialize peerPubkey error")
 	}
 	this.Index = uint32(index)
 	this.PeerPubkey = peerPubkey

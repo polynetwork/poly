@@ -21,7 +21,6 @@ package side_chain_manager
 import (
 	"fmt"
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/native/service/utils"
 )
 
 type RegisterSideChainParam struct {
@@ -40,17 +39,17 @@ func (this *RegisterSideChainParam) Serialization(sink *common.ZeroCopySink) err
 }
 
 func (this *RegisterSideChainParam) Deserialization(source *common.ZeroCopySource) error {
-	address, err := utils.DecodeString(source)
-	if err != nil {
-		return fmt.Errorf("utils.DecodeString, deserialize address error: %v", err)
+	address, eof := source.NextString()
+	if eof {
+		return fmt.Errorf("utils.DecodeString, deserialize address error")
 	}
 	chainId, eof := source.NextUint64()
 	if eof {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize chainid error")
 	}
-	name, err := utils.DecodeString(source)
-	if err != nil {
-		return fmt.Errorf("utils.DecodeString, deserialize name error: %v", err)
+	name, eof := source.NextString()
+	if eof {
+		return fmt.Errorf("utils.DecodeString, deserialize name error")
 	}
 	blocksToWait, eof := source.NextUint64()
 	if eof {
@@ -99,9 +98,9 @@ func (this *Asset) Deserialization(source *common.ZeroCopySource) error {
 	if eof {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize chainid error")
 	}
-	contractAddress, err := utils.DecodeString(source)
-	if err != nil {
-		return fmt.Errorf("utils.DecodeString, deserialize contractAddress error: %v", err)
+	contractAddress, eof := source.NextString()
+	if eof {
+		return fmt.Errorf("utils.DecodeString, deserialize contractAddress error")
 	}
 	this.ChainId = chainid
 	decimal, eof := source.NextUint64()
@@ -134,13 +133,13 @@ func (this *AssetMappingParam) Serialization(sink *common.ZeroCopySink) error {
 }
 
 func (this *AssetMappingParam) Deserialization(source *common.ZeroCopySource) error {
-	address, err := utils.DecodeString(source)
-	if err != nil {
-		return fmt.Errorf("utils.DecodeAddress, deserialize address error: %v", err)
+	address, eof := source.NextString()
+	if eof {
+		return fmt.Errorf("utils.DecodeAddress, deserialize address error")
 	}
-	assetName, err := utils.DecodeString(source)
-	if err != nil {
-		return fmt.Errorf("utils.DecodeString, deserialize assetName error: %v", err)
+	assetName, eof := source.NextString()
+	if eof {
+		return fmt.Errorf("utils.DecodeString, deserialize assetName error")
 	}
 	n, eof := source.NextVarUint()
 	if eof {
@@ -171,9 +170,9 @@ func (this *ApproveAssetMappingParam) Serialization(sink *common.ZeroCopySink) e
 }
 
 func (this *ApproveAssetMappingParam) Deserialization(source *common.ZeroCopySource) error {
-	assetName, err := utils.DecodeString(source)
-	if err != nil {
-		return fmt.Errorf("utils.DecodeString, deserialize assetName error: %v", err)
+	assetName, eof := source.NextString()
+	if eof {
+		return fmt.Errorf("utils.DecodeString, deserialize assetName error")
 	}
 	this.AssetName = assetName
 	return nil

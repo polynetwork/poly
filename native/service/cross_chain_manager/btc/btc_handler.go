@@ -144,9 +144,9 @@ func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*cro
 func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *crosscommon.MakeTxParam) error {
 	amounts := make(map[string]int64)
 
-	toAddr, err := utils.DecodeString(common.NewZeroCopySource(param.Args))
-	if err != nil {
-		return fmt.Errorf("btc MakeTransaction, utils.DecodeString toAddr error: %v", err)
+	toAddr, eof :=common.NewZeroCopySource(param.Args).NextString()
+	if eof {
+		return fmt.Errorf("btc MakeTransaction, utils.DecodeString toAddr error")
 	}
 	amount, eof := common.NewZeroCopySource(param.Args).NextInt64()
 	if eof {

@@ -23,7 +23,6 @@ import (
 	"sort"
 
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/native/service/utils"
 )
 
 type SideChain struct {
@@ -44,9 +43,9 @@ func (this *SideChain) Deserialization(source *common.ZeroCopySource) error {
 	if eof {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize chainid error")
 	}
-	name, err := utils.DecodeString(source)
-	if err != nil {
-		return fmt.Errorf("utils.DecodeString, deserialize name error: %v", err)
+	name, eof := source.NextString()
+	if eof {
+		return fmt.Errorf("utils.DecodeString, deserialize name error")
 	}
 	blocksToWait, eof := source.NextUint64()
 	if eof {

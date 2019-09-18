@@ -44,7 +44,7 @@ func TestToMerkleValue(t *testing.T) {
 	}
 	sink := common.NewZeroCopySink(nil)
 	m.Serialization(sink)
-	
+
 	var mer ToMerkleValue
 	err := mer.Deserialization(common.NewZeroCopySource(sink.Bytes()))
 	assert.NoError(t, err)

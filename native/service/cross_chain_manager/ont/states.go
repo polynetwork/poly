@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"github.com/ontio/multi-chain/common"
 	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
-	"github.com/ontio/multi-chain/native/service/utils"
 )
 
 type FromMerkleValue struct {
@@ -31,17 +30,17 @@ type FromMerkleValue struct {
 }
 
 func (this *FromMerkleValue) Serialization(sink *common.ZeroCopySink) {
-	utils.EncodeUint256(sink, this.TxHash)
+	sink.WriteHash(this.TxHash)
 	this.CreateCrossChainTxMerkle.Serialization(sink)
 }
 
 func (this *FromMerkleValue) Deserialization(source *common.ZeroCopySource) error {
-	txHash, err := utils.DecodeUint256(source)
-	if err != nil {
-		return fmt.Errorf("MerkleValue deserialize txHash error:%s", err)
+	txHash, eof := source.NextHash()
+	if eof {
+		return fmt.Errorf("MerkleValue deserialize txHash error")
 	}
 	createCrossChainTxMerkle := new(CreateCrossChainTxMerkle)
-	err = createCrossChainTxMerkle.Deserialization(source)
+	err := createCrossChainTxMerkle.Deserialization(source)
 	if err != nil {
 		return fmt.Errorf("MerkleValue deserialize createCrossChainTxMerkle error:%s", err)
 	}
@@ -58,22 +57,22 @@ type ToMerkleValue struct {
 }
 
 func (this *ToMerkleValue) Serialization(sink *common.ZeroCopySink) {
-	utils.EncodeUint256(sink, this.TxHash)
+	sink.WriteHash(this.TxHash)
 	sink.WriteVarBytes([]byte(this.ToContractAddress))
 	this.MakeTxParam.Serialization(sink)
 }
 
 func (this *ToMerkleValue) Deserialization(source *common.ZeroCopySource) error {
-	txHash, err := utils.DecodeUint256(source)
-	if err != nil {
-		return fmt.Errorf("MerkleValue deserialize txHash error:%s", err)
+	txHash, eof := source.NextHash()
+	if eof {
+		return fmt.Errorf("MerkleValue deserialize txHash error")
 	}
-	toContractAddress, err := utils.DecodeString(source)
-	if err != nil {
-		return fmt.Errorf("MerkleValue deserialize toContractAddress error:%s", err)
+	toContractAddress, eof := source.NextString()
+	if eof {
+		return fmt.Errorf("MerkleValue deserialize toContractAddress error")
 	}
 	makeTxParam := new(crosscommon.MakeTxParam)
-	err = makeTxParam.Deserialization(source)
+	err := makeTxParam.Deserialization(source)
 	if err != nil {
 		return fmt.Errorf("MerkleValue deserialize makeTxParam error:%s", err)
 	}
@@ -107,8 +106,8 @@ func (this *CreateCrossChainTxMerkle) Deserialization(source *common.ZeroCopySou
 	if eof {
 		return fmt.Errorf("CreateCrossChainTxMerkle deserialize fromChainID error")
 	}
-	fromContractAddress, err := utils.DecodeString(source)
-	if err != nil {
+	fromContractAddress, eof := source.NextString()
+	if eof {
 		return fmt.Errorf("CreateCrossChainTxMerkle deserialize fromContractAddress error")
 	}
 	toChainID, eof := source.NextUint64()
@@ -119,13 +118,13 @@ func (this *CreateCrossChainTxMerkle) Deserialization(source *common.ZeroCopySou
 	if eof {
 		return fmt.Errorf("CreateCrossChainTxMerkle deserialize fee error")
 	}
-	method, err := utils.DecodeString(source)
-	if err != nil {
-		return fmt.Errorf("CreateCrossChainTxMerkle deserialize method error:%s", err)
+	method, eof := source.NextString()
+	if eof {
+		return fmt.Errorf("CreateCrossChainTxMerkle deserialize method error")
 	}
-	args, err := utils.DecodeVarBytes(source)
-	if err != nil {
-		return fmt.Errorf("CreateCrossChainTxMerkle deserialize args error:%s", err)
+	args, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("CreateCrossChainTxMerkle deserialize args error")
 	}
 
 	this.FromChainID = fromChainID
