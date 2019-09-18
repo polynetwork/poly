@@ -7,14 +7,14 @@ import (
 )
 
 func TestEntranceParam(t *testing.T) {
-	param := EntranceParam {
-		SourceChainID: 123,
-		TxData: "123",
-		Height: 123,
-		Proof: "123",
+	param := EntranceParam{
+		SourceChainID:  123,
+		TxData:         "123",
+		Height:         123,
+		Proof:          "123",
 		RelayerAddress: "123",
-		TargetChainID: 123,
-		Value: "123",
+		TargetChainID:  123,
+		Value:          "123",
 	}
 
 	sink := common.NewZeroCopySink(nil)
@@ -26,13 +26,13 @@ func TestEntranceParam(t *testing.T) {
 }
 
 func TestMakeTxParam(t *testing.T) {
-	param := MakeTxParam {
-		TxHash: "123",
-		FromChainID: 123,
+	param := MakeTxParam{
+		TxHash:              "123",
+		FromChainID:         123,
 		FromContractAddress: "123",
-		ToChainID: 123,
-		Method: "test",
-		Args: []byte("test"),
+		ToChainID:           123,
+		Method:              "test",
+		Args:                []byte("test"),
 	}
 
 	sink := common.NewZeroCopySink(nil)
@@ -46,8 +46,8 @@ func TestMakeTxParam(t *testing.T) {
 func TestVoteParam(t *testing.T) {
 	param := VoteParam{
 		FromChainID: 123,
-		Address: "1234",
-		TxHash: []byte{1, 2, 3,},
+		Address:     "1234",
+		TxHash:      []byte{1, 2, 3},
 	}
 
 	sink := common.NewZeroCopySink(nil)
@@ -71,4 +71,3 @@ func TestVote(t *testing.T) {
 	err := v.Deserialization(common.NewZeroCopySource(sink.Bytes()))
 	assert.NoError(t, err)
 }
-

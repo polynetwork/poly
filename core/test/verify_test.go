@@ -35,8 +35,11 @@ func TestVerifyTx(t *testing.T) {
 
 	hash := tx.Hash()
 	err = signature.Verify(acc1.PublicKey, hash.ToArray(), tx.Sigs[0].SigData[0])
-
 	assert.NoError(t, err)
+
+	addr, err := tx.GetSignatureAddresses()
+	assert.NoError(t, err)
+	assert.Equal(t, acc1.Address, addr[0])
 }
 
 func TestMultiVerifyTx(t *testing.T) {
@@ -44,6 +47,8 @@ func TestMultiVerifyTx(t *testing.T) {
 	acc2 := account.NewAccount("123")
 	acc3 := account.NewAccount("123")
 
+	accAddr, err := types.AddressFromMultiPubKeys([]keypair.PublicKey{acc1.PublicKey, acc2.PublicKey, acc3.PublicKey}, 2)
+	assert.NoError(t, err)
 	tx := &types.Transaction{
 		Version:    0,
 		TxType:     types.TransactionType(types.Invoke),
@@ -53,7 +58,7 @@ func TestMultiVerifyTx(t *testing.T) {
 		Attributes: []byte{},
 	}
 	sink := common.NewZeroCopySink(nil)
-	err := tx.Serialization(sink)
+	err = tx.Serialization(sink)
 	assert.NoError(t, err)
 
 	tx, err = types.TransactionFromRawBytes(sink.Bytes())
@@ -67,7 +72,9 @@ func TestMultiVerifyTx(t *testing.T) {
 
 	hash := tx.Hash()
 	err = signature.VerifyMultiSignature(hash.ToArray(), tx.Sigs[0].PubKeys, 2, tx.Sigs[0].SigData)
-
 	assert.NoError(t, err)
-}
 
+	addr, err := tx.GetSignatureAddresses()
+	assert.NoError(t, err)
+	assert.Equal(t, accAddr, addr[0])
+}

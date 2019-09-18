@@ -242,7 +242,7 @@ func (self *Transaction) GetSignatureAddresses() ([]common.Address, error) {
 				return nil, errors.New("[GetSignatureAddresses] no public key")
 			} else if len(prog.PubKeys) == 1 {
 				buf := keypair.SerializePublicKey(prog.PubKeys[0])
-				addrs[0] = common.AddressFromVmCode(buf)
+				addrs = append(addrs, common.AddressFromVmCode(buf))
 			} else {
 				sink := common.NewZeroCopySink(nil)
 				if err := EncodeMultiPubKeyProgramInto(sink, prog.PubKeys, prog.M); err != nil {
