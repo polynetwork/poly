@@ -80,8 +80,8 @@ func VerifyFromNeoTx(native *native.NativeService, proof []byte, fromChainid uin
 			height, fromChainid, err)
 	}
 
-	v := merkle.MerkleProve(proof, header.CrossStatesRoot)
-	if v == nil {
+	v, err := merkle.MerkleProve(proof, header.CrossStatesRoot.ToArray())
+	if err != nil {
 		return nil, fmt.Errorf("VerifyFromNeoTx, merkle.MerkleProve verify merkle proof error")
 	}
 
