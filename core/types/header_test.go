@@ -18,6 +18,7 @@
 package types
 
 import (
+	"bytes"
 	"fmt"
 	"testing"
 
@@ -41,4 +42,29 @@ func TestHeader_Serialize(t *testing.T) {
 	assert.Equal(t, fmt.Sprint(header), fmt.Sprint(h2))
 
 	assert.Nil(t, err)
+}
+
+func TestHeader(t *testing.T) {
+	h := Header{
+		Version:          0,
+		ChainID:          123,
+		PrevBlockHash:    common.UINT256_EMPTY,
+		TransactionsRoot: common.UINT256_EMPTY,
+		CrossStatesRoot:  common.UINT256_EMPTY,
+		BlockRoot:        common.UINT256_EMPTY,
+		Timestamp:        123,
+		Height:           123,
+		ConsensusData:    123,
+		ConsensusPayload: []byte{123},
+		NextBookkeeper:   common.ADDRESS_EMPTY,
+	}
+	sink := common.NewZeroCopySink(nil)
+	err := h.Serialization(sink)
+	assert.NoError(t, err)
+
+	buf := bytes.NewBuffer(nil)
+	err = h.Serialize(buf)
+
+	assert.NoError(t, err)
+	assert.Equal(t, sink.Bytes(), buf.Bytes())
 }

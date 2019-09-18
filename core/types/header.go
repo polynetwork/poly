@@ -118,16 +118,16 @@ func (bd *Header) serializeUnsigned(w io.Writer) error {
 	if err := serialization.WriteUint64(w, bd.ChainID); err != nil {
 		return err
 	}
-	if err := serialization.WriteVarBytes(w, bd.PrevBlockHash[:]); err != nil {
+	if err := serialization.WriteBytes(w, bd.PrevBlockHash[:]); err != nil {
 		return err
 	}
-	if err := serialization.WriteVarBytes(w, bd.TransactionsRoot[:]); err != nil {
+	if err := serialization.WriteBytes(w, bd.TransactionsRoot[:]); err != nil {
 		return err
 	}
-	if err := serialization.WriteVarBytes(w, bd.CrossStatesRoot[:]); err != nil {
+	if err := serialization.WriteBytes(w, bd.CrossStatesRoot[:]); err != nil {
 		return err
 	}
-	if err := serialization.WriteVarBytes(w, bd.BlockRoot[:]); err != nil {
+	if err := serialization.WriteBytes(w, bd.BlockRoot[:]); err != nil {
 		return err
 	}
 	if err := serialization.WriteUint32(w, bd.Timestamp); err != nil {
@@ -142,7 +142,7 @@ func (bd *Header) serializeUnsigned(w io.Writer) error {
 	if err := serialization.WriteVarBytes(w, bd.ConsensusPayload); err != nil {
 		return err
 	}
-	if err := serialization.WriteVarBytes(w, bd.NextBookkeeper[:]); err != nil {
+	if err := serialization.WriteBytes(w, bd.NextBookkeeper[:]); err != nil {
 		return err
 	}
 	return nil

@@ -142,6 +142,11 @@ func WriteVarBytes(writer io.Writer, value []byte) error {
 	return err
 }
 
+func WriteBytes(writer io.Writer, value []byte) error {
+	_, err := writer.Write(value)
+	return err
+}
+
 func WriteString(writer io.Writer, value string) error {
 	return WriteVarBytes(writer, []byte(value))
 }
@@ -159,7 +164,7 @@ func ReadVarBytes(reader io.Reader) ([]byte, error) {
 }
 
 func ReadHash(reader io.Reader) (common.Uint256, error) {
-	val, err := ReadVarBytes(reader)
+	val, err := byteXReader(reader, common.UINT256_SIZE)
 	if err != nil {
 		return common.UINT256_EMPTY, err
 	}
