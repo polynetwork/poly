@@ -911,7 +911,7 @@ func (this *LedgerStoreImp) PreExecuteContract(tx *types.Transaction) (*cstates.
 	cache := storage.NewCacheDB(overlay)
 
 	service := native.NewNativeService(cache, tx, uint32(time.Now().Unix()), block.Header.Height,
-		hash, block.Header.ChainID, tx.Payload.(*payload.InvokeCode).Code, true)
+		hash, block.Header.ChainID, tx.Payload.(*payload.InvokeCode).Code, true, common.NewZeroCopySink(nil))
 
 	if _, err := service.Invoke(); err != nil {
 		return result, err

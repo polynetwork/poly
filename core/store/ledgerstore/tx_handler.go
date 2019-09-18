@@ -38,7 +38,7 @@ func (self *StateStore) HandleInvokeTransaction(store store.LedgerStore, overlay
 	invoke := tx.Payload.(*payload.InvokeCode)
 
 	service := native.NewNativeService(cache, tx, block.Header.Timestamp, block.Header.Height,
-		block.Hash(), block.Header.ChainID, invoke.Code, false)
+		block.Hash(), block.Header.ChainID, invoke.Code, false, crossHashes)
 
 	if _, err := service.Invoke(); err != nil {
 		return err
