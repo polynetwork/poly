@@ -172,7 +172,7 @@ func ReadHash(reader io.Reader) (common.Uint256, error) {
 }
 
 func ReadAddress(reader io.Reader) (common.Address, error) {
-	val, err := ReadVarBytes(reader)
+	val, err := byteXReader(reader, common.ADDR_LEN)
 	if err != nil {
 		return common.ADDRESS_EMPTY, err
 	}

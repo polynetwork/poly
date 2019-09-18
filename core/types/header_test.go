@@ -67,4 +67,17 @@ func TestHeader(t *testing.T) {
 
 	assert.NoError(t, err)
 	assert.Equal(t, sink.Bytes(), buf.Bytes())
+
+	var header1 Header
+	err = header1.Deserialize(buf)
+	assert.NoError(t, err)
+
+	var header2 Header
+
+	err = header2.Deserialization(common.NewZeroCopySource(sink.Bytes()))
+
+	assert.NoError(t, err)
+
+	assert.Equal(t, header1, header2)
+
 }
