@@ -300,7 +300,8 @@ func TestAudit(t *testing.T) {
 	assert.Equal(t, root, treeHashes[0][0])
 	for i := 0; i < n; i++ {
 		auditPath, _ := MerkleLeafPath([]byte(fmt.Sprintf("%d", i)), hashes)
-		value := MerkleProve(auditPath, root)
+		value, err := MerkleProve(auditPath, root[:])
+		assert.NoError(t, err)
 		assert.Equal(t, []byte(fmt.Sprintf("%d", i)), value)
 	}
 }

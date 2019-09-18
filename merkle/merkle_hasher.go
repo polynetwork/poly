@@ -21,6 +21,7 @@ package merkle
 import (
 	"bytes"
 	"crypto/sha256"
+	"errors"
 	"fmt"
 	"math"
 
@@ -200,26 +201,26 @@ func MerkleHashes(preLeaves []common.Uint256, depth int) [][]common.Uint256 {
 	return levels
 }
 
-func MerkleProve(path []byte, root common.Uint256) []byte {
+func MerkleProve(path []byte, root []byte) ([]byte, error) {
 	source := common.NewZeroCopySource(path)
 	l, eof := source.NextUint64()
 	if eof {
-		return nil
+		return nil, errors.New("read uint64 error")
 	}
 	value, eof := source.NextBytes(l)
 	if eof {
-		return nil
+		return nil, errors.New("read bytes error")
 	}
 	hash := HashLeaf(value)
 	size := int((source.Size() - source.Pos()) / common.UINT256_SIZE)
 	for i := 0; i < size; i++ {
 		f, eof := source.NextByte()
 		if eof {
-			return nil
+			return nil, errors.New("read byte error")
 		}
 		v, eof := source.NextHash()
 		if eof {
-			return nil
+			return nil, errors.New("read hash error")
 		}
 		if f == LEFT {
 			hash = HashChildren(v, hash)
@@ -228,10 +229,10 @@ func MerkleProve(path []byte, root common.Uint256) []byte {
 		}
 	}
 
-	if !bytes.Equal(hash[:], root[:]) {
-		return nil
+	if !bytes.Equal(hash[:], root) {
+		return nil, fmt.Errorf("except root is not equal actual root, except:%x, actual:%x", hash, root)
 	}
-	return value
+	return value, nil
 }
 
 func depth(n int) int {
