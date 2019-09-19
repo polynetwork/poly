@@ -343,7 +343,7 @@ func (this *BlockStore) putTransaction(tx *types.Transaction, height uint32) err
 	if err := serialization.WriteUint32(value, height); err != nil {
 		return err
 	}
-	if err := serialization.WriteVarBytes(value, tx.Raw); err != nil {
+	if err := serialization.WriteBytes(value, tx.Raw); err != nil {
 		return err
 	}
 	this.store.BatchPut(key, value.Bytes())

@@ -90,7 +90,7 @@ func newBlockPool(server *Server, historyLen uint32, store *ChainStore) (*BlockP
 	for ; blkNum <= store.GetChainedBlockNum(); blkNum++ {
 		blk, err := store.GetBlock(blkNum)
 		if err != nil {
-			return nil, fmt.Errorf("failed to load block %d: %s", blkNum, err)
+			return nil, fmt.Errorf("failed to load block height %d: error:%s", blkNum, err)
 		}
 		pool.candidateBlocks[blkNum] = &CandidateInfo{
 			SealedBlock: blk,
