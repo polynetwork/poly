@@ -20,9 +20,10 @@ package neo
 
 import (
 	"fmt"
-	"github.com/ontio/multi-chain/common"
 	"math"
 	"sort"
+
+	"github.com/ontio/multi-chain/common"
 )
 
 type Peer struct {

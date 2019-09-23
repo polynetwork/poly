@@ -28,7 +28,7 @@ import (
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/event"
 	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
-	"github.com/ontio/multi-chain/native/service/header_sync/ont"
+	"github.com/ontio/multi-chain/native/service/header_sync/neo"
 	"github.com/ontio/multi-chain/native/service/side_chain_manager"
 	"github.com/ontio/multi-chain/native/service/utils"
 )
@@ -74,13 +74,13 @@ func putRequest(native *native.NativeService, txHash common.Uint256, chainID uin
 
 func VerifyFromNeoTx(native *native.NativeService, proof []byte, fromChainid uint64, height uint32) (*FromMerkleValue, error) {
 	//get block header
-	header, err := ont.GetHeaderByHeight(native, fromChainid, height)
+	header, err := neo.GetHeaderByHeight(native, fromChainid, height)
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromNeoTx, get header by height %d from chain %d error: %v",
 			height, fromChainid, err)
 	}
 
-	v, err := merkle.MerkleProve(proof, header.CrossStatesRoot.ToArray())
+	v, err := merkle.MerkleProve(proof, header.CrossStatesRoot.Bytes())
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromNeoTx, merkle.MerkleProve verify merkle proof error")
 	}
