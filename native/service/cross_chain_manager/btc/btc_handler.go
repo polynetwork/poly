@@ -76,7 +76,7 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 
 	err = crosscommon.ValidateVote(service, vote)
 	if err != nil {
-		return false, nil, fmt.Errorf("btc Vote, ValidateVote error: %v", err)
+		return false, nil, nil
 	}
 
 	proofBytes, err := getBtcProof(service, params.TxHash)
