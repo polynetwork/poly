@@ -129,6 +129,7 @@ func (tx *Transaction) Deserialization(source *common.ZeroCopySource) error {
 		}
 		sigs[i] = sig
 	}
+	tx.Sigs = sigs
 	pend := source.Pos()
 	lenAll := pend - pstart
 	if lenAll > MAX_TX_SIZE {
@@ -229,7 +230,11 @@ func (this *Sig) Deserialize(source *common.ZeroCopySource) error {
 		if eof {
 			return errors.New("[Sig] deserialize read sigData error")
 		}
-		pubKeys[i] = data
+		pk, err := keypair.DeserializePublicKey(data)
+		if err != nil {
+			return err
+		}
+		pubKeys[i] = pk
 	}
 	this.PubKeys = pubKeys
 	m, eof := source.NextUint16()
