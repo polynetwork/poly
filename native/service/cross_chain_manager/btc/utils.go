@@ -263,6 +263,18 @@ func getBtcProof(native *native.NativeService, txHash []byte) ([]byte, error) {
 	return btcProofBytes, nil
 }
 
+func checkBtcProof(native *native.NativeService, txHash []byte) (bool, error) {
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_BTC), txHash)
+	btcProofStore, err := native.GetCacheDB().Get(key)
+	if err != nil {
+		return false, fmt.Errorf("getBtcProof, get btcProofStore error: %v", err)
+	}
+	if btcProofStore == nil {
+		return true, nil
+	}
+	return false, nil
+}
+
 func putBtcVote(native *native.NativeService, txHash []byte, vote *crosscommon.Vote) error {
 	sink := common.NewZeroCopySink(nil)
 	vote.Serialization(sink)

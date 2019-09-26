@@ -190,6 +190,15 @@ func notifyBtcTx(native *native.NativeService, proof, tx []byte, height uint32, 
 	}
 
 	txid := mtx.TxHash()
+
+	ok, err := checkBtcProof(native, txid[:])
+	if err != nil {
+		return fmt.Errorf("notifyBtcTx, checkBtcProof error: %v", err)
+	}
+	if !ok {
+		return fmt.Errorf("notifyBtcTx, btc proof already exist")
+	}
+
 	isExist := false
 	for _, hash := range mb.Hashes {
 		if bytes.Equal(hash[:], txid[:]) {
