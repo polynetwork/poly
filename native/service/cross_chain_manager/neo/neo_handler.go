@@ -42,10 +42,6 @@ func NewNEOHandler() *NEOHandler {
 	return &NEOHandler{}
 }
 
-func (this *NEOHandler) Vote(service *native.NativeService) (bool, *crosscommon.MakeTxParam, error) {
-	return true, nil, nil
-}
-
 func (this *NEOHandler) MakeDepositProposal(service *native.NativeService) (*crosscommon.MakeTxParam, error) {
 	params := new(crosscommon.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {

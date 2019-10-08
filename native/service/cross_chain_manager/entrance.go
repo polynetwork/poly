@@ -122,11 +122,12 @@ func Vote(native *native.NativeService) ([]byte, error) {
 	if sideChain.ChainId != from {
 		return utils.BYTE_FALSE, fmt.Errorf("Vote, side chain is not registered")
 	}
-
-	handler, err := GetChainHandler(from)
-	if err != nil {
-		return utils.BYTE_FALSE, err
+	if from != 0 {
+		return utils.BYTE_FALSE, fmt.Errorf("Vote, side chain %d do not support vote", from)
 	}
+
+	handler := btc.NewBTCHandler()
+
 	//1. vote
 	ok, txParam, err := handler.Vote(native)
 	if err != nil {
