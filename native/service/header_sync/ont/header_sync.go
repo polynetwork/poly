@@ -20,6 +20,7 @@ package ont
 
 import (
 	"fmt"
+	"github.com/ontio/multi-chain/native/service/utils"
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/core/genesis"
@@ -48,11 +49,11 @@ func (this *ONTHandler) SyncGenesisHeader(native *native.NativeService) error {
 		return err
 	}
 
-	////check witness
-	//err = utils.ValidateOwner(native, operatorAddress)
-	//if err != nil {
-	//	return fmt.Errorf("SyncGenesisHeader, checkWitness error: %v", err)
-	//}
+	//check witness
+	err = utils.ValidateOwner(native, operatorAddress)
+	if err != nil {
+		return fmt.Errorf("SyncGenesisHeader, checkWitness error: %v", err)
+	}
 
 	header, err := otypes.HeaderFromRawBytes(params.GenesisHeader)
 	if err != nil {

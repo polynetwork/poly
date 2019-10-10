@@ -28,13 +28,13 @@ func RegisterCrossChainManagerContract(native *native.NativeService) {
 
 func GetChainHandler(chainid uint64) (crosscommon.ChainHandler, error) {
 	switch chainid {
-	case 0:
+	case utils.BTC_CHAIN_ID:
 		return btc.NewBTCHandler(), nil
-	case 1:
+	case utils.ETH_CHAIN_ID:
 		return eth.NewETHHandler(), nil
-	case 2:
+	case utils.ONT_CHAIN_ID:
 		return ont.NewONTHandler(), nil
-	case 3:
+	case utils.NEO_CHAIN_ID:
 		return neo.NewNEOHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported chainid:%d", chainid)

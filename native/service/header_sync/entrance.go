@@ -2,6 +2,7 @@ package header_sync
 
 import (
 	"fmt"
+	"github.com/ontio/multi-chain/native/service/header_sync/eth"
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native"
@@ -25,9 +26,11 @@ func RegisterHeaderSyncContract(native *native.NativeService) {
 
 func GetChainHandler(chainid uint64) (hscommon.HeaderSyncHandler, error) {
 	switch chainid {
-	case 2:
+	case utils.ETH_CHAIN_ID:
+		return eth.NewETHHandler(), nil
+	case utils.ONT_CHAIN_ID:
 		return ont.NewONTHandler(), nil
-	case 3:
+	case utils.NEO_CHAIN_ID:
 		return neo.NewNEOHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported chainid:%d", chainid)
