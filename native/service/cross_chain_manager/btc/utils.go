@@ -342,16 +342,9 @@ func notifyBtcProof(native *native.NativeService, txid, btcProof string) {
 		})
 }
 
-func verifySigs(sigs [][]byte, addr string, redeem []byte, tx *wire.MsgTx, params *chaincfg.Params) (int, error) {
-	cls, addrs, n, err := txscript.ExtractPkScriptAddrs(redeem, params)
-	if err != nil {
-		return n, fmt.Errorf("failed to extract pkscript addrs: %v", err)
-	}
-	if cls.String() != "multisig" {
-		return n, fmt.Errorf("wrong class of redeem: %s", cls.String())
-	}
+func verifySigs(sigs [][]byte, addr string, addrs []btcutil.Address, redeem []byte, tx *wire.MsgTx) error {
 	if len(sigs) != len(tx.TxIn) {
-		return n, fmt.Errorf("not enough sig, only %d sigs but %d required", len(sigs), len(tx.TxIn))
+		return fmt.Errorf("not enough sig, only %d sigs but %d required", len(sigs), len(tx.TxIn))
 	}
 
 	var signerAddr btcutil.Address = nil
@@ -361,30 +354,30 @@ func verifySigs(sigs [][]byte, addr string, redeem []byte, tx *wire.MsgTx, param
 		}
 	}
 	if signerAddr == nil {
-		return n, fmt.Errorf("address %s not found in redeem script", addr)
+		return fmt.Errorf("address %s not found in redeem script", addr)
 	}
 
 	for i, sig := range sigs {
 		if len(sig) < 1 {
-			return n, fmt.Errorf("length of no.%d sig is less than 1", i)
+			return fmt.Errorf("length of no.%d sig is less than 1", i)
 		}
 		tSig := sig[:len(sig)-1]
 		pSig, err := btcec.ParseDERSignature(tSig, btcec.S256())
 		if err != nil {
-			return n, fmt.Errorf("failed to parse no.%d sig: %v", i, err)
+			return fmt.Errorf("failed to parse no.%d sig: %v", i, err)
 		}
 
 		hash, err := txscript.CalcSignatureHash(redeem, txscript.SigHashType(sig[len(sig)-1]), tx, i)
 		if err != nil {
-			return n, fmt.Errorf("failed to calculate sig hash: %v", err)
+			return fmt.Errorf("failed to calculate sig hash: %v", err)
 		}
 
 		if !pSig.Verify(hash, signerAddr.(*btcutil.AddressPubKey).PubKey()) {
-			return n, fmt.Errorf("verify no.%d sig and not pass", i)
+			return fmt.Errorf("verify no.%d sig and not pass", i)
 		}
 	}
 
-	return n, nil
+	return nil
 }
 
 func putBtcMultiSignInfo(native *native.NativeService, txid []byte, multiSignInfo *MultiSignInfo) error {
@@ -415,4 +408,27 @@ func getBtcMultiSignInfo(native *native.NativeService, txid []byte) (*MultiSignI
 		}
 	}
 	return multiSignInfo, nil
+}
+
+func addSigToTx(sigMap map[uint64]*MultiSignItem, addrs []btcutil.Address, redeem []byte, tx *wire.MsgTx) (*wire.MsgTx, error) {
+	for idx, item := range sigMap {
+		builder := txscript.NewScriptBuilder().AddOp(txscript.OP_FALSE)
+		for _, addr := range addrs {
+			val, ok := item.MultiSignItem[addr.EncodeAddress()]
+			if !ok {
+				continue
+			}
+			builder.AddData(val)
+		}
+
+		builder.AddData(redeem)
+		script, err := builder.Script()
+		if err != nil {
+			return nil, fmt.Errorf("failed to build sigscript for input %d: %v", idx, err)
+		}
+
+		tx.TxIn[idx].SignatureScript = script
+	}
+
+	return tx, nil
 }

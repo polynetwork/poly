@@ -22,6 +22,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"github.com/btcsuite/btcd/txscript"
 
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -89,10 +90,6 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 		return fmt.Errorf("MultiSign, failed to get tx hash from param: %v", err)
 	}
 
-	redeemScript, err := getBtcRedeemScriptBytes(service)
-	if err != nil {
-		return fmt.Errorf("MultiSign, getBtcRedeemScript error: %v", err)
-	}
 	txb, err := service.GetCacheDB().Get(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(BTC_TX_PREFIX), txHash[:]))
 	if err != nil {
 		return fmt.Errorf("MultiSign, failed to get tx %s from cacheDB: %v", txHash.String(), err)
@@ -103,7 +100,19 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 		return fmt.Errorf("MultiSign, failed to decode tx: %v", err)
 	}
 
-	n, err := verifySigs(params.Signs, params.Address, redeemScript, mtx, netParam)
+	redeemScript, err := getBtcRedeemScriptBytes(service)
+	if err != nil {
+		return fmt.Errorf("MultiSign, getBtcRedeemScript error: %v", err)
+	}
+	cls, addrs, n, err := txscript.ExtractPkScriptAddrs(redeemScript, netParam)
+	if err != nil {
+		return fmt.Errorf("MultiSign, failed to extract pkscript addrs: %v", err)
+	}
+	if cls.String() != "multisig" {
+		return fmt.Errorf("MultiSign, wrong class of redeem: %s", cls.String())
+	}
+
+	err = verifySigs(params.Signs, params.Address, addrs, redeemScript, mtx)
 	if err != nil {
 		return fmt.Errorf("MultiSign, failed to verify: %v", err)
 	}
@@ -131,7 +140,21 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 		}
 	}
 	if flag {
-		//TODO: collect sign
+		mtx, err = addSigToTx(multiSignInfo.MultiSignInfo, addrs, redeemScript, mtx)
+		if err != nil {
+			return fmt.Errorf("MultiSign, failed to add sig to tx: %v", err)
+		}
+		var buf bytes.Buffer
+		err = mtx.BtcEncode(&buf, wire.ProtocolVersion, wire.LatestEncoding)
+		if err != nil {
+			return fmt.Errorf("MultiSign, failed to encode msgtx to bytes: %v", err)
+		}
+
+		service.AddNotify(
+			&event.NotifyEventInfo{
+				ContractAddress: utils.CrossChainManagerContractAddress,
+				States:          []interface{}{"btcTxToRelay", hex.EncodeToString(buf.Bytes())},
+			})
 	}
 
 	return nil
@@ -365,7 +388,7 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 		return fmt.Errorf("makeBtcTx, serialize rawtransaction fail: %v", err)
 	}
 	txHash := mtx.TxHash()
-	service.GetCacheDB().Put(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte([]byte(BTC_TX_PREFIX)),
+	service.GetCacheDB().Put(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(BTC_TX_PREFIX),
 		txHash[:]), buf.Bytes())
 
 	service.AddNotify(
