@@ -36,10 +36,7 @@ import (
 func putDoneTx(native *native.NativeService, txHash common.Uint256, chainID uint64) error {
 	contract := utils.CrossChainManagerContractAddress
 	prefix := txHash.ToArray()
-	chainIDBytes, err := utils.GetUint64Bytes(chainID)
-	if err != nil {
-		return fmt.Errorf("putRequestID, get chainIDBytes error: %v", err)
-	}
+	chainIDBytes := utils.GetUint64Bytes(chainID)
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(DONE_TX), chainIDBytes, prefix), cstates.GenRawStorageItem(txHash.ToArray()))
 	return nil
 }
@@ -47,10 +44,8 @@ func putDoneTx(native *native.NativeService, txHash common.Uint256, chainID uint
 func checkDoneTx(native *native.NativeService, txHash common.Uint256, chainID uint64) error {
 	contract := utils.CrossChainManagerContractAddress
 	prefix := txHash.ToArray()
-	chainIDBytes, err := utils.GetUint64Bytes(chainID)
-	if err != nil {
-		return fmt.Errorf("checkDoneTx, get chainIDBytes error: %v", err)
-	}
+	chainIDBytes := utils.GetUint64Bytes(chainID)
+
 	value, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(DONE_TX), chainIDBytes, prefix))
 	if err != nil {
 		return fmt.Errorf("checkDoneTx, native.GetCacheDB().Get error: %v", err)
@@ -64,10 +59,8 @@ func checkDoneTx(native *native.NativeService, txHash common.Uint256, chainID ui
 func putRequest(native *native.NativeService, txHash common.Uint256, chainID uint64, request []byte) error {
 	contract := utils.CrossChainManagerContractAddress
 	prefix := txHash.ToArray()
-	chainIDBytes, err := utils.GetUint64Bytes(chainID)
-	if err != nil {
-		return fmt.Errorf("putRequest, get chainIDBytes error: %v", err)
-	}
+	chainIDBytes := utils.GetUint64Bytes(chainID)
+
 	utils.PutBytes(native, utils.ConcatKey(contract, []byte(REQUEST), chainIDBytes, prefix), request)
 	return nil
 }
@@ -126,10 +119,7 @@ func MakeToNeoProof(native *native.NativeService, params *crosscommon.MakeTxPara
 	}
 	native.PutMerkleVal(sink.Bytes())
 	prefix := merkleValue.TxHash.ToArray()
-	chainIDBytes, err := utils.GetUint64Bytes(params.ToChainID)
-	if err != nil {
-		return fmt.Errorf("MakeToNeoProof, get chainIDBytes error: %v", err)
-	}
+	chainIDBytes := utils.GetUint64Bytes(params.ToChainID)
 	key := hex.EncodeToString(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(REQUEST), chainIDBytes, prefix))
 	notifyMakeToNeoProof(native, params.TxHash, params.ToChainID, key)
 	return nil

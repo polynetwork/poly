@@ -31,10 +31,8 @@ import (
 
 func getRegisterSideChain(native *native.NativeService, chanid uint64) (*SideChain, error) {
 	contract := utils.SideChainManagerContractAddress
-	chainidByte, err := utils.GetUint64Bytes(chanid)
-	if err != nil {
-		return nil, fmt.Errorf("getRegisterSideChain, utils.GetUint64Bytes error: %v", err)
-	}
+	chainidByte := utils.GetUint64Bytes(chanid)
+
 	sideChainStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(REGISTER_SIDE_CHAIN_REQUEST),
 		chainidByte))
 	if err != nil {
@@ -57,12 +55,10 @@ func getRegisterSideChain(native *native.NativeService, chanid uint64) (*SideCha
 
 func putRegisterSideChain(native *native.NativeService, sideChain *SideChain) error {
 	contract := utils.SideChainManagerContractAddress
-	chainidByte, err := utils.GetUint64Bytes(sideChain.ChainId)
-	if err != nil {
-		return fmt.Errorf("putRegisterSideChain, utils.GetUint64Bytes error: %v", err)
-	}
+	chainidByte := utils.GetUint64Bytes(sideChain.ChainId)
+
 	sink := common.NewZeroCopySink(nil)
-	err = sideChain.Serialization(sink)
+	err := sideChain.Serialization(sink)
 	if err != nil {
 		return fmt.Errorf("putRegisterSideChain, sideChain.Serialization error: %v", err)
 	}
@@ -74,10 +70,8 @@ func putRegisterSideChain(native *native.NativeService, sideChain *SideChain) er
 
 func GetSideChain(native *native.NativeService, chainID uint64) (*SideChain, error) {
 	contract := utils.SideChainManagerContractAddress
-	chainIDByte, err := utils.GetUint64Bytes(chainID)
-	if err != nil {
-		return nil, fmt.Errorf("getSideChain, utils.GetUint64Bytes error: %v", err)
-	}
+	chainIDByte := utils.GetUint64Bytes(chainID)
+
 	sideChainStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(SIDE_CHAIN),
 		chainIDByte))
 	if err != nil {
@@ -100,12 +94,10 @@ func GetSideChain(native *native.NativeService, chainID uint64) (*SideChain, err
 
 func putSideChain(native *native.NativeService, sideChain *SideChain) error {
 	contract := utils.SideChainManagerContractAddress
-	chainidByte, err := utils.GetUint64Bytes(sideChain.ChainId)
-	if err != nil {
-		return fmt.Errorf("putSideChain, utils.GetUint32Bytes error: %v", err)
-	}
+	chainidByte := utils.GetUint64Bytes(sideChain.ChainId)
+
 	sink := common.NewZeroCopySink(nil)
-	err = sideChain.Serialization(sink)
+	err := sideChain.Serialization(sink)
 	if err != nil {
 		return fmt.Errorf("putSideChain, sideChain.Serialization error: %v", err)
 	}
@@ -117,10 +109,8 @@ func putSideChain(native *native.NativeService, sideChain *SideChain) error {
 
 func getUpdateSideChain(native *native.NativeService, chanid uint64) (*SideChain, error) {
 	contract := utils.SideChainManagerContractAddress
-	chainidByte, err := utils.GetUint64Bytes(chanid)
-	if err != nil {
-		return nil, fmt.Errorf("getUpdateSideChain, utils.GetUint64Bytes error: %v", err)
-	}
+	chainidByte:= utils.GetUint64Bytes(chanid)
+
 	sideChainStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(UPDATE_SIDE_CHAIN_REQUEST),
 		chainidByte))
 	if err != nil {
@@ -141,12 +131,10 @@ func getUpdateSideChain(native *native.NativeService, chanid uint64) (*SideChain
 
 func putUpdateSideChain(native *native.NativeService, sideChain *SideChain) error {
 	contract := utils.SideChainManagerContractAddress
-	chainidByte, err := utils.GetUint64Bytes(sideChain.ChainId)
-	if err != nil {
-		return fmt.Errorf("putUpdateSideChain, utils.GetUint64Bytes error: %v", err)
-	}
+	chainidByte := utils.GetUint64Bytes(sideChain.ChainId)
+
 	sink := common.NewZeroCopySink(nil)
-	err = sideChain.Serialization(sink)
+	err := sideChain.Serialization(sink)
 	if err != nil {
 		return fmt.Errorf("putUpdateSideChain, sideChain.Serialization error: %v", err)
 	}

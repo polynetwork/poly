@@ -19,10 +19,8 @@
 package utils
 
 import (
-	"bytes"
-	"fmt"
+	"encoding/binary"
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/serialization"
 	"github.com/ontio/multi-chain/errors"
 	"github.com/ontio/multi-chain/native"
 )
@@ -42,26 +40,28 @@ func ValidateOwner(native *native.NativeService, address common.Address) error {
 	return nil
 }
 
-func GetUint32Bytes(num uint32) ([]byte, error) {
-	bf := new(bytes.Buffer)
-	if err := serialization.WriteUint32(bf, num); err != nil {
-		return nil, fmt.Errorf("serialization.WriteUint32, serialize uint32 error: %v", err)
-	}
-	return bf.Bytes(), nil
+func GetUint32Bytes(num uint32) []byte {
+	var p [4]byte
+	binary.LittleEndian.PutUint32(p[:], num)
+	return p[:]
 }
 
-func GetBytesUint32(b []byte) (uint32, error) {
-	num, err := serialization.ReadUint32(bytes.NewBuffer(b))
-	if err != nil {
-		return 0, fmt.Errorf("serialization.ReadUint32, deserialize uint32 error: %v", err)
+func GetBytesUint32(b []byte) uint32 {
+	if len(b) != 4 {
+		return 0
 	}
-	return num, nil
+	return binary.LittleEndian.Uint32(b[:])
 }
 
-func GetUint64Bytes(num uint64) ([]byte, error) {
-	bf := new(bytes.Buffer)
-	if err := serialization.WriteUint64(bf, num); err != nil {
-		return nil, fmt.Errorf("serialization.WriteUint64, serialize uint64 error: %v", err)
+func GetBytesUint64(b []byte) uint64 {
+	if len(b) != 8 {
+		return 0
 	}
-	return bf.Bytes(), nil
+	return binary.LittleEndian.Uint64(b[:])
+}
+
+func GetUint64Bytes(num uint64) []byte {
+	var p [8]byte
+	binary.LittleEndian.PutUint64(p[:], num)
+	return p[:]
 }

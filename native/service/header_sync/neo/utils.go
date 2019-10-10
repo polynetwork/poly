@@ -35,14 +35,9 @@ import (
 func PutBlockHeader(native *native.NativeService, chainID uint64, blockHeader *neorpc.BlockHeader) error {
 	contract := utils.HeaderSyncContractAddress
 	headerBytes := blockHeader.ToBytes()
-	chainIDBytes, err := utils.GetUint64Bytes(chainID)
-	if err != nil {
-		return fmt.Errorf("PutBlockHeader chainIDBytes, GetUint64Bytes error: %v", err)
-	}
-	heightBytes, err := utils.GetUint32Bytes(blockHeader.Index)
-	if err != nil {
-		return fmt.Errorf("PutBlockHeader heightBytes, getUint32Bytes error: %v", err)
-	}
+	chainIDBytes := utils.GetUint64Bytes(chainID)
+	heightBytes := utils.GetUint32Bytes(blockHeader.Index)
+
 	blockHash := blockHeader.Hash
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(hscommon.BLOCK_HEADER), chainIDBytes, blockHash.Bytes()),
 		cstates.GenRawStorageItem(headerBytes))
@@ -55,14 +50,9 @@ func PutBlockHeader(native *native.NativeService, chainID uint64, blockHeader *n
 
 func GetHeaderByHeight(native *native.NativeService, chainID uint64, height uint32) (*neorpc.BlockHeader, error) {
 	contract := utils.HeaderSyncContractAddress
-	chainIDBytes, err := utils.GetUint64Bytes(chainID)
-	if err != nil {
-		return nil, fmt.Errorf("GetHeaderByHeight, GetUint64Bytes error: %v", err)
-	}
-	heightBytes, err := utils.GetUint32Bytes(height)
-	if err != nil {
-		return nil, fmt.Errorf("GetHeaderByHeight, getUint32Bytes error: %v", err)
-	}
+	chainIDBytes := utils.GetUint64Bytes(chainID)
+	heightBytes := utils.GetUint32Bytes(height)
+
 	blockHashStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(hscommon.HEADER_INDEX), chainIDBytes, heightBytes))
 	if err != nil {
 		return nil, fmt.Errorf("GetHeaderByHeight, get blockHashStore error: %v", err)
@@ -92,10 +82,8 @@ func GetHeaderByHeight(native *native.NativeService, chainID uint64, height uint
 
 func GetHeaderByHash(native *native.NativeService, chainID uint64, hash common.Uint256) (*neorpc.BlockHeader, error) {
 	contract := utils.HeaderSyncContractAddress
-	chainIDBytes, err := utils.GetUint64Bytes(chainID)
-	if err != nil {
-		return nil, fmt.Errorf("GetHeaderByHash, getUint32Bytes error: %v", err)
-	}
+	chainIDBytes := utils.GetUint64Bytes(chainID)
+
 	header := &neorpc.BlockHeader{}
 	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(hscommon.BLOCK_HEADER), chainIDBytes, hash.ToArray()))
 	if err != nil {

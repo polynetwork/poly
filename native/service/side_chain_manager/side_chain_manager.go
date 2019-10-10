@@ -120,11 +120,7 @@ func ApproveRegisterSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, putSideChain error: %v", err)
 	}
-	chainidByte, err := utils.GetUint64Bytes(params.Chainid)
-	if err != nil {
-		return nil, fmt.Errorf("ApproveRegisterSideChain, utils.GetUint64Bytes error: %v", err)
-	}
-	native.GetCacheDB().Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(REGISTER_SIDE_CHAIN_REQUEST), chainidByte))
+	native.GetCacheDB().Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(REGISTER_SIDE_CHAIN_REQUEST), utils.GetUint64Bytes(params.Chainid)))
 
 	return utils.BYTE_TRUE, nil
 }
@@ -183,10 +179,7 @@ func ApproveUpdateSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, putSideChain error: %v", err)
 	}
-	chainidByte, err := utils.GetUint64Bytes(params.Chainid)
-	if err != nil {
-		return nil, fmt.Errorf("ApproveUpdateSideChain, utils.GetUint64Bytes error: %v", err)
-	}
+	chainidByte := utils.GetUint64Bytes(params.Chainid)
 	native.GetCacheDB().Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(UPDATE_SIDE_CHAIN_REQUEST), chainidByte))
 
 	return utils.BYTE_TRUE, nil
@@ -217,10 +210,7 @@ func RemoveSideChain(native *native.NativeService) ([]byte, error) {
 	if sideChain.ChainId == math.MaxUint64 {
 		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, chainid is not registered")
 	}
-	chainidByte, err := utils.GetUint64Bytes(params.Chainid)
-	if err != nil {
-		return nil, fmt.Errorf("RemoveSideChain, utils.GetUint64Bytes error: %v", err)
-	}
+	chainidByte := utils.GetUint64Bytes(params.Chainid)
 	native.GetCacheDB().Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(SIDE_CHAIN), chainidByte))
 
 	return utils.BYTE_TRUE, nil

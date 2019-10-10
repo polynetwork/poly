@@ -264,10 +264,7 @@ func chooseUtxos(native *native.NativeService, chainID uint64, amount int64, fee
 }
 
 func putUtxos(native *native.NativeService, chainID uint64, utxos *Utxos) error {
-	chainIDBytes, err := utils.GetUint64Bytes(chainID)
-	if err != nil {
-		return fmt.Errorf("putUtxo, utils.GetBytesUint64 err:%v", err)
-	}
+	chainIDBytes := utils.GetUint64Bytes(chainID)
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(UTXOS), chainIDBytes)
 	sink := common.NewZeroCopySink(nil)
 	utxos.Serialization(sink)
@@ -276,10 +273,7 @@ func putUtxos(native *native.NativeService, chainID uint64, utxos *Utxos) error 
 }
 
 func getUtxos(native *native.NativeService, chainID uint64) (*Utxos, error) {
-	chainIDBytes, err := utils.GetUint64Bytes(chainID)
-	if err != nil {
-		return nil, fmt.Errorf("getUtxos, utils.GetBytesUint64 err:%v", err)
-	}
+	chainIDBytes := utils.GetUint64Bytes(chainID)
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(UTXOS), chainIDBytes)
 	utxosStore, err := native.GetCacheDB().Get(key)
 	if err != nil {
