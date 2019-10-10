@@ -323,14 +323,14 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 	txHashBytes := txHash.CloneBytes()
 	service.GetCacheDB().Put(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte([]byte(BTC_TX_PREFIX)),
 		txHashBytes), buf.Bytes())
-	scriptPubkeys := make([][]byte, 0)
-	for _, v := range choosed {
-		scriptPubkeys = append(scriptPubkeys, v.ScriptPubkey)
+	redeemScript, err := getBtcRedeemScript(service)
+	if err != nil {
+		return fmt.Errorf("makeBtcTx, getBtcRedeemScript error: %v", err)
 	}
 	service.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
-			States:          []interface{}{"makeBtcTx", hex.EncodeToString(buf.Bytes()), scriptPubkeys},
+			States:          []interface{}{"makeBtcTx", hex.EncodeToString(buf.Bytes()), redeemScript},
 		})
 
 	// TODO: charge
