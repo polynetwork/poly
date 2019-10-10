@@ -296,10 +296,7 @@ func getUtxos(native *native.NativeService, chainID uint64) (*Utxos, error) {
 }
 
 func putBtcRedeemScript(native *native.NativeService, redeemScript string) error {
-	chainIDBytes, err := utils.GetUint64Bytes(0)
-	if err != nil {
-		return fmt.Errorf("putBtcRedeemScript, utils.GetBytesUint64 err:%v", err)
-	}
+	chainIDBytes := utils.GetUint64Bytes(0)
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(REDEEM_SCRIPT), chainIDBytes)
 	redeem, err := hex.DecodeString(redeemScript)
 	if err != nil {
@@ -318,10 +315,7 @@ func getBtcRedeemScript(native *native.NativeService) (string, error) {
 }
 
 func getBtcRedeemScriptBytes(native *native.NativeService) ([]byte, error) {
-	chainIDBytes, err := utils.GetUint64Bytes(0)
-	if err != nil {
-		return nil, fmt.Errorf("getBtcRedeemScript, utils.GetBytesUint64 err:%v", err)
-	}
+	chainIDBytes := utils.GetUint64Bytes(0)
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(REDEEM_SCRIPT), chainIDBytes)
 	redeemStore, err := native.GetCacheDB().Get(key)
 	if err != nil {
@@ -348,16 +342,16 @@ func notifyBtcProof(native *native.NativeService, txid, btcProof string) {
 		})
 }
 
-func verifySigs(sigs [][]byte, addr string, redeem []byte, tx *wire.MsgTx, params *chaincfg.Params) error {
-	cls, addrs, _, err := txscript.ExtractPkScriptAddrs(redeem, params)
+func verifySigs(sigs [][]byte, addr string, redeem []byte, tx *wire.MsgTx, params *chaincfg.Params) (int, error) {
+	cls, addrs, n, err := txscript.ExtractPkScriptAddrs(redeem, params)
 	if err != nil {
-		return fmt.Errorf("failed to extract pkscript addrs: %v", err)
+		return n, fmt.Errorf("failed to extract pkscript addrs: %v", err)
 	}
 	if cls.String() != "multisig" {
-		return fmt.Errorf("wrong class of redeem: %s", cls.String())
+		return n, fmt.Errorf("wrong class of redeem: %s", cls.String())
 	}
 	if len(sigs) != len(tx.TxIn) {
-		return fmt.Errorf("not enough sig, only %d sigs but %d required", len(sigs), len(tx.TxIn))
+		return n, fmt.Errorf("not enough sig, only %d sigs but %d required", len(sigs), len(tx.TxIn))
 	}
 
 	var signerAddr btcutil.Address = nil
@@ -367,28 +361,58 @@ func verifySigs(sigs [][]byte, addr string, redeem []byte, tx *wire.MsgTx, param
 		}
 	}
 	if signerAddr == nil {
-		return fmt.Errorf("address %s not found in redeem script", addr)
+		return n, fmt.Errorf("address %s not found in redeem script", addr)
 	}
 
 	for i, sig := range sigs {
 		if len(sig) < 1 {
-			return fmt.Errorf("length of no.%d sig is less than 1", i)
+			return n, fmt.Errorf("length of no.%d sig is less than 1", i)
 		}
 		tSig := sig[:len(sig)-1]
 		pSig, err := btcec.ParseDERSignature(tSig, btcec.S256())
 		if err != nil {
-			return fmt.Errorf("failed to parse no.%d sig: %v", i, err)
+			return n, fmt.Errorf("failed to parse no.%d sig: %v", i, err)
 		}
 
 		hash, err := txscript.CalcSignatureHash(redeem, txscript.SigHashType(sig[len(sig)-1]), tx, i)
 		if err != nil {
-			return fmt.Errorf("failed to calculate sig hash: %v", err)
+			return n, fmt.Errorf("failed to calculate sig hash: %v", err)
 		}
 
 		if !pSig.Verify(hash, signerAddr.(*btcutil.AddressPubKey).PubKey()) {
-			return fmt.Errorf("verify no.%d sig and not pass", i)
+			return n, fmt.Errorf("verify no.%d sig and not pass", i)
 		}
 	}
 
+	return n, nil
+}
+
+func putBtcMultiSignInfo(native *native.NativeService, txid []byte, multiSignInfo *MultiSignInfo) error {
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(MULTI_SIGN_INFO), txid)
+	sink := common.NewZeroCopySink(nil)
+	multiSignInfo.Serialization(sink)
+	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(sink.Bytes()))
 	return nil
+}
+
+func getBtcMultiSignInfo(native *native.NativeService, txid []byte) (*MultiSignInfo, error) {
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(MULTI_SIGN_INFO), txid)
+	multiSignInfoStore, err := native.GetCacheDB().Get(key)
+	if err != nil {
+		return nil, fmt.Errorf("getBtcMultiSignInfo, get multiSignInfoStore error: %v", err)
+	}
+	multiSignInfoBytes, err := cstates.GetValueFromRawStorageItem(multiSignInfoStore)
+	if err != nil {
+		return nil, fmt.Errorf("getBtcMultiSignInfo, deserialize from raw storage item err:%v", err)
+	}
+	multiSignInfo := &MultiSignInfo{
+		MultiSignInfo: make(map[uint64]*MultiSignItem),
+	}
+	if multiSignInfoStore != nil {
+		err = multiSignInfo.Deserialization(common.NewZeroCopySource(multiSignInfoBytes))
+		if err != nil {
+			return nil, fmt.Errorf("getBtcMultiSignInfo, deserialize multiSignInfo err:%v", err)
+		}
+	}
+	return multiSignInfo, nil
 }

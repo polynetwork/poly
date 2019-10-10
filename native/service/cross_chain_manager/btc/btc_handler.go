@@ -43,6 +43,7 @@ const (
 	NOTIFY_BTC_PROOF = "notifyBtcProof"
 	UTXOS            = "utxos"
 	REDEEM_SCRIPT    = "redeemScript"
+	MULTI_SIGN_INFO  = "multiSignInfo"
 )
 
 type BTCHandler struct {
@@ -92,7 +93,7 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 	if err != nil {
 		return fmt.Errorf("MultiSign, getBtcRedeemScript error: %v", err)
 	}
-	txb, err := service.GetCacheDB().Get(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte([]byte(BTC_TX_PREFIX)), txHash[:]))
+	txb, err := service.GetCacheDB().Get(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(BTC_TX_PREFIX), txHash[:]))
 	if err != nil {
 		return fmt.Errorf("MultiSign, failed to get tx %s from cacheDB: %v", txHash.String(), err)
 	}
@@ -102,9 +103,35 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 		return fmt.Errorf("MultiSign, failed to decode tx: %v", err)
 	}
 
-	err = verifySigs(params.Signs, params.Address, redeemScript, mtx, netParam)
+	n, err := verifySigs(params.Signs, params.Address, redeemScript, mtx, netParam)
 	if err != nil {
 		return fmt.Errorf("MultiSign, failed to verify: %v", err)
+	}
+
+	multiSignInfo, err := getBtcMultiSignInfo(service, params.TxHash)
+	if err != nil {
+		return fmt.Errorf("MultiSign, getBtcMultiSignInfo error: %v", err)
+	}
+	for i, v := range params.Signs {
+		multiSignItem := &MultiSignItem{
+			MultiSignItem: make(map[string][]byte),
+		}
+		multiSignItem.MultiSignItem[params.Address] = v
+		multiSignInfo.MultiSignInfo[uint64(i)] = multiSignItem
+	}
+	err = putBtcMultiSignInfo(service, params.TxHash, multiSignInfo)
+	if err != nil {
+		return fmt.Errorf("MultiSign, putBtcMultiSignInfo error: %v", err)
+	}
+
+	flag := true
+	for _, v := range multiSignInfo.MultiSignInfo {
+		if len(v.MultiSignItem) != n {
+			flag = false
+		}
+	}
+	if flag {
+		//TODO: collect sign
 	}
 
 	return nil
