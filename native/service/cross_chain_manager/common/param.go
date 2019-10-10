@@ -21,6 +21,24 @@ type ChainHandler interface {
 	MakeTransaction(service *native.NativeService, param *MakeTxParam) error
 }
 
+type InitRedeemScriptParam struct {
+	RedeemScript string
+}
+
+func (this *InitRedeemScriptParam) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteString(this.RedeemScript)
+}
+
+func (this *InitRedeemScriptParam) Deserialization(source *common.ZeroCopySource) error {
+	redeemScript, eof := source.NextString()
+	if eof {
+		return fmt.Errorf("MultiSignParam deserialize redeemScript error")
+	}
+
+	this.RedeemScript = redeemScript
+	return nil
+}
+
 type EntranceParam struct {
 	SourceChainID  uint64 `json:"sourceChainId"`
 	TxData         string `json:"txData"`
@@ -135,22 +153,16 @@ func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 }
 
 type VoteParam struct {
-	FromChainID uint64
-	Address     string
-	TxHash      []byte
+	Address string
+	TxHash  []byte
 }
 
 func (this *VoteParam) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteUint64(this.FromChainID)
 	sink.WriteVarBytes([]byte(this.Address))
 	sink.WriteVarBytes(this.TxHash)
 }
 
 func (this *VoteParam) Deserialization(source *common.ZeroCopySource) error {
-	fromChainID, eof := source.NextUint64()
-	if eof {
-		return fmt.Errorf("VoteParam deserialize fromChainID error")
-	}
 	address, eof := source.NextString()
 	if eof {
 		return fmt.Errorf("VoteParam deserialize address error")
@@ -160,9 +172,51 @@ func (this *VoteParam) Deserialization(source *common.ZeroCopySource) error {
 		return fmt.Errorf("VoteParam deserialize txHash error")
 	}
 
-	this.FromChainID = fromChainID
 	this.Address = address
 	this.TxHash = txHash
+	return nil
+}
+
+type MultiSignParam struct {
+	TxHash  []byte
+	Address string
+	Signs   [][]byte
+}
+
+func (this *MultiSignParam) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteVarBytes(this.TxHash)
+	sink.WriteVarBytes([]byte(this.Address))
+	sink.WriteUint64(uint64(len(this.Signs)))
+	for _, v := range this.Signs {
+		sink.WriteVarBytes(v)
+	}
+}
+
+func (this *MultiSignParam) Deserialization(source *common.ZeroCopySource) error {
+	txHash, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("MultiSignParam deserialize txHash error")
+	}
+	address, eof := source.NextString()
+	if eof {
+		return fmt.Errorf("MultiSignParam deserialize address error")
+	}
+	n, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("MultiSignParam deserialize signs length error")
+	}
+	signs := make([][]byte, 0)
+	for i := 0; uint64(i) < n; i++ {
+		v, eof := source.NextVarBytes()
+		if eof {
+			return fmt.Errorf("deserialize Signs error")
+		}
+		signs = append(signs, v)
+	}
+
+	this.TxHash = txHash
+	this.Address = address
+	this.Signs = signs
 	return nil
 }
 

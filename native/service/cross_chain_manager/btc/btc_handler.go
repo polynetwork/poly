@@ -22,12 +22,15 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
 	wire_bch "github.com/gcash/bchd/wire"
 	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/core/genesis"
+	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/event"
 	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
@@ -39,6 +42,7 @@ const (
 	BTC_ADDRESS      = "btc"
 	NOTIFY_BTC_PROOF = "notifyBtcProof"
 	UTXOS            = "utxos"
+	REDEEM_SCRIPT    = "redeemScript"
 )
 
 type BTCHandler struct {
@@ -46,6 +50,43 @@ type BTCHandler struct {
 
 func NewBTCHandler() *BTCHandler {
 	return &BTCHandler{}
+}
+
+func (this *BTCHandler) InitRedeemScript(service *native.NativeService) error {
+	params := new(crosscommon.InitRedeemScriptParam)
+	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
+		return fmt.Errorf("InitRedeemScript, contract params deserialize error: %v", err)
+	}
+
+	// get operator from database
+	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
+	if err != nil {
+		return err
+	}
+
+	//check witness
+	err = utils.ValidateOwner(service, operatorAddress)
+	if err != nil {
+		return fmt.Errorf("InitRedeemScript, checkWitness error: %v", err)
+	}
+
+	err = putBtcRedeemScript(service, params.RedeemScript)
+	if err != nil {
+		return fmt.Errorf("InitRedeemScript, putBtcRedeemScript error: %v", err)
+	}
+
+	return nil
+}
+
+func (this *BTCHandler) MultiSign(service *native.NativeService) error {
+	params := new(crosscommon.MultiSignParam)
+	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
+		return fmt.Errorf("btc Vote, contract params deserialize error: %v", err)
+	}
+
+	//TODO: verify sign
+
+	return nil
 }
 
 func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.MakeTxParam, error) {
@@ -96,7 +137,7 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 		return false, nil, fmt.Errorf("btc Vote, failed to decode the transaction")
 	}
 
-	err = addUtxos(service, params.FromChainID, proof.Height, mtx)
+	err = addUtxos(service, 0, proof.Height, mtx)
 	if err != nil {
 		return false, nil, fmt.Errorf("btc Vote, updateUtxo error: %s", err)
 	}
@@ -109,7 +150,7 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 
 	return true, &crosscommon.MakeTxParam{
 		TxHash:              mtx.TxHash().String(),
-		FromChainID:         params.FromChainID,
+		FromChainID:         0,
 		FromContractAddress: BTC_ADDRESS,
 		ToChainID:           p.ChainId,
 		Method:              "unlock",
@@ -278,11 +319,18 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 	}
 
 	// TODO: Define a key
-	service.GetCacheDB().Put([]byte(BTC_TX_PREFIX), buf.Bytes())
+	txHash := mtx.TxHash()
+	txHashBytes := txHash.CloneBytes()
+	service.GetCacheDB().Put(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte([]byte(BTC_TX_PREFIX)),
+		txHashBytes), buf.Bytes())
+	scriptPubkeys := make([][]byte, 0)
+	for _, v := range choosed {
+		scriptPubkeys = append(scriptPubkeys, v.ScriptPubkey)
+	}
 	service.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
-			States:          []interface{}{"makeBtcTx", hex.EncodeToString(buf.Bytes())},
+			States:          []interface{}{"makeBtcTx", hex.EncodeToString(buf.Bytes()), scriptPubkeys},
 		})
 
 	// TODO: charge

@@ -20,10 +20,13 @@ package side_chain_manager
 
 import (
 	"fmt"
+	"math"
+
 	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/core/genesis"
+	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/service/utils"
-	"math"
 )
 
 const (
@@ -94,6 +97,18 @@ func ApproveRegisterSideChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, contract params deserialize error: %v", err)
 	}
 
+	// get operator from database
+	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
+
+	//check witness
+	err = utils.ValidateOwner(native, operatorAddress)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, checkWitness error: %v", err)
+	}
+
 	registerSideChain, err := getRegisterSideChain(native, params.Chainid)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, getRegisterSideChain error: %v", err)
@@ -145,6 +160,18 @@ func ApproveUpdateSideChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, contract params deserialize error: %v", err)
 	}
 
+	// get operator from database
+	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
+
+	//check witness
+	err = utils.ValidateOwner(native, operatorAddress)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, checkWitness error: %v", err)
+	}
+
 	sideChain, err := getUpdateSideChain(native, params.Chainid)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, getUpdateSideChain error: %v", err)
@@ -169,6 +196,18 @@ func RemoveSideChain(native *native.NativeService) ([]byte, error) {
 	params := new(ChainidParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, contract params deserialize error: %v", err)
+	}
+
+	// get operator from database
+	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
+
+	//check witness
+	err = utils.ValidateOwner(native, operatorAddress)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, checkWitness error: %v", err)
 	}
 
 	sideChain, err := GetSideChain(native, params.Chainid)
@@ -212,6 +251,19 @@ func ApproveAssetMapping(native *native.NativeService) ([]byte, error) {
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveAssetMapping, contract params deserialize error: %v", err)
 	}
+
+	// get operator from database
+	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
+
+	//check witness
+	err = utils.ValidateOwner(native, operatorAddress)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveAssetMapping, checkWitness error: %v", err)
+	}
+
 	assetMapRequest, err := getAssetMapRequest(native, params.AssetName)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveAssetMapping, getAssetMapRequest error: %v", err)

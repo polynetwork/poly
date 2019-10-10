@@ -19,11 +19,16 @@ import (
 const (
 	IMPORT_OUTER_TRANSFER_NAME = "ImportOuterTransfer"
 	VOTE_NAME                  = "Vote"
+	MULTI_SIGN                 = "MultiSign"
+	INIT_REDEEM_SCRIPT         = "initRedeemScript"
 )
 
 func RegisterCrossChainManagerContract(native *native.NativeService) {
+	native.Register(INIT_REDEEM_SCRIPT, InitRedeemScript)
+
 	native.Register(IMPORT_OUTER_TRANSFER_NAME, ImportExTransfer)
 	native.Register(VOTE_NAME, Vote)
+	native.Register(MULTI_SIGN, MultiSign)
 }
 
 func GetChainHandler(chainid uint64) (crosscommon.ChainHandler, error) {
@@ -107,25 +112,6 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 }
 
 func Vote(native *native.NativeService) ([]byte, error) {
-	params := new(crosscommon.VoteParam)
-	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("Vote, contract params deserialize error: %v", err)
-	}
-
-	from := params.FromChainID
-
-	//check if chainid exist
-	sideChain, err := side_chain_manager.GetSideChain(native, from)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("Vote, side_chain_manager.GetSideChain error: %v", err)
-	}
-	if sideChain.ChainId != from {
-		return utils.BYTE_FALSE, fmt.Errorf("Vote, side chain is not registered")
-	}
-	if from != 0 {
-		return utils.BYTE_FALSE, fmt.Errorf("Vote, side chain %d do not support vote", from)
-	}
-
 	handler := btc.NewBTCHandler()
 
 	//1. vote
@@ -138,7 +124,7 @@ func Vote(native *native.NativeService) ([]byte, error) {
 		targetid := txParam.ToChainID
 
 		//check if chainid exist
-		sideChain, err = side_chain_manager.GetSideChain(native, targetid)
+		sideChain, err := side_chain_manager.GetSideChain(native, targetid)
 		if err != nil {
 			return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side_chain_manager.GetSideChain error: %v", err)
 		}
@@ -156,6 +142,28 @@ func Vote(native *native.NativeService) ([]byte, error) {
 			return utils.BYTE_FALSE, err
 		}
 		return utils.BYTE_TRUE, nil
+	}
+	return utils.BYTE_TRUE, nil
+}
+
+func MultiSign(native *native.NativeService) ([]byte, error) {
+	handler := btc.NewBTCHandler()
+
+	//1. multi sign
+	err := handler.MultiSign(native)
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
+	return utils.BYTE_TRUE, nil
+}
+
+func InitRedeemScript(native *native.NativeService) ([]byte, error) {
+	handler := btc.NewBTCHandler()
+
+	//1. multi sign
+	err := handler.InitRedeemScript(native)
+	if err != nil {
+		return utils.BYTE_FALSE, err
 	}
 	return utils.BYTE_TRUE, nil
 }

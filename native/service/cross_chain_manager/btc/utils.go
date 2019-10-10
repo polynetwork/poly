@@ -395,6 +395,36 @@ func getUtxos(native *native.NativeService, chainID uint64) (*Utxos, error) {
 	return utxos, nil
 }
 
+func putBtcRedeemScript(native *native.NativeService, redeemScript string) error {
+	chainIDBytes, err := utils.GetUint64Bytes(0)
+	if err != nil {
+		return fmt.Errorf("putBtcRedeemScript, utils.GetBytesUint64 err:%v", err)
+	}
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(REDEEM_SCRIPT), chainIDBytes)
+	native.GetCacheDB().Put(key, cstates.GenRawStorageItem([]byte(redeemScript)))
+	return nil
+}
+
+func getBtcRedeemScript(native *native.NativeService) (string, error) {
+	chainIDBytes, err := utils.GetUint64Bytes(0)
+	if err != nil {
+		return "", fmt.Errorf("getBtcRedeemScript, utils.GetBytesUint64 err:%v", err)
+	}
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(REDEEM_SCRIPT), chainIDBytes)
+	btcProofStore, err := native.GetCacheDB().Get(key)
+	if err != nil {
+		return "", fmt.Errorf("getBtcRedeemScript, get btcProofStore error: %v", err)
+	}
+	if btcProofStore == nil {
+		return "", fmt.Errorf("getBtcRedeemScript, can not find any records")
+	}
+	btcProofBytes, err := cstates.GetValueFromRawStorageItem(btcProofStore)
+	if err != nil {
+		return "", fmt.Errorf("getBtcRedeemScript, deserialize from raw storage item err:%v", err)
+	}
+	return string(btcProofBytes), nil
+}
+
 func notifyBtcProof(native *native.NativeService, txid, btcProof string) {
 	if !config.DefConfig.Common.EnableEventLog {
 		return

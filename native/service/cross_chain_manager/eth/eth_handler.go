@@ -76,7 +76,7 @@ func (this *ETHHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 	}
 
 	return true, &crosscommon.MakeTxParam{
-		FromChainID:         params.FromChainID,
+		//FromChainID:         params.FromChainID,
 		FromContractAddress: proof.FromAddress,
 		ToChainID:           proof.ToChainID,
 		Method:              "unlock",

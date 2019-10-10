@@ -27,6 +27,7 @@ import (
 	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/native"
 	hscommon "github.com/ontio/multi-chain/native/service/header_sync/common"
+	"github.com/ontio/multi-chain/native/service/utils"
 	otypes "github.com/ontio/ontology/core/types"
 )
 
