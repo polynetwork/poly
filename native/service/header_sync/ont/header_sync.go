@@ -20,7 +20,6 @@ package ont
 
 import (
 	"fmt"
-	"github.com/ontio/multi-chain/native/service/utils"
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/core/genesis"

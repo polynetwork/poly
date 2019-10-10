@@ -1,8 +1,8 @@
 package btc
 
 import (
-	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"errors"
 	"fmt"
 
@@ -13,7 +13,6 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
-	"github.com/btcsuite/btcutil/base58"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
 	cstates "github.com/ontio/multi-chain/core/states"
@@ -34,20 +33,6 @@ const (
 )
 
 var netParam = &chaincfg.TestNet3Params
-var addr1 = "mj3LUsSvk9ZQH1pSHvC8LBtsYXsZvbky8H"
-var priv1 = "cTqbqa1YqCf4BaQTwYDGsPAB4VmWKUU67G5S1EtrHSWNRwY6QSag"
-var addr2 = "mtNiC48WWbGRk2zLqiTMwKLhrCk6rBqBen"
-var priv2 = "cT2HP4QvL8c6otn4LrzUWzgMBfTo1gzV2aobN1cTiuHPXH9Jk2ua"
-var addr3 = "mi1bYK8SR3Qsf2cdrxgak3spzFx4EVH1pf"
-var priv3 = "cSQmGg6spbhd23jHQ9HAtz3XU7GYJjYaBmFLWHbyKa9mWzTxEY5A"
-var addr4 = "mz3bTZaQ2tNzsn4szNE8R6gp5zyHuqN29V"
-var priv4 = "cPYAx61EjwshK5SQ6fqH7QGjc8L48xiJV7VRGpYzPSbkkZqrzQ5b"
-var addr5 = "mfzbFf6njbEuyvZGDiAdfKamxWfAMv47NG"
-var priv5 = "cVV9UmtnnhebmSQgHhbDZWCb7zBHbiAGDB9a5M2ffe1WpqvwD5zg"
-var addr6 = "n4ESieuFJq5HCvE5GU8B35YTfShZmFrCKM"
-var priv6 = "cNK7BwHmi8rZiqD2QfwJB1R6bF6qc7iVTMBNjTr2ACbsoq1vWau8"
-var addr7 = "msK9xpuXn5xqr4UK7KyWi9VCaFhiwCqqq6"
-var priv7 = "cUZdDF9sL11ya5civzMRYVYojoojjHbmWWm1yC5uRzfBRePVbQTZ"
 
 // not sure now
 type targetChainParam struct {
@@ -81,85 +66,6 @@ func (p *targetChainParam) resolve(amount int64, paramOutput *wire.TxOut) error 
 	sink.WriteInt64(amount)
 	p.AddrAndVal = sink.Bytes()
 	return nil
-}
-
-func buildScript(pubks [][]byte, require int) ([]byte, error) {
-	if len(pubks) == 0 || require <= 0 {
-		return nil, errors.New("Wrong public keys or require number")
-	}
-	var addrPks []*btcutil.AddressPubKey
-	for _, v := range pubks {
-		addrPk, err := btcutil.NewAddressPubKey(v, netParam)
-		if err != nil {
-			return nil, fmt.Errorf("Failed to parse address pubkey: %v", err)
-		}
-		addrPks = append(addrPks, addrPk)
-	}
-	s, err := txscript.MultiSigScript(addrPks, require)
-	if err != nil {
-		return nil, fmt.Errorf("Failed to build multi-sig script: %v", err)
-	}
-
-	return s, nil
-}
-
-func getPubKeys() [][]byte {
-	_, pubk1 := btcec.PrivKeyFromBytes(btcec.S256(), base58.Decode(priv1))
-	_, pubk2 := btcec.PrivKeyFromBytes(btcec.S256(), base58.Decode(priv2))
-	_, pubk3 := btcec.PrivKeyFromBytes(btcec.S256(), base58.Decode(priv3))
-	_, pubk4 := btcec.PrivKeyFromBytes(btcec.S256(), base58.Decode(priv4))
-	_, pubk5 := btcec.PrivKeyFromBytes(btcec.S256(), base58.Decode(priv5))
-	_, pubk6 := btcec.PrivKeyFromBytes(btcec.S256(), base58.Decode(priv6))
-	_, pubk7 := btcec.PrivKeyFromBytes(btcec.S256(), base58.Decode(priv7))
-
-	pubks := make([][]byte, 0)
-	pubks = append(pubks, pubk1.SerializeCompressed(), pubk2.SerializeCompressed(), pubk3.SerializeCompressed(),
-		pubk4.SerializeCompressed(), pubk5.SerializeCompressed(), pubk6.SerializeCompressed(), pubk7.SerializeCompressed())
-	return pubks
-}
-
-func checkTxOutputs(tx *wire.MsgTx, pubKeys [][]byte, require int) (ret bool, err error) {
-	// has to be 2?
-	if len(tx.TxOut) < 2 {
-		return false, errors.New("Number of transaction's outputs is at least greater than 2")
-	}
-	if tx.TxOut[0].Value <= 0 {
-		return false, fmt.Errorf("The value of crosschain transaction must be bigger than 0, but value is %d",
-			tx.TxOut[0].Value)
-	}
-
-	redeem, err := buildScript(pubKeys, require)
-	if err != nil {
-		return false, fmt.Errorf("Failed to build redeem script: %v", err)
-	}
-	c1 := txscript.GetScriptClass(tx.TxOut[0].PkScript)
-	if c1 == txscript.MultiSigTy {
-		if !bytes.Equal(redeem, tx.TxOut[0].PkScript) {
-			return false, fmt.Errorf("Wrong script: \"%x\" is not same as our \"%x\"",
-				tx.TxOut[0].PkScript, redeem)
-		}
-	} else if c1 == txscript.ScriptHashTy {
-		addr, err := btcutil.NewAddressScriptHash(redeem, netParam)
-		if err != nil {
-			return false, err
-		}
-		h, err := txscript.PayToAddrScript(addr)
-		if err != nil {
-			return false, err
-		}
-		if !bytes.Equal(h, tx.TxOut[0].PkScript) {
-			return false, fmt.Errorf("Wrong script: \"%x\" is not same as our \"%x\"", tx.TxOut[0].PkScript, h)
-		}
-	} else {
-		return false, errors.New("First output's pkScript is not supported")
-	}
-
-	c2 := txscript.GetScriptClass(tx.TxOut[1].PkScript)
-	if c2 != txscript.NullDataTy {
-		return false, errors.New("Second output's pkScript is not NullData type")
-	}
-
-	return true, nil
 }
 
 // This function needs to input the input and output information of the transaction
@@ -401,28 +307,40 @@ func putBtcRedeemScript(native *native.NativeService, redeemScript string) error
 		return fmt.Errorf("putBtcRedeemScript, utils.GetBytesUint64 err:%v", err)
 	}
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(REDEEM_SCRIPT), chainIDBytes)
-	native.GetCacheDB().Put(key, cstates.GenRawStorageItem([]byte(redeemScript)))
+	redeem, err := hex.DecodeString(redeemScript)
+	if err != nil {
+		return fmt.Errorf("putBtcRedeemScript, failed to decode redeem script: %v", err)
+	}
+	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(redeem))
 	return nil
 }
 
 func getBtcRedeemScript(native *native.NativeService) (string, error) {
+	redeem, err := getBtcRedeemScriptBytes(native)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(redeem), nil
+}
+
+func getBtcRedeemScriptBytes(native *native.NativeService) ([]byte, error) {
 	chainIDBytes, err := utils.GetUint64Bytes(0)
 	if err != nil {
-		return "", fmt.Errorf("getBtcRedeemScript, utils.GetBytesUint64 err:%v", err)
+		return nil, fmt.Errorf("getBtcRedeemScript, utils.GetBytesUint64 err:%v", err)
 	}
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(REDEEM_SCRIPT), chainIDBytes)
-	btcProofStore, err := native.GetCacheDB().Get(key)
+	redeemStore, err := native.GetCacheDB().Get(key)
 	if err != nil {
-		return "", fmt.Errorf("getBtcRedeemScript, get btcProofStore error: %v", err)
+		return nil, fmt.Errorf("getBtcRedeemScript, get btcProofStore error: %v", err)
 	}
-	if btcProofStore == nil {
-		return "", fmt.Errorf("getBtcRedeemScript, can not find any records")
+	if redeemStore == nil {
+		return nil, fmt.Errorf("getBtcRedeemScript, can not find any records")
 	}
-	btcProofBytes, err := cstates.GetValueFromRawStorageItem(btcProofStore)
+	redeemBytes, err := cstates.GetValueFromRawStorageItem(redeemStore)
 	if err != nil {
-		return "", fmt.Errorf("getBtcRedeemScript, deserialize from raw storage item err:%v", err)
+		return nil, fmt.Errorf("getBtcRedeemScript, deserialize from raw storage item err:%v", err)
 	}
-	return string(btcProofBytes), nil
+	return redeemBytes, nil
 }
 
 func notifyBtcProof(native *native.NativeService, txid, btcProof string) {
@@ -434,4 +352,49 @@ func notifyBtcProof(native *native.NativeService, txid, btcProof string) {
 			ContractAddress: utils.CrossChainManagerContractAddress,
 			States:          []interface{}{NOTIFY_BTC_PROOF, txid, btcProof},
 		})
+}
+
+func verifySigs(sigs [][]byte, addr string, redeem []byte, tx *wire.MsgTx, params *chaincfg.Params) error {
+	cls, addrs, _, err := txscript.ExtractPkScriptAddrs(redeem, params)
+	if err != nil {
+		return fmt.Errorf("failed to extract pkscript addrs: %v", err)
+	}
+	if cls.String() != "multisig" {
+		return fmt.Errorf("wrong class of redeem: %s", cls.String())
+	}
+	if len(sigs) != len(tx.TxIn) {
+		return fmt.Errorf("not enough sig, only %d sigs but %d required", len(sigs), len(tx.TxIn))
+	}
+
+	var signerAddr btcutil.Address = nil
+	for _, a := range addrs {
+		if a.EncodeAddress() == addr {
+			signerAddr = a
+		}
+	}
+	if signerAddr == nil {
+		return fmt.Errorf("address %s not found in redeem script", addr)
+	}
+
+	for i, sig := range sigs {
+		if len(sig) < 1 {
+			return fmt.Errorf("length of no.%d sig is less than 1", i)
+		}
+		tSig := sig[:len(sig)-1]
+		pSig, err := btcec.ParseDERSignature(tSig, btcec.S256())
+		if err != nil {
+			return fmt.Errorf("failed to parse no.%d sig: %v", i, err)
+		}
+
+		hash, err := txscript.CalcSignatureHash(redeem, txscript.SigHashType(sig[len(sig)-1]), tx, i)
+		if err != nil {
+			return fmt.Errorf("failed to calculate sig hash: %v", err)
+		}
+
+		if !pSig.Verify(hash, signerAddr.(*btcutil.AddressPubKey).PubKey()) {
+			return fmt.Errorf("verify no.%d sig and not pass", i)
+		}
+	}
+
+	return nil
 }
