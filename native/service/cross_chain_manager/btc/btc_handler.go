@@ -158,8 +158,7 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 		if err != nil {
 			return fmt.Errorf("MultiSign, txscript.PayToAddrScript, failed to get p2sh script: %v", err)
 		}
-		h := mtx.TxHash()
-		txHash := h.CloneBytes()
+
 		utxos, err := getUtxos(service, 0)
 		if err != nil {
 			return fmt.Errorf("MultiSign, getUtxos error: %v", err)
@@ -168,7 +167,7 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 			if bytes.Compare(p2shScript, v.PkScript) == 0 {
 				newUtxo := &Utxo{
 					Op: &OutPoint{
-						Hash:  txHash,
+						Hash:  mtx.TxHash()[:],
 						Index: uint32(i),
 					},
 					Value:        uint64(v.Value),
