@@ -109,7 +109,7 @@ func putSideChain(native *native.NativeService, sideChain *SideChain) error {
 
 func getUpdateSideChain(native *native.NativeService, chanid uint64) (*SideChain, error) {
 	contract := utils.SideChainManagerContractAddress
-	chainidByte:= utils.GetUint64Bytes(chanid)
+	chainidByte := utils.GetUint64Bytes(chanid)
 
 	sideChainStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(UPDATE_SIDE_CHAIN_REQUEST),
 		chainidByte))

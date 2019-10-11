@@ -150,6 +150,38 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 			return fmt.Errorf("MultiSign, failed to encode msgtx to bytes: %v", err)
 		}
 
+		p2shAddr, err := btcutil.NewAddressScriptHash(redeemScript, netParam)
+		if err != nil {
+			return fmt.Errorf("MultiSign, btcutil.NewAddressScriptHash, failed to get p2sh: %v", err)
+		}
+		p2shScript, err := txscript.PayToAddrScript(p2shAddr)
+		if err != nil {
+			return fmt.Errorf("MultiSign, txscript.PayToAddrScript, failed to get p2sh script: %v", err)
+		}
+		h := mtx.TxHash()
+		txHash := h.CloneBytes()
+		utxos, err := getUtxos(service, 0)
+		if err != nil {
+			return fmt.Errorf("MultiSign, getUtxos error: %v", err)
+		}
+		for i, v := range mtx.TxOut {
+			if bytes.Compare(p2shScript, v.PkScript) == 0 {
+				newUtxo := &Utxo{
+					Op: &OutPoint{
+						Hash:  txHash,
+						Index: uint32(i),
+					},
+					Value:        uint64(v.Value),
+					ScriptPubkey: v.PkScript,
+				}
+				utxos.Utxos = append(utxos.Utxos, newUtxo)
+			}
+		}
+		err = putUtxos(service, 0, utxos)
+		if err != nil {
+			return fmt.Errorf("MultiSign, putUtxos error: %v", err)
+		}
+
 		service.AddNotify(
 			&event.NotifyEventInfo{
 				ContractAddress: utils.CrossChainManagerContractAddress,
@@ -397,6 +429,5 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 			States:          []interface{}{"makeBtcTx", hex.EncodeToString(buf.Bytes()), hex.EncodeToString(redeemScript)},
 		})
 
-	// TODO: charge
 	return nil
 }

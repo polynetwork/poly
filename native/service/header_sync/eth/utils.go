@@ -6,13 +6,13 @@ import (
 	"fmt"
 
 	"github.com/ethereum/go-ethereum/core/types"
+	cty "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ontio/multi-chain/common/config"
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/event"
 	scom "github.com/ontio/multi-chain/native/service/header_sync/common"
 	"github.com/ontio/multi-chain/native/service/utils"
-	cty "github.com/ethereum/go-ethereum/core/types"
 )
 
 func putBlockHeader(native *native.NativeService, blockHeader types.Header, headerBytes []byte) error {
@@ -42,7 +42,7 @@ func getCurrentHeaderHeight(native *native.NativeService) (uint64, error) {
 }
 
 func getPrevHeaderByHeight(native *native.NativeService, height uint64) (cty.Header, error) {
-	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.HEADER_INDEX), utils.ETH_CHAIN_ID_BYTE,  utils.GetUint64Bytes(height)))
+	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.HEADER_INDEX), utils.ETH_CHAIN_ID_BYTE, utils.GetUint64Bytes(height)))
 	if err != nil {
 		return cty.Header{}, fmt.Errorf("GetHeaderByHeight, get blockHashStore error: %v", err)
 	}
