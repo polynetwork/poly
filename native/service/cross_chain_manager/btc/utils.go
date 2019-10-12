@@ -1,10 +1,12 @@
 package btc
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math/big"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/btcjson"
@@ -61,10 +63,25 @@ func (p *targetChainParam) resolve(amount int64, paramOutput *wire.TxOut) error 
 	if err != nil {
 		return fmt.Errorf("Failed to parse address from bytes: %v", err)
 	}
-	sink := common.NewZeroCopySink(nil)
-	sink.WriteVarBytes([]byte(toAddr.ToBase58()))
-	sink.WriteInt64(amount)
-	p.AddrAndVal = sink.Bytes()
+	//sink := common.NewZeroCopySink(nil)
+	//sink.WriteVarBytes([]byte(toAddr.ToBase58()))
+	//sink.WriteInt64(amount)
+	//p.AddrAndVal = sink.Bytes()
+
+	buf := bytes.NewBuffer(nil)
+	err = utils.NeoVmSerializeArray(buf, 2)
+	if err != nil {
+		return fmt.Errorf("btc resolve, utils.NeoVmSerializeArray length error: %v", err)
+	}
+	err = utils.NeoVmSerializeAddress(buf, toAddr)
+	if err != nil {
+		return fmt.Errorf("btc resolve, utils.NeoVmSerializeAddress address error: %v", err)
+	}
+	err = utils.NeoVmSerializeInteger(buf, new(big.Int).SetInt64(amount))
+	if err != nil {
+		return fmt.Errorf("btc resolve, utils.NeoVmSerializeInteger amount error: %v", err)
+	}
+	p.AddrAndVal = buf.Bytes()
 	return nil
 }
 
