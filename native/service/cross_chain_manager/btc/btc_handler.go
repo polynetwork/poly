@@ -163,11 +163,12 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 		if err != nil {
 			return fmt.Errorf("MultiSign, getUtxos error: %v", err)
 		}
+		txid := mtx.TxHash()
 		for i, v := range mtx.TxOut {
 			if bytes.Compare(p2shScript, v.PkScript) == 0 {
 				newUtxo := &Utxo{
 					Op: &OutPoint{
-						Hash:  mtx.TxHash()[:],
+						Hash:  txid[:],
 						Index: uint32(i),
 					},
 					Value:        uint64(v.Value),
