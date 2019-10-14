@@ -1,12 +1,10 @@
 package btc
 
 import (
-	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"math/big"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/btcjson"
@@ -22,6 +20,9 @@ import (
 	"github.com/ontio/multi-chain/native/event"
 	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/utils"
+	sneovm "github.com/ontio/ontology/smartcontract/service/neovm"
+	"github.com/ontio/ontology/vm/neovm"
+	"github.com/ontio/ontology/vm/neovm/types"
 )
 
 const (
@@ -68,20 +69,11 @@ func (p *targetChainParam) resolve(amount int64, paramOutput *wire.TxOut) error 
 	//sink.WriteInt64(amount)
 	//p.AddrAndVal = sink.Bytes()
 
-	buf := bytes.NewBuffer(nil)
-	err = utils.NeoVmSerializeArray(buf, 2)
-	if err != nil {
-		return fmt.Errorf("btc resolve, utils.NeoVmSerializeArray length error: %v", err)
-	}
-	err = utils.NeoVmSerializeAddress(buf, toAddr)
-	if err != nil {
-		return fmt.Errorf("btc resolve, utils.NeoVmSerializeAddress address error: %v", err)
-	}
-	err = utils.NeoVmSerializeInteger(buf, new(big.Int).SetInt64(amount))
-	if err != nil {
-		return fmt.Errorf("btc resolve, utils.NeoVmSerializeInteger amount error: %v", err)
-	}
-	p.AddrAndVal = buf.Bytes()
+	argsMap := types.NewMap()
+	argsMap.Add(neovm.NewStackItem([]byte("address")), neovm.NewStackItem(toAddr[:]))
+	argsMap.Add(neovm.NewStackItem([]byte("amount")), neovm.NewStackItem(amount))
+	args, err := sneovm.SerializeStackItem(argsMap)
+	p.AddrAndVal = args
 	return nil
 }
 
