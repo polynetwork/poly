@@ -22,7 +22,10 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+
 	"github.com/btcsuite/btcd/txscript"
+	sneovm "github.com/ontio/ontology/smartcontract/service/neovm"
+	"github.com/ontio/ontology/vm/neovm"
 
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
@@ -37,6 +40,7 @@ import (
 	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/side_chain_manager"
 	"github.com/ontio/multi-chain/native/service/utils"
+	vtypes "github.com/ontio/ontology/vm/neovm/types"
 )
 
 const (
@@ -288,15 +292,20 @@ func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*cro
 func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *crosscommon.MakeTxParam) error {
 	amounts := make(map[string]int64)
 
-	toAddr, eof := common.NewZeroCopySource(param.Args).NextString()
-	if eof {
-		return fmt.Errorf("btc MakeTransaction, utils.DecodeString toAddr error")
+	bf := bytes.NewBuffer(param.Args)
+	items, err := sneovm.DeserializeStackItem(bf)
+	if err != nil {
+		return fmt.Errorf("neovm.DeserializeStackItem error:%s", err)
 	}
-	amount, eof := common.NewZeroCopySource(param.Args).NextInt64()
-	if eof {
-		return fmt.Errorf("btc MakeTransaction, deserialize amount error")
+	toAddr, err := items.(*vtypes.Map).TryGetValue(neovm.NewStackItem([]byte("address"))).GetByteArray()
+	if err != nil {
+		return fmt.Errorf("deserialize toAddr error:%s", err)
 	}
-	amounts[toAddr] = int64(amount)
+	amount, err := items.(*vtypes.Map).TryGetValue(neovm.NewStackItem([]byte("amount"))).GetBigInteger()
+	if err != nil {
+		return fmt.Errorf("deserialize amount error:%s", err)
+	}
+	amounts[string(toAddr)] = amount.Int64()
 
 	destAsset, err := side_chain_manager.GetDestAsset(service, param.FromChainID,
 		param.ToChainID, param.FromContractAddress)
