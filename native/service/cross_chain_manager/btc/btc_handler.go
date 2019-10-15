@@ -397,7 +397,7 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 		return fmt.Errorf("makeBtcTx, getBtcRedeemScript error: %v", err)
 	}
 
-	choosed, sum, err := chooseUtxos(service, chainID, amountSum, FEE)
+	choosed, sum, err := chooseUtxos(service, chainID, amountSum, 0)
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, chooseUtxos error: %v", err)
 	}
@@ -411,11 +411,6 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 	}
 
 	charge := sum - amountSum
-	if charge < 0 {
-		return fmt.Errorf("makeBtcTx, not enough utxos: the charge amount cannot be less than 0, charge "+
-			"is %d satoshi", charge)
-	}
-
 	mtx, err := getUnsignedTx(txIns, amounts, charge, redeemScript, nil)
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, get rawtransaction fail: %v", err)
