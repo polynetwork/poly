@@ -376,17 +376,22 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 		return fmt.Errorf("makeBtcTx, GetInput() no amount")
 	}
 	var amountSum int64
-	for i, a := range amounts {
-		if a <= 0 || a > btcutil.MaxSatoshi {
-			return fmt.Errorf("makeBtcTx, wrong amount: amounts[%s]=%d", i, a)
+	for k, v := range amounts {
+		if v <= 0 || v > btcutil.MaxSatoshi {
+			return fmt.Errorf("makeBtcTx, wrong amount: amounts[%s]=%d", k, v)
 		}
-		amountSum += int64(a)
+		amountSum += int64(v)
 	}
 	if amountSum > btcutil.MaxSatoshi {
 		return fmt.Errorf("makeBtcTx, sum(%d) of amounts exceeds the MaxSatoshi", amountSum)
 	}
-	amountSum = amountSum - FEE
+	if amountSum <= FEE {
+		return fmt.Errorf("makeBtcTx, amounts sum(%d) must greater than fee %d", amountSum, FEE)
+	}
 
+	for k, v := range amounts {
+		amounts[k] = v - int64(float64(FEE * v) / float64(amountSum))
+	}
 	redeemScript, err := getBtcRedeemScriptBytes(service)
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, getBtcRedeemScript error: %v", err)
@@ -405,7 +410,7 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 		txIns = append(txIns, btcjson.TransactionInput{hash.String(), u.Op.Index})
 	}
 
-	charge := sum - amountSum - FEE
+	charge := sum - amountSum
 	if charge < 0 {
 		return fmt.Errorf("makeBtcTx, not enough utxos: the charge amount cannot be less than 0, charge "+
 			"is %d satoshi", charge)
