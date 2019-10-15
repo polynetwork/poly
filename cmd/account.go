@@ -65,10 +65,10 @@ var curveMap = map[string]curveInfo{
 	"P-384": {"P-384", keypair.P384},
 	"P-521": {"P-521", keypair.P521},
 
-	"224": {"P-224", keypair.P224},
-	"256": {"P-256", keypair.P256},
-	"384": {"P-384", keypair.P384},
-	"521": {"P-521", keypair.P521},
+	"224":       {"P-224", keypair.P224},
+	"256":       {"P-256", keypair.P256},
+	"384":       {"P-384", keypair.P384},
+	"521":       {"P-521", keypair.P521},
 	"secp256k1": {"secp256k1", keypair.SECP256K1},
 
 	"SM2P256V1": {"SM2P256V1", keypair.SM2P256V1},

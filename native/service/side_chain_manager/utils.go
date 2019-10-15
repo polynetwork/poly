@@ -144,14 +144,14 @@ func putUpdateSideChain(native *native.NativeService, sideChain *SideChain) erro
 	return nil
 }
 
-func getAssetMapRequest(native *native.NativeService, assetName string) (*AssetMappingParam, error) {
+func getCrossChainContractMapRequest(native *native.NativeService, assetName string) (*CrossChainContractMappingParam, error) {
 	contract := utils.SideChainManagerContractAddress
-	assetMapRequestStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(ASSET_MAP_REQUEST),
+	assetMapRequestStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(CROSS_CHAIN_CONTRACT_MAP_REQUEST),
 		[]byte(assetName)))
 	if err != nil {
 		return nil, fmt.Errorf("getAssetMapRequest, get assetMapRequestStore error: %v", err)
 	}
-	assetMappingParam := new(AssetMappingParam)
+	assetMappingParam := new(CrossChainContractMappingParam)
 	if assetMapRequestStore != nil {
 		assetMapRequestBytes, err := cstates.GetValueFromRawStorageItem(assetMapRequestStore)
 		if err != nil {
@@ -164,44 +164,44 @@ func getAssetMapRequest(native *native.NativeService, assetName string) (*AssetM
 	return assetMappingParam, nil
 }
 
-func putAssetMapRequest(native *native.NativeService, assetMappingParam *AssetMappingParam) error {
+func putCrossChainContractMapRequest(native *native.NativeService, crossChainContractMappingParam *CrossChainContractMappingParam) error {
 	contract := utils.SideChainManagerContractAddress
 	sink := common.NewZeroCopySink(nil)
-	assetMappingParam.Serialization(sink)
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(ASSET_MAP_REQUEST), []byte(assetMappingParam.AssetName)),
+	crossChainContractMappingParam.Serialization(sink)
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(CROSS_CHAIN_CONTRACT_MAP_REQUEST), []byte(crossChainContractMappingParam.CrossChainContractName)),
 		cstates.GenRawStorageItem(sink.Bytes()))
 	return nil
 }
 
-func putAssetMap(native *native.NativeService, assetMap *AssetMap) error {
+func putCrossChainContractMap(native *native.NativeService, crossChainContractMap *CrossChainContractMap) error {
 	contract := utils.SideChainManagerContractAddress
 	sink := common.NewZeroCopySink(nil)
-	assetMap.Serialization(sink)
-	for _, v := range assetMap.AssetMap {
+	crossChainContractMap.Serialization(sink)
+	for _, v := range crossChainContractMap.CrossChainContractMap {
 		prefix := strconv.Itoa(int(v.ChainId)) + v.ContractAddress
-		native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(ASSET_MAP), []byte(prefix)),
+		native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(CROSS_CHAIN_CONTRACT_MAP), []byte(prefix)),
 			cstates.GenRawStorageItem(sink.Bytes()))
 	}
 	return nil
 }
 
-func GetDestAsset(native *native.NativeService, fromChainid, toChainid uint64, contractAddress string) (*Asset, error) {
+func GetDestCrossChainContract(native *native.NativeService, fromChainid, toChainid uint64, contractAddress string) (*CrossChainContract, error) {
 	contract := utils.SideChainManagerContractAddress
 	prefix := strconv.Itoa(int(fromChainid)) + contractAddress
-	assetMapStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(ASSET_MAP), []byte(prefix)))
+	crossChainContractMapStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(CROSS_CHAIN_CONTRACT_MAP), []byte(prefix)))
 	if err != nil {
-		return nil, fmt.Errorf("getAssetMap,get assetMapStore error: %v", err)
+		return nil, fmt.Errorf("getAssetMap,get crossChainContractMapStore error: %v", err)
 	}
-	if assetMapStore == nil {
+	if crossChainContractMapStore == nil {
 		return nil, fmt.Errorf("getAssetMap, can't find any record with from chainid %d and contract address %s", fromChainid, contractAddress)
 	}
-	assetMapBytes, err := cstates.GetValueFromRawStorageItem(assetMapStore)
+	crossChainContractMapBytes, err := cstates.GetValueFromRawStorageItem(crossChainContractMapStore)
 	if err != nil {
 		return nil, fmt.Errorf("getAssetMap, deserialize from raw storage item err:%v", err)
 	}
-	assetMap := new(AssetMap)
-	if err := assetMap.Deserialization(common.NewZeroCopySource(assetMapBytes)); err != nil {
-		return nil, fmt.Errorf("getAssetMap, deserialize assetMap error: %v", err)
+	crossChainContractMap := new(CrossChainContractMap)
+	if err := crossChainContractMap.Deserialization(common.NewZeroCopySource(crossChainContractMapBytes)); err != nil {
+		return nil, fmt.Errorf("getAssetMap, deserialize crossChainContractMap error: %v", err)
 	}
-	return assetMap.AssetMap[toChainid], nil
+	return crossChainContractMap.CrossChainContractMap[toChainid], nil
 }

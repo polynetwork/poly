@@ -98,7 +98,7 @@ func VerifyFromOntTx(native *native.NativeService, proof []byte, fromChainid uin
 
 func MakeToOntProof(native *native.NativeService, params *crosscommon.MakeTxParam) error {
 	//record cross chain tx
-	destAsset, err := side_chain_manager.GetDestAsset(native, params.FromChainID,
+	destAsset, err := side_chain_manager.GetDestCrossChainContract(native, params.FromChainID,
 		params.ToChainID, params.FromContractAddress)
 	if err != nil {
 		return fmt.Errorf("MakeToOntProof, side_chain_manager.GetAssetContractAddress error: %v", err)

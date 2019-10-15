@@ -27,9 +27,9 @@ type ProofResult struct {
 }
 
 type SProof struct {
-	Key string `json:"key"`
+	Key   string   `json:"key"`
 	Proof []string `json:"proof"`
-	Value string `json:value`
+	Value string   `json:value`
 }
 
 func TestProof(t *testing.T) {

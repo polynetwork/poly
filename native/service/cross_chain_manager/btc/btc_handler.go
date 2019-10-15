@@ -300,7 +300,7 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *cr
 	}
 	amounts[string(toAddr)] = amount.Int64()
 
-	destAsset, err := side_chain_manager.GetDestAsset(service, param.FromChainID,
+	destAsset, err := side_chain_manager.GetDestCrossChainContract(service, param.FromChainID,
 		param.ToChainID, param.FromContractAddress)
 	if err != nil {
 		return fmt.Errorf("btc MakeTransaction, side_chain_manager.GetAssetContractAddress error: %v", err)
@@ -390,7 +390,7 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 	}
 
 	for k, v := range amounts {
-		amounts[k] = v - int64(float64(FEE * v) / float64(amountSum))
+		amounts[k] = v - int64(float64(FEE*v)/float64(amountSum))
 	}
 	redeemScript, err := getBtcRedeemScriptBytes(service)
 	if err != nil {

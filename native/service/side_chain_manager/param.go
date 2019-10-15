@@ -79,20 +79,18 @@ func (this *ChainidParam) Deserialization(source *common.ZeroCopySource) error {
 	return nil
 }
 
-type Asset struct {
+type CrossChainContract struct {
 	ChainId         uint64
 	ContractAddress string
-	Decimal         uint64
 }
 
-func (this *Asset) Serialization(sink *common.ZeroCopySink) error {
+func (this *CrossChainContract) Serialization(sink *common.ZeroCopySink) error {
 	sink.WriteUint64(this.ChainId)
 	sink.WriteVarBytes([]byte(this.ContractAddress))
-	sink.WriteUint64(this.Decimal)
 	return nil
 }
 
-func (this *Asset) Deserialization(source *common.ZeroCopySource) error {
+func (this *CrossChainContract) Deserialization(source *common.ZeroCopySource) error {
 	chainid, eof := source.NextUint64()
 	if eof {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize chainid error")
@@ -102,27 +100,21 @@ func (this *Asset) Deserialization(source *common.ZeroCopySource) error {
 		return fmt.Errorf("utils.DecodeString, deserialize contractAddress error")
 	}
 	this.ChainId = chainid
-	decimal, eof := source.NextUint64()
-	if eof {
-		return fmt.Errorf("utils.DecodeVarUint, deserialize decimal error")
-	}
-	this.ChainId = chainid
 	this.ContractAddress = contractAddress
-	this.Decimal = decimal
 	return nil
 }
 
-type AssetMappingParam struct {
-	Address   string
-	AssetName string
-	AssetList []*Asset
+type CrossChainContractMappingParam struct {
+	Address                string
+	CrossChainContractName string
+	CrossChainContractList []*CrossChainContract
 }
 
-func (this *AssetMappingParam) Serialization(sink *common.ZeroCopySink) error {
+func (this *CrossChainContractMappingParam) Serialization(sink *common.ZeroCopySink) error {
 	sink.WriteVarBytes([]byte(this.Address))
-	sink.WriteVarBytes([]byte(this.AssetName))
-	sink.WriteVarUint(uint64(len(this.AssetList)))
-	for _, v := range this.AssetList {
+	sink.WriteVarBytes([]byte(this.CrossChainContractName))
+	sink.WriteVarUint(uint64(len(this.CrossChainContractList)))
+	for _, v := range this.CrossChainContractList {
 		err := v.Serialization(sink)
 		if err != nil {
 			return fmt.Errorf("v.Serialization, serialize asset map error: %v", err)
@@ -131,22 +123,22 @@ func (this *AssetMappingParam) Serialization(sink *common.ZeroCopySink) error {
 	return nil
 }
 
-func (this *AssetMappingParam) Deserialization(source *common.ZeroCopySource) error {
+func (this *CrossChainContractMappingParam) Deserialization(source *common.ZeroCopySource) error {
 	address, eof := source.NextString()
 	if eof {
 		return fmt.Errorf("utils.DecodeAddress, deserialize address error")
 	}
-	assetName, eof := source.NextString()
+	crossChainContractName, eof := source.NextString()
 	if eof {
-		return fmt.Errorf("utils.DecodeString, deserialize assetName error")
+		return fmt.Errorf("utils.DecodeString, deserialize crossChainContractName error")
 	}
 	n, eof := source.NextVarUint()
 	if eof {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize lenght error")
 	}
-	assetList := make([]*Asset, 0)
+	assetList := make([]*CrossChainContract, 0)
 	for i := 0; uint64(i) < n; i++ {
-		asset := new(Asset)
+		asset := new(CrossChainContract)
 		err := asset.Deserialization(source)
 		if err != nil {
 			return fmt.Errorf("assetMap.Deserialization, deserialize asset map error: %v", err)
@@ -154,25 +146,25 @@ func (this *AssetMappingParam) Deserialization(source *common.ZeroCopySource) er
 		assetList = append(assetList, asset)
 	}
 	this.Address = address
-	this.AssetName = assetName
-	this.AssetList = assetList
+	this.CrossChainContractName = crossChainContractName
+	this.CrossChainContractList = assetList
 	return nil
 }
 
-type ApproveAssetMappingParam struct {
-	AssetName string
+type ApproveCrossChainContractMappingParam struct {
+	CrossChainContractName string
 }
 
-func (this *ApproveAssetMappingParam) Serialization(sink *common.ZeroCopySink) error {
-	sink.WriteVarBytes([]byte(this.AssetName))
+func (this *ApproveCrossChainContractMappingParam) Serialization(sink *common.ZeroCopySink) error {
+	sink.WriteVarBytes([]byte(this.CrossChainContractName))
 	return nil
 }
 
-func (this *ApproveAssetMappingParam) Deserialization(source *common.ZeroCopySource) error {
+func (this *ApproveCrossChainContractMappingParam) Deserialization(source *common.ZeroCopySource) error {
 	assetName, eof := source.NextString()
 	if eof {
 		return fmt.Errorf("utils.DecodeString, deserialize assetName error")
 	}
-	this.AssetName = assetName
+	this.CrossChainContractName = assetName
 	return nil
 }

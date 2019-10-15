@@ -52,7 +52,7 @@ func TestMultiSignInfo(t *testing.T) {
 	multiSignInfo.Serialization(sink)
 
 	u := &MultiSignInfo{
-		MultiSignInfo:make(map[string][][]byte),
+		MultiSignInfo: make(map[string][][]byte),
 	}
 
 	err := u.Deserialization(common.NewZeroCopySource(sink.Bytes()))

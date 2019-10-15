@@ -58,14 +58,14 @@ func (this *SideChain) Deserialization(source *common.ZeroCopySource) error {
 	return nil
 }
 
-type AssetMap struct {
-	AssetMap map[uint64]*Asset
+type CrossChainContractMap struct {
+	CrossChainContractMap map[uint64]*CrossChainContract
 }
 
-func (this *AssetMap) Serialization(sink *common.ZeroCopySink) error {
-	sink.WriteUint64(uint64(len(this.AssetMap)))
-	var assetList []*Asset
-	for _, v := range this.AssetMap {
+func (this *CrossChainContractMap) Serialization(sink *common.ZeroCopySink) error {
+	sink.WriteUint64(uint64(len(this.CrossChainContractMap)))
+	var assetList []*CrossChainContract
+	for _, v := range this.CrossChainContractMap {
 		assetList = append(assetList, v)
 	}
 	sort.SliceStable(assetList, func(i, j int) bool {
@@ -79,19 +79,19 @@ func (this *AssetMap) Serialization(sink *common.ZeroCopySink) error {
 	return nil
 }
 
-func (this *AssetMap) Deserialization(source *common.ZeroCopySource) error {
+func (this *CrossChainContractMap) Deserialization(source *common.ZeroCopySource) error {
 	n, eof := source.NextUint64()
 	if eof {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize length error")
 	}
-	assetMap := make(map[uint64]*Asset)
+	crossChainContractMap := make(map[uint64]*CrossChainContract)
 	for i := 0; uint64(i) < n; i++ {
-		asset := new(Asset)
+		asset := new(CrossChainContract)
 		if err := asset.Deserialization(source); err != nil {
 			return fmt.Errorf("deserialize asset error: %v", err)
 		}
-		assetMap[asset.ChainId] = asset
+		crossChainContractMap[asset.ChainId] = asset
 	}
-	this.AssetMap = assetMap
+	this.CrossChainContractMap = crossChainContractMap
 	return nil
 }
