@@ -6,13 +6,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/core/types"
-	"github.com/ontio/eth_relayer/locker"
 	"github.com/ontio/multi-chain/native/service/header_sync/eth"
 	"math/big"
-	"strings"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
-	ethcommon "github.com/ethereum/go-ethereum/common"
+	ecom "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/light"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -20,7 +17,6 @@ import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/native"
-	"github.com/ontio/multi-chain/native/event"
 	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/utils"
 )
@@ -63,7 +59,7 @@ func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*sco
 	}
 
 	bf := bytes.NewBuffer(utils.CrossChainManagerContractAddress[:])
-	keyBytes := ethcommon.Hex2Bytes(scom.KEY_PREFIX_ETH + scom.Replace0x(ethProof.StorageProofs[0].Key))
+	keyBytes := ecom.Hex2Bytes(scom.KEY_PREFIX_ETH + scom.Replace0x(ethProof.StorageProofs[0].Key))
 	bf.Write(keyBytes)
 	key := bf.Bytes()
 	val, err := service.GetCacheDB().Get(key)
@@ -104,30 +100,30 @@ func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*sco
 func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *scom.MakeTxParam) error {
 	//todo add logic
 
-	//1 construct tx
-	contractabi, err := abi.JSON(strings.NewReader(locker.EthereumCrossChainABI))
-	if err != nil {
-		return err
-	}
-
-	txData, err := contractabi.Pack(param.Method, param.Args)
-	if err != nil {
-		return err
-	}
-
-	//todo store the txData in storage
-	//determin the key format
-	bf := bytes.NewBuffer(utils.CrossChainManagerContractAddress[:])
-
-	txhash := service.GetTx().Hash()
-	bf.WriteString(txhash.ToHexString())
-	service.GetCacheDB().Put(bf.Bytes(), txData)
-
-	service.AddNotify(
-		&event.NotifyEventInfo{
-			ContractAddress: utils.CrossChainManagerContractAddress,
-			States:          []interface{}{"makeETHtx", hex.EncodeToString(txData)},
-		})
+	////1 construct tx
+	//contractabi, err := abi.JSON(strings.NewReader(locker.EthereumCrossChainABI))
+	//if err != nil {
+	//	return err
+	//}
+	//
+	//txData, err := contractabi.Pack(param.Method, param.Args)
+	//if err != nil {
+	//	return err
+	//}
+	//
+	////todo store the txData in storage
+	////determin the key format
+	//bf := bytes.NewBuffer(utils.CrossChainManagerContractAddress[:])
+	//
+	//txhash := service.GetTx().Hash()
+	//bf.WriteString(txhash.ToHexString())
+	//service.GetCacheDB().Put(bf.Bytes(), txData)
+	//
+	//service.AddNotify(
+	//	&event.NotifyEventInfo{
+	//		ContractAddress: utils.CrossChainManagerContractAddress,
+	//		States:          []interface{}{"makeETHtx", hex.EncodeToString(txData)},
+	//	})
 
 	return nil
 }
@@ -138,11 +134,11 @@ func verifyMerkleProof(ethProof *ETHProof, blockData types.Header) ([]byte, erro
 
 	for _, s := range ethProof.AccountProof {
 		p := scom.Replace0x(s)
-		nodeList.Put(nil, ethcommon.Hex2Bytes(p))
+		nodeList.Put(nil, ecom.Hex2Bytes(p))
 	}
 	ns := nodeList.NodeSet()
 
-	acctKey := crypto.Keccak256(ethcommon.Hex2Bytes(scom.Replace0x(ethProof.Address)))
+	acctKey := crypto.Keccak256(ecom.Hex2Bytes(scom.Replace0x(ethProof.Address)))
 
 	//2. verify account proof
 	acctVal, _, err := trie.VerifyProof(blockData.Root, acctKey, ns)
@@ -162,8 +158,8 @@ func verifyMerkleProof(ethProof *ETHProof, blockData types.Header) ([]byte, erro
 		return nil, fmt.Errorf("verifyMerkleProof, invalid format of balance:%s\n", ethProof.Balance)
 	}
 
-	storageHash := ethcommon.HexToHash(scom.Replace0x(ethProof.StorageHash))
-	codeHash := ethcommon.HexToHash(scom.Replace0x(ethProof.CodeHash))
+	storageHash := ecom.HexToHash(scom.Replace0x(ethProof.StorageHash))
+	codeHash := ecom.HexToHash(scom.Replace0x(ethProof.CodeHash))
 
 	acct := &ProofAccount{
 		Nounce:   nounce,
@@ -188,10 +184,10 @@ func verifyMerkleProof(ethProof *ETHProof, blockData types.Header) ([]byte, erro
 	}
 
 	sp := ethProof.StorageProofs[0]
-	storageKey := crypto.Keccak256(ethcommon.Hex2Bytes(scom.Replace0x(sp.Key)))
+	storageKey := crypto.Keccak256(ecom.Hex2Bytes(scom.Replace0x(sp.Key)))
 
 	for _, prf := range sp.Proof {
-		nodeList.Put(nil, ethcommon.Hex2Bytes(scom.Replace0x(prf)))
+		nodeList.Put(nil, ecom.Hex2Bytes(scom.Replace0x(prf)))
 	}
 
 	ns = nodeList.NodeSet()
