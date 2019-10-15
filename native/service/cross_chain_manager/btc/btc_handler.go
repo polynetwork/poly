@@ -125,26 +125,20 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 	if err != nil {
 		return fmt.Errorf("MultiSign, getBtcMultiSignInfo error: %v", err)
 	}
-	for i, v := range params.Signs {
-		multiSignItem := &MultiSignItem{
-			MultiSignItem: make(map[string][]byte),
-		}
-		multiSignItem.MultiSignItem[params.Address] = v
-		multiSignInfo.MultiSignInfo[uint64(i)] = multiSignItem
-	}
+	multiSignInfo.MultiSignInfo[params.Address] = params.Signs
 	err = putBtcMultiSignInfo(service, params.TxHash, multiSignInfo)
 	if err != nil {
 		return fmt.Errorf("MultiSign, putBtcMultiSignInfo error: %v", err)
 	}
 
-	flag := true
-	for _, v := range multiSignInfo.MultiSignInfo {
-		if len(v.MultiSignItem) != n {
-			flag = false
-		}
-	}
-	if flag {
-		mtx, err = addSigToTx(multiSignInfo.MultiSignInfo, addrs, redeemScript, mtx)
+	if len(multiSignInfo.MultiSignInfo) != n {
+		service.AddNotify(
+			&event.NotifyEventInfo{
+				ContractAddress: utils.CrossChainManagerContractAddress,
+				States:          []interface{}{"btcTxMultiSign", params.TxHash, multiSignInfo.MultiSignInfo},
+			})
+	} else {
+		mtx, err = addSigToTx(multiSignInfo, addrs, redeemScript, mtx, len(params.Signs))
 		if err != nil {
 			return fmt.Errorf("MultiSign, failed to add sig to tx: %v", err)
 		}
@@ -192,7 +186,6 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 				States:          []interface{}{"btcTxToRelay", hex.EncodeToString(buf.Bytes())},
 			})
 	}
-
 	return nil
 }
 

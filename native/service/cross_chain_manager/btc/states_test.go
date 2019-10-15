@@ -43,3 +43,20 @@ func TestUTXO(t *testing.T) {
 
 	assert.Equal(t, utxo, u)
 }
+
+func TestMultiSignInfo(t *testing.T) {
+	multiSignInfo := &MultiSignInfo{
+		MultiSignInfo: map[string][][]byte{"zmh": {[]byte("zmh")}},
+	}
+	sink := common.NewZeroCopySink(nil)
+	multiSignInfo.Serialization(sink)
+
+	u := &MultiSignInfo{
+		MultiSignInfo:make(map[string][][]byte),
+	}
+
+	err := u.Deserialization(common.NewZeroCopySource(sink.Bytes()))
+	assert.NoError(t, err)
+
+	assert.Equal(t, multiSignInfo, u)
+}

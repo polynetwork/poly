@@ -45,9 +45,8 @@ func TestMakeTxParam(t *testing.T) {
 
 func TestVoteParam(t *testing.T) {
 	param := VoteParam{
-		FromChainID: 123,
-		Address:     "1234",
-		TxHash:      []byte{1, 2, 3},
+		Address: "1234",
+		TxHash:  []byte{1, 2, 3},
 	}
 
 	sink := common.NewZeroCopySink(nil)

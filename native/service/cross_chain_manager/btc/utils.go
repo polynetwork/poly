@@ -264,7 +264,7 @@ func chooseUtxos(native *native.NativeService, chainID uint64, amount int64, fee
 	if sum < total {
 		return nil, sum, fmt.Errorf("chooseUtxos, current utxo sum %d is not enough %d", sum, total)
 	}
-	utxos.Utxos = utxos.Utxos[j:]
+	utxos.Utxos = utxos.Utxos[j+1:]
 	err = putUtxos(native, chainID, utxos)
 	if err != nil {
 		return nil, sum, fmt.Errorf("chooseUtxos, putUtxos err:%v", err)
@@ -403,14 +403,14 @@ func getBtcMultiSignInfo(native *native.NativeService, txid []byte) (*MultiSignI
 	if err != nil {
 		return nil, fmt.Errorf("getBtcMultiSignInfo, get multiSignInfoStore error: %v", err)
 	}
-	multiSignInfoBytes, err := cstates.GetValueFromRawStorageItem(multiSignInfoStore)
-	if err != nil {
-		return nil, fmt.Errorf("getBtcMultiSignInfo, deserialize from raw storage item err:%v", err)
-	}
 	multiSignInfo := &MultiSignInfo{
-		MultiSignInfo: make(map[uint64]*MultiSignItem),
+		MultiSignInfo: make(map[string][][]byte),
 	}
 	if multiSignInfoStore != nil {
+		multiSignInfoBytes, err := cstates.GetValueFromRawStorageItem(multiSignInfoStore)
+		if err != nil {
+			return nil, fmt.Errorf("getBtcMultiSignInfo, deserialize from raw storage item err:%v", err)
+		}
 		err = multiSignInfo.Deserialization(common.NewZeroCopySource(multiSignInfoBytes))
 		if err != nil {
 			return nil, fmt.Errorf("getBtcMultiSignInfo, deserialize multiSignInfo err:%v", err)
@@ -419,25 +419,25 @@ func getBtcMultiSignInfo(native *native.NativeService, txid []byte) (*MultiSignI
 	return multiSignInfo, nil
 }
 
-func addSigToTx(sigMap map[uint64]*MultiSignItem, addrs []btcutil.Address, redeem []byte, tx *wire.MsgTx) (*wire.MsgTx, error) {
-	for idx, item := range sigMap {
+func addSigToTx(sigMap *MultiSignInfo, addrs []btcutil.Address, redeem []byte, tx *wire.MsgTx, length int) (*wire.MsgTx, error) {
+	for i := 0; i < length; i++ {
 		builder := txscript.NewScriptBuilder().AddOp(txscript.OP_FALSE)
 		for _, addr := range addrs {
-			val, ok := item.MultiSignItem[addr.EncodeAddress()]
+			signs, ok := sigMap.MultiSignInfo[addr.EncodeAddress()]
 			if !ok {
 				continue
 			}
+			val := signs[i]
 			builder.AddData(val)
 		}
 
 		builder.AddData(redeem)
 		script, err := builder.Script()
 		if err != nil {
-			return nil, fmt.Errorf("failed to build sigscript for input %d: %v", idx, err)
+			return nil, fmt.Errorf("failed to build sigscript for input %d: %v", i, err)
 		}
 
-		tx.TxIn[idx].SignatureScript = script
+		tx.TxIn[i].SignatureScript = script
 	}
-
 	return tx, nil
 }

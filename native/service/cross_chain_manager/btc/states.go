@@ -2,6 +2,7 @@ package btc
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/ontio/multi-chain/common"
 )
@@ -147,67 +148,53 @@ func (this *OutPoint) Deserialization(source *common.ZeroCopySource) error {
 }
 
 type MultiSignInfo struct {
-	MultiSignInfo map[uint64]*MultiSignItem
+	MultiSignInfo map[string][][]byte
 }
 
 func (this *MultiSignInfo) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteUint64(uint64(len(this.MultiSignInfo)))
-	for k, v := range this.MultiSignInfo {
-		sink.WriteUint64(k)
-		v.Serialization(sink)
+	var MultiSignInfoList []string
+	for k := range this.MultiSignInfo {
+		MultiSignInfoList = append(MultiSignInfoList, k)
+	}
+	sort.SliceStable(MultiSignInfoList, func(i, j int) bool {
+		return MultiSignInfoList[i] > MultiSignInfoList[j]
+	})
+	for _, k := range MultiSignInfoList {
+		sink.WriteString(k)
+		v := this.MultiSignInfo[k]
+		sink.WriteUint64(uint64(len(v)))
+		for _, b := range v {
+			sink.WriteVarBytes(b)
+		}
 	}
 }
 
 func (this *MultiSignInfo) Deserialization(source *common.ZeroCopySource) error {
 	n, eof := source.NextUint64()
 	if eof {
-		return fmt.Errorf("MultiSignItem deserialize MultiSignItem length error")
+		return fmt.Errorf("MultiSignInfo deserialize MultiSignInfo length error")
 	}
-	multiSignInfo := make(map[uint64]*MultiSignItem)
+	multiSignInfo := make(map[string][][]byte)
 	for i := 0; uint64(i) < n; i++ {
-		k, eof := source.NextUint64()
+		k, eof := source.NextString()
 		if eof {
-			return fmt.Errorf("MultiSignItem deserialize index error")
+			return fmt.Errorf("MultiSignInfo deserialize public key error")
 		}
-		multiSignItem := new(MultiSignItem)
-		err := multiSignItem.Deserialization(source)
-		if err != nil {
-			return fmt.Errorf("MultiSignItem deserialize multiSignItem error")
+		m, eof := source.NextUint64()
+		if eof {
+			return fmt.Errorf("MultiSignInfo deserialize MultiSignItem length error")
+		}
+		multiSignItem := make([][]byte, 0)
+		for j := 0; uint64(j) < m; j++ {
+			b, eof := source.NextVarBytes()
+			if eof {
+				return fmt.Errorf("MultiSignInfo deserialize []byte error")
+			}
+			multiSignItem = append(multiSignItem, b)
 		}
 		multiSignInfo[k] = multiSignItem
 	}
 	this.MultiSignInfo = multiSignInfo
-	return nil
-}
-
-type MultiSignItem struct {
-	MultiSignItem map[string][]byte
-}
-
-func (this *MultiSignItem) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteUint64(uint64(len(this.MultiSignItem)))
-	for k, v := range this.MultiSignItem {
-		sink.WriteString(k)
-		sink.WriteVarBytes(v)
-	}
-}
-
-func (this *MultiSignItem) Deserialization(source *common.ZeroCopySource) error {
-	n, eof := source.NextUint64()
-	if eof {
-		return fmt.Errorf("MultiSignItem deserialize MultiSignItem length error")
-	}
-	multiSignItem := make(map[string][]byte)
-	for i := 0; uint64(i) < n; i++ {
-		k, eof := source.NextString()
-		if eof {
-			return fmt.Errorf("deserialize pubkey error")
-		}
-		v, eof := source.NextVarBytes()
-		if eof {
-			return fmt.Errorf("deserialize MultiSignItem error")
-		}
-		multiSignItem[k] = v
-	}
 	return nil
 }
