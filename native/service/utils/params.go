@@ -32,6 +32,7 @@ var (
 	ONT_CHAIN_ID = uint64(2)
 	NEO_CHAIN_ID = uint64(3)
 
+	BTC_CHAIN_ID_BYTE = []byte{byte(BTC_CHAIN_ID)}
 	ETH_CHAIN_ID_BYTE = []byte{byte(ETH_CHAIN_ID)}
 	ONT_CHAIN_ID_BYTE = []byte{byte(ONT_CHAIN_ID)}
 	NEO_CHAIN_ID_BYTE = []byte{byte(NEO_CHAIN_ID)}

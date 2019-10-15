@@ -26,7 +26,7 @@ func putBlockHeader(native *native.NativeService, blockHeader types.Header, head
 	return nil
 }
 
-func getCurrentHeaderHeight(native *native.NativeService) (uint64, error) {
+func GetCurrentHeaderHeight(native *native.NativeService) (uint64, error) {
 	heightStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.CURRENT_HEIGHT), utils.ETH_CHAIN_ID_BYTE))
 	if err != nil {
 		return 0, fmt.Errorf("getPrevHeaderHeight error: %v", err)
@@ -41,7 +41,7 @@ func getCurrentHeaderHeight(native *native.NativeService) (uint64, error) {
 	return utils.GetBytesUint64(heightBytes), err
 }
 
-func getPrevHeaderByHeight(native *native.NativeService, height uint64) (cty.Header, error) {
+func GetHeaderByHeight(native *native.NativeService, height uint64) (cty.Header, error) {
 	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.HEADER_INDEX), utils.ETH_CHAIN_ID_BYTE, utils.GetUint64Bytes(height)))
 	if err != nil {
 		return cty.Header{}, fmt.Errorf("GetHeaderByHeight, get blockHashStore error: %v", err)

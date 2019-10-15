@@ -64,7 +64,7 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 		if err != nil {
 			return fmt.Errorf("ETHHandler SyncBlockHeader, deserialize header err: %v", err)
 		}
-		prevHeader, err := getPrevHeaderByHeight(native, header.Number.Uint64()-1)
+		prevHeader, err := GetHeaderByHeight(native, header.Number.Uint64()-1)
 		if err != nil {
 			return fmt.Errorf("ETHHandler SyncBlockHeader, height:%d, error:%s", header.Number.Uint64()-1, err)
 		}

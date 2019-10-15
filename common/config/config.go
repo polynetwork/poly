@@ -611,7 +611,7 @@ func (this *OntologyConfig) GetBookkeepers() ([]keypair.PublicKey, error) {
 		pubKey, err := hex.DecodeString(key)
 		k, err := keypair.DeserializePublicKey(pubKey)
 		if err != nil {
-			return nil, fmt.Errorf("Incorrectly book keepers key:%s", key)
+			return nil, fmt.Errorf("Incorrectly book keepers key:%s", err)
 		}
 		pubKeys = append(pubKeys, k)
 	}

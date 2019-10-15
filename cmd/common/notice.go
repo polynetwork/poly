@@ -44,6 +44,7 @@ Select a curve from the following:
   2 | P-256 | 256
   3 | P-384 | 384
   4 | P-521 | 521
+  5 | secp256k1 | 256
 
 This determines the length of the private key [default is 2]: `)
 		break
