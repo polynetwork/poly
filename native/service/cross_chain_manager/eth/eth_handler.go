@@ -93,39 +93,7 @@ func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*sco
 	service.GetCacheDB().Put(key, []byte(params.Value))
 
 	notifyEthroof(service, hex.EncodeToString([]byte(params.Value)))
-
 	return nil, nil
-}
-
-func (this *ETHHandler) MakeTransaction(service *native.NativeService, param *scom.MakeTxParam) error {
-	//todo add logic
-
-	////1 construct tx
-	//contractabi, err := abi.JSON(strings.NewReader(locker.EthereumCrossChainABI))
-	//if err != nil {
-	//	return err
-	//}
-	//
-	//txData, err := contractabi.Pack(param.Method, param.Args)
-	//if err != nil {
-	//	return err
-	//}
-	//
-	////todo store the txData in storage
-	////determin the key format
-	//bf := bytes.NewBuffer(utils.CrossChainManagerContractAddress[:])
-	//
-	//txhash := service.GetTx().Hash()
-	//bf.WriteString(txhash.ToHexString())
-	//service.GetCacheDB().Put(bf.Bytes(), txData)
-	//
-	//service.AddNotify(
-	//	&event.NotifyEventInfo{
-	//		ContractAddress: utils.CrossChainManagerContractAddress,
-	//		States:          []interface{}{"makeETHtx", hex.EncodeToString(txData)},
-	//	})
-
-	return nil
 }
 
 func verifyMerkleProof(ethProof *ETHProof, blockData types.Header) ([]byte, error) {

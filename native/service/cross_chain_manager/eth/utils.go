@@ -12,6 +12,19 @@ import (
 	"github.com/ontio/multi-chain/native/service/utils"
 )
 
+const (
+	MAKE_TO_ETH_PROOF = "makeToETHProof"
+	REQUEST           = "request"
+)
+
+func putRequest(native *native.NativeService, txHash common.Uint256, chainID uint64, request []byte) error {
+	contract := utils.CrossChainManagerContractAddress
+	prefix := txHash.ToArray()
+	chainIDBytes := utils.GetUint64Bytes(chainID)
+	utils.PutBytes(native, utils.ConcatKey(contract, []byte(REQUEST), chainIDBytes, prefix), request)
+	return nil
+}
+
 func putEthProof(native *native.NativeService, txHash, proof []byte) {
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_ETH), txHash)
 	native.GetCacheDB().Put(key, states.GenRawStorageItem(proof))

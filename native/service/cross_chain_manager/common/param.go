@@ -14,11 +14,17 @@ var (
 
 	KEY_PREFIX_BTC_VOTE = "btcVote"
 	KEY_PREFIX_ETH_VOTE = "ethVote"
+	REQUEST             = "request"
 )
+
+var NotifyMakeProofInfo = map[uint64]string{
+	1: "notifyEthProof",
+	2: "notifyONTProof",
+	3: "notifyNEOProof",
+}
 
 type ChainHandler interface {
 	MakeDepositProposal(service *native.NativeService) (*MakeTxParam, error)
-	MakeTransaction(service *native.NativeService, param *MakeTxParam) error
 }
 
 type InitRedeemScriptParam struct {
@@ -252,5 +258,38 @@ func (this *Vote) Deserialization(source *common.ZeroCopySource) error {
 		voteMap[v] = v
 	}
 	this.VoteMap = voteMap
+	return nil
+}
+
+type ToMerkleValue struct {
+	TxHash            common.Uint256
+	ToContractAddress string
+	MakeTxParam       *MakeTxParam
+}
+
+func (this *ToMerkleValue) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteHash(this.TxHash)
+	sink.WriteVarBytes([]byte(this.ToContractAddress))
+	this.MakeTxParam.Serialization(sink)
+}
+
+func (this *ToMerkleValue) Deserialization(source *common.ZeroCopySource) error {
+	txHash, eof := source.NextHash()
+	if eof {
+		return fmt.Errorf("MerkleValue deserialize txHash error")
+	}
+	toContractAddress, eof := source.NextString()
+	if eof {
+		return fmt.Errorf("MerkleValue deserialize toContractAddress error")
+	}
+	makeTxParam := new(MakeTxParam)
+	err := makeTxParam.Deserialization(source)
+	if err != nil {
+		return fmt.Errorf("MerkleValue deserialize makeTxParam error:%s", err)
+	}
+
+	this.TxHash = txHash
+	this.ToContractAddress = toContractAddress
+	this.MakeTxParam = makeTxParam
 	return nil
 }

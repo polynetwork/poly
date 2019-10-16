@@ -19,7 +19,6 @@
 package neo
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
@@ -27,9 +26,7 @@ import (
 	"github.com/ontio/multi-chain/merkle"
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/event"
-	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/header_sync/neo"
-	"github.com/ontio/multi-chain/native/service/side_chain_manager"
 	"github.com/ontio/multi-chain/native/service/utils"
 )
 
@@ -98,33 +95,6 @@ func VerifyFromNeoTx(native *native.NativeService, proof []byte, fromChainid uin
 	return merkleValue, nil
 }
 
-func MakeToNeoProof(native *native.NativeService, params *crosscommon.MakeTxParam) error {
-	//record cross chain tx
-	destAsset, err := side_chain_manager.GetDestCrossChainContract(native, params.FromChainID,
-		params.ToChainID, params.FromContractAddress)
-	if err != nil {
-		return fmt.Errorf("MakeToNeoProof, side_chain_manager.GetAssetContractAddress error: %v", err)
-	}
-
-	merkleValue := &ToMerkleValue{
-		TxHash:            native.GetTx().Hash(),
-		ToContractAddress: destAsset.ContractAddress,
-		MakeTxParam:       params,
-	}
-	sink := common.NewZeroCopySink(nil)
-	merkleValue.Serialization(sink)
-	err = putRequest(native, merkleValue.TxHash, params.ToChainID, sink.Bytes())
-	if err != nil {
-		return fmt.Errorf("MakeToNeoProof, putRequest error:%s", err)
-	}
-	native.PutMerkleVal(sink.Bytes())
-	prefix := merkleValue.TxHash.ToArray()
-	chainIDBytes := utils.GetUint64Bytes(params.ToChainID)
-	key := hex.EncodeToString(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(REQUEST), chainIDBytes, prefix))
-	notifyMakeToNeoProof(native, params.TxHash, params.ToChainID, key)
-	return nil
-}
-
 func notifyVerifyFromNeoProof(native *native.NativeService, txHash string, toChainID uint64) {
 	if !config.DefConfig.Common.EnableEventLog {
 		return
@@ -133,16 +103,5 @@ func notifyVerifyFromNeoProof(native *native.NativeService, txHash string, toCha
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
 			States:          []interface{}{VERIFY_FROM_NEO_PROOF, txHash, toChainID, native.GetHeight()},
-		})
-}
-
-func notifyMakeToNeoProof(native *native.NativeService, txHash string, toChainID uint64, key string) {
-	if !config.DefConfig.Common.EnableEventLog {
-		return
-	}
-	native.AddNotify(
-		&event.NotifyEventInfo{
-			ContractAddress: utils.CrossChainManagerContractAddress,
-			States:          []interface{}{MAKE_TO_NEO_PROOF, txHash, toChainID, native.GetHeight(), key},
 		})
 }

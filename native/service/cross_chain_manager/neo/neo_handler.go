@@ -67,11 +67,3 @@ func (this *NEOHandler) MakeDepositProposal(service *native.NativeService) (*cro
 	}
 	return makeTxParam, nil
 }
-
-func (this *NEOHandler) MakeTransaction(service *native.NativeService, param *crosscommon.MakeTxParam) error {
-	err := MakeToNeoProof(service, param)
-	if err != nil {
-		return fmt.Errorf("neo MakeTransaction, MakeToNeoProof error: %v", err)
-	}
-	return nil
-}

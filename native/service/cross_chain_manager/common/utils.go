@@ -2,7 +2,10 @@ package common
 
 import (
 	"fmt"
+	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/core/genesis"
+	"github.com/ontio/multi-chain/native/event"
+	"github.com/ontio/multi-chain/native/service/utils"
 	"math/big"
 	"strings"
 
@@ -39,4 +42,15 @@ func ConverDecimal(fromDecimal int, toDecimal int, fromAmount *big.Int) *big.Int
 		return new(big.Int).Mul(fromAmount, ethmath.Exp(big.NewInt(10), big.NewInt(int64(-diff))))
 	}
 	return fromAmount
+}
+
+func NotifyMakeProof(native *native.NativeService, txHash string, toChainID uint64, key string) {
+	if !config.DefConfig.Common.EnableEventLog {
+		return
+	}
+	native.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.CrossChainManagerContractAddress,
+			States:          []interface{}{NotifyMakeProofInfo[toChainID], txHash, toChainID, native.GetHeight(), key},
+		})
 }

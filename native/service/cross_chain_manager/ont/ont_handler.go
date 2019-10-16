@@ -67,11 +67,3 @@ func (this *ONTHandler) MakeDepositProposal(service *native.NativeService) (*cro
 	}
 	return makeTxParam, nil
 }
-
-func (this *ONTHandler) MakeTransaction(service *native.NativeService, param *crosscommon.MakeTxParam) error {
-	err := MakeToOntProof(service, param)
-	if err != nil {
-		return fmt.Errorf("ont MakeTransaction, MakeToOntProof error: %v", err)
-	}
-	return nil
-}

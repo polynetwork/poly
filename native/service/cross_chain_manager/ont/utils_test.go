@@ -20,6 +20,7 @@ func TestStateroot(t *testing.T) {
 	if err != nil {
 		fmt.Println("hex.DecodeString", err)
 	}
-	v := merkle.MerkleProve(proof, root)
+
+	v, err := merkle.MerkleProve(proof, root[:])
 	assert.NotNil(t, v)
 }

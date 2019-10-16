@@ -1,6 +1,7 @@
 package cross_chain_manager
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/ontio/multi-chain/native/service/cross_chain_manager/neo"
 
@@ -10,7 +11,7 @@ import (
 
 	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/native/service/cross_chain_manager/btc"
-	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
+	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/cross_chain_manager/eth"
 	"github.com/ontio/multi-chain/native/service/cross_chain_manager/ont"
 	"github.com/ontio/multi-chain/native/service/side_chain_manager"
@@ -31,7 +32,7 @@ func RegisterCrossChainManagerContract(native *native.NativeService) {
 	native.Register(MULTI_SIGN, MultiSign)
 }
 
-func GetChainHandler(chainid uint64) (crosscommon.ChainHandler, error) {
+func GetChainHandler(chainid uint64) (scom.ChainHandler, error) {
 	switch chainid {
 	case utils.BTC_CHAIN_ID:
 		return btc.NewBTCHandler(), nil
@@ -47,7 +48,7 @@ func GetChainHandler(chainid uint64) (crosscommon.ChainHandler, error) {
 }
 
 func ImportExTransfer(native *native.NativeService) ([]byte, error) {
-	params := new(crosscommon.EntranceParam)
+	params := new(scom.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, contract params deserialize error: %v", err)
 	}
@@ -75,36 +76,33 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, err
 	}
 	//1. verify tx
-	if chainID == 2 || chainID == 3 {
-		txParam, err := handler.MakeDepositProposal(native)
-		if err != nil {
-			return utils.BYTE_FALSE, err
-		}
-
-		//2. make target chain tx
-		targetid := txParam.ToChainID
-
-		//check if chainid exist
-		sideChain, err = side_chain_manager.GetSideChain(native, targetid)
-		if err != nil {
-			return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side_chain_manager.GetSideChain error: %v", err)
-		}
-		if sideChain.ChainId != targetid {
-			return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, targetid chain is not registered")
-		}
-
-		targetHandler, err := GetChainHandler(targetid)
-		if err != nil {
-			return utils.BYTE_FALSE, err
-		}
-		//NOTE, you need to store the tx in this
-		err = targetHandler.MakeTransaction(native, txParam)
+	if chainID == utils.BTC_CHAIN_ID {
+		_, err = handler.MakeDepositProposal(native)
 		if err != nil {
 			return utils.BYTE_FALSE, err
 		}
 		return utils.BYTE_TRUE, nil
 	}
-	_, err = handler.MakeDepositProposal(native)
+
+	txParam, err := handler.MakeDepositProposal(native)
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
+
+	//2. make target chain tx
+	targetid := txParam.ToChainID
+
+	//check if chainid exist
+	sideChain, err = side_chain_manager.GetSideChain(native, targetid)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side_chain_manager.GetSideChain error: %v", err)
+	}
+	if sideChain.ChainId != targetid {
+		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, targetid chain is not registered")
+	}
+
+	//NOTE, you need to store the tx in this
+	err = MakeTransaction(native, txParam)
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
@@ -131,13 +129,8 @@ func Vote(native *native.NativeService) ([]byte, error) {
 		if sideChain.ChainId != targetid {
 			return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, targetid chain is not registered")
 		}
-
-		targetHandler, err := GetChainHandler(targetid)
-		if err != nil {
-			return utils.BYTE_FALSE, err
-		}
 		//NOTE, you need to store the tx in this
-		err = targetHandler.MakeTransaction(native, txParam)
+		err = handler.MakeTransaction(native, txParam)
 		if err != nil {
 			return utils.BYTE_FALSE, err
 		}
@@ -166,4 +159,39 @@ func InitRedeemScript(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, err
 	}
 	return utils.BYTE_TRUE, nil
+}
+
+func MakeTransaction(service *native.NativeService, params *scom.MakeTxParam) error {
+	destAsset, err := side_chain_manager.GetDestCrossChainContract(service, params.FromChainID,
+		params.ToChainID, params.FromContractAddress)
+	if err != nil {
+		return fmt.Errorf("ETHHandler MakeTransaction, GetDestCrossChainContract error: %v", err)
+	}
+
+	merkleValue := &scom.ToMerkleValue{
+		TxHash:            service.GetTx().Hash(),
+		ToContractAddress: destAsset.ContractAddress,
+		MakeTxParam:       params,
+	}
+
+	sink := common.NewZeroCopySink(nil)
+	merkleValue.Serialization(sink)
+	err = putRequest(service, merkleValue.TxHash, params.ToChainID, sink.Bytes())
+	if err != nil {
+		return fmt.Errorf("MakeToOntProof, putRequest error:%s", err)
+	}
+	service.PutMerkleVal(sink.Bytes())
+	prefix := merkleValue.TxHash.ToArray()
+	chainIDBytes := utils.GetUint64Bytes(params.ToChainID)
+	key := hex.EncodeToString(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(scom.REQUEST), chainIDBytes, prefix))
+	scom.NotifyMakeProof(service, params.TxHash, params.ToChainID, key)
+	return nil
+}
+
+func putRequest(native *native.NativeService, txHash common.Uint256, chainID uint64, request []byte) error {
+	contract := utils.CrossChainManagerContractAddress
+	prefix := txHash.ToArray()
+	chainIDBytes := utils.GetUint64Bytes(chainID)
+	utils.PutBytes(native, utils.ConcatKey(contract, []byte(scom.REQUEST), chainIDBytes, prefix), request)
+	return nil
 }
