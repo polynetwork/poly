@@ -28,7 +28,6 @@ import (
 
 const (
 	VERIFY_FROM_ONT_PROOF = "verifyFromOntProof"
-	MAKE_TO_ONT_PROOF     = "makeToOntProof"
 
 	//key prefix
 	DONE_TX = "doneTx"

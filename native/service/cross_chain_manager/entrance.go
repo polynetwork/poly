@@ -165,7 +165,7 @@ func MakeTransaction(service *native.NativeService, params *scom.MakeTxParam) er
 	destAsset, err := side_chain_manager.GetDestCrossChainContract(service, params.FromChainID,
 		params.ToChainID, params.FromContractAddress)
 	if err != nil {
-		return fmt.Errorf("ETHHandler MakeTransaction, GetDestCrossChainContract error: %v", err)
+		return fmt.Errorf("MakeTransaction, GetDestCrossChainContract error: %v", err)
 	}
 
 	merkleValue := &scom.ToMerkleValue{
@@ -178,7 +178,7 @@ func MakeTransaction(service *native.NativeService, params *scom.MakeTxParam) er
 	merkleValue.Serialization(sink)
 	err = putRequest(service, merkleValue.TxHash, params.ToChainID, sink.Bytes())
 	if err != nil {
-		return fmt.Errorf("MakeToOntProof, putRequest error:%s", err)
+		return fmt.Errorf("MakeTransaction, putRequest error:%s", err)
 	}
 	service.PutMerkleVal(sink.Bytes())
 	prefix := merkleValue.TxHash.ToArray()

@@ -18,9 +18,9 @@ var (
 )
 
 var NotifyMakeProofInfo = map[uint64]string{
-	1: "notifyEthProof",
-	2: "notifyONTProof",
-	3: "notifyNEOProof",
+	1: "makeToEthProof",
+	2: "makeToOntProof",
+	3: "makeToNeoProof",
 }
 
 type ChainHandler interface {
