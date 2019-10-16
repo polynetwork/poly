@@ -61,8 +61,7 @@ func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*sco
 	bf := bytes.NewBuffer(utils.CrossChainManagerContractAddress[:])
 	keyBytes := ecom.Hex2Bytes(scom.KEY_PREFIX_ETH + scom.Replace0x(ethProof.StorageProofs[0].Key))
 	bf.Write(keyBytes)
-	key := bf.Bytes()
-	val, err := service.GetCacheDB().Get(key)
+	val, err := service.GetCacheDB().Get(bf.Bytes())
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +88,7 @@ func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*sco
 	}
 
 	rawTxValue := crypto.Keccak256([]byte(params.Value))
-	key = utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(scom.KEY_PREFIX_ETH), rawTxValue)
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(scom.KEY_PREFIX_ETH), rawTxValue)
 	service.GetCacheDB().Put(key, []byte(params.Value))
 
 	notifyEthroof(service, hex.EncodeToString([]byte(params.Value)))

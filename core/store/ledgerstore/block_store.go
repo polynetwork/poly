@@ -75,7 +75,7 @@ func (this *BlockStore) SaveBlock(block *types.Block) error {
 	}
 
 	blockHeight := block.Header.Height
-	err := this.SaveHeader(block, 0)
+	err := this.SaveHeader(block)
 	if err != nil {
 		return fmt.Errorf("SaveHeader error %s", err)
 	}
@@ -145,11 +145,6 @@ func (this *BlockStore) loadHeaderWithTx(blockHash common.Uint256) (*types.Heade
 		return nil, nil, err
 	}
 	source := common.NewZeroCopySource(value)
-	sysFee := new(common.Fixed64)
-	err = sysFee.Deserialization(source)
-	if err != nil {
-		return nil, nil, err
-	}
 	header := new(types.Header)
 	err = header.Deserialization(source)
 	if err != nil {
@@ -171,11 +166,10 @@ func (this *BlockStore) loadHeaderWithTx(blockHash common.Uint256) (*types.Heade
 }
 
 //SaveHeader persist block header to store
-func (this *BlockStore) SaveHeader(block *types.Block, sysFee common.Fixed64) error {
+func (this *BlockStore) SaveHeader(block *types.Block) error {
 	blockHash := block.Hash()
 	key := this.getHeaderKey(blockHash)
 	sink := common.NewZeroCopySink(nil)
-	sysFee.Serialization(sink)
 	block.Header.Serialization(sink)
 	sink.WriteUint32(uint32(len(block.Transactions)))
 	for _, tx := range block.Transactions {
