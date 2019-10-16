@@ -31,7 +31,6 @@ const (
 
 	//key prefix
 	DONE_TX = "doneTx"
-	REQUEST = "request"
 )
 
 type ONTHandler struct {

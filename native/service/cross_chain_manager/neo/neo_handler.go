@@ -28,11 +28,9 @@ import (
 
 const (
 	VERIFY_FROM_NEO_PROOF = "verifyFromNeoProof"
-	MAKE_TO_NEO_PROOF     = "makeToNeoProof"
 
 	//key prefix
 	DONE_TX = "doneTx"
-	REQUEST = "request"
 )
 
 type NEOHandler struct {

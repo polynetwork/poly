@@ -52,14 +52,6 @@ func checkDoneTx(native *native.NativeService, txHash common.Uint256, chainID ui
 	return nil
 }
 
-func putRequest(native *native.NativeService, txHash common.Uint256, chainID uint64, request []byte) error {
-	contract := utils.CrossChainManagerContractAddress
-	prefix := txHash.ToArray()
-	chainIDBytes := utils.GetUint64Bytes(chainID)
-	utils.PutBytes(native, utils.ConcatKey(contract, []byte(REQUEST), chainIDBytes, prefix), request)
-	return nil
-}
-
 func VerifyFromOntTx(native *native.NativeService, proof []byte, fromChainid uint64, height uint32) (*FromMerkleValue, error) {
 	//get block header
 	header, err := ont.GetHeaderByHeight(native, fromChainid, height)
