@@ -262,7 +262,7 @@ func chooseUtxos(native *native.NativeService, chainID uint64, amount int64, fee
 		}
 	}
 	if sum < total {
-		return nil, sum, fmt.Errorf("chooseUtxos, current utxo sum %d is not enough %d", sum, total)
+		return nil, sum, fmt.Errorf("chooseUtxos, current utxo is not enough")
 	}
 	utxos.Utxos = utxos.Utxos[j+1:]
 	err = putUtxos(native, chainID, utxos)
