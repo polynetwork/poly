@@ -2,8 +2,12 @@ package eth
 
 import (
 	"fmt"
+	"math/big"
+
 	"github.com/ontio/multi-chain/common"
 	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
+	ethcomm "github.com/ethereum/go-ethereum/common"
+
 )
 
 type ToMerkleValue struct {
@@ -37,4 +41,11 @@ func (this *ToMerkleValue) Deserialization(source *common.ZeroCopySource) error 
 	this.ToContractAddress = toContractAddress
 	this.MakeTxParam = makeTxParam
 	return nil
+}
+
+type ProofAccount struct {
+	Nounce   *big.Int
+	Balance  *big.Int
+	Storage  ethcomm.Hash
+	Codehash ethcomm.Hash
 }
