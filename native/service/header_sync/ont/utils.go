@@ -28,11 +28,11 @@ import (
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/consensus/vbft/config"
-	"github.com/ontio/multi-chain/core/signature"
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/native"
 	hscommon "github.com/ontio/multi-chain/native/service/header_sync/common"
 	"github.com/ontio/multi-chain/native/service/utils"
+	"github.com/ontio/ontology/core/signature"
 	otypes "github.com/ontio/ontology/core/types"
 )
 
