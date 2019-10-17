@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/core/genesis"
+	"github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/native/event"
 	"github.com/ontio/multi-chain/native/service/utils"
 	"math/big"
@@ -53,4 +54,24 @@ func NotifyMakeProof(native *native.NativeService, txHash string, toChainID uint
 			ContractAddress: utils.CrossChainManagerContractAddress,
 			States:          []interface{}{NotifyMakeProofInfo[toChainID], txHash, toChainID, native.GetHeight(), key},
 		})
+}
+
+func PutDoneTx(native *native.NativeService, txHash []byte, chainID uint64) error {
+	contract := utils.CrossChainManagerContractAddress
+	chainIDBytes := utils.GetUint64Bytes(chainID)
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(DONE_TX), chainIDBytes, txHash), states.GenRawStorageItem(txHash))
+	return nil
+}
+
+func CheckDoneTx(native *native.NativeService, txHash []byte, chainID uint64) error {
+	contract := utils.CrossChainManagerContractAddress
+	chainIDBytes := utils.GetUint64Bytes(chainID)
+	value, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(DONE_TX), chainIDBytes, txHash))
+	if err != nil {
+		return fmt.Errorf("checkDoneTx, native.GetCacheDB().Get error: %v", err)
+	}
+	if value != nil {
+		return fmt.Errorf("checkDoneTx, tx already done")
+	}
+	return nil
 }

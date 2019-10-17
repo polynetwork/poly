@@ -57,13 +57,12 @@ func PutBlockHeader(native *native.NativeService, blockHeader *otypes.Header) er
 	return nil
 }
 
-func GetHeaderByHeight(native *native.NativeService, chainID uint64, height uint32) (*otypes.Header, error) {
+func GetHeaderByHeight(native *native.NativeService, height uint32) (*otypes.Header, error) {
 	contract := utils.HeaderSyncContractAddress
 
-	chainIDBytes := utils.GetUint64Bytes(chainID)
 	heightBytes := utils.GetUint32Bytes(height)
 
-	blockHashStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(hscommon.HEADER_INDEX), chainIDBytes, heightBytes))
+	blockHashStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(hscommon.HEADER_INDEX), utils.ONT_CHAIN_ID_BYTE, heightBytes))
 	if err != nil {
 		return nil, fmt.Errorf("GetHeaderByHeight, get blockHashStore error: %v", err)
 	}
@@ -75,7 +74,7 @@ func GetHeaderByHeight(native *native.NativeService, chainID uint64, height uint
 		return nil, fmt.Errorf("GetHeaderByHeight, deserialize blockHashBytes from raw storage item err:%v", err)
 	}
 	header := new(otypes.Header)
-	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(hscommon.BLOCK_HEADER), chainIDBytes, blockHashBytes))
+	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(hscommon.BLOCK_HEADER), utils.ONT_CHAIN_ID_BYTE, blockHashBytes))
 	if err != nil {
 		return nil, fmt.Errorf("GetHeaderByHeight, get headerStore error: %v", err)
 	}

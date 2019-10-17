@@ -19,80 +19,35 @@
 package neo
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/config"
-	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/merkle"
 	"github.com/ontio/multi-chain/native"
-	"github.com/ontio/multi-chain/native/event"
 	"github.com/ontio/multi-chain/native/service/header_sync/neo"
-	"github.com/ontio/multi-chain/native/service/utils"
+	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 )
 
-func putDoneTx(native *native.NativeService, txHash common.Uint256, chainID uint64) error {
-	contract := utils.CrossChainManagerContractAddress
-	prefix := txHash.ToArray()
-	chainIDBytes := utils.GetUint64Bytes(chainID)
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(DONE_TX), chainIDBytes, prefix), cstates.GenRawStorageItem(txHash.ToArray()))
-	return nil
-}
-
-func checkDoneTx(native *native.NativeService, txHash common.Uint256, chainID uint64) error {
-	contract := utils.CrossChainManagerContractAddress
-	prefix := txHash.ToArray()
-	chainIDBytes := utils.GetUint64Bytes(chainID)
-
-	value, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(DONE_TX), chainIDBytes, prefix))
-	if err != nil {
-		return fmt.Errorf("checkDoneTx, native.GetCacheDB().Get error: %v", err)
-	}
-	if value != nil {
-		return fmt.Errorf("checkDoneTx, tx already done")
-	}
-	return nil
-}
-
-func VerifyFromNeoTx(native *native.NativeService, proof []byte, fromChainid uint64, height uint32) (*FromMerkleValue, error) {
+func verifyFromNEOTx(native *native.NativeService, proof, txHash []byte, fromChainid uint64, height uint32) (*scom.MakeTxParam, error) {
 	//get block header
-	header, err := neo.GetHeaderByHeight(native, fromChainid, height)
+	header, err := neo.GetHeaderByHeight(native, height)
 	if err != nil {
-		return nil, fmt.Errorf("VerifyFromNeoTx, get header by height %d from chain %d error: %v",
+		return nil, fmt.Errorf("verifyFromOntTx, get header by height %d from chain %d error: %v",
 			height, fromChainid, err)
 	}
 
 	v, err := merkle.MerkleProve(proof, header.CrossStatesRoot.Bytes())
 	if err != nil {
-		return nil, fmt.Errorf("VerifyFromNeoTx, merkle.MerkleProve verify merkle proof error")
+		return nil, fmt.Errorf("VerifyFromOntTx, merkle.MerkleProve verify merkle proof error")
 	}
 
 	s := common.NewZeroCopySource(v)
-	merkleValue := new(FromMerkleValue)
-	if err := merkleValue.Deserialization(s); err != nil {
-		return nil, fmt.Errorf("VerifyFromNeoTx, deserialize merkleValue error:%s", err)
+	txParam := new(scom.MakeTxParam)
+	if err := txParam.Deserialization(s); err != nil {
+		return nil, fmt.Errorf("VerifyFromOntTx, deserialize merkleValue error:%s", err)
 	}
-
-	//record done cross chain tx
-	err = checkDoneTx(native, merkleValue.TxHash, fromChainid)
-	if err != nil {
-		return nil, fmt.Errorf("VerifyFromNeoTx, checkDoneTx error:%s", err)
+	if !bytes.Equal(txHash, txParam.TxHash) {
+		return nil, fmt.Errorf("VerifyFromOntTx, relayer txHash:%x doesn't equal user txHash:%x", txParam.TxHash, txParam.TxHash)
 	}
-	err = putDoneTx(native, merkleValue.TxHash, fromChainid)
-	if err != nil {
-		return nil, fmt.Errorf("VerifyFromNeoTx, putDoneTx error:%s", err)
-	}
-
-	notifyVerifyFromNeoProof(native, merkleValue.TxHash.ToHexString(), merkleValue.CreateCrossChainTxMerkle.ToChainID)
-	return merkleValue, nil
-}
-
-func notifyVerifyFromNeoProof(native *native.NativeService, txHash string, toChainID uint64) {
-	if !config.DefConfig.Common.EnableEventLog {
-		return
-	}
-	native.AddNotify(
-		&event.NotifyEventInfo{
-			ContractAddress: utils.CrossChainManagerContractAddress,
-			States:          []interface{}{VERIFY_FROM_NEO_PROOF, txHash, toChainID, native.GetHeight()},
-		})
+	return txParam, nil
 }

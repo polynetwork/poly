@@ -19,6 +19,7 @@
 package side_chain_manager
 
 import (
+	"bytes"
 	"fmt"
 	"sort"
 
@@ -69,7 +70,7 @@ func (this *CrossChainContractMap) Serialization(sink *common.ZeroCopySink) erro
 		assetList = append(assetList, v)
 	}
 	sort.SliceStable(assetList, func(i, j int) bool {
-		return assetList[i].ContractAddress > assetList[j].ContractAddress
+		return bytes.Compare(assetList[i].ContractAddress, assetList[j].ContractAddress) > 0
 	})
 	for _, v := range assetList {
 		if err := v.Serialization(sink); err != nil {

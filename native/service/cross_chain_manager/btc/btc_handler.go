@@ -248,10 +248,11 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 		return false, nil, fmt.Errorf("btc Vote, failed to resolve parameter: %v", err)
 	}
 
+	txHash := mtx.TxHash()
 	return true, &crosscommon.MakeTxParam{
-		TxHash:              mtx.TxHash().String(),
+		TxHash:              txHash[:],
 		FromChainID:         0,
-		FromContractAddress: BTC_ADDRESS,
+		FromContractAddress: []byte(BTC_ADDRESS),
 		ToChainID:           p.ChainId,
 		Method:              "unlock",
 		Args:                p.AddrAndVal,
@@ -263,18 +264,10 @@ func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*cro
 	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
 		return nil, fmt.Errorf("btc MakeDepositProposal, contract params deserialize error: %v", err)
 	}
-	if params.Proof == "" || params.TxData == "" {
+	if len(params.Proof) == 0 || len(params.Extra) == 0 {
 		return nil, fmt.Errorf("btc MakeDepositProposal, GetInput() data can't be empty")
 	}
-	tx, err := hex.DecodeString(params.TxData)
-	if err != nil {
-		return nil, fmt.Errorf("btc MakeDepositProposal, failed to decode transaction from string to bytes: %v", err)
-	}
-	proof, err := hex.DecodeString(params.Proof)
-	if err != nil {
-		return nil, fmt.Errorf("btc MakeDepositProposal, failed to decode proof from string to bytes: %v", err)
-	}
-	err = notifyBtcTx(service, proof, tx, params.Height, params.SourceChainID)
+	err := notifyBtcTx(service, params.Proof, params.Extra, params.Height, params.SourceChainID)
 	if err != nil {
 		return nil, fmt.Errorf("btc MakeDepositProposal, failed to verify: %v", err)
 	}
@@ -305,7 +298,7 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *cr
 	if err != nil {
 		return fmt.Errorf("btc MakeTransaction, side_chain_manager.GetAssetContractAddress error: %v", err)
 	}
-	if destAsset.ContractAddress != "btc" {
+	if bytes.Equal(destAsset.ContractAddress, []byte(BTC_ADDRESS)) {
 		return fmt.Errorf("btc MakeTransaction, destContractAddr is %s not btc", destAsset.ContractAddress)
 	}
 

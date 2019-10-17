@@ -20,13 +20,11 @@ package side_chain_manager
 
 import (
 	"fmt"
-	"math"
-	"strconv"
-
 	"github.com/ontio/multi-chain/common"
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/service/utils"
+	"math"
 )
 
 func getRegisterSideChain(native *native.NativeService, chanid uint64) (*SideChain, error) {
@@ -178,17 +176,16 @@ func putCrossChainContractMap(native *native.NativeService, crossChainContractMa
 	sink := common.NewZeroCopySink(nil)
 	crossChainContractMap.Serialization(sink)
 	for _, v := range crossChainContractMap.CrossChainContractMap {
-		prefix := strconv.Itoa(int(v.ChainId)) + v.ContractAddress
-		native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(CROSS_CHAIN_CONTRACT_MAP), []byte(prefix)),
+		native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(CROSS_CHAIN_CONTRACT_MAP), append(utils.GetUint64Bytes(v.ChainId), v.ContractAddress...)),
 			cstates.GenRawStorageItem(sink.Bytes()))
 	}
 	return nil
 }
 
-func GetDestCrossChainContract(native *native.NativeService, fromChainid, toChainid uint64, contractAddress string) (*CrossChainContract, error) {
+func GetDestCrossChainContract(native *native.NativeService, fromChainid, toChainid uint64, contractAddress []byte) (*CrossChainContract, error) {
 	contract := utils.SideChainManagerContractAddress
-	prefix := strconv.Itoa(int(fromChainid)) + contractAddress
-	crossChainContractMapStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(CROSS_CHAIN_CONTRACT_MAP), []byte(prefix)))
+	prefix := append(utils.GetUint64Bytes(fromChainid), contractAddress...)
+	crossChainContractMapStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(CROSS_CHAIN_CONTRACT_MAP), prefix))
 	if err != nil {
 		return nil, fmt.Errorf("getAssetMap,get crossChainContractMapStore error: %v", err)
 	}

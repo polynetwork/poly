@@ -19,18 +19,10 @@
 package ont
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native"
-	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
-)
-
-const (
-	VERIFY_FROM_ONT_PROOF = "verifyFromOntProof"
-
-	//key prefix
-	DONE_TX = "doneTx"
+	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 )
 
 type ONTHandler struct {
@@ -40,28 +32,23 @@ func NewONTHandler() *ONTHandler {
 	return &ONTHandler{}
 }
 
-func (this *ONTHandler) MakeDepositProposal(service *native.NativeService) (*crosscommon.MakeTxParam, error) {
-	params := new(crosscommon.EntranceParam)
+func (this *ONTHandler) MakeDepositProposal(service *native.NativeService) (*scom.MakeTxParam, error) {
+	params := new(scom.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
 		return nil, fmt.Errorf("ont MakeDepositProposal, contract params deserialize error: %v", err)
 	}
 
-	proof, err := hex.DecodeString(params.Proof)
-	if err != nil {
-		return nil, fmt.Errorf("ont MakeDepositProposal, hex.DecodeString proof error: %v", err)
+	if err := scom.CheckDoneTx(service, params.TxHash, params.SourceChainID); err != nil {
+		return nil, fmt.Errorf("MakeDepositProposal, check done transaction error:%s", err)
 	}
-	merkleValue, err := VerifyFromOntTx(service, proof, params.SourceChainID, params.Height)
+
+	value, err := verifyFromOntTx(service, params.Proof, params.TxHash, params.SourceChainID, params.Height)
 	if err != nil {
 		return nil, fmt.Errorf("ont MakeDepositProposal, VerifyOntTx error: %v", err)
 	}
 
-	makeTxParam := &crosscommon.MakeTxParam{
-		TxHash:              merkleValue.TxHash.ToHexString(),
-		FromChainID:         merkleValue.CreateCrossChainTxMerkle.FromChainID,
-		FromContractAddress: merkleValue.CreateCrossChainTxMerkle.FromContractAddress,
-		ToChainID:           merkleValue.CreateCrossChainTxMerkle.ToChainID,
-		Method:              merkleValue.CreateCrossChainTxMerkle.Method,
-		Args:                merkleValue.CreateCrossChainTxMerkle.Args,
+	if err = scom.PutDoneTx(service, value.TxHash, value.FromChainID); err != nil {
+		return nil, fmt.Errorf("VerifyFromOntTx, putDoneTx error:%s", err)
 	}
-	return makeTxParam, nil
+	return value, nil
 }

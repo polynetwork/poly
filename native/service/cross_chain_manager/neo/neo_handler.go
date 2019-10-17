@@ -19,11 +19,10 @@
 package neo
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native"
-	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
+	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 )
 
 const (
@@ -40,28 +39,23 @@ func NewNEOHandler() *NEOHandler {
 	return &NEOHandler{}
 }
 
-func (this *NEOHandler) MakeDepositProposal(service *native.NativeService) (*crosscommon.MakeTxParam, error) {
-	params := new(crosscommon.EntranceParam)
+func (this *NEOHandler) MakeDepositProposal(service *native.NativeService) (*scom.MakeTxParam, error) {
+	params := new(scom.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
-		return nil, fmt.Errorf("neo MakeDepositProposal, contract params deserialize error: %v", err)
+		return nil, fmt.Errorf("ont MakeDepositProposal, contract params deserialize error: %v", err)
 	}
 
-	proof, err := hex.DecodeString(params.Proof)
-	if err != nil {
-		return nil, fmt.Errorf("neo MakeDepositProposal, hex.DecodeString proof error: %v", err)
-	}
-	merkleValue, err := VerifyFromNeoTx(service, proof, params.SourceChainID, params.Height)
-	if err != nil {
-		return nil, fmt.Errorf("neo MakeDepositProposal, VerifyOntTx error: %v", err)
+	if err := scom.CheckDoneTx(service, params.TxHash, params.SourceChainID); err != nil {
+		return nil, fmt.Errorf("MakeDepositProposal, check done transaction error:%s", err)
 	}
 
-	makeTxParam := &crosscommon.MakeTxParam{
-		TxHash:              merkleValue.TxHash.ToHexString(),
-		FromChainID:         merkleValue.CreateCrossChainTxMerkle.FromChainID,
-		FromContractAddress: merkleValue.CreateCrossChainTxMerkle.FromContractAddress,
-		ToChainID:           merkleValue.CreateCrossChainTxMerkle.ToChainID,
-		Method:              merkleValue.CreateCrossChainTxMerkle.Method,
-		Args:                merkleValue.CreateCrossChainTxMerkle.Args,
+	value, err := verifyFromNEOTx(service, params.Proof, params.TxHash, params.SourceChainID, params.Height)
+	if err != nil {
+		return nil, fmt.Errorf("ont MakeDepositProposal, VerifyOntTx error: %v", err)
 	}
-	return makeTxParam, nil
+
+	if err = scom.PutDoneTx(service, value.TxHash, value.FromChainID); err != nil {
+		return nil, fmt.Errorf("VerifyFromOntTx, putDoneTx error:%s", err)
+	}
+	return value, nil
 }

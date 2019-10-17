@@ -19,42 +19,18 @@
 package ont
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/config"
-	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/merkle"
 	"github.com/ontio/multi-chain/native"
-	"github.com/ontio/multi-chain/native/event"
+	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/header_sync/ont"
-	"github.com/ontio/multi-chain/native/service/utils"
 )
 
-func putDoneTx(native *native.NativeService, txHash common.Uint256, chainID uint64) error {
-	contract := utils.CrossChainManagerContractAddress
-	prefix := txHash.ToArray()
-	chainIDBytes := utils.GetUint64Bytes(chainID)
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(DONE_TX), chainIDBytes, prefix), cstates.GenRawStorageItem(txHash.ToArray()))
-	return nil
-}
-
-func checkDoneTx(native *native.NativeService, txHash common.Uint256, chainID uint64) error {
-	contract := utils.CrossChainManagerContractAddress
-	prefix := txHash.ToArray()
-	chainIDBytes := utils.GetUint64Bytes(chainID)
-	value, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(DONE_TX), chainIDBytes, prefix))
-	if err != nil {
-		return fmt.Errorf("checkDoneTx, native.GetCacheDB().Get error: %v", err)
-	}
-	if value != nil {
-		return fmt.Errorf("checkDoneTx, tx already done")
-	}
-	return nil
-}
-
-func VerifyFromOntTx(native *native.NativeService, proof []byte, fromChainid uint64, height uint32) (*FromMerkleValue, error) {
+func verifyFromOntTx(native *native.NativeService, proof, txHash []byte, fromChainid uint64, height uint32) (*scom.MakeTxParam, error) {
 	//get block header
-	header, err := ont.GetHeaderByHeight(native, fromChainid, height)
+	header, err := ont.GetHeaderByHeight(native, height)
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromOntTx, get header by height %d from chain %d error: %v",
 			height, fromChainid, err)
@@ -66,32 +42,12 @@ func VerifyFromOntTx(native *native.NativeService, proof []byte, fromChainid uin
 	}
 
 	s := common.NewZeroCopySource(v)
-	merkleValue := new(FromMerkleValue)
-	if err := merkleValue.Deserialization(s); err != nil {
+	txParam := new(scom.MakeTxParam)
+	if err := txParam.Deserialization(s); err != nil {
 		return nil, fmt.Errorf("VerifyFromOntTx, deserialize merkleValue error:%s", err)
 	}
-
-	//record done cross chain tx
-	err = checkDoneTx(native, merkleValue.TxHash, fromChainid)
-	if err != nil {
-		return nil, fmt.Errorf("VerifyFromOntTx, checkDoneTx error:%s", err)
+	if !bytes.Equal(txHash, txParam.TxHash) {
+		return nil, fmt.Errorf("VerifyFromOntTx, relayer txHash:%x doesn't equal user txHash:%x", txParam.TxHash, txParam.TxHash)
 	}
-	err = putDoneTx(native, merkleValue.TxHash, fromChainid)
-	if err != nil {
-		return nil, fmt.Errorf("VerifyFromOntTx, putDoneTx error:%s", err)
-	}
-
-	notifyVerifyFromOntProof(native, merkleValue.TxHash.ToHexString(), merkleValue.CreateCrossChainTxMerkle.ToChainID)
-	return merkleValue, nil
-}
-
-func notifyVerifyFromOntProof(native *native.NativeService, txHash string, toChainID uint64) {
-	if !config.DefConfig.Common.EnableEventLog {
-		return
-	}
-	native.AddNotify(
-		&event.NotifyEventInfo{
-			ContractAddress: utils.CrossChainManagerContractAddress,
-			States:          []interface{}{VERIFY_FROM_ONT_PROOF, txHash, toChainID, native.GetHeight()},
-		})
+	return txParam, nil
 }

@@ -81,7 +81,7 @@ func (this *ChainidParam) Deserialization(source *common.ZeroCopySource) error {
 
 type CrossChainContract struct {
 	ChainId         uint64
-	ContractAddress string
+	ContractAddress []byte
 }
 
 func (this *CrossChainContract) Serialization(sink *common.ZeroCopySink) error {
@@ -95,7 +95,7 @@ func (this *CrossChainContract) Deserialization(source *common.ZeroCopySource) e
 	if eof {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize chainid error")
 	}
-	contractAddress, eof := source.NextString()
+	contractAddress, eof := source.NextVarBytes()
 	if eof {
 		return fmt.Errorf("utils.DecodeString, deserialize contractAddress error")
 	}

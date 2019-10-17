@@ -83,7 +83,7 @@ func (this *ONTHandler) SyncBlockHeader(native *native.NativeService) error {
 		if err != nil {
 			return fmt.Errorf("SyncBlockHeader, otypes.HeaderFromRawBytes error: %v", err)
 		}
-		_, err = GetHeaderByHeight(native, header.ShardID, header.Height)
+		_, err = GetHeaderByHeight(native, header.Height)
 		if err == nil {
 			return fmt.Errorf("SyncBlockHeader, %d, %d", header.ShardID, header.Height)
 		}

@@ -53,12 +53,10 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, contract params deserialize error: %v", err)
 	}
 	log.Infof("SourceChainID:%v\n", params.SourceChainID)
-	log.Infof("TargetChainID:%v\n", params.TargetChainID)
 	log.Infof("Proof:%v\n", params.Proof)
-	log.Infof("TxData:%v\n", params.TxData)
+	log.Infof("Extra:%v\n", params.Extra)
 	log.Infof("Height:%v\n", params.Height)
 	log.Infof("RelayerAddress:%v\n", params.RelayerAddress)
-	log.Infof("value:%v\n", params.Value)
 
 	chainID := params.SourceChainID
 
@@ -184,7 +182,7 @@ func MakeTransaction(service *native.NativeService, params *scom.MakeTxParam) er
 	prefix := merkleValue.TxHash.ToArray()
 	chainIDBytes := utils.GetUint64Bytes(params.ToChainID)
 	key := hex.EncodeToString(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(scom.REQUEST), chainIDBytes, prefix))
-	scom.NotifyMakeProof(service, params.TxHash, params.ToChainID, key)
+	scom.NotifyMakeProof(service, hex.EncodeToString(params.TxHash), params.ToChainID, key)
 	return nil
 }
 
