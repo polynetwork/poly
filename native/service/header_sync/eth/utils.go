@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/ethereum/go-ethereum/core/types"
 	cty "github.com/ethereum/go-ethereum/core/types"
@@ -13,6 +14,11 @@ import (
 	"github.com/ontio/multi-chain/native/event"
 	scom "github.com/ontio/multi-chain/native/service/header_sync/common"
 	"github.com/ontio/multi-chain/native/service/utils"
+)
+
+const (
+	// source from https://github.com/ethereum/go-ethereum/blob/master/consensus/ethash/consensus.go#L45
+	allowedFutureBlockTime = 15 * time.Second // Max time from current time allowed for blocks, before they're considered future blocks
 )
 
 func putBlockHeader(native *native.NativeService, blockHeader types.Header, headerBytes []byte) error {

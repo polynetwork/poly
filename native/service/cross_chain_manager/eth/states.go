@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"math/big"
 
+	ethcomm "github.com/ethereum/go-ethereum/common"
 	"github.com/ontio/multi-chain/common"
 	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
-	ethcomm "github.com/ethereum/go-ethereum/common"
-
 )
 
 type ToMerkleValue struct {
