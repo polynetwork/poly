@@ -58,6 +58,7 @@ func (p *targetChainParam) resolve(amount int64, paramOutput *wire.TxOut) ([]byt
 	if err != nil {
 		return nil, fmt.Errorf("inputArgs.Deserialization fail: %v", err)
 	}
+	p.ChainId = inputArgs.ToChainID
 
 	argsMap := types.NewMap()
 	argsMap.Add(neovm.NewStackItem([]byte("address")), neovm.NewStackItem(inputArgs.Address[:]))
