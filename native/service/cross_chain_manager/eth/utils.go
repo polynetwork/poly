@@ -22,7 +22,7 @@ import (
 func verifyFromEthTx(native *native.NativeService, proof, extra, txHash []byte, height uint32) (*scom.MakeTxParam, error) {
 	blockData, err := eth.GetHeaderByHeight(native, uint64(height))
 	if err != nil {
-		return nil, fmt.Errorf("VerifyFromEthProof, get header by height error:%s", err)
+		return nil, fmt.Errorf("VerifyFromEthProof, get header by height, height:%d, error:%s", height, err)
 	}
 
 	ethProof := new(ETHProof)
