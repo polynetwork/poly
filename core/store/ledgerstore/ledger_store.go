@@ -967,11 +967,6 @@ func (this *LedgerStoreImp) GetHeaderByHeight(height uint32) (*types.Header, err
 	return this.GetHeaderByHash(blockHash)
 }
 
-//GetSysFeeAmount return the sys fee for block by block hash. Wrap function of BlockStore.GetSysFeeAmount
-func (this *LedgerStoreImp) GetSysFeeAmount(blockHash common.Uint256) (common.Fixed64, error) {
-	return this.blockStore.GetSysFeeAmount(blockHash)
-}
-
 //GetTransaction return transaction by transaction hash. Wrap function of BlockStore.GetTransaction
 func (this *LedgerStoreImp) GetTransaction(txHash common.Uint256) (*types.Transaction, uint32, error) {
 	return this.blockStore.GetTransaction(txHash)

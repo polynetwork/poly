@@ -191,22 +191,6 @@ func (this *BlockStore) GetHeader(blockHash common.Uint256) (*types.Header, erro
 	return this.loadHeader(blockHash)
 }
 
-//GetSysFeeAmount return the sys fee for block by block hash
-func (this *BlockStore) GetSysFeeAmount(blockHash common.Uint256) (common.Fixed64, error) {
-	key := this.getHeaderKey(blockHash)
-	data, err := this.store.Get(key)
-	if err != nil {
-		return common.Fixed64(0), err
-	}
-	source := common.NewZeroCopySource(data)
-	var fee common.Fixed64
-	err = fee.Deserialization(source)
-	if err != nil {
-		return common.Fixed64(0), err
-	}
-	return fee, nil
-}
-
 func (this *BlockStore) loadHeader(blockHash common.Uint256) (*types.Header, error) {
 	key := this.getHeaderKey(blockHash)
 	value, err := this.store.Get(key)
@@ -214,11 +198,6 @@ func (this *BlockStore) loadHeader(blockHash common.Uint256) (*types.Header, err
 		return nil, err
 	}
 	source := common.NewZeroCopySource(value)
-	sysFee := new(common.Fixed64)
-	err = sysFee.Deserialization(source)
-	if err != nil {
-		return nil, err
-	}
 	header := new(types.Header)
 	err = header.Deserialization(source)
 	if err != nil {
