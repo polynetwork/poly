@@ -157,7 +157,7 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 			return fmt.Errorf("MultiSign, txscript.PayToAddrScript, failed to get p2sh script: %v", err)
 		}
 
-		utxos, err := getUtxos(service, 0)
+		utxos, err := getUtxos(service, utils.BTC_CHAIN_ID)
 		if err != nil {
 			return fmt.Errorf("MultiSign, getUtxos error: %v", err)
 		}
@@ -237,13 +237,13 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 		return false, nil, fmt.Errorf("btc Vote, failed to decode the transaction")
 	}
 
-	err = addUtxos(service, 0, proof.Height, mtx)
+	err = addUtxos(service, utils.BTC_CHAIN_ID, proof.Height, mtx)
 	if err != nil {
 		return false, nil, fmt.Errorf("btc Vote, updateUtxo error: %s", err)
 	}
 
 	var p targetChainParam
-	err = p.resolve(mtx.TxOut[0].Value, mtx.TxOut[1])
+	toContract, err := p.resolve(mtx.TxOut[0].Value, mtx.TxOut[1])
 	if err != nil {
 		return false, nil, fmt.Errorf("btc Vote, failed to resolve parameter: %v", err)
 	}
@@ -251,9 +251,10 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 	txHash := mtx.TxHash()
 	return true, &crosscommon.MakeTxParam{
 		TxHash:              txHash[:],
-		FromChainID:         0,
+		FromChainID:         utils.BTC_CHAIN_ID,
 		FromContractAddress: []byte(BTC_ADDRESS),
 		ToChainID:           p.ChainId,
+		ToContractAddress:   toContract,
 		Method:              "unlock",
 		Args:                p.AddrAndVal,
 	}, nil
@@ -313,7 +314,7 @@ func notifyBtcTx(native *native.NativeService, proof, tx []byte, height uint32, 
 	reader := bytes.NewReader(tx)
 	err = mtx.BtcDecode(reader, wire.ProtocolVersion, wire.LatestEncoding)
 	if err != nil {
-		return fmt.Errorf("notifyBtcTx, failed to decode the transaction")
+		return fmt.Errorf("notifyBtcTx, failed to decode the transaction %s: %s", hex.EncodeToString(tx), err)
 	}
 
 	mb := wire_bch.MsgMerkleBlock{}

@@ -1,7 +1,6 @@
 package btc
 
 import (
-	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -45,36 +44,27 @@ type targetChainParam struct {
 }
 
 // func about OP_RETURN
-func (p *targetChainParam) resolve(amount int64, paramOutput *wire.TxOut) error {
+func (p *targetChainParam) resolve(amount int64, paramOutput *wire.TxOut) ([]byte, error) {
 	script := paramOutput.PkScript
 	if int(script[1]) != OP_RETURN_DATA_LEN {
-		return errors.New("Length of script is wrong")
+		return nil, errors.New("Length of script is wrong")
 	}
 
 	if script[2] != OP_RETURN_SCRIPT_FLAG {
-		return errors.New("Wrong flag")
+		return nil, errors.New("Wrong flag")
 	}
-	p.ChainId = binary.BigEndian.Uint64(script[3:11])
-	p.Fee = int64(binary.BigEndian.Uint64(script[11:19]))
-	// TODO:need to check the addr format?
-	if amount < p.Fee && p.Fee >= 0 {
-		return errors.New("The transfer amount cannot be less than the transaction fee")
-	}
-	toAddr, err := common.AddressParseFromBytes(script[19:])
+	inputArgs := new(Args)
+	err := inputArgs.Deserialization(common.NewZeroCopySource(script[3:]))
 	if err != nil {
-		return fmt.Errorf("Failed to parse address from bytes: %v", err)
+		return nil, fmt.Errorf("inputArgs.Deserialization fail: %v", err)
 	}
-	//sink := common.NewZeroCopySink(nil)
-	//sink.WriteVarBytes([]byte(toAddr.ToBase58()))
-	//sink.WriteInt64(amount)
-	//p.AddrAndVal = sink.Bytes()
 
 	argsMap := types.NewMap()
-	argsMap.Add(neovm.NewStackItem([]byte("address")), neovm.NewStackItem(toAddr[:]))
+	argsMap.Add(neovm.NewStackItem([]byte("address")), neovm.NewStackItem(inputArgs.Address[:]))
 	argsMap.Add(neovm.NewStackItem([]byte("amount")), neovm.NewStackItem(amount))
 	args, err := sneovm.SerializeStackItem(argsMap)
 	p.AddrAndVal = args
-	return nil
+	return inputArgs.ToContractAddress, nil
 }
 
 // This function needs to input the input and output information of the transaction

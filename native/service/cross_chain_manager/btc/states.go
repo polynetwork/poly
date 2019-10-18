@@ -198,3 +198,28 @@ func (this *MultiSignInfo) Deserialization(source *common.ZeroCopySource) error 
 	this.MultiSignInfo = multiSignInfo
 	return nil
 }
+
+type Args struct {
+	ToContractAddress []byte
+	Address           []byte
+}
+
+func (this *Args) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteVarBytes(this.ToContractAddress)
+	sink.WriteVarBytes(this.Address)
+}
+
+func (this *Args) Deserialization(source *common.ZeroCopySource) error {
+	toContractAddress, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("Args deserialize toContractAddress error")
+	}
+	address, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("Args deserialize address error")
+	}
+
+	this.ToContractAddress = toContractAddress
+	this.Address = address
+	return nil
+}
