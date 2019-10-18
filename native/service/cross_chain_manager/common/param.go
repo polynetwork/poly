@@ -94,6 +94,7 @@ func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error 
 
 func (this *EntranceParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteUint64(this.SourceChainID)
+	sink.WriteVarBytes(this.TxHash)
 	sink.WriteUint32(this.Height)
 	sink.WriteVarBytes([]byte(this.Proof))
 	sink.WriteVarBytes([]byte(this.RelayerAddress))
