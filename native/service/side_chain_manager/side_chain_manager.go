@@ -31,20 +31,16 @@ import (
 
 const (
 	//function name
-	REGISTER_SIDE_CHAIN                  = "registerSideChain"
-	APPROVE_REGISTER_SIDE_CHAIN          = "approveRegisterSideChain"
-	UPDATE_SIDE_CHAIN                    = "updateSideChain"
-	APPROVE_UPDATE_SIDE_CHAIN            = "approveUpdateSideChain"
-	REMOVE_SIDE_CHAIN                    = "removeSideChain"
-	CROSS_CHAIN_CONTRACT_MAPPING         = "crossChainContractMapping"
-	APPROVE_CROSS_CHAIN_CONTRACT_MAPPING = "approveCrossChainContractMapping"
+	REGISTER_SIDE_CHAIN         = "registerSideChain"
+	APPROVE_REGISTER_SIDE_CHAIN = "approveRegisterSideChain"
+	UPDATE_SIDE_CHAIN           = "updateSideChain"
+	APPROVE_UPDATE_SIDE_CHAIN   = "approveUpdateSideChain"
+	REMOVE_SIDE_CHAIN           = "removeSideChain"
 
 	//key prefix
-	REGISTER_SIDE_CHAIN_REQUEST      = "registerSideChainRequest"
-	UPDATE_SIDE_CHAIN_REQUEST        = "updateSideChainRequest"
-	SIDE_CHAIN                       = "sideChain"
-	CROSS_CHAIN_CONTRACT_MAP         = "crossChainContractMap"
-	CROSS_CHAIN_CONTRACT_MAP_REQUEST = "crossChainContractMapRequest"
+	REGISTER_SIDE_CHAIN_REQUEST = "registerSideChainRequest"
+	UPDATE_SIDE_CHAIN_REQUEST   = "updateSideChainRequest"
+	SIDE_CHAIN                  = "sideChain"
 )
 
 //Register methods of governance contract
@@ -54,9 +50,6 @@ func RegisterSideChainManagerContract(native *native.NativeService) {
 	native.Register(UPDATE_SIDE_CHAIN, UpdateSideChain)
 	native.Register(APPROVE_UPDATE_SIDE_CHAIN, ApproveUpdateSideChain)
 	native.Register(REMOVE_SIDE_CHAIN, RemoveSideChain)
-
-	native.Register(CROSS_CHAIN_CONTRACT_MAPPING, CrossChainContractMapping)
-	native.Register(APPROVE_CROSS_CHAIN_CONTRACT_MAPPING, ApproveCrossChainContractMapping)
 }
 
 func RegisterSideChain(native *native.NativeService) ([]byte, error) {
@@ -213,71 +206,5 @@ func RemoveSideChain(native *native.NativeService) ([]byte, error) {
 	chainidByte := utils.GetUint64Bytes(params.Chainid)
 	native.GetCacheDB().Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(SIDE_CHAIN), chainidByte))
 
-	return utils.BYTE_TRUE, nil
-}
-
-func CrossChainContractMapping(native *native.NativeService) ([]byte, error) {
-	params := new(CrossChainContractMappingParam)
-	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("AssetMapping, contract params deserialize error: %v", err)
-	}
-	crossChainContractMapRequest, err := getCrossChainContractMapRequest(native, params.CrossChainContractName)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("AssetMapping, getAssetMapRequest error: %v", err)
-	}
-	if crossChainContractMapRequest.CrossChainContractName != "" {
-		return utils.BYTE_FALSE, fmt.Errorf("AssetMapping, asset name is already used")
-	}
-	err = putCrossChainContractMapRequest(native, params)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("AssetMapping, putAssetMapRequest error: %v", err)
-	}
-
-	return utils.BYTE_TRUE, nil
-}
-
-func ApproveCrossChainContractMapping(native *native.NativeService) ([]byte, error) {
-	params := new(ApproveCrossChainContractMappingParam)
-	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("ApproveAssetMapping, contract params deserialize error: %v", err)
-	}
-
-	// get operator from database
-	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
-	if err != nil {
-		return utils.BYTE_FALSE, err
-	}
-
-	//check witness
-	err = utils.ValidateOwner(native, operatorAddress)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("ApproveAssetMapping, checkWitness error: %v", err)
-	}
-
-	assetMapRequest, err := getCrossChainContractMapRequest(native, params.CrossChainContractName)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("ApproveAssetMapping, getAssetMapRequest error: %v", err)
-	}
-	if assetMapRequest.CrossChainContractName == "" {
-		return utils.BYTE_FALSE, fmt.Errorf("ApproveAssetMapping, asset name is not requested")
-	}
-	assetMap := make(map[uint64]*CrossChainContract)
-	for _, v := range assetMapRequest.CrossChainContractList {
-		assetMap[v.ChainId] = v
-	}
-	value := &CrossChainContractMap{
-		CrossChainContractMap: assetMap,
-	}
-	sink := common.NewZeroCopySink(nil)
-	err = value.Serialization(sink)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("AssetMapping, value.Serialization error: %v", err)
-	}
-	err = putCrossChainContractMap(native, value)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("AssetMapping, putAssetMap error: %v", err)
-	}
-
-	native.GetCacheDB().Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(CROSS_CHAIN_CONTRACT_MAP_REQUEST), []byte(params.CrossChainContractName)))
 	return utils.BYTE_TRUE, nil
 }

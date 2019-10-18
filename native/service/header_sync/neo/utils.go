@@ -42,7 +42,7 @@ func PutBlockHeader(native *native.NativeService, blockHeader *neorpc.BlockHeade
 		cstates.GenRawStorageItem(headerBytes))
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(hscommon.HEADER_INDEX), utils.NEO_CHAIN_ID_BYTE, heightBytes),
 		cstates.GenRawStorageItem(blockHash.Bytes()))
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(hscommon.CURRENT_HEIGHT), utils.NEO_CHAIN_ID_BYTE,), cstates.GenRawStorageItem(heightBytes))
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(hscommon.CURRENT_HEIGHT), utils.NEO_CHAIN_ID_BYTE), cstates.GenRawStorageItem(heightBytes))
 	notifyPutHeader(native, utils.NEO_CHAIN_ID, blockHeader.Index, blockHash.String())
 	return nil
 }

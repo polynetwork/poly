@@ -25,13 +25,6 @@ import (
 	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 )
 
-const (
-	VERIFY_FROM_NEO_PROOF = "verifyFromNeoProof"
-
-	//key prefix
-	DONE_TX = "doneTx"
-)
-
 type NEOHandler struct {
 }
 

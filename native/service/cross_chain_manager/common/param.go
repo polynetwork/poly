@@ -105,6 +105,7 @@ type MakeTxParam struct {
 	FromChainID         uint64
 	FromContractAddress []byte
 	ToChainID           uint64
+	ToContractAddress   []byte
 	Method              string
 	Args                []byte
 }
@@ -114,6 +115,7 @@ func (this *MakeTxParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteUint64(this.FromChainID)
 	sink.WriteVarBytes([]byte(this.FromContractAddress))
 	sink.WriteUint64(this.ToChainID)
+	sink.WriteVarBytes([]byte(this.ToContractAddress))
 	sink.WriteVarBytes([]byte(this.Method))
 	sink.WriteVarBytes([]byte(this.Args))
 }
@@ -135,6 +137,10 @@ func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 	if eof {
 		return fmt.Errorf("MakeTxParam deserialize toChainID error")
 	}
+	toContractAddress, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("MakeTxParam deserialize toContractAddress error")
+	}
 	method, eof := source.NextString()
 	if eof {
 		return fmt.Errorf("MakeTxParam deserialize method error")
@@ -148,6 +154,7 @@ func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 	this.FromChainID = fromChainID
 	this.FromContractAddress = fromContractAddress
 	this.ToChainID = toChainID
+	this.ToContractAddress = toContractAddress
 	this.Method = method
 	this.Args = args
 	return nil
@@ -257,25 +264,19 @@ func (this *Vote) Deserialization(source *common.ZeroCopySource) error {
 }
 
 type ToMerkleValue struct {
-	TxHash            common.Uint256
-	ToContractAddress []byte
-	MakeTxParam       *MakeTxParam
+	TxHash      []byte
+	MakeTxParam *MakeTxParam
 }
 
 func (this *ToMerkleValue) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteHash(this.TxHash)
-	sink.WriteVarBytes(this.ToContractAddress)
+	sink.WriteVarBytes(this.TxHash)
 	this.MakeTxParam.Serialization(sink)
 }
 
 func (this *ToMerkleValue) Deserialization(source *common.ZeroCopySource) error {
-	txHash, eof := source.NextHash()
+	txHash, eof := source.NextVarBytes()
 	if eof {
 		return fmt.Errorf("MerkleValue deserialize txHash error")
-	}
-	toContractAddress, eof := source.NextVarBytes()
-	if eof {
-		return fmt.Errorf("MerkleValue deserialize toContractAddress error")
 	}
 	makeTxParam := new(MakeTxParam)
 	err := makeTxParam.Deserialization(source)
@@ -284,7 +285,6 @@ func (this *ToMerkleValue) Deserialization(source *common.ZeroCopySource) error 
 	}
 
 	this.TxHash = txHash
-	this.ToContractAddress = toContractAddress
 	this.MakeTxParam = makeTxParam
 	return nil
 }

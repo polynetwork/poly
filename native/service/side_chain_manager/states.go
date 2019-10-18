@@ -19,10 +19,7 @@
 package side_chain_manager
 
 import (
-	"bytes"
 	"fmt"
-	"sort"
-
 	"github.com/ontio/multi-chain/common"
 )
 
@@ -56,43 +53,5 @@ func (this *SideChain) Deserialization(source *common.ZeroCopySource) error {
 	this.ChainId = chainId
 	this.Name = name
 	this.BlocksToWait = blocksToWait
-	return nil
-}
-
-type CrossChainContractMap struct {
-	CrossChainContractMap map[uint64]*CrossChainContract
-}
-
-func (this *CrossChainContractMap) Serialization(sink *common.ZeroCopySink) error {
-	sink.WriteUint64(uint64(len(this.CrossChainContractMap)))
-	var assetList []*CrossChainContract
-	for _, v := range this.CrossChainContractMap {
-		assetList = append(assetList, v)
-	}
-	sort.SliceStable(assetList, func(i, j int) bool {
-		return bytes.Compare(assetList[i].ContractAddress, assetList[j].ContractAddress) > 0
-	})
-	for _, v := range assetList {
-		if err := v.Serialization(sink); err != nil {
-			return fmt.Errorf("serialize asset error: %v", err)
-		}
-	}
-	return nil
-}
-
-func (this *CrossChainContractMap) Deserialization(source *common.ZeroCopySource) error {
-	n, eof := source.NextUint64()
-	if eof {
-		return fmt.Errorf("utils.DecodeVarUint, deserialize length error")
-	}
-	crossChainContractMap := make(map[uint64]*CrossChainContract)
-	for i := 0; uint64(i) < n; i++ {
-		asset := new(CrossChainContract)
-		if err := asset.Deserialization(source); err != nil {
-			return fmt.Errorf("deserialize asset error: %v", err)
-		}
-		crossChainContractMap[asset.ChainId] = asset
-	}
-	this.CrossChainContractMap = crossChainContractMap
 	return nil
 }

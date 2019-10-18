@@ -276,6 +276,9 @@ func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*cro
 }
 
 func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *crosscommon.MakeTxParam) error {
+	if bytes.Equal(param.ToContractAddress, []byte(BTC_ADDRESS)) {
+		return fmt.Errorf("btc MakeTransaction, destContractAddr is %s not btc", string(param.ToContractAddress))
+	}
 	amounts := make(map[string]int64)
 
 	bf := bytes.NewBuffer(param.Args)
@@ -292,15 +295,6 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *cr
 		return fmt.Errorf("deserialize amount error:%s", err)
 	}
 	amounts[string(toAddr)] = amount.Int64()
-
-	destAsset, err := side_chain_manager.GetDestCrossChainContract(service, param.FromChainID,
-		param.ToChainID, param.FromContractAddress)
-	if err != nil {
-		return fmt.Errorf("btc MakeTransaction, side_chain_manager.GetAssetContractAddress error: %v", err)
-	}
-	if bytes.Equal(destAsset.ContractAddress, []byte(BTC_ADDRESS)) {
-		return fmt.Errorf("btc MakeTransaction, destContractAddr is %s not btc", destAsset.ContractAddress)
-	}
 
 	err = makeBtcTx(service, param.ToChainID, amounts)
 	if err != nil {

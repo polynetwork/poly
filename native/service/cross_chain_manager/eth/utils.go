@@ -6,18 +6,17 @@ import (
 	"fmt"
 	"math/big"
 
+	ecom "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/light"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
-	"github.com/ontio/multi-chain/common/log"
-	ecom "github.com/ethereum/go-ethereum/common"
 	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/native"
 	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/header_sync/eth"
-
 )
 
 func verifyFromEthTx(native *native.NativeService, proof, extra, txHash []byte, height uint32) (*scom.MakeTxParam, error) {
@@ -142,4 +141,3 @@ func checkProofResult(result, value []byte) bool {
 	hash := crypto.Keccak256(value)
 	return bytes.Equal(s, hash)
 }
-

@@ -99,6 +99,14 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, targetid chain is not registered")
 	}
 
+	if targetid == utils.BTC_CHAIN_ID {
+		err := btc.NewBTCHandler().MakeTransaction(native, txParam)
+		if err != nil {
+			return utils.BYTE_FALSE, err
+		}
+		return utils.BYTE_TRUE, nil
+	}
+
 	//NOTE, you need to store the tx in this
 	err = MakeTransaction(native, txParam)
 	if err != nil {
@@ -108,10 +116,8 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 }
 
 func Vote(native *native.NativeService) ([]byte, error) {
-	handler := btc.NewBTCHandler()
-
 	//1. vote
-	ok, txParam, err := handler.Vote(native)
+	ok, txParam, err := btc.NewBTCHandler().Vote(native)
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
@@ -128,7 +134,7 @@ func Vote(native *native.NativeService) ([]byte, error) {
 			return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, targetid chain is not registered")
 		}
 		//NOTE, you need to store the tx in this
-		err = handler.MakeTransaction(native, txParam)
+		err = MakeTransaction(native, txParam)
 		if err != nil {
 			return utils.BYTE_FALSE, err
 		}
@@ -160,36 +166,28 @@ func InitRedeemScript(native *native.NativeService) ([]byte, error) {
 }
 
 func MakeTransaction(service *native.NativeService, params *scom.MakeTxParam) error {
-	destAsset, err := side_chain_manager.GetDestCrossChainContract(service, params.FromChainID,
-		params.ToChainID, params.FromContractAddress)
-	if err != nil {
-		return fmt.Errorf("MakeTransaction, GetDestCrossChainContract error: %v", err)
-	}
-
+	txHash := service.GetTx().Hash()
 	merkleValue := &scom.ToMerkleValue{
-		TxHash:            service.GetTx().Hash(),
-		ToContractAddress: destAsset.ContractAddress,
-		MakeTxParam:       params,
+		TxHash:      txHash.ToArray(),
+		MakeTxParam: params,
 	}
 
 	sink := common.NewZeroCopySink(nil)
 	merkleValue.Serialization(sink)
-	err = putRequest(service, merkleValue.TxHash, params.ToChainID, sink.Bytes())
+	err := putRequest(service, merkleValue.TxHash, params.ToChainID, sink.Bytes())
 	if err != nil {
 		return fmt.Errorf("MakeTransaction, putRequest error:%s", err)
 	}
 	service.PutMerkleVal(sink.Bytes())
-	prefix := merkleValue.TxHash.ToArray()
 	chainIDBytes := utils.GetUint64Bytes(params.ToChainID)
-	key := hex.EncodeToString(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(scom.REQUEST), chainIDBytes, prefix))
+	key := hex.EncodeToString(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(scom.REQUEST), chainIDBytes, merkleValue.TxHash))
 	scom.NotifyMakeProof(service, hex.EncodeToString(params.TxHash), params.ToChainID, key)
 	return nil
 }
 
-func putRequest(native *native.NativeService, txHash common.Uint256, chainID uint64, request []byte) error {
+func putRequest(native *native.NativeService, txHash []byte, chainID uint64, request []byte) error {
 	contract := utils.CrossChainManagerContractAddress
-	prefix := txHash.ToArray()
 	chainIDBytes := utils.GetUint64Bytes(chainID)
-	utils.PutBytes(native, utils.ConcatKey(contract, []byte(scom.REQUEST), chainIDBytes, prefix), request)
+	utils.PutBytes(native, utils.ConcatKey(contract, []byte(scom.REQUEST), chainIDBytes, txHash), request)
 	return nil
 }

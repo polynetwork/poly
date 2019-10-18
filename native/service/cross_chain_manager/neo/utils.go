@@ -24,8 +24,8 @@ import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/merkle"
 	"github.com/ontio/multi-chain/native"
-	"github.com/ontio/multi-chain/native/service/header_sync/neo"
 	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
+	"github.com/ontio/multi-chain/native/service/header_sync/neo"
 )
 
 func verifyFromNEOTx(native *native.NativeService, proof, txHash []byte, fromChainid uint64, height uint32) (*scom.MakeTxParam, error) {

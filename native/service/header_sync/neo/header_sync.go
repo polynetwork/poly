@@ -83,7 +83,7 @@ func (this *NEOHandler) SyncBlockHeader(native *native.NativeService) error {
 		if err != nil {
 			return fmt.Errorf("SyncBlockHeader, strconv.Atoi shardID error: %v", err)
 		}
-		_, err = GetHeaderByHeight(native,  header.Index)
+		_, err = GetHeaderByHeight(native, header.Index)
 		if err == nil {
 			return fmt.Errorf("SyncBlockHeader, %d, %d", chainID, header.Index)
 		}
