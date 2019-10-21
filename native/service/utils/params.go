@@ -27,13 +27,8 @@ var (
 	CrossChainManagerContractAddress, _ = common.AddressParseFromBytes([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02})
 	SideChainManagerContractAddress, _  = common.AddressParseFromBytes([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03})
 
-	BTC_CHAIN_ID = uint64(0)
-	ETH_CHAIN_ID = uint64(1)
-	ONT_CHAIN_ID = uint64(2)
-	NEO_CHAIN_ID = uint64(3)
-
-	BTC_CHAIN_ID_BYTE = []byte{byte(BTC_CHAIN_ID)}
-	ETH_CHAIN_ID_BYTE = []byte{byte(ETH_CHAIN_ID)}
-	ONT_CHAIN_ID_BYTE = []byte{byte(ONT_CHAIN_ID)}
-	NEO_CHAIN_ID_BYTE = []byte{byte(NEO_CHAIN_ID)}
+	BTC_ROUTER = uint64(0)
+	ETH_ROUTER = uint64(1)
+	ONT_ROUTER = uint64(2)
+	NEO_ROUTER = uint64(3)
 )

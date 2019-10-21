@@ -9,7 +9,6 @@ import (
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/service/utils"
 
-	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/native/service/cross_chain_manager/btc"
 	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/cross_chain_manager/eth"
@@ -32,18 +31,18 @@ func RegisterCrossChainManagerContract(native *native.NativeService) {
 	native.Register(MULTI_SIGN, MultiSign)
 }
 
-func GetChainHandler(chainid uint64) (scom.ChainHandler, error) {
-	switch chainid {
-	case utils.BTC_CHAIN_ID:
+func GetChainHandler(router uint64) (scom.ChainHandler, error) {
+	switch router {
+	case utils.BTC_ROUTER:
 		return btc.NewBTCHandler(), nil
-	case utils.ETH_CHAIN_ID:
+	case utils.ETH_ROUTER:
 		return eth.NewETHHandler(), nil
-	case utils.ONT_CHAIN_ID:
+	case utils.ONT_ROUTER:
 		return ont.NewONTHandler(), nil
-	case utils.NEO_CHAIN_ID:
+	case utils.NEO_ROUTER:
 		return neo.NewNEOHandler(), nil
 	default:
-		return nil, fmt.Errorf("not a supported chainid:%d", chainid)
+		return nil, fmt.Errorf("not a supported router:%d", router)
 	}
 }
 
@@ -52,11 +51,6 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, contract params deserialize error: %v", err)
 	}
-	log.Infof("SourceChainID:%v\n", params.SourceChainID)
-	log.Infof("Proof:%v\n", params.Proof)
-	log.Infof("Extra:%v\n", params.Extra)
-	log.Infof("Height:%v\n", params.Height)
-	log.Infof("RelayerAddress:%v\n", params.RelayerAddress)
 
 	chainID := params.SourceChainID
 
@@ -69,12 +63,12 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side chain is not registered")
 	}
 
-	handler, err := GetChainHandler(chainID)
+	handler, err := GetChainHandler(sideChain.Router)
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
 	//1. verify tx
-	if chainID == utils.BTC_CHAIN_ID {
+	if sideChain.Router == utils.BTC_ROUTER {
 		_, err = handler.MakeDepositProposal(native)
 		if err != nil {
 			return utils.BYTE_FALSE, err
@@ -99,7 +93,7 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, targetid chain is not registered")
 	}
 
-	if targetid == utils.BTC_CHAIN_ID {
+	if sideChain.Router == utils.BTC_ROUTER {
 		err := btc.NewBTCHandler().MakeTransaction(native, txParam)
 		if err != nil {
 			return utils.BYTE_FALSE, err

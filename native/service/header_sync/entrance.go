@@ -24,16 +24,16 @@ func RegisterHeaderSyncContract(native *native.NativeService) {
 	native.Register(SYNC_BLOCK_HEADER, SyncBlockHeader)
 }
 
-func GetChainHandler(chainid uint64) (hscommon.HeaderSyncHandler, error) {
-	switch chainid {
-	case utils.ETH_CHAIN_ID:
+func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
+	switch router {
+	case utils.ETH_ROUTER:
 		return eth.NewETHHandler(), nil
-	case utils.ONT_CHAIN_ID:
+	case utils.ONT_ROUTER:
 		return ont.NewONTHandler(), nil
-	case utils.NEO_CHAIN_ID:
+	case utils.NEO_ROUTER:
 		return neo.NewNEOHandler(), nil
 	default:
-		return nil, fmt.Errorf("not a supported chainid:%d", chainid)
+		return nil, fmt.Errorf("not a supported router:%d", router)
 	}
 }
 
@@ -53,7 +53,7 @@ func SyncGenesisHeader(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("SyncGenesisHeader, side chain is not registered")
 	}
 
-	handler, err := GetChainHandler(chainID)
+	handler, err := GetChainHandler(sideChain.Router)
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
@@ -81,7 +81,7 @@ func SyncBlockHeader(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("SyncBlockHeader, side chain is not registered")
 	}
 
-	handler, err := GetChainHandler(chainID)
+	handler, err := GetChainHandler(sideChain.Router)
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}

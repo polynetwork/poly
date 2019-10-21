@@ -25,12 +25,14 @@ import (
 
 type SideChain struct {
 	ChainId      uint64
+	Router       uint64
 	Name         string
 	BlocksToWait uint64
 }
 
 func (this *SideChain) Serialization(sink *common.ZeroCopySink) error {
 	sink.WriteUint64(this.ChainId)
+	sink.WriteUint64(this.Router)
 	sink.WriteString(this.Name)
 	sink.WriteUint64(this.BlocksToWait)
 	return nil
@@ -40,6 +42,10 @@ func (this *SideChain) Deserialization(source *common.ZeroCopySource) error {
 	chainId, eof := source.NextUint64()
 	if eof {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize chainid error")
+	}
+	router, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("utils.DecodeVarUint, deserialize router error")
 	}
 	name, eof := source.NextString()
 	if eof {
@@ -51,6 +57,7 @@ func (this *SideChain) Deserialization(source *common.ZeroCopySource) error {
 	}
 
 	this.ChainId = chainId
+	this.Router = router
 	this.Name = name
 	this.BlocksToWait = blocksToWait
 	return nil

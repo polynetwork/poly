@@ -60,13 +60,13 @@ func (this *ONTHandler) SyncGenesisHeader(native *native.NativeService) error {
 		return fmt.Errorf("SyncGenesisHeader, deserialize header err: %v", err)
 	}
 	//block header storage
-	err = PutBlockHeader(native, header)
+	err = PutBlockHeader(native, params.ChainID, header)
 	if err != nil {
 		return fmt.Errorf("SyncGenesisHeader, put blockHeader error: %v", err)
 	}
 
 	//consensus node pk storage
-	err = UpdateConsensusPeer(native, header, operatorAddress)
+	err = UpdateConsensusPeer(native, params.ChainID, header)
 	if err != nil {
 		return fmt.Errorf("SyncGenesisHeader, update ConsensusPeer error: %v", err)
 	}
@@ -83,19 +83,19 @@ func (this *ONTHandler) SyncBlockHeader(native *native.NativeService) error {
 		if err != nil {
 			return fmt.Errorf("SyncBlockHeader, otypes.HeaderFromRawBytes error: %v", err)
 		}
-		_, err = GetHeaderByHeight(native, header.Height)
+		_, err = GetHeaderByHeight(native, params.ChainID, header.Height)
 		if err == nil {
-			return fmt.Errorf("SyncBlockHeader, %d, %d", header.ShardID, header.Height)
+			return fmt.Errorf("SyncBlockHeader, %d, %d", params.ChainID, header.Height)
 		}
-		err = verifyHeader(native, header)
+		err = verifyHeader(native, params.ChainID, header)
 		if err != nil {
 			return fmt.Errorf("SyncBlockHeader, verifyHeader error: %v", err)
 		}
-		err = PutBlockHeader(native, header)
+		err = PutBlockHeader(native, params.ChainID, header)
 		if err != nil {
 			return fmt.Errorf("SyncBlockHeader, put BlockHeader error: %v", err)
 		}
-		err = UpdateConsensusPeer(native, header, params.Address)
+		err = UpdateConsensusPeer(native, params.ChainID, header)
 		if err != nil {
 			return fmt.Errorf("SyncBlockHeader, update ConsensusPeer error: %v", err)
 		}

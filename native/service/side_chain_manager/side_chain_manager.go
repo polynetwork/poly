@@ -73,6 +73,7 @@ func RegisterSideChain(native *native.NativeService) ([]byte, error) {
 	}
 	sideChain = &SideChain{
 		ChainId:      params.ChainId,
+		Router:       params.Router,
 		Name:         params.Name,
 		BlocksToWait: params.BlocksToWait,
 	}
@@ -132,6 +133,7 @@ func UpdateSideChain(native *native.NativeService) ([]byte, error) {
 	}
 	updateSideChain := &SideChain{
 		ChainId:      params.ChainId,
+		Router:       params.Router,
 		Name:         params.Name,
 		BlocksToWait: params.BlocksToWait,
 	}

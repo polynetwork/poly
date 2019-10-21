@@ -32,26 +32,30 @@ import (
 	"github.com/ontio/multi-chain/native/service/utils"
 )
 
-func PutBlockHeader(native *native.NativeService, blockHeader *neorpc.BlockHeader) error {
+func PutBlockHeader(native *native.NativeService, chainID uint64, blockHeader *neorpc.BlockHeader) error {
 	contract := utils.HeaderSyncContractAddress
 	headerBytes := blockHeader.ToBytes()
 	heightBytes := utils.GetUint32Bytes(blockHeader.Index)
+	chainIDBytes := utils.GetUint64Bytes(chainID)
 
 	blockHash := blockHeader.Hash
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(hscommon.BLOCK_HEADER), utils.NEO_CHAIN_ID_BYTE, blockHash.Bytes()),
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(hscommon.BLOCK_HEADER), chainIDBytes, blockHash.Bytes()),
 		cstates.GenRawStorageItem(headerBytes))
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(hscommon.HEADER_INDEX), utils.NEO_CHAIN_ID_BYTE, heightBytes),
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(hscommon.HEADER_INDEX), chainIDBytes, heightBytes),
 		cstates.GenRawStorageItem(blockHash.Bytes()))
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(hscommon.CURRENT_HEIGHT), utils.NEO_CHAIN_ID_BYTE), cstates.GenRawStorageItem(heightBytes))
-	notifyPutHeader(native, utils.NEO_CHAIN_ID, blockHeader.Index, blockHash.String())
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(hscommon.CURRENT_HEIGHT), chainIDBytes),
+		cstates.GenRawStorageItem(heightBytes))
+	notifyPutHeader(native, chainID, blockHeader.Index, blockHash.String())
 	return nil
 }
 
-func GetHeaderByHeight(native *native.NativeService, height uint32) (*neorpc.BlockHeader, error) {
+func GetHeaderByHeight(native *native.NativeService, chainID uint64, height uint32) (*neorpc.BlockHeader, error) {
 	contract := utils.HeaderSyncContractAddress
 	heightBytes := utils.GetUint32Bytes(height)
+	chainIDBytes := utils.GetUint64Bytes(chainID)
 
-	blockHashStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(hscommon.HEADER_INDEX), utils.NEO_CHAIN_ID_BYTE, heightBytes))
+	blockHashStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(hscommon.HEADER_INDEX),
+		chainIDBytes, heightBytes))
 	if err != nil {
 		return nil, fmt.Errorf("GetHeaderByHeight, get blockHashStore error: %v", err)
 	}
@@ -63,7 +67,8 @@ func GetHeaderByHeight(native *native.NativeService, height uint32) (*neorpc.Blo
 		return nil, fmt.Errorf("GetHeaderByHeight, deserialize blockHashBytes from raw storage item err:%v", err)
 	}
 	header := &neorpc.BlockHeader{}
-	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(hscommon.BLOCK_HEADER), utils.NEO_CHAIN_ID_BYTE, blockHashBytes))
+	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(hscommon.BLOCK_HEADER),
+		chainIDBytes, blockHashBytes))
 	if err != nil {
 		return nil, fmt.Errorf("GetHeaderByHeight, get headerStore error: %v", err)
 	}
