@@ -19,8 +19,8 @@ import (
 	"github.com/ontio/multi-chain/native/service/header_sync/eth"
 )
 
-func verifyFromEthTx(native *native.NativeService, proof, extra, txHash []byte, height uint32) (*scom.MakeTxParam, error) {
-	blockData, err := eth.GetHeaderByHeight(native, uint64(height))
+func verifyFromEthTx(native *native.NativeService, proof, extra, txHash []byte, fromChainID uint64, height uint32) (*scom.MakeTxParam, error) {
+	blockData, err := eth.GetHeaderByHeight(native, uint64(height), fromChainID)
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromEthProof, get header by height, height:%d, error:%s", height, err)
 	}
@@ -46,7 +46,7 @@ func verifyFromEthTx(native *native.NativeService, proof, extra, txHash []byte, 
 	}
 
 	if !checkProofResult(proofResult, extra) {
-		return nil, fmt.Errorf("VerifyFromEthProof, verify proof value hash failed!")
+		return nil, fmt.Errorf("VerifyFromEthProof, verify proof value hash failed, proof result:%x, extra:%x", proofResult, extra)
 	}
 
 	data := common.NewZeroCopySource(extra)

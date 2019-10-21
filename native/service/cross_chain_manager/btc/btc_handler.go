@@ -251,7 +251,6 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 	txHash := mtx.TxHash()
 	return true, &crosscommon.MakeTxParam{
 		TxHash:              txHash[:],
-		FromChainID:         utils.BTC_CHAIN_ID,
 		FromContractAddress: []byte(BTC_ADDRESS),
 		ToChainID:           p.ChainId,
 		ToContractAddress:   toContract,

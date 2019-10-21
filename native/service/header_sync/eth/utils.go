@@ -21,19 +21,19 @@ const (
 	allowedFutureBlockTime = 15 * time.Second // Max time from current time allowed for blocks, before they're considered future blocks
 )
 
-func putBlockHeader(native *native.NativeService, blockHeader types.Header, headerBytes []byte) error {
+func putBlockHeader(native *native.NativeService, blockHeader types.Header, headerBytes []byte, chainID uint64) error {
 	contract := utils.HeaderSyncContractAddress
 	blockHash := blockHeader.Hash().Bytes()
 
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.HEADER_INDEX), utils.ETH_CHAIN_ID_BYTE, utils.GetUint64Bytes(blockHeader.Number.Uint64())),
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), utils.GetUint64Bytes(blockHeader.Number.Uint64())),
 		cstates.GenRawStorageItem(headerBytes))
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.CURRENT_HEIGHT), utils.ETH_CHAIN_ID_BYTE), cstates.GenRawStorageItem(utils.GetUint64Bytes(blockHeader.Number.Uint64())))
-	notifyPutHeader(native, utils.ETH_CHAIN_ID, blockHeader.Number.Uint64(), hex.EncodeToString(blockHash))
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.CURRENT_HEIGHT), utils.GetUint64Bytes(chainID)), cstates.GenRawStorageItem(utils.GetUint64Bytes(blockHeader.Number.Uint64())))
+	notifyPutHeader(native, chainID, blockHeader.Number.Uint64(), hex.EncodeToString(blockHash))
 	return nil
 }
 
-func GetCurrentHeaderHeight(native *native.NativeService) (uint64, error) {
-	heightStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.CURRENT_HEIGHT), utils.ETH_CHAIN_ID_BYTE))
+func GetCurrentHeaderHeight(native *native.NativeService, chainID []byte) (uint64, error) {
+	heightStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.CURRENT_HEIGHT), chainID))
 	if err != nil {
 		return 0, fmt.Errorf("getPrevHeaderHeight error: %v", err)
 	}
@@ -47,8 +47,8 @@ func GetCurrentHeaderHeight(native *native.NativeService) (uint64, error) {
 	return utils.GetBytesUint64(heightBytes), err
 }
 
-func GetHeaderByHeight(native *native.NativeService, height uint64) (cty.Header, error) {
-	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.HEADER_INDEX), utils.ETH_CHAIN_ID_BYTE, utils.GetUint64Bytes(height)))
+func GetHeaderByHeight(native *native.NativeService, height, chainID uint64) (cty.Header, error) {
+	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), utils.GetUint64Bytes(height)))
 	if err != nil {
 		return cty.Header{}, fmt.Errorf("GetHeaderByHeight, get blockHashStore error: %v", err)
 	}

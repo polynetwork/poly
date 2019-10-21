@@ -23,6 +23,10 @@ func NewETHHandler() *ETHHandler {
 }
 
 func (this *ETHHandler) SyncGenesisHeader(native *native.NativeService) error {
+	params := new(scom.SyncGenesisHeaderParam)
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
+		return fmt.Errorf("SyncGenesisHeader, contract params deserialize error: %v", err)
+	}
 	//// get operator from database
 	//operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
 	//if err != nil {
@@ -40,7 +44,7 @@ func (this *ETHHandler) SyncGenesisHeader(native *native.NativeService) error {
 		return fmt.Errorf("ETHHandler SyncGenesisHeader: %s", err)
 	}
 
-	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.HEADER_INDEX), utils.ETH_CHAIN_ID_BYTE, header.Number.Bytes()))
+	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(params.ChainID), header.Number.Bytes()))
 	if err != nil {
 		return fmt.Errorf("ETHHandler GetHeaderByHeight, get blockHashStore error: %v", err)
 	}
@@ -49,7 +53,7 @@ func (this *ETHHandler) SyncGenesisHeader(native *native.NativeService) error {
 	}
 
 	//block header storage
-	err = putBlockHeader(native, header, headerByte)
+	err = putBlockHeader(native, header, headerByte, params.ChainID)
 	if err != nil {
 		return fmt.Errorf("ETHHandler SyncGenesisHeader, put blockHeader error: %v", err)
 	}
@@ -68,7 +72,7 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 		if err != nil {
 			return fmt.Errorf("ETHHandler SyncBlockHeader, deserialize header err: %v", err)
 		}
-		prevHeader, err := GetHeaderByHeight(native, header.Number.Uint64()-1)
+		prevHeader, err := GetHeaderByHeight(native, header.Number.Uint64()-1, headerParams.ChainID)
 		if err != nil {
 			return fmt.Errorf("ETHHandler SyncBlockHeader, height:%d, error:%s", header.Number.Uint64()-1, err)
 		}
@@ -107,7 +111,7 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 		}
 
 		//block header storage
-		err = putBlockHeader(native, header, v)
+		err = putBlockHeader(native, header, v, headerParams.ChainID)
 		if err != nil {
 			return fmt.Errorf("ETHHandler SyncGenesisHeader, put blockHeader error: %v", err)
 		}

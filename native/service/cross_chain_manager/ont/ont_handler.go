@@ -47,7 +47,7 @@ func (this *ONTHandler) MakeDepositProposal(service *native.NativeService) (*sco
 		return nil, fmt.Errorf("ont MakeDepositProposal, VerifyOntTx error: %v", err)
 	}
 
-	if err = scom.PutDoneTx(service, value.TxHash, value.FromChainID); err != nil {
+	if err = scom.PutDoneTx(service, value.TxHash, params.SourceChainID); err != nil {
 		return nil, fmt.Errorf("VerifyFromOntTx, putDoneTx error:%s", err)
 	}
 	return value, nil

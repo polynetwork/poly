@@ -102,7 +102,7 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	}
 
 	//NOTE, you need to store the tx in this
-	err = MakeTransaction(native, txParam)
+	err = MakeTransaction(native, txParam, chainID)
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
@@ -159,11 +159,12 @@ func InitRedeemScript(native *native.NativeService) ([]byte, error) {
 	return utils.BYTE_TRUE, nil
 }
 
-func MakeTransaction(service *native.NativeService, params *scom.MakeTxParam) error {
+func MakeTransaction(service *native.NativeService, params *scom.MakeTxParam, chainID uint64) error {
 	txHash := service.GetTx().Hash()
 	merkleValue := &scom.ToMerkleValue{
-		TxHash:      txHash.ToArray(),
-		MakeTxParam: params,
+		TxHash:        txHash.ToArray(),
+		SourceChainID: chainID,
+		MakeTxParam:   params,
 	}
 
 	sink := common.NewZeroCopySink(nil)

@@ -30,7 +30,7 @@ import (
 
 func verifyFromOntTx(native *native.NativeService, proof, txHash []byte, fromChainid uint64, height uint32) (*scom.MakeTxParam, error) {
 	//get block header
-	header, err := ont.GetHeaderByHeight(native, height)
+	header, err := ont.GetHeaderByHeight(native, fromChainid, height)
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromOntTx, get header by height %d from chain %d error: %v",
 			height, fromChainid, err)

@@ -20,9 +20,9 @@ var (
 )
 
 var NotifyMakeProofInfo = map[uint64]string{
-	utils.ETH_CHAIN_ID: "makeToEthProof",
-	utils.ONT_CHAIN_ID: "makeToOntProof",
-	utils.NEO_CHAIN_ID: "makeToNeoProof",
+	utils.ETH_ROUTER: "makeToEthProof",
+	utils.ONT_ROUTER: "makeToOntProof",
+	utils.NEO_ROUTER: "makeToNeoProof",
 }
 
 type ChainHandler interface {
@@ -85,7 +85,7 @@ func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error 
 	}
 	this.SourceChainID = sourceChainID
 	this.TxHash = txHash
-	this.Height = uint32(height)
+	this.Height = height
 	this.Proof = proof
 	this.RelayerAddress = relayerAddr
 	this.Extra = extra
@@ -96,14 +96,13 @@ func (this *EntranceParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteUint64(this.SourceChainID)
 	sink.WriteVarBytes(this.TxHash)
 	sink.WriteUint32(this.Height)
-	sink.WriteVarBytes([]byte(this.Proof))
-	sink.WriteVarBytes([]byte(this.RelayerAddress))
-	sink.WriteVarBytes([]byte(this.Extra))
+	sink.WriteVarBytes(this.Proof)
+	sink.WriteVarBytes(this.RelayerAddress)
+	sink.WriteVarBytes(this.Extra)
 }
 
 type MakeTxParam struct {
 	TxHash              []byte
-	FromChainID         uint64
 	FromContractAddress []byte
 	ToChainID           uint64
 	ToContractAddress   []byte
@@ -112,23 +111,18 @@ type MakeTxParam struct {
 }
 
 func (this *MakeTxParam) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteVarBytes([]byte(this.TxHash))
-	sink.WriteUint64(this.FromChainID)
-	sink.WriteVarBytes([]byte(this.FromContractAddress))
+	sink.WriteVarBytes(this.TxHash)
+	sink.WriteVarBytes(this.FromContractAddress)
 	sink.WriteUint64(this.ToChainID)
-	sink.WriteVarBytes([]byte(this.ToContractAddress))
+	sink.WriteVarBytes(this.ToContractAddress)
 	sink.WriteVarBytes([]byte(this.Method))
-	sink.WriteVarBytes([]byte(this.Args))
+	sink.WriteVarBytes(this.Args)
 }
 
 func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 	txHash, eof := source.NextVarBytes()
 	if eof {
 		return fmt.Errorf("MakeTxParam deserialize txHash error")
-	}
-	fromChainID, eof := source.NextUint64()
-	if eof {
-		return fmt.Errorf("MakeTxParam deserialize fromChainID error")
 	}
 	fromContractAddress, eof := source.NextVarBytes()
 	if eof {
@@ -152,7 +146,6 @@ func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 	}
 
 	this.TxHash = txHash
-	this.FromChainID = fromChainID
 	this.FromContractAddress = fromContractAddress
 	this.ToChainID = toChainID
 	this.ToContractAddress = toContractAddress
@@ -265,12 +258,14 @@ func (this *Vote) Deserialization(source *common.ZeroCopySource) error {
 }
 
 type ToMerkleValue struct {
-	TxHash      []byte
-	MakeTxParam *MakeTxParam
+	TxHash        []byte
+	SourceChainID uint64
+	MakeTxParam   *MakeTxParam
 }
 
 func (this *ToMerkleValue) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteVarBytes(this.TxHash)
+	sink.WriteUint64(this.SourceChainID)
 	this.MakeTxParam.Serialization(sink)
 }
 
@@ -279,6 +274,11 @@ func (this *ToMerkleValue) Deserialization(source *common.ZeroCopySource) error 
 	if eof {
 		return fmt.Errorf("MerkleValue deserialize txHash error")
 	}
+	chainID, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("MerkleValue deserialize sourceChainID error")
+	}
+
 	makeTxParam := new(MakeTxParam)
 	err := makeTxParam.Deserialization(source)
 	if err != nil {
@@ -286,6 +286,7 @@ func (this *ToMerkleValue) Deserialization(source *common.ZeroCopySource) error 
 	}
 
 	this.TxHash = txHash
+	this.SourceChainID = chainID
 	this.MakeTxParam = makeTxParam
 	return nil
 }
