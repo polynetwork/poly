@@ -111,7 +111,7 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 
 func Vote(native *native.NativeService) ([]byte, error) {
 	//1. vote
-	ok, txParam, err := btc.NewBTCHandler().Vote(native)
+	ok, txParam, fromChainID, err := btc.NewBTCHandler().Vote(native)
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
@@ -128,7 +128,7 @@ func Vote(native *native.NativeService) ([]byte, error) {
 			return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, targetid chain is not registered")
 		}
 		//NOTE, you need to store the tx in this
-		err = MakeTransaction(native, txParam)
+		err = MakeTransaction(native, txParam, fromChainID)
 		if err != nil {
 			return utils.BYTE_FALSE, err
 		}
@@ -159,12 +159,12 @@ func InitRedeemScript(native *native.NativeService) ([]byte, error) {
 	return utils.BYTE_TRUE, nil
 }
 
-func MakeTransaction(service *native.NativeService, params *scom.MakeTxParam, chainID uint64) error {
+func MakeTransaction(service *native.NativeService, params *scom.MakeTxParam, fromChainID uint64) error {
 	txHash := service.GetTx().Hash()
 	merkleValue := &scom.ToMerkleValue{
-		TxHash:        txHash.ToArray(),
-		SourceChainID: chainID,
-		MakeTxParam:   params,
+		TxHash:      txHash.ToArray(),
+		FromChainID: fromChainID,
+		MakeTxParam: params,
 	}
 
 	sink := common.NewZeroCopySink(nil)

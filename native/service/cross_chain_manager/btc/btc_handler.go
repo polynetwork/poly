@@ -157,7 +157,7 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 			return fmt.Errorf("MultiSign, txscript.PayToAddrScript, failed to get p2sh script: %v", err)
 		}
 
-		utxos, err := getUtxos(service, utils.BTC_CHAIN_ID)
+		utxos, err := getUtxos(service, params.ChainID)
 		if err != nil {
 			return fmt.Errorf("MultiSign, getUtxos error: %v", err)
 		}
@@ -175,7 +175,7 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 				utxos.Utxos = append(utxos.Utxos, newUtxo)
 			}
 		}
-		err = putUtxos(service, 0, utxos)
+		err = putUtxos(service, params.ChainID, utxos)
 		if err != nil {
 			return fmt.Errorf("MultiSign, putUtxos error: %v", err)
 		}
@@ -189,63 +189,63 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 	return nil
 }
 
-func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.MakeTxParam, error) {
+func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.MakeTxParam, uint64, error) {
 	params := new(crosscommon.VoteParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
-		return false, nil, fmt.Errorf("btc Vote, contract params deserialize error: %v", err)
+		return false, nil, 0, fmt.Errorf("btc Vote, contract params deserialize error: %v", err)
 	}
 
 	address, err := common.AddressFromBase58(params.Address)
 	if err != nil {
-		return false, nil, fmt.Errorf("btc Vote, common.AddressFromBase58 error: %v", err)
+		return false, nil, 0, fmt.Errorf("btc Vote, common.AddressFromBase58 error: %v", err)
 	}
 	//check witness
 	err = utils.ValidateOwner(service, address)
 	if err != nil {
-		return false, nil, fmt.Errorf("btc Vote, utils.ValidateOwner error: %v", err)
+		return false, nil, 0, fmt.Errorf("btc Vote, utils.ValidateOwner error: %v", err)
 	}
 
 	vote, err := getBtcVote(service, params.TxHash)
 	if err != nil {
-		return false, nil, fmt.Errorf("btc Vote, getBtcVote error: %v", err)
+		return false, nil, 0, fmt.Errorf("btc Vote, getBtcVote error: %v", err)
 	}
 	vote.VoteMap[params.Address] = params.Address
 	err = putBtcVote(service, params.TxHash, vote)
 	if err != nil {
-		return false, nil, fmt.Errorf("btc Vote, putBtcVote error: %v", err)
+		return false, nil, 0, fmt.Errorf("btc Vote, putBtcVote error: %v", err)
 	}
 
 	err = crosscommon.ValidateVote(service, vote)
 	if err != nil {
-		return false, nil, nil
+		return false, nil, 0, nil
 	}
 
 	proofBytes, err := getBtcProof(service, params.TxHash)
 	if err != nil {
-		return false, nil, fmt.Errorf("btc Vote, getBtcTx error: %v", err)
+		return false, nil, 0, fmt.Errorf("btc Vote, getBtcTx error: %v", err)
 	}
 	proof := new(BtcProof)
 	err = proof.Deserialization(common.NewZeroCopySource(proofBytes))
 	if err != nil {
-		return false, nil, fmt.Errorf("btc Vote, proof.Deserialization error: %v", err)
+		return false, nil, 0, fmt.Errorf("btc Vote, proof.Deserialization error: %v", err)
 	}
 
 	mtx := wire.NewMsgTx(wire.TxVersion)
 	reader := bytes.NewReader(proof.Tx)
 	err = mtx.BtcDecode(reader, wire.ProtocolVersion, wire.LatestEncoding)
 	if err != nil {
-		return false, nil, fmt.Errorf("btc Vote, failed to decode the transaction")
+		return false, nil, 0, fmt.Errorf("btc Vote, failed to decode the transaction")
 	}
 
-	err = addUtxos(service, utils.BTC_CHAIN_ID, proof.Height, mtx)
+	err = addUtxos(service, params.FromChainID, proof.Height, mtx)
 	if err != nil {
-		return false, nil, fmt.Errorf("btc Vote, updateUtxo error: %s", err)
+		return false, nil, 0, fmt.Errorf("btc Vote, updateUtxo error: %s", err)
 	}
 
 	var p targetChainParam
 	toContract, err := p.resolve(mtx.TxOut[0].Value, mtx.TxOut[1])
 	if err != nil {
-		return false, nil, fmt.Errorf("btc Vote, failed to resolve parameter: %v", err)
+		return false, nil, 0, fmt.Errorf("btc Vote, failed to resolve parameter: %v", err)
 	}
 
 	txHash := mtx.TxHash()
@@ -256,7 +256,7 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 		ToContractAddress:   toContract,
 		Method:              "unlock",
 		Args:                p.AddrAndVal,
-	}, nil
+	}, params.FromChainID, nil
 }
 
 func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*crosscommon.MakeTxParam, error) {

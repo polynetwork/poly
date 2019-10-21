@@ -155,16 +155,22 @@ func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 }
 
 type VoteParam struct {
-	Address string
-	TxHash  []byte
+	FromChainID uint64
+	Address     string
+	TxHash      []byte
 }
 
 func (this *VoteParam) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteUint64(this.FromChainID)
 	sink.WriteVarBytes([]byte(this.Address))
 	sink.WriteVarBytes(this.TxHash)
 }
 
 func (this *VoteParam) Deserialization(source *common.ZeroCopySource) error {
+	fromChainID, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("VoteParam deserialize fromChainID error")
+	}
 	address, eof := source.NextString()
 	if eof {
 		return fmt.Errorf("VoteParam deserialize address error")
@@ -174,18 +180,21 @@ func (this *VoteParam) Deserialization(source *common.ZeroCopySource) error {
 		return fmt.Errorf("VoteParam deserialize txHash error")
 	}
 
+	this.FromChainID = fromChainID
 	this.Address = address
 	this.TxHash = txHash
 	return nil
 }
 
 type MultiSignParam struct {
+	ChainID uint64
 	TxHash  []byte
 	Address string
 	Signs   [][]byte
 }
 
 func (this *MultiSignParam) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteUint64(this.ChainID)
 	sink.WriteVarBytes(this.TxHash)
 	sink.WriteVarBytes([]byte(this.Address))
 	sink.WriteUint64(uint64(len(this.Signs)))
@@ -195,6 +204,10 @@ func (this *MultiSignParam) Serialization(sink *common.ZeroCopySink) {
 }
 
 func (this *MultiSignParam) Deserialization(source *common.ZeroCopySource) error {
+	chainID, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("MultiSignParam deserialize txHash error")
+	}
 	txHash, eof := source.NextVarBytes()
 	if eof {
 		return fmt.Errorf("MultiSignParam deserialize txHash error")
@@ -216,6 +229,7 @@ func (this *MultiSignParam) Deserialization(source *common.ZeroCopySource) error
 		signs = append(signs, v)
 	}
 
+	this.ChainID = chainID
 	this.TxHash = txHash
 	this.Address = address
 	this.Signs = signs
@@ -258,14 +272,14 @@ func (this *Vote) Deserialization(source *common.ZeroCopySource) error {
 }
 
 type ToMerkleValue struct {
-	TxHash        []byte
-	SourceChainID uint64
-	MakeTxParam   *MakeTxParam
+	TxHash      []byte
+	FromChainID uint64
+	MakeTxParam *MakeTxParam
 }
 
 func (this *ToMerkleValue) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteVarBytes(this.TxHash)
-	sink.WriteUint64(this.SourceChainID)
+	sink.WriteUint64(this.FromChainID)
 	this.MakeTxParam.Serialization(sink)
 }
 
@@ -274,9 +288,9 @@ func (this *ToMerkleValue) Deserialization(source *common.ZeroCopySource) error 
 	if eof {
 		return fmt.Errorf("MerkleValue deserialize txHash error")
 	}
-	chainID, eof := source.NextUint64()
+	fromChainID, eof := source.NextUint64()
 	if eof {
-		return fmt.Errorf("MerkleValue deserialize sourceChainID error")
+		return fmt.Errorf("MerkleValue deserialize fromChainID error")
 	}
 
 	makeTxParam := new(MakeTxParam)
@@ -286,7 +300,7 @@ func (this *ToMerkleValue) Deserialization(source *common.ZeroCopySource) error 
 	}
 
 	this.TxHash = txHash
-	this.SourceChainID = chainID
+	this.FromChainID = fromChainID
 	this.MakeTxParam = makeTxParam
 	return nil
 }
