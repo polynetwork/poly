@@ -46,9 +46,6 @@ type targetChainParam struct {
 // func about OP_RETURN
 func (p *targetChainParam) resolve(amount int64, paramOutput *wire.TxOut) ([]byte, error) {
 	script := paramOutput.PkScript
-	if int(script[1]) != OP_RETURN_DATA_LEN {
-		return nil, errors.New("Length of script is wrong")
-	}
 
 	if script[2] != OP_RETURN_SCRIPT_FLAG {
 		return nil, errors.New("Wrong flag")
