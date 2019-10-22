@@ -26,7 +26,6 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	sneovm "github.com/ontio/ontology/smartcontract/service/neovm"
 	"github.com/ontio/ontology/vm/neovm"
-
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
@@ -281,7 +280,7 @@ func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*cro
 }
 
 func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *crosscommon.MakeTxParam) error {
-	if bytes.Equal(param.ToContractAddress, []byte(BTC_ADDRESS)) {
+	if !bytes.Equal(param.ToContractAddress, []byte(BTC_ADDRESS)) {
 		return fmt.Errorf("btc MakeTransaction, destContractAddr is %s not btc", string(param.ToContractAddress))
 	}
 	amounts := make(map[string]int64)
