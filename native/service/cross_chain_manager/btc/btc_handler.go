@@ -214,6 +214,11 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 	if err != nil {
 		return false, nil, 0, fmt.Errorf("btc Vote, putBtcVote error: %v", err)
 	}
+	service.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.CrossChainManagerContractAddress,
+			States:          []interface{}{"Vote", vote.VoteMap},
+		})
 
 	err = crosscommon.ValidateVote(service, vote)
 	if err != nil {
