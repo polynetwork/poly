@@ -32,21 +32,6 @@ func putBlockHeader(native *native.NativeService, blockHeader types.Header, head
 	return nil
 }
 
-func GetCurrentHeaderHeight(native *native.NativeService, chainID []byte) (uint64, error) {
-	heightStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.CURRENT_HEIGHT), chainID))
-	if err != nil {
-		return 0, fmt.Errorf("getPrevHeaderHeight error: %v", err)
-	}
-	if heightStore == nil {
-		return 0, fmt.Errorf("getPrevHeaderHeight, heightStore is nil")
-	}
-	heightBytes, err := cstates.GetValueFromRawStorageItem(heightStore)
-	if err != nil {
-		return 0, fmt.Errorf("GetHeaderByHeight, deserialize headerBytes from raw storage item err:%v", err)
-	}
-	return utils.GetBytesUint64(heightBytes), err
-}
-
 func GetHeaderByHeight(native *native.NativeService, height, chainID uint64) (cty.Header, error) {
 	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), utils.GetUint64Bytes(height)))
 	if err != nil {
