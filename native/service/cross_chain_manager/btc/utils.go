@@ -19,9 +19,6 @@ import (
 	"github.com/ontio/multi-chain/native/event"
 	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/utils"
-	sneovm "github.com/ontio/ontology/smartcontract/service/neovm"
-	"github.com/ontio/ontology/vm/neovm"
-	"github.com/ontio/ontology/vm/neovm/types"
 )
 
 const (
@@ -57,11 +54,11 @@ func (p *targetChainParam) resolve(amount int64, paramOutput *wire.TxOut) ([]byt
 	}
 	p.ChainId = inputArgs.ToChainID
 
-	argsMap := types.NewMap()
-	argsMap.Add(neovm.NewStackItem([]byte("address")), neovm.NewStackItem(inputArgs.Address[:]))
-	argsMap.Add(neovm.NewStackItem([]byte("amount")), neovm.NewStackItem(amount))
-	args, err := sneovm.SerializeStackItem(argsMap)
-	p.AddrAndVal = args
+	sink := common.NewZeroCopySink(nil)
+	sink.WriteVarBytes(inputArgs.Address)
+	sink.WriteInt64(amount)
+	p.AddrAndVal = sink.Bytes()
+
 	return inputArgs.ToContractAddress, nil
 }
 
