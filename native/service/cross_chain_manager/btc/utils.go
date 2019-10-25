@@ -29,6 +29,9 @@ const (
 	REQUIRE                      = 5
 	BTC_TX_PREFIX         string = "btctx"
 	IP                    string = "0.0.0.0:30336" //
+	RedeemP2SH5of7MultisigSigScriptSize = 1 + 5*(1+72) + 1 + 1 + 7*(1+33) + 1 + 1
+	MinSatoshiToRelayPerByte = 1
+	Weight = 1.2
 )
 
 var netParam = &chaincfg.TestNet3Params
@@ -66,7 +69,7 @@ func (p *targetChainParam) resolve(amount int64, paramOutput *wire.TxOut) ([]byt
 // and the lock time. Function build a raw transaction without signature and return it.
 // This function uses the partial logic and code of btcd to finally return the
 // reference of the transaction object.
-func getUnsignedTx(txIns []btcjson.TransactionInput, amounts map[string]int64, change int64, multiScript []byte,
+func getUnsignedTx(txIns []btcjson.TransactionInput, outs []*wire.TxOut, changeOut *wire.TxOut, multiScript []byte,
 	locktime *int64) (*wire.MsgTx, error) {
 	if locktime != nil &&
 		(*locktime < 0 || *locktime > int64(wire.MaxTxInSequenceNum)) {
@@ -89,14 +92,27 @@ func getUnsignedTx(txIns []btcjson.TransactionInput, amounts map[string]int64, c
 		}
 		mtx.AddTxIn(txIn)
 	}
+	for _, out := range outs {
+		mtx.AddTxOut(out)
+	}
+	if changeOut.Value > 0 {
+		mtx.AddTxOut(changeOut)
+	}
+	// Set the Locktime, if given.
+	if locktime != nil {
+		mtx.LockTime = uint32(*locktime)
+	}
 
-	// Add all transaction outputs to the transaction after performing
-	// some validity checks.
+	return mtx, nil
+}
+
+func getTxOuts(amounts map[string]int64) ([]*wire.TxOut, error) {
+	outs := make([]*wire.TxOut, 0)
 	for encodedAddr, amount := range amounts {
 		// Decode the provided address.
 		addr, err := btcutil.DecodeAddress(encodedAddr, netParam)
 		if err != nil {
-			return nil, fmt.Errorf("getUnsignedTx, decode addr fail: %v", err)
+			return nil, fmt.Errorf("getTxOuts, decode addr fail: %v", err)
 		}
 
 		// Ensure the address is one of the supported types and that
@@ -106,41 +122,50 @@ func getUnsignedTx(txIns []btcjson.TransactionInput, amounts map[string]int64, c
 		case *btcutil.AddressPubKeyHash:
 		case *btcutil.AddressScriptHash:
 		default:
-			return nil, fmt.Errorf("getUnsignedTx, type of addr is not found")
+			return nil, fmt.Errorf("getTxOuts, type of addr is not found")
 		}
 		if !addr.IsForNet(netParam) {
-			return nil, fmt.Errorf("getUnsignedTx, addr is not for mainnet")
+			return nil, fmt.Errorf("getTxOuts, addr is not for %s", netParam.Name)
 		}
 
 		// Create a new script which pays to the provided address.
 		pkScript, err := txscript.PayToAddrScript(addr)
 		if err != nil {
-			return nil, fmt.Errorf("getUnsignedTx, failed to generate pay-to-address script: %v", err)
+			return nil, fmt.Errorf("getTxOuts, failed to generate pay-to-address script: %v", err)
 		}
 
 		txOut := wire.NewTxOut(amount, pkScript)
-		mtx.AddTxOut(txOut)
+		outs = append(outs, txOut)
 	}
 
-	if change > 0 {
-		p2shAddr, err := btcutil.NewAddressScriptHash(multiScript, netParam)
-		if err != nil {
-			return nil, fmt.Errorf("getRawTxToMultiAddr, failed to get p2sh: %v", err)
-		}
-		p2shScript, err := txscript.PayToAddrScript(p2shAddr)
-		if err != nil {
-			return nil, fmt.Errorf("getRawTxToMultiAddr, failed to get p2sh script: %v", err)
-		}
-		mtx.AddTxOut(wire.NewTxOut(change, p2shScript))
-	}
-
-	// Set the Locktime, if given.
-	if locktime != nil {
-		mtx.LockTime = uint32(*locktime)
-	}
-
-	return mtx, nil
+	return outs, nil
 }
+
+func getChangeTxOut(change int64, redeem []byte) (*wire.TxOut, error) {
+	p2shAddr, err := btcutil.NewAddressScriptHash(redeem, netParam)
+	if err != nil {
+		return nil, fmt.Errorf("getChangeTxOut, failed to get p2sh: %v", err)
+	}
+	p2shScript, err := txscript.PayToAddrScript(p2shAddr)
+	if err != nil {
+		return nil, fmt.Errorf("getChangeTxOut, failed to get p2sh script: %v", err)
+	}
+
+	return wire.NewTxOut(change, p2shScript), nil
+}
+
+func estimateSerializedTxSize(inputCount int, txOuts []*wire.TxOut, potential *wire.TxOut) int {
+	multi5of7InputSize := 32 + 4 + 1 + 4 + RedeemP2SH5of7MultisigSigScriptSize
+
+	outsSize := 0
+	for _, txOut := range txOuts {
+		outsSize += txOut.SerializeSize()
+	}
+
+	return 10 + wire.VarIntSerializeSize(uint64(inputCount)) + wire.VarIntSerializeSize(uint64(len(txOuts)+1)) +
+		inputCount*multi5of7InputSize + potential.SerializeSize() + outsSize
+}
+
 
 func putBtcProof(native *native.NativeService, txHash, proof []byte) {
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_BTC), txHash)

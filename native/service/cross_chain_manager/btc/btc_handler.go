@@ -368,18 +368,22 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 	if amountSum > btcutil.MaxSatoshi {
 		return fmt.Errorf("makeBtcTx, sum(%d) of amounts exceeds the MaxSatoshi", amountSum)
 	}
-	if amountSum <= FEE {
-		return fmt.Errorf("makeBtcTx, amounts sum(%d) must greater than fee %d", amountSum, FEE)
-	}
 
-	for k, v := range amounts {
-		amounts[k] = v - int64(float64(FEE*v)/float64(amountSum))
+	// get tx outs
+	outs, err := getTxOuts(amounts)
+	if err != nil {
+		return fmt.Errorf("makeBtcTx, %v", err)
 	}
 	redeemScript, err := getBtcRedeemScriptBytes(service)
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, getBtcRedeemScript error: %v", err)
 	}
+	out, err := getChangeTxOut(0, redeemScript)
+	if err != nil {
+		return fmt.Errorf("makeBtcTx, %v", err)
+	}
 
+	// get tx inputs
 	choosed, sum, err := chooseUtxos(service, chainID, amountSum, 0)
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, chooseUtxos error: %v", err)
@@ -393,8 +397,17 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 		txIns = append(txIns, btcjson.TransactionInput{hash.String(), u.Op.Index})
 	}
 
-	charge := sum - amountSum
-	mtx, err := getUnsignedTx(txIns, amounts, charge, redeemScript, nil)
+	// get fee
+	fee := int64(float64(estimateSerializedTxSize(len(txIns), outs, out) * MinSatoshiToRelayPerByte) * Weight)
+	if amountSum <= fee {
+		return fmt.Errorf("makeBtcTx, amounts sum(%d) must greater than fee %d", amountSum, FEE)
+	}
+
+	for i, _ := range outs {
+		outs[i].Value = outs[i].Value - int64(float64(fee*outs[i].Value)/float64(amountSum))
+	}
+	out.Value = sum - amountSum
+	mtx, err := getUnsignedTx(txIns, outs, out, redeemScript, nil)
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, get rawtransaction fail: %v", err)
 	}
@@ -407,7 +420,6 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 	txHash := mtx.TxHash()
 	service.GetCacheDB().Put(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(BTC_TX_PREFIX),
 		txHash[:]), buf.Bytes())
-
 	service.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
