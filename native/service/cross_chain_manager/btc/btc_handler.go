@@ -407,7 +407,7 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 		outs[i].Value = outs[i].Value - int64(float64(fee*outs[i].Value)/float64(amountSum))
 	}
 	out.Value = sum - amountSum
-	mtx, err := getUnsignedTx(txIns, outs, out, redeemScript, nil)
+	mtx, err := getUnsignedTx(txIns, outs, out, nil)
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, get rawtransaction fail: %v", err)
 	}

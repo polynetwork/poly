@@ -69,10 +69,8 @@ func (p *targetChainParam) resolve(amount int64, paramOutput *wire.TxOut) ([]byt
 // and the lock time. Function build a raw transaction without signature and return it.
 // This function uses the partial logic and code of btcd to finally return the
 // reference of the transaction object.
-func getUnsignedTx(txIns []btcjson.TransactionInput, outs []*wire.TxOut, changeOut *wire.TxOut, multiScript []byte,
-	locktime *int64) (*wire.MsgTx, error) {
-	if locktime != nil &&
-		(*locktime < 0 || *locktime > int64(wire.MaxTxInSequenceNum)) {
+func getUnsignedTx(txIns []btcjson.TransactionInput, outs []*wire.TxOut, changeOut *wire.TxOut, locktime *int64) (*wire.MsgTx, error) {
+	if locktime != nil && (*locktime < 0 || *locktime > int64(wire.MaxTxInSequenceNum)) {
 		return nil, fmt.Errorf("getUnsignedTx, locktime %d out of range", *locktime)
 	}
 
