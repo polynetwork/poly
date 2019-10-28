@@ -447,3 +447,32 @@ func addSigToTx(sigMap *MultiSignInfo, addrs []btcutil.Address, redeem []byte, t
 	}
 	return tx, nil
 }
+
+func putBtcFromInfo(native *native.NativeService, txid []byte, btcFromInfo *BtcFromInfo) error {
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(BTC_FROM_TX_PREFIX), txid)
+	sink := common.NewZeroCopySink(nil)
+	btcFromInfo.Serialization(sink)
+	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(sink.Bytes()))
+	return nil
+}
+
+func getBtcFromInfo(native *native.NativeService, txid []byte) (*BtcFromInfo, error) {
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(BTC_FROM_TX_PREFIX), txid)
+	btcFromInfoStore, err := native.GetCacheDB().Get(key)
+	if err != nil {
+		return nil, fmt.Errorf("getBtcFromInfo, get multiSignInfoStore error: %v", err)
+	}
+	btcFromInfo := new(BtcFromInfo)
+	if btcFromInfoStore == nil {
+		return nil, fmt.Errorf("getBtcFromInfo, can not find any record")
+	}
+	multiSignInfoBytes, err := cstates.GetValueFromRawStorageItem(btcFromInfoStore)
+	if err != nil {
+		return nil, fmt.Errorf("getBtcFromInfo, deserialize from raw storage item err:%v", err)
+	}
+	err = btcFromInfo.Deserialization(common.NewZeroCopySource(multiSignInfoBytes))
+	if err != nil {
+		return nil, fmt.Errorf("getBtcFromInfo, deserialize multiSignInfo err:%v", err)
+	}
+	return btcFromInfo, nil
+}

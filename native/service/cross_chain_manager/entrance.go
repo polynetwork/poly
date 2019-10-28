@@ -94,7 +94,7 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	}
 
 	if sideChain.Router == utils.BTC_ROUTER {
-		err := btc.NewBTCHandler().MakeTransaction(native, txParam)
+		err := btc.NewBTCHandler().MakeTransaction(native, txParam, chainID)
 		if err != nil {
 			return utils.BYTE_FALSE, err
 		}

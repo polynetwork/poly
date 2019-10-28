@@ -85,15 +85,11 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
 		return fmt.Errorf("MultiSign, contract params deserialize error: %v", err)
 	}
-	txHash, err := chainhash.NewHash(params.TxHash)
-	if err != nil {
-		return fmt.Errorf("MultiSign, failed to get tx hash from param: %v", err)
-	}
 
 	txb, err := service.GetCacheDB().Get(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(BTC_TX_PREFIX),
-		txHash[:]))
+		params.TxHash))
 	if err != nil {
-		return fmt.Errorf("MultiSign, failed to get tx %s from cacheDB: %v", txHash.String(), err)
+		return fmt.Errorf("MultiSign, failed to get tx %s from cacheDB: %v", hex.EncodeToString(params.TxHash), err)
 	}
 	mtx := wire.NewMsgTx(wire.TxVersion)
 	err = mtx.BtcDecode(bytes.NewBuffer(txb), wire.ProtocolVersion, wire.LatestEncoding)
@@ -176,15 +172,16 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 		if err != nil {
 			return fmt.Errorf("MultiSign, putUtxos error: %v", err)
 		}
-		fromTxHash, err := service.GetCacheDB().Get(utils.ConcatKey(utils.CrossChainManagerContractAddress,
-			[]byte(BTC_FROM_TX_PREFIX), txHash[:]))
+		btcFromTxInfo, err := getBtcFromInfo(service, params.TxHash)
 		if err != nil {
-			return fmt.Errorf("MultiSign, failed to get from tx hash %s from cacheDB: %v", txHash.String(), err)
+			return fmt.Errorf("MultiSign, failed to get from tx hash %s from cacheDB: %v",
+				hex.EncodeToString(params.TxHash), err)
 		}
 		service.AddNotify(
 			&event.NotifyEventInfo{
 				ContractAddress: utils.CrossChainManagerContractAddress,
-				States:          []interface{}{"btcTxToRelay", hex.EncodeToString(buf.Bytes()), hex.EncodeToString(fromTxHash)},
+				States: []interface{}{"btcTxToRelay", hex.EncodeToString(buf.Bytes()),
+					hex.EncodeToString(btcFromTxInfo.FromTxHash), btcFromTxInfo.FromChainID},
 			})
 	}
 	return nil
@@ -281,7 +278,7 @@ func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*cro
 	return nil, nil
 }
 
-func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *crosscommon.MakeTxParam) error {
+func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *crosscommon.MakeTxParam, fromChainID uint64) error {
 	if !bytes.Equal(param.ToContractAddress, []byte(BTC_ADDRESS)) {
 		return fmt.Errorf("btc MakeTransaction, destContractAddr is %s not btc", string(param.ToContractAddress))
 	}
@@ -297,7 +294,7 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *cr
 	}
 	amounts[toAddr] = int64(amount)
 
-	err := makeBtcTx(service, param.ToChainID, amounts, param.TxHash)
+	err := makeBtcTx(service, param.ToChainID, amounts, param.TxHash, fromChainID)
 	if err != nil {
 		return fmt.Errorf("btc MakeTransaction, failed to make transaction: %v", err)
 	}
@@ -359,7 +356,7 @@ func notifyBtcTx(native *native.NativeService, proof, tx []byte, height uint32, 
 	return nil
 }
 
-func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string]int64, fromTxHash []byte) error {
+func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string]int64, fromTxHash []byte, fromChainID uint64) error {
 	if len(amounts) == 0 {
 		return fmt.Errorf("makeBtcTx, GetInput() no amount")
 	}
@@ -425,8 +422,16 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 	txHash := mtx.TxHash()
 	service.GetCacheDB().Put(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(BTC_TX_PREFIX),
 		txHash[:]), buf.Bytes())
-	service.GetCacheDB().Put(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(BTC_FROM_TX_PREFIX),
-		txHash[:]), fromTxHash)
+
+	btcFromInfo := &BtcFromInfo{
+		FromTxHash:  fromTxHash,
+		FromChainID: fromChainID,
+	}
+	err = putBtcFromInfo(service, txHash[:], btcFromInfo)
+	if err != nil {
+		return fmt.Errorf("makeBtcTx, putBtcFromInfo failed: %v", err)
+	}
+
 	service.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,

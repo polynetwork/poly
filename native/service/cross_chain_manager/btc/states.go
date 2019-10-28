@@ -237,3 +237,28 @@ func (this *Args) Deserialization(source *common.ZeroCopySource) error {
 	this.Address = address
 	return nil
 }
+
+type BtcFromInfo struct {
+	FromTxHash  []byte
+	FromChainID uint64
+}
+
+func (this *BtcFromInfo) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteVarBytes(this.FromTxHash)
+	sink.WriteUint64(this.FromChainID)
+}
+
+func (this *BtcFromInfo) Deserialization(source *common.ZeroCopySource) error {
+	fromTxHash, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("BtcProof deserialize fromTxHash error")
+	}
+	fromChainID, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("BtcProof deserialize fromChainID error:")
+	}
+
+	this.FromTxHash = fromTxHash
+	this.FromChainID = fromChainID
+	return nil
+}
