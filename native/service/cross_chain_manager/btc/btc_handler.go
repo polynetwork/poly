@@ -90,7 +90,8 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 		return fmt.Errorf("MultiSign, failed to get tx hash from param: %v", err)
 	}
 
-	txb, err := service.GetCacheDB().Get(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(BTC_TX_PREFIX), txHash[:]))
+	txb, err := service.GetCacheDB().Get(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(BTC_TX_PREFIX),
+		txHash[:]))
 	if err != nil {
 		return fmt.Errorf("MultiSign, failed to get tx %s from cacheDB: %v", txHash.String(), err)
 	}
@@ -175,11 +176,15 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 		if err != nil {
 			return fmt.Errorf("MultiSign, putUtxos error: %v", err)
 		}
-
+		fromTxHash, err := service.GetCacheDB().Get(utils.ConcatKey(utils.CrossChainManagerContractAddress,
+			[]byte(BTC_FROM_TX_PREFIX), txHash[:]))
+		if err != nil {
+			return fmt.Errorf("MultiSign, failed to get from tx hash %s from cacheDB: %v", txHash.String(), err)
+		}
 		service.AddNotify(
 			&event.NotifyEventInfo{
 				ContractAddress: utils.CrossChainManagerContractAddress,
-				States:          []interface{}{"btcTxToRelay", hex.EncodeToString(buf.Bytes())},
+				States:          []interface{}{"btcTxToRelay", hex.EncodeToString(buf.Bytes()), hex.EncodeToString(fromTxHash)},
 			})
 	}
 	return nil
@@ -292,7 +297,7 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *cr
 	}
 	amounts[toAddr] = int64(amount)
 
-	err := makeBtcTx(service, param.ToChainID, amounts)
+	err := makeBtcTx(service, param.ToChainID, amounts, param.TxHash)
 	if err != nil {
 		return fmt.Errorf("btc MakeTransaction, failed to make transaction: %v", err)
 	}
@@ -354,7 +359,7 @@ func notifyBtcTx(native *native.NativeService, proof, tx []byte, height uint32, 
 	return nil
 }
 
-func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string]int64) error {
+func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string]int64, fromTxHash []byte) error {
 	if len(amounts) == 0 {
 		return fmt.Errorf("makeBtcTx, GetInput() no amount")
 	}
@@ -398,7 +403,7 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 	}
 
 	// get fee
-	fee := int64(float64(estimateSerializedTxSize(len(txIns), outs, out) * MinSatoshiToRelayPerByte) * Weight)
+	fee := int64(float64(estimateSerializedTxSize(len(txIns), outs, out)*MinSatoshiToRelayPerByte) * Weight)
 	if amountSum <= fee {
 		return fmt.Errorf("makeBtcTx, amounts sum(%d) must greater than fee %d", amountSum, FEE)
 	}
@@ -420,6 +425,8 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 	txHash := mtx.TxHash()
 	service.GetCacheDB().Put(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(BTC_TX_PREFIX),
 		txHash[:]), buf.Bytes())
+	service.GetCacheDB().Put(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(BTC_FROM_TX_PREFIX),
+		txHash[:]), fromTxHash)
 	service.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,

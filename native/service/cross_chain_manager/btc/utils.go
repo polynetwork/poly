@@ -23,15 +23,14 @@ import (
 
 const (
 	// TODO: Temporary setting
-	OP_RETURN_DATA_LEN           = 37
-	OP_RETURN_SCRIPT_FLAG        = byte(0x66)
-	FEE                          = int64(4e3)
-	REQUIRE                      = 5
-	BTC_TX_PREFIX         string = "btctx"
-	IP                    string = "0.0.0.0:30336" //
-	RedeemP2SH5of7MultisigSigScriptSize = 1 + 5*(1+72) + 1 + 1 + 7*(1+33) + 1 + 1
-	MinSatoshiToRelayPerByte = 1
-	Weight = 1.2
+	OP_RETURN_SCRIPT_FLAG                      = byte(0x66)
+	FEE                                        = int64(4e3)
+	BTC_TX_PREFIX                       string = "btctx"
+	BTC_FROM_TX_PREFIX                  string = "btcfromtx"
+	IP                                  string = "0.0.0.0:30336" //
+	RedeemP2SH5of7MultisigSigScriptSize        = 1 + 5*(1+72) + 1 + 1 + 7*(1+33) + 1 + 1
+	MinSatoshiToRelayPerByte                   = 1
+	Weight                                     = 1.2
 )
 
 var netParam = &chaincfg.TestNet3Params
@@ -163,7 +162,6 @@ func estimateSerializedTxSize(inputCount int, txOuts []*wire.TxOut, potential *w
 	return 10 + wire.VarIntSerializeSize(uint64(inputCount)) + wire.VarIntSerializeSize(uint64(len(txOuts)+1)) +
 		inputCount*multi5of7InputSize + potential.SerializeSize() + outsSize
 }
-
 
 func putBtcProof(native *native.NativeService, txHash, proof []byte) {
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_BTC), txHash)
