@@ -4,8 +4,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"math/big"
-
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -57,15 +55,9 @@ func (p *targetChainParam) resolve(amount int64, paramOutput *wire.TxOut) ([]byt
 	}
 	p.ChainId = inputArgs.ToChainID
 
-	b := new(big.Int).SetInt64(amount)
-	v, err := common.Uint256ParseFromBytes(prefixAppendUint256(b.Bytes()))
-	if err != nil {
-		return nil, fmt.Errorf("inputArgs.Deserialization fail: %v", err)
-	}
-
 	sink := common.NewZeroCopySink(nil)
 	sink.WriteVarBytes(inputArgs.Address)
-	sink.WriteHash(v)
+	sink.WriteUint64(uint64(amount))
 	p.AddrAndVal = sink.Bytes()
 
 	return inputArgs.ToContractAddress, nil

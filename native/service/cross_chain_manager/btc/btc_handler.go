@@ -22,7 +22,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-
 	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
@@ -283,12 +282,12 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *cr
 		return fmt.Errorf("btc MakeTransaction, destContractAddr is %s not btc", string(param.ToContractAddress))
 	}
 	amounts := make(map[string]int64)
-
-	toAddr, eof := common.NewZeroCopySource(param.Args).NextString()
+	source := common.NewZeroCopySource(param.Args)
+	toAddr, eof := source.NextString()
 	if eof {
 		return fmt.Errorf("btc MakeTransaction, utils.DecodeString toAddr error")
 	}
-	amount, eof := common.NewZeroCopySource(param.Args).NextInt64()
+	amount, eof := source.NextUint64()
 	if eof {
 		return fmt.Errorf("btc MakeTransaction, deserialize amount error")
 	}
