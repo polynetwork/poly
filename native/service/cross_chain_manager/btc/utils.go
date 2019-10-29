@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math/big"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/btcjson"
@@ -56,12 +57,26 @@ func (p *targetChainParam) resolve(amount int64, paramOutput *wire.TxOut) ([]byt
 	}
 	p.ChainId = inputArgs.ToChainID
 
+	b := new(big.Int).SetInt64(amount)
+	v, err := common.Uint256ParseFromBytes(prefixAppendUint256(b.Bytes()))
+	if err != nil {
+		return nil, fmt.Errorf("inputArgs.Deserialization fail: %v", err)
+	}
+
 	sink := common.NewZeroCopySink(nil)
 	sink.WriteVarBytes(inputArgs.Address)
-	sink.WriteInt64(amount)
+	sink.WriteHash(v)
 	p.AddrAndVal = sink.Bytes()
 
 	return inputArgs.ToContractAddress, nil
+}
+
+func prefixAppendUint256(src []byte) []byte {
+	x := make([]byte, 32)
+	for i := 0; i < len(src); i++ {
+		x[32-len(src)+i] = byte(src[i])
+	}
+	return x
 }
 
 // This function needs to input the input and output information of the transaction
