@@ -38,7 +38,7 @@ func (this *NEOHandler) MakeDepositProposal(service *native.NativeService) (*sco
 		return nil, fmt.Errorf("ont MakeDepositProposal, contract params deserialize error: %v", err)
 	}
 
-	if err := scom.CheckDoneTx(service, params.TxHash, params.SourceChainID); err != nil {
+	if err := scom.CheckDoneTx(service, params.TxHash, params.Proof, params.SourceChainID); err != nil {
 		return nil, fmt.Errorf("MakeDepositProposal, check done transaction error:%s", err)
 	}
 
@@ -47,7 +47,7 @@ func (this *NEOHandler) MakeDepositProposal(service *native.NativeService) (*sco
 		return nil, fmt.Errorf("ont MakeDepositProposal, VerifyOntTx error: %v", err)
 	}
 
-	if err = scom.PutDoneTx(service, value.TxHash, params.SourceChainID); err != nil {
+	if err = scom.PutDoneTx(service, value.TxHash, params.Proof, params.SourceChainID); err != nil {
 		return nil, fmt.Errorf("VerifyFromOntTx, putDoneTx error:%s", err)
 	}
 	return value, nil
