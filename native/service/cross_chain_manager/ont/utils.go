@@ -47,7 +47,7 @@ func verifyFromOntTx(native *native.NativeService, proof, txHash []byte, fromCha
 		return nil, fmt.Errorf("VerifyFromOntTx, deserialize merkleValue error:%s", err)
 	}
 	if !bytes.Equal(txHash, txParam.TxHash) {
-		return nil, fmt.Errorf("VerifyFromOntTx, relayer txHash:%x doesn't equal user txHash:%x", txParam.TxHash, txParam.TxHash)
+		return nil, fmt.Errorf("VerifyFromOntTx, relayer txHash:%x doesn't equal user txHash:%x", txHash, txParam.TxHash)
 	}
 	return txParam, nil
 }
