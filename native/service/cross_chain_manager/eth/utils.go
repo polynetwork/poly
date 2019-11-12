@@ -60,7 +60,7 @@ func verifyFromEthTx(native *native.NativeService, proof, extra, txHash []byte, 
 	return txParam, nil
 }
 
-func verifyMerkleProof(ethProof *ETHProof, blockData types.Header) ([]byte, error) {
+func verifyMerkleProof(ethProof *ETHProof, blockData *types.Header) ([]byte, error) {
 	//1. prepare verify account
 	nodeList := new(light.NodeList)
 

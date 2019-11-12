@@ -32,23 +32,38 @@ func putBlockHeader(native *native.NativeService, blockHeader types.Header, head
 	return nil
 }
 
-func GetHeaderByHeight(native *native.NativeService, height, chainID uint64) (cty.Header, error) {
+func GetCurrentHeaderHeight(native *native.NativeService, chainID []byte) (uint64, error) {
+	heightStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.CURRENT_HEIGHT), chainID))
+	if err != nil {
+		return 0, fmt.Errorf("getPrevHeaderHeight error: %v", err)
+	}
+	if heightStore == nil {
+		return 0, fmt.Errorf("getPrevHeaderHeight, heightStore is nil")
+	}
+	heightBytes, err := cstates.GetValueFromRawStorageItem(heightStore)
+	if err != nil {
+		return 0, fmt.Errorf("GetHeaderByHeight, deserialize headerBytes from raw storage item err:%v", err)
+	}
+	return utils.GetBytesUint64(heightBytes), err
+}
+
+func GetHeaderByHeight(native *native.NativeService, height, chainID uint64) (*cty.Header, error) {
 	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), utils.GetUint64Bytes(height)))
 	if err != nil {
-		return cty.Header{}, fmt.Errorf("GetHeaderByHeight, get blockHashStore error: %v", err)
+		return nil, fmt.Errorf("GetHeaderByHeight, get blockHashStore error: %v", err)
 	}
 	if headerStore == nil {
-		return cty.Header{}, fmt.Errorf("GetHeaderByHeight, can not find any header records")
+		return nil, fmt.Errorf("GetHeaderByHeight, can not find any header records")
 	}
 	headerBytes, err := cstates.GetValueFromRawStorageItem(headerStore)
 	if err != nil {
-		return cty.Header{}, fmt.Errorf("GetHeaderByHeight, deserialize headerBytes from raw storage item err:%v", err)
+		return nil, fmt.Errorf("GetHeaderByHeight, deserialize headerBytes from raw storage item err:%v", err)
 	}
 	var header cty.Header
 	if err := json.Unmarshal(headerBytes, &header); err != nil {
-		return cty.Header{}, fmt.Errorf("GetHeaderByHeight, deserialize header error: %v", err)
+		return nil, fmt.Errorf("GetHeaderByHeight, deserialize header error: %v", err)
 	}
-	return header, nil
+	return &header, nil
 }
 
 func notifyPutHeader(native *native.NativeService, chainID uint64, height uint64, blockHash string) {
