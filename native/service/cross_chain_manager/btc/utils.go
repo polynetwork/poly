@@ -118,16 +118,7 @@ func getTxOuts(amounts map[string]int64) ([]*wire.TxOut, error) {
 		if err != nil {
 			return nil, fmt.Errorf("getTxOuts, decode addr fail: %v", err)
 		}
-
-		// Ensure the address is one of the supported types and that
-		// the network encoded with the address matches the network the
-		// server is currently on.
-		switch addr.(type) {
-		case *btcutil.AddressPubKeyHash:
-		case *btcutil.AddressScriptHash:
-		default:
-			return nil, fmt.Errorf("getTxOuts, type of addr is not found")
-		}
+		
 		if !addr.IsForNet(netParam) {
 			return nil, fmt.Errorf("getTxOuts, addr is not for %s", netParam.Name)
 		}
