@@ -27,6 +27,7 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
+	"github.com/btcsuite/btcutil/base58"
 	wire_bch "github.com/gcash/bchd/wire"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/core/genesis"
@@ -283,14 +284,15 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *cr
 	}
 	amounts := make(map[string]int64)
 	source := common.NewZeroCopySource(param.Args)
-	toAddr, eof := source.NextString()
+	toAddrBytes, eof := source.NextVarBytes()
 	if eof {
-		return fmt.Errorf("btc MakeTransaction, utils.DecodeString toAddr error")
+		return fmt.Errorf("btc MakeTransaction, deserialize toAddr error")
 	}
 	amount, eof := source.NextUint64()
 	if eof {
 		return fmt.Errorf("btc MakeTransaction, deserialize amount error")
 	}
+	toAddr := base58.Encode(toAddrBytes)
 	amounts[toAddr] = int64(amount)
 
 	err := makeBtcTx(service, param.ToChainID, amounts, param.TxHash, fromChainID)

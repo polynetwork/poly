@@ -118,7 +118,7 @@ func getTxOuts(amounts map[string]int64) ([]*wire.TxOut, error) {
 		if err != nil {
 			return nil, fmt.Errorf("getTxOuts, decode addr fail: %v", err)
 		}
-		
+
 		if !addr.IsForNet(netParam) {
 			return nil, fmt.Errorf("getTxOuts, addr is not for %s", netParam.Name)
 		}
