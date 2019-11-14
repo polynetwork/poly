@@ -75,6 +75,20 @@ func (this *Utxos) Deserialization(source *common.ZeroCopySource) error {
 	return nil
 }
 
+func (this Utxos) Len() int {
+	return len(this.Utxos)
+}
+
+func (this Utxos) Less(i, j int) bool {
+	return uint64(this.Utxos[i].Confs)*this.Utxos[i].Value < uint64(this.Utxos[j].Confs)*this.Utxos[j].Value
+}
+
+func (this Utxos) Swap(i, j int) {
+	temp := this.Utxos[i]
+	this.Utxos[i] = this.Utxos[j]
+	this.Utxos[j] = temp
+}
+
 type Utxo struct {
 	// Previous txid and output index
 	Op *OutPoint
@@ -87,6 +101,9 @@ type Utxo struct {
 
 	// Output script
 	ScriptPubkey []byte
+
+	// no need to save
+	Confs uint32
 }
 
 func (this *Utxo) Serialization(sink *common.ZeroCopySink) {

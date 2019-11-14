@@ -240,7 +240,7 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 		return false, nil, 0, fmt.Errorf("btc Vote, failed to decode the transaction")
 	}
 
-	err = addUtxos(service, params.FromChainID, proof.Height, mtx)
+	err = addUtxos(service, params.FromChainID, service.GetHeight(), mtx)
 	if err != nil {
 		return false, nil, 0, fmt.Errorf("btc Vote, updateUtxo error: %s", err)
 	}
@@ -403,7 +403,7 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 	// get fee
 	fee := int64(float64(estimateSerializedTxSize(len(txIns), outs, out)*MinSatoshiToRelayPerByte) * Weight)
 	if amountSum <= fee {
-		return fmt.Errorf("makeBtcTx, amounts sum(%d) must greater than fee %d", amountSum, FEE)
+		return fmt.Errorf("makeBtcTx, amounts sum(%d) must greater than fee %d", amountSum, fee)
 	}
 
 	for i, _ := range outs {

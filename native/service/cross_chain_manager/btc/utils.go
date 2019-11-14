@@ -18,6 +18,7 @@ import (
 	"github.com/ontio/multi-chain/native/event"
 	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/utils"
+	"sort"
 )
 
 const (
@@ -30,6 +31,7 @@ const (
 	RedeemP2SH5of7MultisigSigScriptSize        = 1 + 5*(1+72) + 1 + 1 + 7*(1+33) + 1 + 1
 	MinSatoshiToRelayPerByte                   = 1
 	Weight                                     = 1.2
+	MIN_CHANGE                                 = 2000
 )
 
 var netParam = &chaincfg.TestNet3Params
@@ -255,25 +257,34 @@ func chooseUtxos(native *native.NativeService, chainID uint64, amount int64, fee
 	}
 	total := amount + fee
 	result := make([]*Utxo, 0)
-	var sum int64 = 0
-	var j int
 	for i := 0; i < len(utxos.Utxos); i++ {
+		utxos.Utxos[i].Confs = native.GetHeight() - utxos.Utxos[i].AtHeight + 1
+	}
+	sort.Sort(utxos)
+	var sum int64 = 0
+	var end int
+	for i := len(utxos.Utxos) - 1; i >= 0; i-- {
 		sum = sum + int64(utxos.Utxos[i].Value)
 		result = append(result, utxos.Utxos[i])
-		if sum >= total {
-			j = i
+		if satisfiesTargetValue(total, sum) {
+			end = i
 			break
 		}
 	}
 	if sum < total {
 		return nil, sum, fmt.Errorf("chooseUtxos, current utxo is not enough")
 	}
-	utxos.Utxos = utxos.Utxos[j+1:]
+	utxos.Utxos = utxos.Utxos[:end] //end == 0 ???
 	err = putUtxos(native, chainID, utxos)
 	if err != nil {
 		return nil, sum, fmt.Errorf("chooseUtxos, putUtxos err:%v", err)
 	}
 	return result, sum, nil
+}
+
+// avoid making dust utxo by setting minChange
+func satisfiesTargetValue(targetValue, totalValue int64) bool {
+	return totalValue == targetValue || totalValue >= targetValue+MIN_CHANGE
 }
 
 func putUtxos(native *native.NativeService, chainID uint64, utxos *Utxos) error {
