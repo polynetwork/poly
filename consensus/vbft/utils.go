@@ -23,6 +23,7 @@ import (
 	"crypto/sha512"
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/ontio/multi-chain/account"
 	"github.com/ontio/multi-chain/common"
@@ -33,6 +34,8 @@ import (
 	"github.com/ontio/multi-chain/core/states"
 	scommon "github.com/ontio/multi-chain/core/store/common"
 	"github.com/ontio/multi-chain/core/store/overlaydb"
+	gov "github.com/ontio/multi-chain/native/service/governance"
+	nutils "github.com/ontio/multi-chain/native/service/utils"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/ontology-crypto/vrf"
 )
@@ -124,17 +127,53 @@ func verifyVrf(pk keypair.PublicKey, blkNum uint32, prevVrf, newVrf, proof []byt
 	}
 	return nil
 }
-
 func GetVbftConfigInfo(memdb *overlaydb.MemDB) (*config.VBFTConfig, error) {
-	return config.MainNetConfig.VBFT, nil
+	data, err := GetStorageValue(memdb, ledger.DefLedger, nutils.GovernanceContractAddress, []byte(gov.VBFT_CONFIG))
+	if err != nil {
+		return nil, err
+	}
+	cfg := new(gov.Configuration)
+	err = cfg.Deserialization(common.NewZeroCopySource(data))
+	if err != nil {
+		return nil, err
+	}
+	chainconfig := &config.VBFTConfig{
+		N:                    uint32(cfg.N),
+		C:                    uint32(cfg.C),
+		K:                    uint32(cfg.K),
+		L:                    uint32(cfg.L),
+		BlockMsgDelay:        uint32(cfg.BlockMsgDelay),
+		HashMsgDelay:         uint32(cfg.HashMsgDelay),
+		PeerHandshakeTimeout: uint32(cfg.PeerHandshakeTimeout),
+		MaxBlockChangeView:   uint32(cfg.MaxBlockChangeView),
+	}
+
+	return chainconfig, nil
 }
 
 func GetPeersConfig(memdb *overlaydb.MemDB) ([]*config.VBFTPeerStakeInfo, error) {
-	return nil, nil
-}
-
-func isUpdate(memdb *overlaydb.MemDB, view uint32) (bool, error) {
-	return false, nil
+	data, err := GetStorageValue(memdb, ledger.DefLedger, nutils.GovernanceContractAddress, []byte(gov.PEER_POOL))
+	if err != nil {
+		return nil, err
+	}
+	peerMap := &gov.PeerPoolMap{
+		PeerPoolMap: make(map[string]*gov.PeerPoolItem),
+	}
+	err = peerMap.Deserialization(common.NewZeroCopySource(data))
+	if err != nil {
+		return nil, err
+	}
+	var peerstakes []*config.VBFTPeerStakeInfo
+	for _, id := range peerMap.PeerPoolMap {
+		if id.Status == gov.ConsensusStatus {
+			config := &config.VBFTPeerStakeInfo{
+				Index:      uint32(id.Index),
+				PeerPubkey: id.PeerPubkey,
+			}
+			peerstakes = append(peerstakes, config)
+		}
+	}
+	return peerstakes, nil
 }
 
 func getRawStorageItemFromMemDb(memdb *overlaydb.MemDB, addr common.Address, key []byte) (value []byte, unkown bool) {
@@ -162,5 +201,44 @@ func GetStorageValue(memdb *overlaydb.MemDB, backend *ledger.Ledger, addr common
 }
 
 func getChainConfig(memdb *overlaydb.MemDB, blkNum uint32) (*vconfig.ChainConfig, error) {
-	return nil, nil
+	config, err := GetVbftConfigInfo(memdb)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get chainconfig from leveldb: %s", err)
+	}
+
+	peersinfo, err := GetPeersConfig(memdb)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get peersinfo from leveldb: %s", err)
+	}
+
+	cfg, err := vconfig.GenesisChainConfig(config, peersinfo, blkNum)
+	if err != nil {
+		return nil, fmt.Errorf("GenesisChainConfig failed: %s", err)
+	}
+	return cfg, err
+}
+
+func peersChange(new []*config.VBFTPeerStakeInfo, old []*vconfig.PeerConfig) bool {
+	sort.SliceStable(new, func(i, j int) bool {
+		return new[i].PeerPubkey > new[j].PeerPubkey
+	})
+	sort.SliceStable(old, func(i, j int) bool {
+		return old[i].ID > old[j].ID
+	})
+
+	if len(new) != len(old) {
+		return true
+	}
+
+	if (new == nil) != (old == nil) {
+		return true
+	}
+
+	for i, v := range new {
+		if v.PeerPubkey != old[i].ID {
+			return true
+		}
+	}
+
+	return false
 }

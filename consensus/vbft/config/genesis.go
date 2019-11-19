@@ -24,7 +24,6 @@ import (
 	"fmt"
 	"hash/fnv"
 	"math"
-	"sort"
 	"strings"
 	"time"
 
@@ -112,36 +111,15 @@ func genConsensusPayload(cfg *config.VBFTConfig, height uint32) ([]byte, error) 
 
 //GenesisChainConfig return chainconfig
 func GenesisChainConfig(conf *config.VBFTConfig, peers []*config.VBFTPeerStakeInfo, height uint32) (*ChainConfig, error) {
-	sort.SliceStable(peers, func(i, j int) bool {
-		if peers[i].InitPos > peers[j].InitPos {
-			return true
-		} else if peers[i].InitPos == peers[j].InitPos {
-			return peers[i].PeerPubkey > peers[j].PeerPubkey
-		}
-		return false
-	})
 	log.Debugf("sorted peers: %v", peers)
-	// get stake sum of top-k peers
-	var sum uint64
-	for i := 0; i < int(conf.K); i++ {
-		sum += peers[i].InitPos
-		log.Debugf("peer: %d, stack: %d", peers[i].Index, peers[i].InitPos)
-	}
-
-	log.Debugf("sum of top K stakes: %d", sum)
+	k := uint32(len(peers))
+	sum := uint64(len(peers))
 
 	// calculate peer ranks
-	scale := conf.L/conf.K - 1
-	if scale <= 0 {
-		return nil, fmt.Errorf("L is equal or less than K")
-	}
-
+	scale := 15
 	peerRanks := make([]uint64, 0)
-	for i := 0; i < int(conf.K); i++ {
-		var s uint64 = 1
-		if sum > 0 && peers[i].InitPos > 0 {
-			s = uint64(math.Ceil(float64(peers[i].InitPos) * float64(scale) * float64(conf.K) / float64(sum)))
-		}
+	for i := 0; i < int(k); i++ {
+		s := uint64(math.Ceil(float64(1) * float64(scale) * float64(k) / float64(sum)))
 		peerRanks = append(peerRanks, s)
 	}
 
@@ -150,7 +128,7 @@ func GenesisChainConfig(conf *config.VBFTConfig, peers []*config.VBFTPeerStakeIn
 	// calculate pos table
 	chainPeers := make(map[uint32]*PeerConfig, 0)
 	posTable := make([]uint32, 0)
-	for i := 0; i < int(conf.K); i++ {
+	for i := 0; i < int(k); i++ {
 		nodeId := peers[i].PeerPubkey
 		chainPeers[peers[i].Index] = &PeerConfig{
 			Index: peers[i].Index,
@@ -173,15 +151,15 @@ func GenesisChainConfig(conf *config.VBFTConfig, peers []*config.VBFTPeerStakeIn
 
 	// generate chain conf, and save to ChainConfigFile
 	peerCfgs := make([]*PeerConfig, 0)
-	for i := 0; i < int(conf.K); i++ {
+	for i := 0; i < int(k); i++ {
 		peerCfgs = append(peerCfgs, chainPeers[peers[i].Index])
 	}
 
 	chainConfig := &ChainConfig{
 		Version:              1,
 		View:                 1,
-		N:                    conf.K,
-		C:                    conf.C,
+		N:                    k,
+		C:                    k / 3,
 		BlockMsgDelay:        time.Duration(conf.BlockMsgDelay) * time.Millisecond,
 		HashMsgDelay:         time.Duration(conf.HashMsgDelay) * time.Millisecond,
 		PeerHandshakeTimeout: time.Duration(conf.PeerHandshakeTimeout) * time.Second,

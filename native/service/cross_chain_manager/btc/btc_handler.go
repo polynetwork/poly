@@ -118,6 +118,10 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 	if err != nil {
 		return fmt.Errorf("MultiSign, getBtcMultiSignInfo error: %v", err)
 	}
+	_, ok := multiSignInfo.MultiSignInfo[params.Address]
+	if ok {
+		return fmt.Errorf("MultiSign, address %s already sign", params.Address)
+	}
 	multiSignInfo.MultiSignInfo[params.Address] = params.Signs
 	err = putBtcMultiSignInfo(service, params.TxHash, multiSignInfo)
 	if err != nil {
@@ -206,6 +210,10 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 	vote, err := getBtcVote(service, params.TxHash)
 	if err != nil {
 		return false, nil, 0, fmt.Errorf("btc Vote, getBtcVote error: %v", err)
+	}
+	_, ok := vote.VoteMap[params.Address]
+	if ok {
+		return false, nil, 0, fmt.Errorf("btc Vote, address %s already voted", params.Address)
 	}
 	vote.VoteMap[params.Address] = params.Address
 	err = putBtcVote(service, params.TxHash, vote)

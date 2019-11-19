@@ -216,7 +216,11 @@ func (self *Server) handleBlockPersistCompleted(block *types.Block) {
 		self.metaLock.Unlock()
 	}
 
-	if self.checkNeedUpdateChainConfig(self.completedBlockNum) || self.checkUpdateChainConfig(self.completedBlockNum) {
+	peersinfo, err := GetPeersConfig(self.chainStore.GetExecWriteSet(self.completedBlockNum - 1))
+	if err != nil {
+		log.Errorf("handleBlockPersistCompleted, failed to get peersinfo from leveldb: %s", err)
+	}
+	if peersChange(peersinfo, self.config.Peers) {
 		err := self.updateChainConfig()
 		if err != nil {
 			log.Errorf("updateChainConfig failed:%s", err)
@@ -2066,31 +2070,6 @@ func (self *Server) msgSendLoop() {
 	}
 }
 
-//checkNeedUpdateChainConfig use blockcount
-func (self *Server) checkNeedUpdateChainConfig(blockNum uint32) bool {
-	prevBlk, _ := self.blockPool.getSealedBlock(blockNum - 1)
-	if prevBlk == nil {
-		log.Errorf("failed to get prevBlock (%d)", blockNum-1)
-		return false
-	}
-	lastConfigBlkNum := prevBlk.getLastConfigBlockNum()
-	if (blockNum - lastConfigBlkNum) >= self.config.MaxBlockChangeView {
-		return true
-	}
-	return false
-}
-
-//checkUpdateChainConfig query leveldb check is force update
-func (self *Server) checkUpdateChainConfig(blkNum uint32) bool {
-	force, err := isUpdate(self.chainStore.GetExecWriteSet(blkNum-1), self.config.View)
-	if err != nil {
-		log.Errorf("checkUpdateChainConfig err:%s", err)
-		return false
-	}
-	log.Debugf("checkUpdateChainConfig force: %v", force)
-	return force
-}
-
 func (self *Server) validHeight(blkNum uint32) uint32 {
 	height := blkNum - 1
 	validHeight := height
@@ -2121,15 +2100,25 @@ func (self *Server) makeProposal(blkNum uint32, forEmpty bool) error {
 	cfg := &vconfig.ChainConfig{}
 	cfg = nil
 
+	peersinfo, err := GetPeersConfig(self.chainStore.GetExecWriteSet(blkNum - 1))
+	if err != nil {
+		return fmt.Errorf("failed to get peersinfo from leveldb: %s", err)
+	}
+	if peersChange(peersinfo, self.config.Peers) {
+		chainconfig, err := getChainConfig(self.chainStore.GetExecWriteSet(blkNum-1), blkNum)
+		if err != nil {
+			return fmt.Errorf("getChainConfig failed:%s", err)
+		}
+		cfg = chainconfig
+	}
+
 	if self.nonConsensusNode() {
 		return fmt.Errorf("%d quit consensus node", self.Index)
 	}
 
-	if !forEmpty {
-		for _, e := range self.poolActor.GetTxnPool(true, uint32(validHeight)) {
-			if err := self.incrValidator.Verify(e.Tx, uint32(validHeight)); err == nil {
-				userTxs = append(userTxs, e.Tx)
-			}
+	for _, e := range self.poolActor.GetTxnPool(true, uint32(validHeight)) {
+		if err := self.incrValidator.Verify(e.Tx, uint32(validHeight)); err == nil {
+			userTxs = append(userTxs, e.Tx)
 		}
 	}
 	proposal, err := self.constructProposalMsg(blkNum, sysTxs, userTxs, cfg)
