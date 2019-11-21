@@ -21,9 +21,9 @@ package service
 import (
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/service/cross_chain_manager"
-	"github.com/ontio/multi-chain/native/service/governance"
+	"github.com/ontio/multi-chain/native/service/governance/node_manager"
+	"github.com/ontio/multi-chain/native/service/governance/side_chain_manager"
 	"github.com/ontio/multi-chain/native/service/header_sync"
-	"github.com/ontio/multi-chain/native/service/side_chain_manager"
 	"github.com/ontio/multi-chain/native/service/utils"
 )
 
@@ -31,5 +31,5 @@ func init() {
 	native.Contracts[utils.SideChainManagerContractAddress] = side_chain_manager.RegisterSideChainManagerContract
 	native.Contracts[utils.HeaderSyncContractAddress] = header_sync.RegisterHeaderSyncContract
 	native.Contracts[utils.CrossChainManagerContractAddress] = cross_chain_manager.RegisterCrossChainManagerContract
-	native.Contracts[utils.GovernanceContractAddress] = governance.RegisterGovernanceContract
+	native.Contracts[utils.NodeManagerContractAddress] = node_manager.RegisterNodeManagerContract
 }

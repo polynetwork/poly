@@ -34,7 +34,7 @@ import (
 	"github.com/ontio/multi-chain/core/states"
 	scommon "github.com/ontio/multi-chain/core/store/common"
 	"github.com/ontio/multi-chain/core/store/overlaydb"
-	gov "github.com/ontio/multi-chain/native/service/governance"
+	gov "github.com/ontio/multi-chain/native/service/governance/node_manager"
 	nutils "github.com/ontio/multi-chain/native/service/utils"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/ontology-crypto/vrf"
@@ -128,7 +128,7 @@ func verifyVrf(pk keypair.PublicKey, blkNum uint32, prevVrf, newVrf, proof []byt
 	return nil
 }
 func GetVbftConfigInfo(memdb *overlaydb.MemDB) (*config.VBFTConfig, error) {
-	data, err := GetStorageValue(memdb, ledger.DefLedger, nutils.GovernanceContractAddress, []byte(gov.VBFT_CONFIG))
+	data, err := GetStorageValue(memdb, ledger.DefLedger, nutils.NodeManagerContractAddress, []byte(gov.VBFT_CONFIG))
 	if err != nil {
 		return nil, err
 	}
@@ -152,7 +152,7 @@ func GetVbftConfigInfo(memdb *overlaydb.MemDB) (*config.VBFTConfig, error) {
 }
 
 func GetPeersConfig(memdb *overlaydb.MemDB) ([]*config.VBFTPeerStakeInfo, error) {
-	data, err := GetStorageValue(memdb, ledger.DefLedger, nutils.GovernanceContractAddress, []byte(gov.PEER_POOL))
+	data, err := GetStorageValue(memdb, ledger.DefLedger, nutils.NodeManagerContractAddress, []byte(gov.PEER_POOL))
 	if err != nil {
 		return nil, err
 	}

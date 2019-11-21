@@ -16,7 +16,7 @@
  * along with The ontology.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package governance
+package node_manager
 
 import (
 	"encoding/hex"
@@ -31,7 +31,7 @@ func registerCandidate(native *native.NativeService) error {
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return fmt.Errorf("deserialize, contract params deserialize error: %v", err)
 	}
-	contract := utils.GovernanceContractAddress
+	contract := utils.NodeManagerContractAddress
 
 	address, err := common.AddressParseFromBytes(params.Address)
 	if err != nil {

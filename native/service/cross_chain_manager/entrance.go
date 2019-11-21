@@ -13,7 +13,7 @@ import (
 	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/cross_chain_manager/eth"
 	"github.com/ontio/multi-chain/native/service/cross_chain_manager/ont"
-	"github.com/ontio/multi-chain/native/service/side_chain_manager"
+	"github.com/ontio/multi-chain/native/service/governance/side_chain_manager"
 )
 
 const (

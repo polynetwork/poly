@@ -20,7 +20,6 @@
 package ont
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"github.com/ontio/multi-chain/common/config"
@@ -32,23 +31,21 @@ import (
 	"github.com/ontio/multi-chain/native"
 	hscommon "github.com/ontio/multi-chain/native/service/header_sync/common"
 	"github.com/ontio/multi-chain/native/service/utils"
+	ocommon "github.com/ontio/ontology/common"
 	"github.com/ontio/ontology/core/signature"
 	otypes "github.com/ontio/ontology/core/types"
 )
 
 func PutBlockHeader(native *native.NativeService, chainID uint64, blockHeader *otypes.Header) error {
 	contract := utils.HeaderSyncContractAddress
-	buf := bytes.NewBuffer(nil)
-	err := blockHeader.Serialize(buf)
-	if err != nil {
-		return fmt.Errorf("PutBlockHeader, blockHeader.Serializ error: %v", err)
-	}
+	sink := ocommon.NewZeroCopySink(nil)
+	blockHeader.Serialization(sink)
 	chainIDBytes := utils.GetUint64Bytes(chainID)
 	heightBytes := utils.GetUint32Bytes(blockHeader.Height)
 
 	blockHash := blockHeader.Hash()
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(hscommon.BLOCK_HEADER), chainIDBytes, blockHash.ToArray()),
-		cstates.GenRawStorageItem(buf.Bytes()))
+		cstates.GenRawStorageItem(sink.Bytes()))
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(hscommon.HEADER_INDEX), chainIDBytes, heightBytes),
 		cstates.GenRawStorageItem(blockHash.ToArray()))
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(hscommon.CURRENT_HEIGHT), chainIDBytes),
@@ -87,7 +84,7 @@ func GetHeaderByHeight(native *native.NativeService, chainID uint64, height uint
 	if err != nil {
 		return nil, fmt.Errorf("GetHeaderByHeight, deserialize headerBytes from raw storage item err:%v", err)
 	}
-	if err := header.Deserialize(bytes.NewBuffer(headerBytes)); err != nil {
+	if err := header.Deserialization(ocommon.NewZeroCopySource(headerBytes)); err != nil {
 		return nil, fmt.Errorf("GetHeaderByHeight, deserialize header error: %v", err)
 	}
 	return header, nil
@@ -109,7 +106,7 @@ func GetHeaderByHash(native *native.NativeService, chainID uint64, hash common.U
 	if err != nil {
 		return nil, fmt.Errorf("GetHeaderByHash, deserialize from raw storage item err:%v", err)
 	}
-	if err := header.Deserialize(bytes.NewBuffer(headerBytes)); err != nil {
+	if err := header.Deserialization(ocommon.NewZeroCopySource(headerBytes)); err != nil {
 		return nil, fmt.Errorf("GetHeaderByHash, deserialize header error: %v", err)
 	}
 	return header, nil

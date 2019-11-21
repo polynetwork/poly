@@ -43,7 +43,7 @@ const (
 	SIDE_CHAIN                  = "sideChain"
 )
 
-//Register methods of governance contract
+//Register methods of node_manager contract
 func RegisterSideChainManagerContract(native *native.NativeService) {
 	native.Register(REGISTER_SIDE_CHAIN, RegisterSideChain)
 	native.Register(APPROVE_REGISTER_SIDE_CHAIN, ApproveRegisterSideChain)

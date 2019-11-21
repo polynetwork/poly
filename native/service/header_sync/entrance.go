@@ -2,14 +2,14 @@ package header_sync
 
 import (
 	"fmt"
-	"github.com/ontio/multi-chain/native/service/header_sync/eth"
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native"
+	"github.com/ontio/multi-chain/native/service/governance/side_chain_manager"
 	hscommon "github.com/ontio/multi-chain/native/service/header_sync/common"
+	"github.com/ontio/multi-chain/native/service/header_sync/eth"
 	"github.com/ontio/multi-chain/native/service/header_sync/neo"
 	"github.com/ontio/multi-chain/native/service/header_sync/ont"
-	"github.com/ontio/multi-chain/native/service/side_chain_manager"
 	"github.com/ontio/multi-chain/native/service/utils"
 )
 
@@ -18,7 +18,7 @@ const (
 	SYNC_BLOCK_HEADER   = "syncBlockHeader"
 )
 
-//Register methods of governance contract
+//Register methods of node_manager contract
 func RegisterHeaderSyncContract(native *native.NativeService) {
 	native.Register(SYNC_GENESIS_HEADER, SyncGenesisHeader)
 	native.Register(SYNC_BLOCK_HEADER, SyncBlockHeader)

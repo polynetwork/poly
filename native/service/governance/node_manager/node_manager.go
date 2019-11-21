@@ -16,8 +16,7 @@
  * along with The ontology.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-//Governance contract:
-package governance
+package node_manager
 
 import (
 	"bytes"
@@ -60,22 +59,20 @@ const (
 	BLACK_LIST      = "blackList"
 )
 
-//Register methods of governance contract
-func RegisterGovernanceContract(native *native.NativeService) {
+//Register methods of node_manager contract
+func RegisterNodeManagerContract(native *native.NativeService) {
+	native.Register(INIT_CONFIG, InitConfig)
 	native.Register(REGISTER_CANDIDATE, RegisterCandidate)
 	native.Register(UNREGISTER_CANDIDATE, UnRegisterCandidate)
 	native.Register(QUIT_NODE, QuitNode)
-
-	native.Register(INIT_CONFIG, InitConfig)
 	native.Register(APPROVE_CANDIDATE, ApproveCandidate)
 	native.Register(REJECT_CANDIDATE, RejectCandidate)
 	native.Register(BLACK_NODE, BlackNode)
 	native.Register(WHITE_NODE, WhiteNode)
-
 	native.Register(UPDATE_CONFIG, UpdateConfig)
 }
 
-//Init governance contract, include vbft config, global param and ontid admin.
+//Init node_manager contract, include vbft config, global param and ontid admin.
 func InitConfig(native *native.NativeService) ([]byte, error) {
 	configuration := new(config.VBFTConfig)
 	buf, err := serialization.ReadVarBytes(bytes.NewBuffer(native.GetInput()))
@@ -85,7 +82,7 @@ func InitConfig(native *native.NativeService) ([]byte, error) {
 	if err := configuration.Deserialize(bytes.NewBuffer(buf)); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("initConfig, contract params deserialize error: %v", err)
 	}
-	contract := utils.GovernanceContractAddress
+	contract := utils.NodeManagerContractAddress
 
 	// check if initConfig is already execute
 	peerPoolMapBytes, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(PEER_POOL)))
@@ -184,7 +181,7 @@ func UnRegisterCandidate(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("unRegisterCandidate, common.AddressParseFromBytes error: %v", err)
 	}
-	contract := utils.GovernanceContractAddress
+	contract := utils.NodeManagerContractAddress
 
 	//check witness
 	err = utils.ValidateOwner(native, address)
@@ -240,7 +237,7 @@ func ApproveCandidate(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("approveCandidate, checkWitness error: %v", err)
 	}
-	contract := utils.GovernanceContractAddress
+	contract := utils.NodeManagerContractAddress
 
 	//get peerPoolMap
 	peerPoolMap, err := GetPeerPoolMap(native, contract)
@@ -326,7 +323,7 @@ func RejectCandidate(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("rejectCandidate, checkWitness error: %v", err)
 	}
-	contract := utils.GovernanceContractAddress
+	contract := utils.NodeManagerContractAddress
 
 	//get peerPoolMap
 	peerPoolMap, err := GetPeerPoolMap(native, contract)
@@ -372,7 +369,7 @@ func BlackNode(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("blackNode, checkWitness error: %v", err)
 	}
-	contract := utils.GovernanceContractAddress
+	contract := utils.NodeManagerContractAddress
 
 	//get peerPoolMap
 	peerPoolMap, err := GetPeerPoolMap(native, contract)
@@ -427,7 +424,7 @@ func WhiteNode(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("whiteNode, checkWitness error: %v", err)
 	}
-	contract := utils.GovernanceContractAddress
+	contract := utils.NodeManagerContractAddress
 
 	peerPubkeyPrefix, err := hex.DecodeString(params.PeerPubkey)
 	if err != nil {
@@ -466,7 +463,7 @@ func QuitNode(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("quitNode, checkWitness error: %v", err)
 	}
-	contract := utils.GovernanceContractAddress
+	contract := utils.NodeManagerContractAddress
 
 	//get peerPoolMap
 	peerPoolMap, err := GetPeerPoolMap(native, contract)
@@ -508,7 +505,7 @@ func UpdateConfig(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("updateConfig, checkWitness error: %v", err)
 	}
-	contract := utils.GovernanceContractAddress
+	contract := utils.NodeManagerContractAddress
 
 	configuration := new(Configuration)
 	if err := configuration.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {

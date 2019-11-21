@@ -35,7 +35,7 @@ import (
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/event"
 	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
-	"github.com/ontio/multi-chain/native/service/side_chain_manager"
+	"github.com/ontio/multi-chain/native/service/governance/side_chain_manager"
 	"github.com/ontio/multi-chain/native/service/utils"
 )
 

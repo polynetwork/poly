@@ -16,7 +16,7 @@
  * along with The ontology.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package governance
+package node_manager
 
 import (
 	"bytes"
