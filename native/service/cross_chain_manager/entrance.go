@@ -59,7 +59,7 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side_chain_manager.GetSideChain error: %v", err)
 	}
-	if sideChain.ChainId != chainID {
+	if sideChain == nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side chain is not registered")
 	}
 
@@ -89,8 +89,8 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side_chain_manager.GetSideChain error: %v", err)
 	}
-	if sideChain.ChainId != targetid {
-		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, targetid chain is not registered")
+	if sideChain == nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side chain is not registered")
 	}
 
 	if sideChain.Router == utils.BTC_ROUTER {
@@ -124,8 +124,8 @@ func Vote(native *native.NativeService) ([]byte, error) {
 		if err != nil {
 			return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side_chain_manager.GetSideChain error: %v", err)
 		}
-		if sideChain.ChainId != targetid {
-			return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, targetid chain is not registered")
+		if sideChain == nil {
+			return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side chain is not registered")
 		}
 		//NOTE, you need to store the tx in this
 		err = MakeTransaction(native, txParam, fromChainID)

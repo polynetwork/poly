@@ -315,6 +315,9 @@ func notifyBtcTx(native *native.NativeService, proof, tx []byte, height uint32, 
 	if err != nil {
 		return fmt.Errorf("notifyBtcTx, side_chain_manager.GetSideChain error: %v", err)
 	}
+	if sideChain == nil {
+		return fmt.Errorf("notifyBtcTx, side chain is not registered")
+	}
 
 	mtx := wire.NewMsgTx(wire.TxVersion)
 	reader := bytes.NewReader(tx)

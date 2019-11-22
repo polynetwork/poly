@@ -85,7 +85,7 @@ func (this *PeerListParam) Deserialization(source *common.ZeroCopySource) error 
 	for i := 0; uint64(i) < n; i++ {
 		k, eof := source.NextString()
 		if eof {
-			return fmt.Errorf("source.NextVarBytes, deserialize peerPubkey error")
+			return fmt.Errorf("source.NextString, deserialize peerPubkey error")
 		}
 		peerPubkeyList = append(peerPubkeyList, k)
 	}

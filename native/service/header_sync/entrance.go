@@ -49,7 +49,7 @@ func SyncGenesisHeader(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("SyncGenesisHeader, side_chain_manager.GetSideChain error: %v", err)
 	}
-	if sideChain.ChainId != chainID {
+	if sideChain == nil {
 		return utils.BYTE_FALSE, fmt.Errorf("SyncGenesisHeader, side chain is not registered")
 	}
 
@@ -77,8 +77,8 @@ func SyncBlockHeader(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("SyncBlockHeader, side_chain_manager.GetSideChain error: %v", err)
 	}
-	if sideChain.ChainId != chainID {
-		return utils.BYTE_FALSE, fmt.Errorf("SyncBlockHeader, side chain is not registered")
+	if sideChain == nil {
+		return utils.BYTE_FALSE, fmt.Errorf("SyncGenesisHeader, side chain is not registered")
 	}
 
 	handler, err := GetChainHandler(sideChain.Router)

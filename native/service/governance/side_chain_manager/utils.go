@@ -24,21 +24,18 @@ import (
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/service/utils"
-	"math"
 )
 
-func getRegisterSideChain(native *native.NativeService, chanid uint64) (*SideChain, error) {
+func getSideChainApply(native *native.NativeService, chanid uint64) (*SideChain, error) {
 	contract := utils.SideChainManagerContractAddress
 	chainidByte := utils.GetUint64Bytes(chanid)
 
-	sideChainStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(REGISTER_SIDE_CHAIN_REQUEST),
+	sideChainStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(SIDE_CHAIN_APPLY),
 		chainidByte))
 	if err != nil {
 		return nil, fmt.Errorf("getRegisterSideChain,get registerSideChainRequestStore error: %v", err)
 	}
-	sideChain := &SideChain{
-		ChainId: math.MaxUint64,
-	}
+	sideChain := new(SideChain)
 	if sideChainStore != nil {
 		sideChainBytes, err := cstates.GetValueFromRawStorageItem(sideChainStore)
 		if err != nil {
@@ -47,11 +44,13 @@ func getRegisterSideChain(native *native.NativeService, chanid uint64) (*SideCha
 		if err := sideChain.Deserialization(common.NewZeroCopySource(sideChainBytes)); err != nil {
 			return nil, fmt.Errorf("getRegisterSideChain, deserialize sideChain error: %v", err)
 		}
+		return sideChain, nil
+	} else {
+		return nil, nil
 	}
-	return sideChain, nil
 }
 
-func putRegisterSideChain(native *native.NativeService, sideChain *SideChain) error {
+func putSideChainApply(native *native.NativeService, sideChain *SideChain) error {
 	contract := utils.SideChainManagerContractAddress
 	chainidByte := utils.GetUint64Bytes(sideChain.ChainId)
 
@@ -61,7 +60,7 @@ func putRegisterSideChain(native *native.NativeService, sideChain *SideChain) er
 		return fmt.Errorf("putRegisterSideChain, sideChain.Serialization error: %v", err)
 	}
 
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(REGISTER_SIDE_CHAIN_REQUEST), chainidByte),
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(SIDE_CHAIN_APPLY), chainidByte),
 		cstates.GenRawStorageItem(sink.Bytes()))
 	return nil
 }
@@ -75,9 +74,7 @@ func GetSideChain(native *native.NativeService, chainID uint64) (*SideChain, err
 	if err != nil {
 		return nil, fmt.Errorf("getSideChain,get registerSideChainRequestStore error: %v", err)
 	}
-	sideChain := &SideChain{
-		ChainId: math.MaxUint64,
-	}
+	sideChain := new(SideChain)
 	if sideChainStore != nil {
 		sideChainBytes, err := cstates.GetValueFromRawStorageItem(sideChainStore)
 		if err != nil {
@@ -86,8 +83,11 @@ func GetSideChain(native *native.NativeService, chainID uint64) (*SideChain, err
 		if err := sideChain.Deserialization(common.NewZeroCopySource(sideChainBytes)); err != nil {
 			return nil, fmt.Errorf("getSideChain, deserialize sideChain error: %v", err)
 		}
+		return sideChain, nil
+	} else {
+		return nil, nil
 	}
-	return sideChain, nil
+
 }
 
 func putSideChain(native *native.NativeService, sideChain *SideChain) error {

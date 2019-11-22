@@ -20,19 +20,54 @@ package node_manager
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
-	"github.com/ontio/multi-chain/common/serialization"
-	vbftconfig "github.com/ontio/multi-chain/consensus/vbft/config"
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/service/utils"
-	"github.com/ontio/ontology-crypto/vrf"
 )
 
-func GetPeerPoolMap(native *native.NativeService, contract common.Address) (*PeerPoolMap, error) {
+func GetPeeApply(native *native.NativeService, peerPubkey string) (*PeerPoolItem, error) {
+	contract := utils.NodeManagerContractAddress
+	peerPubkeyPrefix, err := hex.DecodeString(peerPubkey)
+	if err != nil {
+		return nil, fmt.Errorf("GetPeeApply, peerPubkey format error: %v", err)
+	}
+	peerBytes, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(PEER_APPLY), peerPubkeyPrefix))
+	if err != nil {
+		return nil, fmt.Errorf("GetPeeApply, get peer error: %v", err)
+	}
+	if peerBytes == nil {
+		return nil, nil
+	}
+	peerStore, err := cstates.GetValueFromRawStorageItem(peerBytes)
+	if err != nil {
+		return nil, fmt.Errorf("GetPeeApply, deserialize from raw storage item err:%v", err)
+	}
+	peer := new(PeerPoolItem)
+	if err := peer.Deserialization(common.NewZeroCopySource(peerStore)); err != nil {
+		return nil, fmt.Errorf("GetPeeApply, deserialize peer error: %v", err)
+	}
+	return peer, nil
+}
+
+func putPeerApply(native *native.NativeService, peer *PeerPoolItem) error {
+	contract := utils.NodeManagerContractAddress
+	peerPubkeyPrefix, err := hex.DecodeString(peer.PeerPubkey)
+	if err != nil {
+		return fmt.Errorf("putPeerApply, peerPubkey format error: %v", err)
+	}
+	sink := common.NewZeroCopySink(nil)
+	peer.Serialization(sink)
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(PEER_APPLY), peerPubkeyPrefix), cstates.GenRawStorageItem(sink.Bytes()))
+	return nil
+}
+
+func GetPeerPoolMap(native *native.NativeService) (*PeerPoolMap, error) {
+	contract := utils.NodeManagerContractAddress
 	peerPoolMap := &PeerPoolMap{
 		PeerPoolMap: make(map[string]*PeerPoolItem),
 	}
@@ -55,53 +90,11 @@ func GetPeerPoolMap(native *native.NativeService, contract common.Address) (*Pee
 	return peerPoolMap, nil
 }
 
-func putPeerPoolMap(native *native.NativeService, contract common.Address, peerPoolMap *PeerPoolMap) error {
+func putPeerPoolMap(native *native.NativeService, peerPoolMap *PeerPoolMap) error {
+	contract := utils.NodeManagerContractAddress
 	sink := common.NewZeroCopySink(nil)
 	peerPoolMap.Serialization(sink)
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(PEER_POOL)), cstates.GenRawStorageItem(sink.Bytes()))
-	return nil
-}
-
-func GetUint32Bytes(num uint32) ([]byte, error) {
-	bf := new(bytes.Buffer)
-	if err := serialization.WriteUint32(bf, num); err != nil {
-		return nil, fmt.Errorf("serialization.WriteUint32, serialize uint32 error: %v", err)
-	}
-	return bf.Bytes(), nil
-}
-
-func GetBytesUint32(b []byte) (uint32, error) {
-	num, err := serialization.ReadUint32(bytes.NewBuffer(b))
-	if err != nil {
-		return 0, fmt.Errorf("serialization.ReadUint32, deserialize uint32 error: %v", err)
-	}
-	return num, nil
-}
-
-func GetUint64Bytes(num uint64) ([]byte, error) {
-	bf := new(bytes.Buffer)
-	if err := serialization.WriteUint64(bf, num); err != nil {
-		return nil, fmt.Errorf("serialization.WriteUint64, serialize uint64 error: %v", err)
-	}
-	return bf.Bytes(), nil
-}
-
-func GetBytesUint64(b []byte) (uint64, error) {
-	num, err := serialization.ReadUint64(bytes.NewBuffer(b))
-	if err != nil {
-		return 0, fmt.Errorf("serialization.ReadUint64, deserialize uint64 error: %v", err)
-	}
-	return num, nil
-}
-
-func validatePeerPubKeyFormat(pubkey string) error {
-	pk, err := vbftconfig.Pubkey(pubkey)
-	if err != nil {
-		return fmt.Errorf("failed to parse pubkey")
-	}
-	if !vrf.ValidatePublicKey(pk) {
-		return fmt.Errorf("invalid for VRF")
-	}
 	return nil
 }
 
@@ -159,7 +152,7 @@ func CheckVBFTConfig(configuration *config.VBFTConfig) error {
 			return fmt.Errorf("initConfig, peer index in config must > 0")
 		}
 		//check peerPubkey
-		if err := validatePeerPubKeyFormat(peer.PeerPubkey); err != nil {
+		if err := utils.ValidatePeerPubKeyFormat(peer.PeerPubkey); err != nil {
 			return fmt.Errorf("invalid peer pubkey")
 		}
 		_, err := common.AddressFromBase58(peer.Address)
@@ -170,7 +163,8 @@ func CheckVBFTConfig(configuration *config.VBFTConfig) error {
 	return nil
 }
 
-func getConfig(native *native.NativeService, contract common.Address) (*Configuration, error) {
+func GetConfig(native *native.NativeService) (*Configuration, error) {
+	contract := utils.NodeManagerContractAddress
 	config := new(Configuration)
 	configBytes, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(VBFT_CONFIG)))
 	if err != nil {
@@ -189,14 +183,16 @@ func getConfig(native *native.NativeService, contract common.Address) (*Configur
 	return config, nil
 }
 
-func putConfig(native *native.NativeService, contract common.Address, config *Configuration) error {
+func putConfig(native *native.NativeService, config *Configuration) error {
+	contract := utils.NodeManagerContractAddress
 	sink := common.NewZeroCopySink(nil)
 	config.Serialization(sink)
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(VBFT_CONFIG)), cstates.GenRawStorageItem(sink.Bytes()))
 	return nil
 }
 
-func getCandidateIndex(native *native.NativeService, contract common.Address) (uint32, error) {
+func getCandidateIndex(native *native.NativeService) (uint32, error) {
+	contract := utils.NodeManagerContractAddress
 	candidateIndexBytes, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(CANDIDITE_INDEX)))
 	if err != nil {
 		return 0, fmt.Errorf("native.CacheDB.Get, get candidateIndex error: %v", err)
@@ -208,19 +204,14 @@ func getCandidateIndex(native *native.NativeService, contract common.Address) (u
 		if err != nil {
 			return 0, fmt.Errorf("getCandidateIndex, deserialize from raw storage item err:%v", err)
 		}
-		candidateIndex, err := GetBytesUint32(candidateIndexStore)
-		if err != nil {
-			return 0, fmt.Errorf("GetBytesUint32, get candidateIndex error: %v", err)
-		}
+		candidateIndex := utils.GetBytesUint32(candidateIndexStore)
 		return candidateIndex, nil
 	}
 }
 
-func putCandidateIndex(native *native.NativeService, contract common.Address, candidateIndex uint32) error {
-	candidateIndexBytes, err := GetUint32Bytes(candidateIndex)
-	if err != nil {
-		return fmt.Errorf("GetUint32Bytes, get candidateIndexBytes error: %v", err)
-	}
+func putCandidateIndex(native *native.NativeService, candidateIndex uint32) error {
+	contract := utils.NodeManagerContractAddress
+	candidateIndexBytes := utils.GetUint32Bytes(candidateIndex)
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(CANDIDITE_INDEX)), cstates.GenRawStorageItem(candidateIndexBytes))
 	return nil
 }

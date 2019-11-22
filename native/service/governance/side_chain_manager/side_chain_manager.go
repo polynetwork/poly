@@ -38,9 +38,9 @@ const (
 	REMOVE_SIDE_CHAIN           = "removeSideChain"
 
 	//key prefix
-	REGISTER_SIDE_CHAIN_REQUEST = "registerSideChainRequest"
-	UPDATE_SIDE_CHAIN_REQUEST   = "updateSideChainRequest"
-	SIDE_CHAIN                  = "sideChain"
+	SIDE_CHAIN_APPLY          = "sideChainApply"
+	UPDATE_SIDE_CHAIN_REQUEST = "updateSideChainRequest"
+	SIDE_CHAIN                = "sideChain"
 )
 
 //Register methods of node_manager contract
@@ -57,18 +57,18 @@ func RegisterSideChain(native *native.NativeService) ([]byte, error) {
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, contract params deserialize error: %v", err)
 	}
-	registerSideChain, err := getRegisterSideChain(native, params.ChainId)
+	registerSideChain, err := getSideChainApply(native, params.ChainId)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, getRegisterSideChain error: %v", err)
 	}
-	if registerSideChain.ChainId != math.MaxUint64 {
+	if registerSideChain != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, chainid already requested")
 	}
 	sideChain, err := GetSideChain(native, params.ChainId)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, getSideChain error: %v", err)
 	}
-	if sideChain.ChainId != math.MaxUint64 {
+	if sideChain != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, chainid already registered")
 	}
 	sideChain = &SideChain{
@@ -77,7 +77,7 @@ func RegisterSideChain(native *native.NativeService) ([]byte, error) {
 		Name:         params.Name,
 		BlocksToWait: params.BlocksToWait,
 	}
-	err = putRegisterSideChain(native, sideChain)
+	err = putSideChainApply(native, sideChain)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, putRegisterSideChain error: %v", err)
 	}
@@ -103,18 +103,18 @@ func ApproveRegisterSideChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, checkWitness error: %v", err)
 	}
 
-	registerSideChain, err := getRegisterSideChain(native, params.Chainid)
+	registerSideChain, err := getSideChainApply(native, params.Chainid)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, getRegisterSideChain error: %v", err)
 	}
-	if registerSideChain.ChainId == math.MaxUint64 {
+	if registerSideChain != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, chainid is not requested")
 	}
 	err = putSideChain(native, registerSideChain)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, putSideChain error: %v", err)
 	}
-	native.GetCacheDB().Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(REGISTER_SIDE_CHAIN_REQUEST), utils.GetUint64Bytes(params.Chainid)))
+	native.GetCacheDB().Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(SIDE_CHAIN_APPLY), utils.GetUint64Bytes(params.Chainid)))
 
 	return utils.BYTE_TRUE, nil
 }
@@ -128,8 +128,8 @@ func UpdateSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, getSideChain error: %v", err)
 	}
-	if sideChain.ChainId == math.MaxUint64 {
-		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, chainid is not registered")
+	if sideChain == nil {
+		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, side chain is not registered")
 	}
 	updateSideChain := &SideChain{
 		ChainId:      params.ChainId,
@@ -202,8 +202,8 @@ func RemoveSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, getUpdateSideChain error: %v", err)
 	}
-	if sideChain.ChainId == math.MaxUint64 {
-		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, chainid is not registered")
+	if sideChain == nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, side chain is not registered")
 	}
 	chainidByte := utils.GetUint64Bytes(params.Chainid)
 	native.GetCacheDB().Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(SIDE_CHAIN), chainidByte))

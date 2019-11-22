@@ -165,13 +165,11 @@ func GetPeersConfig(memdb *overlaydb.MemDB) ([]*config.VBFTPeerStakeInfo, error)
 	}
 	var peerstakes []*config.VBFTPeerStakeInfo
 	for _, id := range peerMap.PeerPoolMap {
-		if id.Status == gov.ConsensusStatus {
-			config := &config.VBFTPeerStakeInfo{
-				Index:      uint32(id.Index),
-				PeerPubkey: id.PeerPubkey,
-			}
-			peerstakes = append(peerstakes, config)
+		config := &config.VBFTPeerStakeInfo{
+			Index:      uint32(id.Index),
+			PeerPubkey: id.PeerPubkey,
 		}
+		peerstakes = append(peerstakes, config)
 	}
 	return peerstakes, nil
 }
