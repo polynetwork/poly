@@ -161,9 +161,6 @@ func (self *Ledger) GetStorageItem(codeHash common.Address, key []byte) ([]byte,
 	if err != nil {
 		return nil, err
 	}
-	if storageItem == nil {
-		return nil, nil
-	}
 	return storageItem.Value, nil
 }
 

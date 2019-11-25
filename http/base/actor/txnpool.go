@@ -24,6 +24,7 @@ import (
 	"github.com/ontio/multi-chain/core/genesis"
 	"time"
 
+	scommon "github.com/ontio/multi-chain/core/store/common"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/core/types"
@@ -61,7 +62,9 @@ func AppendTxToPool(txn *types.Transaction) (ontErrors.ErrCode, string) {
 		key := append([]byte(relayer_manager.RELAYER), address[:]...)
 		value, err := GetStorageItem(utils.RelayerManagerContractAddress, key)
 		if err != nil {
-			return ontErrors.ErrUnknown, err.Error()
+			if err != scommon.ErrNotFound {
+				return ontErrors.ErrUnknown, err.Error()
+			}
 		}
 		if value != nil || address == operatorAddress {
 			flag = false
