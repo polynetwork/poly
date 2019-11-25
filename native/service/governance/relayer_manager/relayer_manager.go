@@ -20,7 +20,6 @@ package relayer_manager
 
 import (
 	"bytes"
-	"encoding/hex"
 	"fmt"
 
 	"github.com/ontio/multi-chain/common"
@@ -59,7 +58,7 @@ func RegisterRelayerManagerContract(native *native.NativeService) {
 
 //Register a candidate node, used by users.
 func RegisterRelayer(native *native.NativeService) ([]byte, error) {
-	params := new(RegisterRelayerParam)
+	params := new(RelayerParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, contract params deserialize error: %v", err)
 	}
@@ -74,25 +73,21 @@ func RegisterRelayer(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, checkWitness error: %v", err)
 	}
 
-	//check peerPubkey
-	if err := utils.ValidatePeerPubKeyFormat(params.Pubkey); err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, invalid pubkey")
-	}
-	relayerApply, err := GetRelayerApply(native, params.Pubkey)
+	relayerApply, err := GetRelayerApply(native, params.Address)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, get relayer error: %v", err)
 	}
 	if relayerApply != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, relayer already applied")
 	}
-	relayer, err := GetRelayer(native, params.Pubkey)
+	relayer, err := GetRelayer(native, params.Address)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, get relayer error: %v", err)
 	}
 	if relayer != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, relayer already registered")
 	}
-	blacked, err := checkIfBlacked(native, params.Pubkey)
+	blacked, err := checkIfBlacked(native, params.Address)
 	if blacked {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, relayer is blacked")
 	}
@@ -106,7 +101,7 @@ func RegisterRelayer(native *native.NativeService) ([]byte, error) {
 }
 
 func UnRegisterRelayer(native *native.NativeService) ([]byte, error) {
-	params := new(RegisterRelayerParam)
+	params := new(RelayerParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("UnRegisterRelayer, contract params deserialize error: %v", err)
 	}
@@ -123,7 +118,7 @@ func UnRegisterRelayer(native *native.NativeService) ([]byte, error) {
 	}
 
 	//get relayer apply
-	relayer, err := GetRelayerApply(native, params.Pubkey)
+	relayer, err := GetRelayerApply(native, params.Address)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("UnRegisterRelayer, get relayer error: %v", err)
 	}
@@ -134,11 +129,7 @@ func UnRegisterRelayer(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("UnRegisterRelayer, address is not relayer owner")
 	}
 
-	pubkeyPrefix, err := hex.DecodeString(relayer.Pubkey)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("UnRegisterRelayer, peerPubkey format error: %v", err)
-	}
-	native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(RELAYER_APPLY), pubkeyPrefix))
+	native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(RELAYER_APPLY), params.Address))
 
 	return utils.BYTE_TRUE, nil
 }
@@ -161,7 +152,7 @@ func ApproveRelayer(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRelayer, checkWitness error: %v", err)
 	}
 
-	err = approveRelayer(native, params.Pubkey)
+	err = approveRelayer(native, params.Address)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRelayer, approveRelayer error: %v", err)
 	}
@@ -189,7 +180,7 @@ func RejectRelayer(native *native.NativeService) ([]byte, error) {
 	contract := utils.RelayerManagerContractAddress
 
 	//get relayer apply
-	relayerRaw, err := GetRelayerApplyRaw(native, params.Pubkey)
+	relayerRaw, err := GetRelayerApplyRaw(native, params.Address)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RejectRelayer, get relayerRaw error: %v", err)
 	}
@@ -197,11 +188,7 @@ func RejectRelayer(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("RejectRelayer, relayer is not applied")
 	}
 
-	pubkeyPrefix, err := hex.DecodeString(params.Pubkey)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RejectRelayer, peerPubkey format error: %v", err)
-	}
-	native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(RELAYER_APPLY), pubkeyPrefix))
+	native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(RELAYER_APPLY), params.Address))
 
 	return utils.BYTE_TRUE, nil
 }
@@ -225,9 +212,9 @@ func BlackRelayer(native *native.NativeService) ([]byte, error) {
 	}
 	contract := utils.RelayerManagerContractAddress
 
-	for _, pubkey := range params.PubkeyList {
+	for _, address := range params.AddressList {
 		//get relayer
-		relayerRaw, err := GetRelayerRaw(native, pubkey)
+		relayerRaw, err := GetRelayerRaw(native, address)
 		if err != nil {
 			return utils.BYTE_FALSE, fmt.Errorf("BlackRelayer, get relayer error: %v", err)
 		}
@@ -235,14 +222,10 @@ func BlackRelayer(native *native.NativeService) ([]byte, error) {
 			return utils.BYTE_FALSE, fmt.Errorf("BlackRelayer, relayer is not registered")
 		}
 
-		pubkeyPrefix, err := hex.DecodeString(pubkey)
-		if err != nil {
-			return utils.BYTE_FALSE, fmt.Errorf("BlackRelayer, pubkey format error: %v", err)
-		}
 		//put peer into black list
-		native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(RELAYER_BLACK), pubkeyPrefix), relayerRaw)
+		native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(RELAYER_BLACK), address), relayerRaw)
 
-		native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(RELAYER), pubkeyPrefix))
+		native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(RELAYER), address))
 	}
 
 	return utils.BYTE_TRUE, nil
@@ -267,24 +250,22 @@ func WhiteRelayer(native *native.NativeService) ([]byte, error) {
 	}
 	contract := utils.RelayerManagerContractAddress
 
-	for _, pubkey := range params.PubkeyList {
-		pubkeyPrefix, err := hex.DecodeString(pubkey)
+	for _, address := range params.AddressList {
+		blacked, err := checkIfBlacked(native, address)
 		if err != nil {
-			return utils.BYTE_FALSE, fmt.Errorf("whiteNode, pubkey format error: %v", err)
+			return utils.BYTE_FALSE, fmt.Errorf("whiteNode, checkIfBlacked error: %v", err)
 		}
-
-		blacked, err := checkIfBlacked(native, pubkey)
 		if !blacked {
 			return utils.BYTE_FALSE, fmt.Errorf("whiteNode, relayer is not blacked")
 		}
-		native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(RELAYER_BLACK), pubkeyPrefix))
+		native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(RELAYER_BLACK), address))
 	}
 
 	return utils.BYTE_TRUE, nil
 }
 
 func QuitRelayer(native *native.NativeService) ([]byte, error) {
-	params := new(RegisterRelayerParam)
+	params := new(RelayerParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("QuitRelayer, contract params deserialize error: %v", err)
 	}
@@ -301,7 +282,7 @@ func QuitRelayer(native *native.NativeService) ([]byte, error) {
 	}
 
 	//get relayer
-	relayer, err := GetRelayer(native, params.Pubkey)
+	relayer, err := GetRelayer(native, params.Address)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("QuitRelayer, get relayer error: %v", err)
 	}
@@ -312,11 +293,7 @@ func QuitRelayer(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("QuitRelayer, address is not relayer owner")
 	}
 
-	pubkeyPrefix, err := hex.DecodeString(params.Pubkey)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("whiteNode, pubkey format error: %v", err)
-	}
-	native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(RELAYER), pubkeyPrefix))
+	native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(RELAYER), params.Address))
 
 	return utils.BYTE_TRUE, nil
 }

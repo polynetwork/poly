@@ -21,19 +21,24 @@ package genesis
 import (
 	"bytes"
 	"fmt"
+	"github.com/ontio/multi-chain/native/service/utils"
 	"time"
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/common/constants"
-	"github.com/ontio/multi-chain/consensus/vbft/config"
+	vconfig "github.com/ontio/multi-chain/consensus/vbft/config"
+	"github.com/ontio/multi-chain/core/payload"
 	"github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/multi-chain/native/states"
 	"github.com/ontio/ontology-crypto/keypair"
 )
 
 const (
 	BlockVersion uint32 = 0
 	GenesisNonce uint64 = 2083236893
+
+	INIT_CONFIG = "initConfig"
 )
 
 var GenBlockTime = (config.DEFAULT_GEN_BLOCK_TIME * time.Second)
@@ -56,6 +61,7 @@ func BuildGenesisBlock(defaultBookkeeper []keypair.PublicKey, genesisConfig *con
 	if genesisConfig.VBFT != nil {
 		genesisConfig.VBFT.Serialize(conf)
 	}
+	nodeManagerConfig := newNodeManagerInit(conf.Bytes())
 	consensusPayload, err := vconfig.GenesisConsensusPayload(0)
 	if err != nil {
 		return nil, fmt.Errorf("consensus genesis init failed: %s", err)
@@ -84,9 +90,42 @@ func BuildGenesisBlock(defaultBookkeeper []keypair.PublicKey, genesisConfig *con
 	}
 
 	genesisBlock := &types.Block{
-		Header:       genesisHeader,
-		Transactions: []*types.Transaction{},
+		Header: genesisHeader,
+		Transactions: []*types.Transaction{
+			nodeManagerConfig,
+		},
 	}
 	genesisBlock.RebuildMerkleRoot()
 	return genesisBlock, nil
+}
+
+func newNodeManagerInit(config []byte) *types.Transaction {
+	tx, err := NewInitNodeManagerTransaction(config)
+	if err != nil {
+		panic("construct genesis node manager transaction error ")
+	}
+	return tx
+}
+
+//NewInvokeTransaction return smart contract invoke transaction
+func NewInvokeTransaction(invokeCode []byte) *types.Transaction {
+	invokePayload := &payload.InvokeCode{
+		Code: invokeCode,
+	}
+	tx := &types.Transaction{
+		TxType:  types.Invoke,
+		Payload: invokePayload,
+	}
+	return tx
+}
+
+func NewInitNodeManagerTransaction(
+	paramBytes []byte,
+) (*types.Transaction, error) {
+	contractInvokeParam := &states.ContractInvokeParam{Address: utils.NodeManagerContractAddress,
+		Method: INIT_CONFIG, Args: paramBytes}
+	invokeCode := new(common.ZeroCopySink)
+	contractInvokeParam.Serialization(invokeCode)
+
+	return NewInvokeTransaction(invokeCode.Bytes()), nil
 }

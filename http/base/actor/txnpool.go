@@ -44,6 +44,26 @@ func SetTxnPoolPid(actr *actor.PID) {
 
 //append transaction to pool to txpool actor
 func AppendTxToPool(txn *types.Transaction) (ontErrors.ErrCode, string) {
+	////check if registered relayer
+	//flag := true
+	//addresses, err := txn.GetSignatureAddresses()
+	//if err != nil {
+	//	return ontErrors.ErrUnknown, err.Error()
+	//}
+	//for _, address := range addresses {
+	//	key := append([]byte(relayer_manager.RELAYER_APPLY), address[:]...)
+	//	value, err := GetStorageItem(utils.RelayerManagerContractAddress, key)
+	//	if err != nil {
+	//		return ontErrors.ErrUnknown, err.Error()
+	//	}
+	//	if value != nil {
+	//		flag = false
+	//	}
+	//}
+	//if flag {
+	//	return ontErrors.ErrUnknown, "relayer is not registered"
+	//}
+
 	if DisableSyncVerifyTx {
 		txReq := &tcomn.TxReq{txn, tcomn.HttpSender, nil}
 		txnPid.Tell(txReq)

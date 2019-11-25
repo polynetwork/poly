@@ -43,8 +43,8 @@ type StoreIterator interface {
 //PersistStore of ledger
 type PersistStore interface {
 	Put(key []byte, value []byte) error      //Put the key-value pair to store
-	Get(key []byte) ([]byte, error)          //Get the value if key in store
 	Has(key []byte) (bool, error)            //Whether the key is exist in store
+	Get(key []byte) ([]byte, error)          //Get the value if key in store
 	Delete(key []byte) error                 //Delete the key in store
 	NewBatch()                               //Start commit batch
 	BatchPut(key []byte, value []byte)       //Put a key-value pair to batch

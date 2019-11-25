@@ -23,56 +23,31 @@ import (
 	"github.com/ontio/multi-chain/common"
 )
 
-type RegisterRelayerParam struct {
-	Pubkey  string
+type RelayerParam struct {
 	Address []byte
 }
 
-func (this *RegisterRelayerParam) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteString(this.Pubkey)
+func (this *RelayerParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteVarBytes(this.Address)
 }
 
-func (this *RegisterRelayerParam) Deserialization(source *common.ZeroCopySource) error {
-	pubkey, eof := source.NextString()
-	if eof {
-		return fmt.Errorf("source.NextString, deserialize pubkey error")
-	}
+func (this *RelayerParam) Deserialization(source *common.ZeroCopySource) error {
 	address, eof := source.NextVarBytes()
 	if eof {
 		return fmt.Errorf("source.NextVarBytes, deserialize address error")
 	}
-
-	this.Pubkey = pubkey
 	this.Address = address
 	return nil
 }
 
-type RelayerParam struct {
-	Pubkey string
-}
-
-func (this *RelayerParam) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteString(this.Pubkey)
-}
-
-func (this *RelayerParam) Deserialization(source *common.ZeroCopySource) error {
-	pubkey, eof := source.NextString()
-	if eof {
-		return fmt.Errorf("source.NextString, deserialize pubkey error")
-	}
-	this.Pubkey = pubkey
-	return nil
-}
-
 type RelayerListParam struct {
-	PubkeyList []string
+	AddressList [][]byte
 }
 
 func (this *RelayerListParam) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteVarUint(uint64(len(this.PubkeyList)))
-	for _, v := range this.PubkeyList {
-		sink.WriteString(v)
+	sink.WriteVarUint(uint64(len(this.AddressList)))
+	for _, v := range this.AddressList {
+		sink.WriteVarBytes(v)
 	}
 }
 
@@ -81,14 +56,14 @@ func (this *RelayerListParam) Deserialization(source *common.ZeroCopySource) err
 	if eof {
 		return fmt.Errorf("source.NextVarUint, deserialize PeerPubkeyList length error")
 	}
-	pubkeyList := make([]string, 0)
+	addressList := make([][]byte, 0)
 	for i := 0; uint64(i) < n; i++ {
-		k, eof := source.NextString()
+		k, eof := source.NextVarBytes()
 		if eof {
-			return fmt.Errorf("source.NextString, deserialize pubkeyList error")
+			return fmt.Errorf("source.NextVarBytes, deserialize pubkeyList error")
 		}
-		pubkeyList = append(pubkeyList, k)
+		addressList = append(addressList, k)
 	}
-	this.PubkeyList = pubkeyList
+	this.AddressList = addressList
 	return nil
 }

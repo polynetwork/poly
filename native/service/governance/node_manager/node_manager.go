@@ -22,10 +22,8 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
-	"github.com/ontio/multi-chain/common/serialization"
 	"github.com/ontio/multi-chain/core/genesis"
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/core/types"
@@ -35,7 +33,6 @@ import (
 
 const (
 	//function name
-	INIT_CONFIG          = "initConfig"
 	REGISTER_CANDIDATE   = "registerCandidate"
 	UNREGISTER_CANDIDATE = "unRegisterCandidate"
 	APPROVE_CANDIDATE    = "approveCandidate"
@@ -56,7 +53,7 @@ const (
 
 //Register methods of node_manager contract
 func RegisterNodeManagerContract(native *native.NativeService) {
-	native.Register(INIT_CONFIG, InitConfig)
+	native.Register(genesis.INIT_CONFIG, InitConfig)
 	native.Register(REGISTER_CANDIDATE, RegisterCandidate)
 	native.Register(UNREGISTER_CANDIDATE, UnRegisterCandidate)
 	native.Register(QUIT_NODE, QuitNode)
@@ -70,11 +67,7 @@ func RegisterNodeManagerContract(native *native.NativeService) {
 //Init node_manager contract
 func InitConfig(native *native.NativeService) ([]byte, error) {
 	configuration := new(config.VBFTConfig)
-	buf, err := serialization.ReadVarBytes(bytes.NewBuffer(native.GetInput()))
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("initConfig, contract params deserialize error: %v", err)
-	}
-	if err := configuration.Deserialize(bytes.NewBuffer(buf)); err != nil {
+	if err := configuration.Deserialize(bytes.NewBuffer(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("initConfig, contract params deserialize error: %v", err)
 	}
 	contract := utils.NodeManagerContractAddress
