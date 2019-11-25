@@ -58,7 +58,7 @@ func AppendTxToPool(txn *types.Transaction) (ontErrors.ErrCode, string) {
 		return ontErrors.ErrUnknown, err.Error()
 	}
 	for _, address := range addresses {
-		key := append([]byte(relayer_manager.RELAYER_APPLY), address[:]...)
+		key := append([]byte(relayer_manager.RELAYER), address[:]...)
 		value, err := GetStorageItem(utils.RelayerManagerContractAddress, key)
 		if err != nil {
 			return ontErrors.ErrUnknown, err.Error()
