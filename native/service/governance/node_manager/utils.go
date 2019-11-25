@@ -99,21 +99,6 @@ func putPeerPoolMap(native *native.NativeService, peerPoolMap *PeerPoolMap) erro
 }
 
 func CheckVBFTConfig(configuration *config.VBFTConfig) error {
-	if configuration.C == 0 {
-		return fmt.Errorf("initConfig. C can not be 0 in config")
-	}
-	if int(configuration.K) != len(configuration.Peers) {
-		return fmt.Errorf("initConfig. K must equal to length of peer in config")
-	}
-	if configuration.L < 16*configuration.K || configuration.L%configuration.K != 0 {
-		return fmt.Errorf("initConfig. L can not be less than 16*K and K must be times of L in config")
-	}
-	if configuration.K < 2*configuration.C+1 {
-		return fmt.Errorf("initConfig. K can not be less than 2*C+1 in config")
-	}
-	if configuration.N < configuration.K || configuration.K < 7 {
-		return fmt.Errorf("initConfig. config not match N >= K >= 7")
-	}
 	if configuration.BlockMsgDelay < 5000 {
 		return fmt.Errorf("initConfig. BlockMsgDelay must >= 5000")
 	}
@@ -122,9 +107,6 @@ func CheckVBFTConfig(configuration *config.VBFTConfig) error {
 	}
 	if configuration.PeerHandshakeTimeout < 10 {
 		return fmt.Errorf("initConfig. PeerHandshakeTimeout must >= 10")
-	}
-	if configuration.MinInitStake < 10000 {
-		return fmt.Errorf("initConfig. MinInitStake must >= 10000")
 	}
 	if len(configuration.VrfProof) < 128 {
 		return fmt.Errorf("initConfig. VrfProof must >= 128")

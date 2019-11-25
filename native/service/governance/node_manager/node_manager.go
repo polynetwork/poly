@@ -126,14 +126,9 @@ func InitConfig(native *native.NativeService) ([]byte, error) {
 
 	//init config
 	config := &Configuration{
-		N:                    configuration.N,
-		C:                    configuration.C,
-		K:                    configuration.K,
-		L:                    configuration.L,
 		BlockMsgDelay:        configuration.BlockMsgDelay,
 		HashMsgDelay:         configuration.HashMsgDelay,
 		PeerHandshakeTimeout: configuration.PeerHandshakeTimeout,
-		MaxBlockChangeView:   configuration.MaxBlockChangeView,
 	}
 	err = putConfig(native, config)
 	if err != nil {
@@ -524,18 +519,6 @@ func UpdateConfig(native *native.NativeService) ([]byte, error) {
 	}
 
 	//check the configuration
-	if configuration.C == 0 {
-		return utils.BYTE_FALSE, fmt.Errorf("updateConfig. C can not be 0 in config")
-	}
-	if configuration.L < 16*configuration.K || configuration.L%configuration.K != 0 {
-		return utils.BYTE_FALSE, fmt.Errorf("updateConfig. L can not be less than 16*K and K must be times of L in config")
-	}
-	if configuration.K < 2*configuration.C+1 {
-		return utils.BYTE_FALSE, fmt.Errorf("updateConfig. K can not be less than 2*C+1 in config")
-	}
-	if configuration.N < configuration.K || configuration.K < 7 {
-		return utils.BYTE_FALSE, fmt.Errorf("updateConfig. config not match N >= K >= 7")
-	}
 	if configuration.BlockMsgDelay < 5000 {
 		return utils.BYTE_FALSE, fmt.Errorf("updateConfig. BlockMsgDelay must >= 5000")
 	}

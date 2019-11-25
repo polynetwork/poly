@@ -120,16 +120,9 @@ var PolarisConfig = &GenesisConfig{
 		"polaris4.ont.io:20338"},
 	ConsensusType: CONSENSUS_TYPE_VBFT,
 	VBFT: &VBFTConfig{
-		N:                    7,
-		C:                    2,
-		K:                    7,
-		L:                    112,
 		BlockMsgDelay:        10000,
 		HashMsgDelay:         10000,
 		PeerHandshakeTimeout: 10,
-		MaxBlockChangeView:   3000,
-		AdminOntID:           "did:ont:AMAx993nE6NEqZjwBssUfopxnnvTdob9ij",
-		MinInitStake:         10000,
 		VrfValue:             "1c9810aa9822e511d5804a9c4db9dd08497c31087b0daafa34d768a3253441fa20515e2f30f81741102af0ca3cefc4818fef16adb825fbaa8cad78647f3afb590e",
 		VrfProof:             "c57741f934042cb8d8b087b44b161db56fc3ffd4ffb675d36cd09f83935be853d8729f3f5298d12d6fd28d45dde515a4b9d7f67682d182ba5118abf451ff1988",
 		Peers: []*VBFTPeerStakeInfo{
@@ -183,16 +176,9 @@ var MainNetConfig = &GenesisConfig{
 		"seed5.ont.io:20338"},
 	ConsensusType: CONSENSUS_TYPE_VBFT,
 	VBFT: &VBFTConfig{
-		N:                    7,
-		C:                    2,
-		K:                    7,
-		L:                    112,
 		BlockMsgDelay:        10000,
 		HashMsgDelay:         10000,
 		PeerHandshakeTimeout: 10,
-		MaxBlockChangeView:   120000,
-		AdminOntID:           "did:ont:AdjfcJgwru2FD8kotCPvLDXYzRjqFjc9Tb",
-		MinInitStake:         100000,
 		VrfValue:             "1c9810aa9822e511d5804a9c4db9dd08497c31087b0daafa34d768a3253441fa20515e2f30f81741102af0ca3cefc4818fef16adb825fbaa8cad78647f3afb590e",
 		VrfProof:             "c57741f934042cb8d8b087b44b161db56fc3ffd4ffb675d36cd09f83935be853d8729f3f5298d12d6fd28d45dde515a4b9d7f67682d182ba5118abf451ff1988",
 		Peers: []*VBFTPeerStakeInfo{
@@ -261,34 +247,15 @@ func NewGenesisConfig() *GenesisConfig {
 // VBFT genesis config, from local config file
 //
 type VBFTConfig struct {
-	N                    uint32               `json:"n"` // network size
-	C                    uint32               `json:"c"` // consensus quorum
-	K                    uint32               `json:"k"`
-	L                    uint32               `json:"l"`
 	BlockMsgDelay        uint32               `json:"block_msg_delay"`
 	HashMsgDelay         uint32               `json:"hash_msg_delay"`
 	PeerHandshakeTimeout uint32               `json:"peer_handshake_timeout"`
-	MaxBlockChangeView   uint32               `json:"max_block_change_view"`
-	MinInitStake         uint32               `json:"min_init_stake"`
-	AdminOntID           string               `json:"admin_ont_id"`
 	VrfValue             string               `json:"vrf_value"`
 	VrfProof             string               `json:"vrf_proof"`
 	Peers                []*VBFTPeerStakeInfo `json:"peers"`
 }
 
 func (this *VBFTConfig) Serialize(w io.Writer) error {
-	if err := serialization.WriteUint32(w, this.N); err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.WriteUint32, serialize n error!")
-	}
-	if err := serialization.WriteUint32(w, this.C); err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.WriteUint32, serialize c error!")
-	}
-	if err := serialization.WriteUint32(w, this.K); err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.WriteUint32, serialize k error!")
-	}
-	if err := serialization.WriteUint32(w, this.L); err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.WriteUint32, serialize l error!")
-	}
 	if err := serialization.WriteUint32(w, this.BlockMsgDelay); err != nil {
 		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.WriteUint32, serialize block_msg_delay error!")
 	}
@@ -297,15 +264,6 @@ func (this *VBFTConfig) Serialize(w io.Writer) error {
 	}
 	if err := serialization.WriteUint32(w, this.PeerHandshakeTimeout); err != nil {
 		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.WriteUint32, serialize peer_handshake_timeout error!")
-	}
-	if err := serialization.WriteUint32(w, this.MaxBlockChangeView); err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.WriteUint32, serialize max_block_change_view error!")
-	}
-	if err := serialization.WriteUint32(w, this.MinInitStake); err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.WriteUint32, serialize min_init_stake error!")
-	}
-	if err := serialization.WriteString(w, this.AdminOntID); err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.WriteString, serialize admin_ont_id error!")
 	}
 	if err := serialization.WriteString(w, this.VrfValue); err != nil {
 		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.WriteString, serialize vrf_value error!")
@@ -325,22 +283,6 @@ func (this *VBFTConfig) Serialize(w io.Writer) error {
 }
 
 func (this *VBFTConfig) Deserialize(r io.Reader) error {
-	n, err := serialization.ReadUint32(r)
-	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.ReadUint32, deserialize n error!")
-	}
-	c, err := serialization.ReadUint32(r)
-	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.ReadUint32, deserialize c error!")
-	}
-	k, err := serialization.ReadUint32(r)
-	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.ReadUint32, deserialize k error!")
-	}
-	l, err := serialization.ReadUint32(r)
-	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.ReadUint32, deserialize l error!")
-	}
 	blockMsgDelay, err := serialization.ReadUint32(r)
 	if err != nil {
 		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.ReadUint32, deserialize blockMsgDelay error!")
@@ -352,18 +294,6 @@ func (this *VBFTConfig) Deserialize(r io.Reader) error {
 	peerHandshakeTimeout, err := serialization.ReadUint32(r)
 	if err != nil {
 		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.ReadUint32, deserialize peerHandshakeTimeout error!")
-	}
-	maxBlockChangeView, err := serialization.ReadUint32(r)
-	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.ReadUint32, deserialize maxBlockChangeView error!")
-	}
-	minInitStake, err := serialization.ReadUint32(r)
-	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.ReadUint32, deserialize minInitStake error!")
-	}
-	adminOntID, err := serialization.ReadString(r)
-	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.ReadString, deserialize adminOntID error!")
 	}
 	vrfValue, err := serialization.ReadString(r)
 	if err != nil {
@@ -386,16 +316,10 @@ func (this *VBFTConfig) Deserialize(r io.Reader) error {
 		}
 		peers = append(peers, peer)
 	}
-	this.N = n
-	this.C = c
-	this.K = k
-	this.L = l
+
 	this.BlockMsgDelay = blockMsgDelay
 	this.HashMsgDelay = hashMsgDelay
 	this.PeerHandshakeTimeout = peerHandshakeTimeout
-	this.MaxBlockChangeView = maxBlockChangeView
-	this.MinInitStake = minInitStake
-	this.AdminOntID = adminOntID
 	this.VrfValue = vrfValue
 	this.VrfProof = vrfProof
 	this.Peers = peers

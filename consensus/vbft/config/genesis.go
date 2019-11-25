@@ -61,18 +61,6 @@ func deepCopy(peersInfo []*config.VBFTPeerStakeInfo) ([]*config.VBFTPeerStakeInf
 }
 
 func genConsensusPayload(cfg *config.VBFTConfig, height uint32) ([]byte, error) {
-	if cfg.C == 0 {
-		return nil, fmt.Errorf("C must larger than zero")
-	}
-	if int(cfg.K) > len(cfg.Peers) {
-		return nil, fmt.Errorf("peer count is less than K")
-	}
-	if cfg.K < 2*cfg.C+1 {
-		return nil, fmt.Errorf("invalid config, K: %d, C: %d", cfg.K, cfg.C)
-	}
-	if cfg.L%cfg.K != 0 || cfg.L < cfg.K*2 {
-		return nil, fmt.Errorf("invalid config, K: %d, L: %d", cfg.K, cfg.L)
-	}
 	// deep copy to avoid modify global config
 	peers, err := deepCopy(cfg.Peers)
 	if err != nil {
@@ -165,7 +153,6 @@ func GenesisChainConfig(conf *config.VBFTConfig, peers []*config.VBFTPeerStakeIn
 		PeerHandshakeTimeout: time.Duration(conf.PeerHandshakeTimeout) * time.Second,
 		Peers:                peerCfgs,
 		PosTable:             posTable,
-		MaxBlockChangeView:   conf.MaxBlockChangeView,
 	}
 	return chainConfig, nil
 }

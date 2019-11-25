@@ -138,14 +138,9 @@ func GetVbftConfigInfo(memdb *overlaydb.MemDB) (*config.VBFTConfig, error) {
 		return nil, err
 	}
 	chainconfig := &config.VBFTConfig{
-		N:                    uint32(cfg.N),
-		C:                    uint32(cfg.C),
-		K:                    uint32(cfg.K),
-		L:                    uint32(cfg.L),
 		BlockMsgDelay:        uint32(cfg.BlockMsgDelay),
 		HashMsgDelay:         uint32(cfg.HashMsgDelay),
 		PeerHandshakeTimeout: uint32(cfg.PeerHandshakeTimeout),
-		MaxBlockChangeView:   uint32(cfg.MaxBlockChangeView),
 	}
 
 	return chainconfig, nil

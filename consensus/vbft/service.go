@@ -286,8 +286,8 @@ func (self *Server) LoadChainConfig(chainStore *ChainStore) error {
 	self.metaLock.RLock()
 	defer self.metaLock.RUnlock()
 
-	if self.config.View == 0 || self.config.MaxBlockChangeView == 0 {
-		panic("invalid view or maxblockchangeview ")
+	if self.config.View == 0 {
+		panic("invalid view")
 	}
 	// update msg delays
 	makeProposalTimeout = time.Duration(self.config.BlockMsgDelay * 2)
@@ -1077,8 +1077,8 @@ func (self *Server) processProposalMsg(msg *blockProposalMsg) {
 	if blk.getNewChainConfig() != nil {
 		cfg = *blk.getNewChainConfig()
 		if cfg.Hash() != self.config.Hash() {
-			log.Errorf("processProposalMsg chainconfig unqeual to blockinfo cfg,view:(%d,%d),N:(%d,%d),C:(%d,%d),BlockMsgDelay:(%d,%d),HashMsgDelay:(%d,%d),PeerHandshakeTimeout:(%d,%d),posTable:(%v,%v),MaxBlockChangeView:(%d,%d)", cfg.View, self.config.View, cfg.N, self.config.N, cfg.C,
-				self.config.C, cfg.BlockMsgDelay, self.config.BlockMsgDelay, cfg.HashMsgDelay, self.config.HashMsgDelay, cfg.PeerHandshakeTimeout, self.config.PeerHandshakeTimeout, cfg.PosTable, self.config.PosTable, cfg.MaxBlockChangeView, self.config.MaxBlockChangeView)
+			log.Errorf("processProposalMsg chainconfig unqeual to blockinfo cfg,view:(%d,%d),N:(%d,%d),C:(%d,%d),BlockMsgDelay:(%d,%d),HashMsgDelay:(%d,%d),PeerHandshakeTimeout:(%d,%d),posTable:(%v,%v)", cfg.View, self.config.View, cfg.N, self.config.N, cfg.C,
+				self.config.C, cfg.BlockMsgDelay, self.config.BlockMsgDelay, cfg.HashMsgDelay, self.config.HashMsgDelay, cfg.PeerHandshakeTimeout, self.config.PeerHandshakeTimeout, cfg.PosTable, self.config.PosTable)
 			self.msgPool.DropMsg(msg)
 			return
 		}

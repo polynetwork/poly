@@ -94,44 +94,18 @@ func (this *PeerListParam) Deserialization(source *common.ZeroCopySource) error 
 }
 
 type Configuration struct {
-	N                    uint32
-	C                    uint32
-	K                    uint32
-	L                    uint32
 	BlockMsgDelay        uint32
 	HashMsgDelay         uint32
 	PeerHandshakeTimeout uint32
-	MaxBlockChangeView   uint32
 }
 
 func (this *Configuration) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteUint32(this.N)
-	sink.WriteUint32(this.C)
-	sink.WriteUint32(this.K)
-	sink.WriteUint32(this.L)
 	sink.WriteUint32(this.BlockMsgDelay)
 	sink.WriteUint32(this.HashMsgDelay)
 	sink.WriteUint32(this.PeerHandshakeTimeout)
-	sink.WriteUint32(this.MaxBlockChangeView)
 }
 
 func (this *Configuration) Deserialization(source *common.ZeroCopySource) error {
-	n, eof := source.NextUint32()
-	if eof {
-		return fmt.Errorf("source.NextUint32, deserialize n length error")
-	}
-	c, eof := source.NextUint32()
-	if eof {
-		return fmt.Errorf("source.NextUint32, deserialize c length error")
-	}
-	k, eof := source.NextUint32()
-	if eof {
-		return fmt.Errorf("source.NextUint32, deserialize k length error")
-	}
-	l, eof := source.NextUint32()
-	if eof {
-		return fmt.Errorf("source.NextUint32, deserialize l length error")
-	}
 	blockMsgDelay, eof := source.NextUint32()
 	if eof {
 		return fmt.Errorf("source.NextUint32, deserialize blockMsgDelay length error")
@@ -144,18 +118,9 @@ func (this *Configuration) Deserialization(source *common.ZeroCopySource) error 
 	if eof {
 		return fmt.Errorf("source.NextUint32, deserialize peerHandshakeTimeout length error")
 	}
-	maxBlockChangeView, eof := source.NextUint32()
-	if eof {
-		return fmt.Errorf("source.NextUint32, deserialize maxBlockChangeView length error")
-	}
 
-	this.N = n
-	this.C = c
-	this.K = k
-	this.L = l
 	this.BlockMsgDelay = blockMsgDelay
 	this.HashMsgDelay = hashMsgDelay
 	this.PeerHandshakeTimeout = peerHandshakeTimeout
-	this.MaxBlockChangeView = maxBlockChangeView
 	return nil
 }
