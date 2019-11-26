@@ -24,9 +24,9 @@ import (
 	"github.com/ontio/multi-chain/core/genesis"
 	"time"
 
-	scommon "github.com/ontio/multi-chain/core/store/common"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/log"
+	scommon "github.com/ontio/multi-chain/core/store/common"
 	"github.com/ontio/multi-chain/core/types"
 	ontErrors "github.com/ontio/multi-chain/errors"
 	"github.com/ontio/multi-chain/native/service/governance/relayer_manager"

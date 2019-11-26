@@ -19,6 +19,7 @@
 package vbft
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -177,7 +178,8 @@ func (self *Server) constructHeartbeatMsg() (*peerHeartbeatMsg, error) {
 	return msg, nil
 }
 
-func (self *Server) constructBlock(blkNum uint32, prevBlkHash common.Uint256, txs []*types.Transaction, consensusPayload []byte, blocktimestamp uint32) (*types.Block, error) {
+func (self *Server) constructBlock(blkNum uint32, prevBlkHash common.Uint256, txs []*types.Transaction,
+	consensusPayload []byte, blocktimestamp uint32, nextBookkeeper common.Address) (*types.Block, error) {
 	txHash := []common.Uint256{}
 	for _, t := range txs {
 		txHash = append(txHash, t.Hash())
@@ -204,6 +206,7 @@ func (self *Server) constructBlock(blkNum uint32, prevBlkHash common.Uint256, tx
 		BlockRoot:        blockRoot,
 		Timestamp:        blocktimestamp,
 		Height:           uint32(blkNum),
+		NextBookkeeper:   nextBookkeeper,
 		ConsensusData:    common.GetNonce(),
 		ConsensusPayload: consensusPayload,
 	}
@@ -243,7 +246,24 @@ func (self *Server) constructProposalMsg(blkNum uint32, sysTxs, userTxs []*types
 	if prevBlk.Info.NewChainConfig != nil {
 		lastConfigBlkNum = prevBlk.getBlockNum()
 	}
+	nextBookkeeper := common.ADDRESS_EMPTY
 	if chainconfig != nil {
+		bookkeepers := make([]keypair.PublicKey, 0)
+		for _, peer := range chainconfig.Peers {
+			pkb, err := hex.DecodeString(peer.ID)
+			if err != nil {
+				return nil, fmt.Errorf("constructProposalMsg, hex.DecodeString error: %s", err)
+			}
+			pk, err := keypair.DeserializePublicKey(pkb)
+			if err != nil {
+				return nil, fmt.Errorf("constructProposalMsg, keypair.DeserializePublicKey error: %s", err)
+			}
+			bookkeepers = append(bookkeepers, pk)
+		}
+		nextBookkeeper, err = types.AddressFromBookkeepers(bookkeepers)
+		if err != nil {
+			return nil, fmt.Errorf("constructProposalMsg err with GetBookkeeperAddress: %s", err)
+		}
 		lastConfigBlkNum = blkNum
 	}
 	vbftBlkInfo := &vconfig.VbftBlockInfo{
@@ -258,11 +278,11 @@ func (self *Server) constructProposalMsg(blkNum uint32, sysTxs, userTxs []*types
 		return nil, err
 	}
 
-	emptyBlk, err := self.constructBlock(blkNum, prevBlkHash, sysTxs, consensusPayload, blocktimestamp)
+	emptyBlk, err := self.constructBlock(blkNum, prevBlkHash, sysTxs, consensusPayload, blocktimestamp, nextBookkeeper)
 	if err != nil {
 		return nil, fmt.Errorf("failed to construct empty block: %s", err)
 	}
-	blk, err := self.constructBlock(blkNum, prevBlkHash, append(sysTxs, userTxs...), consensusPayload, blocktimestamp)
+	blk, err := self.constructBlock(blkNum, prevBlkHash, append(sysTxs, userTxs...), consensusPayload, blocktimestamp, nextBookkeeper)
 	if err != nil {
 		return nil, fmt.Errorf("failed to constuct blk: %s", err)
 	}
