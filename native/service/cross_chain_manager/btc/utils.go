@@ -1,13 +1,12 @@
 package btc
 
 import (
+	"bytes"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/btcsuite/btcd/btcec"
-	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
@@ -23,46 +22,50 @@ import (
 
 const (
 	// TODO: Temporary setting
-	OP_RETURN_SCRIPT_FLAG                      = byte(0x66)
-	FEE                                        = int64(4e3)
-	BTC_TX_PREFIX                       string = "btctx"
-	BTC_FROM_TX_PREFIX                  string = "btcfromtx"
-	IP                                  string = "0.0.0.0:30336" //
-	RedeemP2SH5of7MultisigSigScriptSize        = 1 + 5*(1+72) + 1 + 1 + 7*(1+33) + 1 + 1
-	MinSatoshiToRelayPerByte                   = 1
-	Weight                                     = 1.2
-	MIN_CHANGE                                 = 2000
+	OP_RETURN_SCRIPT_FLAG                   = byte(0xcc)
+	FEE                                     = int64(4e3)
+	BTC_TX_PREFIX                           = "btctx"
+	BTC_FROM_TX_PREFIX                      = "btcfromtx"
+	REDEEM_P2SH_5_OF_7_MULTISIG_SCRIPT_SIZE = 1 + 5*(1+72) + 1 + 1 + 7*(1+33) + 1 + 1
+	MIN_SATOSHI_TO_RELAY_PER_BYTE           = 1
+	WEIGHT                                  = 1.2
+	MIN_CHANGE                              = 2000
+	BTC_ADDRESS                             = "btc"
+	NOTIFY_BTC_PROOF                        = "notifyBtcProof"
+	UTXOS                                   = "utxos"
+	STXOS                                   = "stxos"
+	REDEEM_SCRIPT                           = "redeemScript"
+	MULTI_SIGN_INFO                         = "multiSignInfo"
 )
 
 var netParam = &chaincfg.TestNet3Params
 
 // not sure now
 type targetChainParam struct {
-	ChainId    uint64
-	Fee        int64
+	args       *Args
 	AddrAndVal []byte
 }
 
 // func about OP_RETURN
-func (p *targetChainParam) resolve(amount int64, paramOutput *wire.TxOut) ([]byte, error) {
+func (p *targetChainParam) resolve(amount int64, paramOutput *wire.TxOut) error {
 	script := paramOutput.PkScript
 
 	if script[2] != OP_RETURN_SCRIPT_FLAG {
-		return nil, errors.New("Wrong flag")
+		return errors.New("Wrong flag")
 	}
 	inputArgs := new(Args)
 	err := inputArgs.Deserialization(common.NewZeroCopySource(script[3:]))
 	if err != nil {
-		return nil, fmt.Errorf("inputArgs.Deserialization fail: %v", err)
+		return fmt.Errorf("inputArgs.Deserialization fail: %v", err)
 	}
-	p.ChainId = inputArgs.ToChainID
+	p.args = inputArgs
 
 	sink := common.NewZeroCopySink(nil)
 	sink.WriteVarBytes(inputArgs.Address)
 	sink.WriteUint64(uint64(amount))
 	p.AddrAndVal = sink.Bytes()
 
-	return inputArgs.ToContractAddress, nil
+	return nil
 }
 
 func prefixAppendUint256(src []byte) []byte {
@@ -77,7 +80,7 @@ func prefixAppendUint256(src []byte) []byte {
 // and the lock time. Function build a raw transaction without signature and return it.
 // This function uses the partial logic and code of btcd to finally return the
 // reference of the transaction object.
-func getUnsignedTx(txIns []btcjson.TransactionInput, outs []*wire.TxOut, changeOut *wire.TxOut, locktime *int64) (*wire.MsgTx, error) {
+func getUnsignedTx(txIns []*wire.TxIn, outs []*wire.TxOut, changeOut *wire.TxOut, locktime *int64) (*wire.MsgTx, error) {
 	if locktime != nil && (*locktime < 0 || *locktime > int64(wire.MaxTxInSequenceNum)) {
 		return nil, fmt.Errorf("getUnsignedTx, locktime %d out of range", *locktime)
 	}
@@ -85,18 +88,11 @@ func getUnsignedTx(txIns []btcjson.TransactionInput, outs []*wire.TxOut, changeO
 	// Add all transaction inputs to a new transaction after performing
 	// some validity checks.
 	mtx := wire.NewMsgTx(wire.TxVersion)
-	for _, input := range txIns {
-		txHash, err := chainhash.NewHashFromStr(input.Txid)
-		if err != nil {
-			return nil, fmt.Errorf("getUnsignedTx, decode txid fail: %v", err)
-		}
-
-		prevOut := wire.NewOutPoint(txHash, input.Vout)
-		txIn := wire.NewTxIn(prevOut, []byte{}, nil)
+	for _, in := range txIns {
 		if locktime != nil && *locktime != 0 {
-			txIn.Sequence = wire.MaxTxInSequenceNum - 1
+			in.Sequence = wire.MaxTxInSequenceNum - 1
 		}
-		mtx.AddTxIn(txIn)
+		mtx.AddTxIn(in)
 	}
 	for _, out := range outs {
 		mtx.AddTxOut(out)
@@ -163,7 +159,7 @@ func getChangeTxOut(change int64, redeem []byte) (*wire.TxOut, error) {
 }
 
 func estimateSerializedTxSize(inputCount int, txOuts []*wire.TxOut, potential *wire.TxOut) int {
-	multi5of7InputSize := 32 + 4 + 1 + 4 + RedeemP2SH5of7MultisigSigScriptSize
+	multi5of7InputSize := 32 + 4 + 1 + 4 + REDEEM_P2SH_5_OF_7_MULTISIG_SCRIPT_SIZE
 
 	outsSize := 0
 	for _, txOut := range txOuts {
@@ -275,42 +271,40 @@ func addUtxos(native *native.NativeService, chainID uint64, height uint32, mtx *
 		ScriptPubkey: mtx.TxOut[0].PkScript,
 	}
 	utxos.Utxos = append(utxos.Utxos, newUtxo)
-	err = putUtxos(native, chainID, utxos)
-	if err != nil {
-		return fmt.Errorf("addUtxos, putUtxos err:%v", err)
-	}
+	putUtxos(native, chainID, utxos)
 	return nil
 }
 
-func chooseUtxos(native *native.NativeService, chainID uint64, amount int64, fee int64) ([]*Utxo, int64, error) {
+func chooseUtxos(native *native.NativeService, chainID uint64, amount int64) ([]*Utxo, int64, error) {
 	utxos, err := getUtxos(native, chainID)
 	if err != nil {
 		return nil, 0, fmt.Errorf("chooseUtxos, getUtxos error: %v", err)
 	}
-	total := amount + fee
 	result := make([]*Utxo, 0)
 	for i := 0; i < len(utxos.Utxos); i++ {
 		utxos.Utxos[i].Confs = native.GetHeight() - utxos.Utxos[i].AtHeight + 1
 	}
 	sort.Sort(utxos)
 	var sum int64 = 0
-	var end int
-	for i := len(utxos.Utxos) - 1; i >= 0; i-- {
-		sum = sum + int64(utxos.Utxos[i].Value)
-		result = append(result, utxos.Utxos[i])
-		if satisfiesTargetValue(total, sum) {
-			end = i
-			break
-		}
+	idx := len(utxos.Utxos) - 1
+	for idx >= 0 && !satisfiesTargetValue(amount, sum) {
+		sum += int64(utxos.Utxos[idx].Value)
+		result = append(result, utxos.Utxos[idx])
+		idx--
 	}
-	if sum < total {
+	if sum < amount {
 		return nil, sum, fmt.Errorf("chooseUtxos, current utxo is not enough")
 	}
-	utxos.Utxos = utxos.Utxos[:end] //end == 0 ???
-	err = putUtxos(native, chainID, utxos)
+
+	stxos, err := getStxos(native, chainID)
 	if err != nil {
-		return nil, sum, fmt.Errorf("chooseUtxos, putUtxos err:%v", err)
+		return nil, sum, fmt.Errorf("chooseUtxos, failed to get stxos: %v", err)
 	}
+	stxos.Utxos = append(stxos.Utxos, utxos.Utxos[idx+1:]...)
+	putStxos(native, chainID, stxos)
+
+	utxos.Utxos = utxos.Utxos[:idx+1] //end == 0 ???
+	putUtxos(native, chainID, utxos)
 	return result, sum, nil
 }
 
@@ -319,36 +313,77 @@ func satisfiesTargetValue(targetValue, totalValue int64) bool {
 	return totalValue == targetValue || totalValue >= targetValue+MIN_CHANGE
 }
 
-func putUtxos(native *native.NativeService, chainID uint64, utxos *Utxos) error {
+func putTxos(k string, native *native.NativeService, chainID uint64, txos *Utxos) {
 	chainIDBytes := utils.GetUint64Bytes(chainID)
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(UTXOS), chainIDBytes)
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(k), chainIDBytes)
 	sink := common.NewZeroCopySink(nil)
-	utxos.Serialization(sink)
+	txos.Serialization(sink)
 	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(sink.Bytes()))
-	return nil
+}
+
+func getTxos(k string, native *native.NativeService, chainID uint64) (*Utxos, error) {
+	chainIDBytes := utils.GetUint64Bytes(chainID)
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(k), chainIDBytes)
+	store, err := native.GetCacheDB().Get(key)
+	if err != nil {
+		return nil, fmt.Errorf("get%s, get btcTxStore error: %v", k, err)
+	}
+	txos := &Utxos{
+		Utxos: make([]*Utxo, 0),
+	}
+	if store != nil {
+		utxosBytes, err := cstates.GetValueFromRawStorageItem(store)
+		if err != nil {
+			return nil, fmt.Errorf("get%s, deserialize from raw storage item err:%v", k, err)
+		}
+		err = txos.Deserialization(common.NewZeroCopySource(utxosBytes))
+		if err != nil {
+			return nil, fmt.Errorf("get%s, utxos.Deserialization err:%v", k, err)
+		}
+	}
+	return txos, nil
+}
+
+func putUtxos(native *native.NativeService, chainID uint64, utxos *Utxos) {
+	putTxos(UTXOS, native, chainID, utxos)
 }
 
 func getUtxos(native *native.NativeService, chainID uint64) (*Utxos, error) {
-	chainIDBytes := utils.GetUint64Bytes(chainID)
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(UTXOS), chainIDBytes)
-	utxosStore, err := native.GetCacheDB().Get(key)
+	utxos, err := getTxos(UTXOS, native, chainID)
+	return utxos, err
+}
+
+func putStxos(native *native.NativeService, chainID uint64, stxos *Utxos) {
+	putTxos(STXOS, native, chainID, stxos)
+}
+
+func getStxos(native *native.NativeService, chainID uint64) (*Utxos, error) {
+	stxos, err := getTxos(STXOS, native, chainID)
+	return stxos, err
+}
+
+func getStxoAmts(service *native.NativeService, chainID uint64, txIns []*wire.TxIn) ([]uint64, *Utxos, error) {
+	stxos, err := getStxos(service, chainID)
 	if err != nil {
-		return nil, fmt.Errorf("getUtxos, get btcTxStore error: %v", err)
+		return nil, nil, fmt.Errorf("getStxoAmts, failed to get stxos: %v", err)
 	}
-	utxos := &Utxos{
-		Utxos: make([]*Utxo, 0),
-	}
-	if utxosStore != nil {
-		utxosBytes, err := cstates.GetValueFromRawStorageItem(utxosStore)
-		if err != nil {
-			return nil, fmt.Errorf("getUtxos, deserialize from raw storage item err:%v", err)
+	amts := make([]uint64, len(txIns))
+	for i, in := range txIns {
+		toDel := -1
+		for j, v := range stxos.Utxos {
+			if bytes.Equal(in.PreviousOutPoint.Hash[:], v.Op.Hash) && in.PreviousOutPoint.Index == v.Op.Index {
+				amts[i] = v.Value
+				toDel = j
+				break
+			}
 		}
-		err = utxos.Deserialization(common.NewZeroCopySource(utxosBytes))
-		if err != nil {
-			return nil, fmt.Errorf("getUtxos, utxos.Deserialization err:%v", err)
+		if toDel < 0 {
+			return nil, nil, fmt.Errorf("getStxoAmts, %d txIn not found in stxos: %v", i, err)
 		}
+		stxos.Utxos = append(stxos.Utxos[:toDel], stxos.Utxos[toDel+1:]...)
 	}
-	return utxos, nil
+
+	return amts, stxos, nil
 }
 
 func putBtcRedeemScript(native *native.NativeService, redeemScript string) error {
@@ -398,11 +433,11 @@ func notifyBtcProof(native *native.NativeService, txid, btcProof string) {
 		})
 }
 
-func verifySigs(sigs [][]byte, addr string, addrs []btcutil.Address, redeem []byte, tx *wire.MsgTx) error {
+func verifySigs(sigs [][]byte, addr string, addrs []btcutil.Address, redeem []byte, tx *wire.MsgTx,
+	pkScripts [][]byte, amts []uint64) error {
 	if len(sigs) != len(tx.TxIn) {
 		return fmt.Errorf("not enough sig, only %d sigs but %d required", len(sigs), len(tx.TxIn))
 	}
-
 	var signerAddr btcutil.Address = nil
 	for _, a := range addrs {
 		if a.EncodeAddress() == addr {
@@ -422,12 +457,22 @@ func verifySigs(sigs [][]byte, addr string, addrs []btcutil.Address, redeem []by
 		if err != nil {
 			return fmt.Errorf("failed to parse no.%d sig: %v", i, err)
 		}
-
-		hash, err := txscript.CalcSignatureHash(redeem, txscript.SigHashType(sig[len(sig)-1]), tx, i)
-		if err != nil {
-			return fmt.Errorf("failed to calculate sig hash: %v", err)
+		var hash []byte
+		switch c := txscript.GetScriptClass(pkScripts[i]); c {
+		case txscript.MultiSigTy, txscript.ScriptHashTy:
+			hash, err = txscript.CalcSignatureHash(redeem, txscript.SigHashType(sig[len(sig)-1]), tx, i)
+			if err != nil {
+				return fmt.Errorf("failed to calculate sig hash: %v", err)
+			}
+		case txscript.WitnessV0ScriptHashTy:
+			sh := txscript.NewTxSigHashes(tx)
+			hash, err = txscript.CalcWitnessSigHash(redeem, sh, txscript.SigHashType(sig[len(sig)-1]), tx, i, int64(amts[i]))
+			if err != nil {
+				return fmt.Errorf("failed to calculate sig hash: %v", err)
+			}
+		default:
+			return fmt.Errorf("script %s not supported", c)
 		}
-
 		if !pSig.Verify(hash, signerAddr.(*btcutil.AddressPubKey).PubKey()) {
 			return fmt.Errorf("verify no.%d sig and not pass", i)
 		}
@@ -466,25 +511,48 @@ func getBtcMultiSignInfo(native *native.NativeService, txid []byte) (*MultiSignI
 	return multiSignInfo, nil
 }
 
-func addSigToTx(sigMap *MultiSignInfo, addrs []btcutil.Address, redeem []byte, tx *wire.MsgTx, length int) (*wire.MsgTx, error) {
-	for i := 0; i < length; i++ {
-		builder := txscript.NewScriptBuilder().AddOp(txscript.OP_FALSE)
-		for _, addr := range addrs {
-			signs, ok := sigMap.MultiSignInfo[addr.EncodeAddress()]
-			if !ok {
-				continue
+func addSigToTx(sigMap *MultiSignInfo, addrs []btcutil.Address, redeem []byte, tx *wire.MsgTx, pkScripts [][]byte) (*wire.MsgTx, error) {
+	for i := 0; i < len(tx.TxIn); i++ {
+		var (
+			script []byte
+			err error
+		)
+		builder := txscript.NewScriptBuilder()
+		switch c := txscript.GetScriptClass(pkScripts[i]); c {
+		case txscript.MultiSigTy, txscript.ScriptHashTy:
+			builder.AddOp(txscript.OP_FALSE)
+			for _, addr := range addrs {
+				signs, ok := sigMap.MultiSignInfo[addr.EncodeAddress()]
+				if !ok {
+					continue
+				}
+				val := signs[i]
+				builder.AddData(val)
 			}
-			val := signs[i]
-			builder.AddData(val)
+			if c == txscript.ScriptHashTy {
+				builder.AddData(redeem)
+			}
+			script, err = builder.Script()
+			if err != nil {
+				return nil, fmt.Errorf("failed to build sigscript for input %d: %v", i, err)
+			}
+			tx.TxIn[i].SignatureScript = script
+		case txscript.WitnessV0ScriptHashTy:
+			data := make([][]byte, len(sigMap.MultiSignInfo) + 2)
+			idx := 1
+			for _, addr := range addrs {
+				signs, ok := sigMap.MultiSignInfo[addr.EncodeAddress()]
+				if !ok {
+					continue
+				}
+				data[idx] = signs[i]
+				idx++
+			}
+			data[idx] = redeem
+			tx.TxIn[i].Witness = wire.TxWitness(data)
+		default:
+			return nil, fmt.Errorf("addSigToTx, type of no.%d utxo is %s which is not supported", i, c)
 		}
-
-		builder.AddData(redeem)
-		script, err := builder.Script()
-		if err != nil {
-			return nil, fmt.Errorf("failed to build sigscript for input %d: %v", i, err)
-		}
-
-		tx.TxIn[i].SignatureScript = script
 	}
 	return tx, nil
 }
