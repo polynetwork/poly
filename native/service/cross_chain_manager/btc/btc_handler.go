@@ -22,7 +22,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
-	"github.com/btcsuite/btcd/btcjson"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
@@ -37,14 +36,6 @@ import (
 	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/governance/side_chain_manager"
 	"github.com/ontio/multi-chain/native/service/utils"
-)
-
-const (
-	BTC_ADDRESS      = "btc"
-	NOTIFY_BTC_PROOF = "notifyBtcProof"
-	UTXOS            = "utxos"
-	REDEEM_SCRIPT    = "redeemScript"
-	MULTI_SIGN_INFO  = "multiSignInfo"
 )
 
 type BTCHandler struct {
@@ -86,15 +77,13 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 		return fmt.Errorf("MultiSign, contract params deserialize error: %v", err)
 	}
 
-	txb, err := service.GetCacheDB().Get(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(BTC_TX_PREFIX),
-		params.TxHash))
+	multiSignInfo, err := getBtcMultiSignInfo(service, params.TxHash)
 	if err != nil {
-		return fmt.Errorf("MultiSign, failed to get tx %s from cacheDB: %v", hex.EncodeToString(params.TxHash), err)
+		return fmt.Errorf("MultiSign, getBtcMultiSignInfo error: %v", err)
 	}
-	mtx := wire.NewMsgTx(wire.TxVersion)
-	err = mtx.BtcDecode(bytes.NewBuffer(txb), wire.ProtocolVersion, wire.LatestEncoding)
-	if err != nil {
-		return fmt.Errorf("MultiSign, failed to decode tx: %v", err)
+	_, ok := multiSignInfo.MultiSignInfo[params.Address]
+	if ok {
+		return fmt.Errorf("MultiSign, address %s already sign", params.Address)
 	}
 
 	redeemScript, err := getBtcRedeemScriptBytes(service)
@@ -108,20 +97,35 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 	if cls.String() != "multisig" {
 		return fmt.Errorf("MultiSign, wrong class of redeem: %s", cls.String())
 	}
+	if len(multiSignInfo.MultiSignInfo) == n {
+		return fmt.Errorf("MultiSign, already enough signature: %d", n)
+	}
 
-	err = verifySigs(params.Signs, params.Address, addrs, redeemScript, mtx)
+	txb, err := service.GetCacheDB().Get(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(BTC_TX_PREFIX),
+		params.TxHash))
+	if err != nil {
+		return fmt.Errorf("MultiSign, failed to get tx %s from cacheDB: %v", hex.EncodeToString(params.TxHash), err)
+	}
+	mtx := wire.NewMsgTx(wire.TxVersion)
+	err = mtx.BtcDecode(bytes.NewBuffer(txb), wire.ProtocolVersion, wire.LatestEncoding)
+	if err != nil {
+		return fmt.Errorf("MultiSign, failed to decode tx: %v", err)
+	}
+
+	pkScripts := make([][]byte, len(mtx.TxIn))
+	for i, in := range mtx.TxIn {
+		pkScripts[i] = in.SignatureScript
+		in.SignatureScript = nil
+	}
+	amts, stxos, err := getStxoAmts(service, params.ChainID, mtx.TxIn) //TODO 当第六次签名时候是否要报错
+	if err != nil {
+		return fmt.Errorf("MultiSign, failed to get stxos: %v", err)
+	}
+	err = verifySigs(params.Signs, params.Address, addrs, redeemScript, mtx, pkScripts, amts)
 	if err != nil {
 		return fmt.Errorf("MultiSign, failed to verify: %v", err)
 	}
 
-	multiSignInfo, err := getBtcMultiSignInfo(service, params.TxHash)
-	if err != nil {
-		return fmt.Errorf("MultiSign, getBtcMultiSignInfo error: %v", err)
-	}
-	_, ok := multiSignInfo.MultiSignInfo[params.Address]
-	if ok {
-		return fmt.Errorf("MultiSign, address %s already sign", params.Address)
-	}
 	multiSignInfo.MultiSignInfo[params.Address] = params.Signs
 	err = putBtcMultiSignInfo(service, params.TxHash, multiSignInfo)
 	if err != nil {
@@ -135,7 +139,7 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 				States:          []interface{}{"btcTxMultiSign", params.TxHash, multiSignInfo.MultiSignInfo},
 			})
 	} else {
-		mtx, err = addSigToTx(multiSignInfo, addrs, redeemScript, mtx, len(params.Signs))
+		mtx, err = addSigToTx(multiSignInfo, addrs, redeemScript, mtx, pkScripts)
 		if err != nil {
 			return fmt.Errorf("MultiSign, failed to add sig to tx: %v", err)
 		}
@@ -172,15 +176,13 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 				utxos.Utxos = append(utxos.Utxos, newUtxo)
 			}
 		}
-		err = putUtxos(service, params.ChainID, utxos)
-		if err != nil {
-			return fmt.Errorf("MultiSign, putUtxos error: %v", err)
-		}
+		putUtxos(service, params.ChainID, utxos)
 		btcFromTxInfo, err := getBtcFromInfo(service, params.TxHash)
 		if err != nil {
 			return fmt.Errorf("MultiSign, failed to get from tx hash %s from cacheDB: %v",
 				hex.EncodeToString(params.TxHash), err)
 		}
+		putStxos(service, params.ChainID, stxos)
 		service.AddNotify(
 			&event.NotifyEventInfo{
 				ContractAddress: utils.CrossChainManagerContractAddress,
@@ -259,7 +261,7 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 	}
 
 	var p targetChainParam
-	toContract, err := p.resolve(mtx.TxOut[0].Value, mtx.TxOut[1])
+	err = p.resolve(mtx.TxOut[0].Value, mtx.TxOut[1])
 	if err != nil {
 		return false, nil, 0, nil, fmt.Errorf("btc Vote, failed to resolve parameter: %v", err)
 	}
@@ -268,8 +270,8 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 	return true, &crosscommon.MakeTxParam{
 		TxHash:              txHash[:],
 		FromContractAddress: []byte(BTC_ADDRESS),
-		ToChainID:           p.ChainId,
-		ToContractAddress:   toContract,
+		ToChainID:           p.args.ToChainID,
+		ToContractAddress:   p.args.ToContractAddress,
 		Method:              "unlock",
 		Args:                p.AddrAndVal,
 	}, params.FromChainID, relayer, nil
@@ -306,6 +308,7 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *cr
 	if eof {
 		return fmt.Errorf("btc MakeTransaction, deserialize amount error")
 	}
+	//TODO bech32支持
 	toAddr := base58.Encode(toAddrBytes)
 	amounts[toAddr] = int64(amount)
 
@@ -405,24 +408,24 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 		return fmt.Errorf("makeBtcTx, %v", err)
 	}
 
-	// get tx inputs
-	choosed, sum, err := chooseUtxos(service, chainID, amountSum, 0)
+	choosed, sum, err := chooseUtxos(service, chainID, amountSum)
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, chooseUtxos error: %v", err)
 	}
-	txIns := make([]btcjson.TransactionInput, 0)
-	for _, u := range choosed {
+	amts := make([]uint64, len(choosed))
+	txIns := make([]*wire.TxIn, len(choosed))
+	for i, u := range choosed {
 		hash, err := chainhash.NewHash(u.Op.Hash)
 		if err != nil {
 			return fmt.Errorf("makeBtcTx, chainhash.NewHash error: %v", err)
 		}
-		txIns = append(txIns, btcjson.TransactionInput{hash.String(), u.Op.Index})
+		txIns[i] = wire.NewTxIn(wire.NewOutPoint(hash, u.Op.Index), u.ScriptPubkey, nil)
+		amts[i] = u.Value
 	}
 
-	// get fee
-	gasfee := int64(float64(estimateSerializedTxSize(len(txIns), outs, out)*MinSatoshiToRelayPerByte) * Weight)
-	if amountSum <= gasfee {
-		return fmt.Errorf("makeBtcTx, amounts sum(%d) must greater than fee %d", amountSum, gasfee)
+	fee := int64(float64(estimateSerializedTxSize(len(txIns), outs, out)*MIN_SATOSHI_TO_RELAY_PER_BYTE)*WEIGHT)
+	if amountSum <= fee {
+		return fmt.Errorf("makeBtcTx, amounts sum(%d) must greater than fee %d", amountSum, fee)
 	}
 
 	for i, _ := range outs {
@@ -455,7 +458,8 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 	service.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
-			States:          []interface{}{"makeBtcTx", hex.EncodeToString(buf.Bytes()), hex.EncodeToString(redeemScript)},
+			States:          []interface{}{"makeBtcTx", hex.EncodeToString(buf.Bytes()),
+				hex.EncodeToString(redeemScript), amts},
 		})
 
 	return nil

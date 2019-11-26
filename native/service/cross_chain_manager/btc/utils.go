@@ -2,11 +2,9 @@ package btc
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
@@ -24,7 +22,8 @@ import (
 
 const (
 	// TODO: Temporary setting
-	OP_RETURN_SCRIPT_FLAG                   = byte(0x66)
+	OP_RETURN_SCRIPT_FLAG                   = byte(0xcc)
+	FEE                                     = int64(4e3)
 	BTC_TX_PREFIX                           = "btctx"
 	BTC_FROM_TX_PREFIX                      = "btcfromtx"
 	REDEEM_P2SH_5_OF_7_MULTISIG_SCRIPT_SIZE = 1 + 5*(1+72) + 1 + 1 + 7*(1+33) + 1 + 1
@@ -147,41 +146,28 @@ func getTxOuts(amountSum int64, amounts map[string]int64, fee uint64, relayer []
 }
 
 func getChangeTxOut(change int64, redeem []byte) (*wire.TxOut, error) {
-	script, err := getLockScript(redeem)
-	return wire.NewTxOut(change, script), err
-}
-
-func getLockScript(redeem []byte) ([]byte, error) {
-	hasher := sha256.New()
-	hasher.Write(redeem)
-	witAddr, err := btcutil.NewAddressWitnessScriptHash(hasher.Sum(nil), netParam)
+	p2shAddr, err := btcutil.NewAddressScriptHash(redeem, netParam)
 	if err != nil {
-		return nil, fmt.Errorf("getChangeTxOut, failed to get witness address: %v", err)
+		return nil, fmt.Errorf("getChangeTxOut, failed to get p2sh: %v", err)
 	}
-	script, err := txscript.PayToAddrScript(witAddr)
+	p2shScript, err := txscript.PayToAddrScript(p2shAddr)
 	if err != nil {
 		return nil, fmt.Errorf("getChangeTxOut, failed to get p2sh script: %v", err)
 	}
-	return script, nil
+
+	return wire.NewTxOut(change, p2shScript), nil
 }
 
-func estimateSerializedTxSize(txIns []*wire.TxIn, txOuts []*wire.TxOut, potential *wire.TxOut) int {
-	p2shInputSize := 43 + REDEEM_P2SH_5_OF_7_MULTISIG_SCRIPT_SIZE
-	witnessInputSize := 41 + REDEEM_P2SH_5_OF_7_MULTISIG_SCRIPT_SIZE/blockchain.WitnessScaleFactor
+func estimateSerializedTxSize(inputCount int, txOuts []*wire.TxOut, potential *wire.TxOut) int {
+	multi5of7InputSize := 32 + 4 + 1 + 4 + REDEEM_P2SH_5_OF_7_MULTISIG_SCRIPT_SIZE
+
 	outsSize := 0
 	for _, txOut := range txOuts {
 		outsSize += txOut.SerializeSize()
 	}
-	witNum := 0
-	for _, txIn := range txIns {
-		switch txscript.GetScriptClass(txIn.SignatureScript) {
-		case txscript.WitnessV0ScriptHashTy:
-			witNum++
-		}
-	}
 
-	return 10 + 2 + wire.VarIntSerializeSize(uint64(len(txIns))) + wire.VarIntSerializeSize(uint64(len(txOuts)+1)) +
-		(len(txIns)-witNum)*p2shInputSize + witNum*witnessInputSize + potential.SerializeSize() + outsSize
+	return 10 + wire.VarIntSerializeSize(uint64(inputCount)) + wire.VarIntSerializeSize(uint64(len(txOuts)+1)) +
+		inputCount*multi5of7InputSize + potential.SerializeSize() + outsSize
 }
 
 func putBtcRelayer(native *native.NativeService, txHash, relayer []byte) {
@@ -407,11 +393,6 @@ func putBtcRedeemScript(native *native.NativeService, redeemScript string) error
 	if err != nil {
 		return fmt.Errorf("putBtcRedeemScript, failed to decode redeem script: %v", err)
 	}
-
-	cls := txscript.GetScriptClass(redeem)
-	if cls.String() != "multisig" {
-		return fmt.Errorf("putBtcRedeemScript, wrong type of redeem: %s", cls)
-	}
 	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(redeem))
 	return nil
 }
@@ -530,11 +511,11 @@ func getBtcMultiSignInfo(native *native.NativeService, txid []byte) (*MultiSignI
 	return multiSignInfo, nil
 }
 
-func addSigToTx(sigMap *MultiSignInfo, addrs []btcutil.Address, redeem []byte, tx *wire.MsgTx, pkScripts [][]byte) error {
+func addSigToTx(sigMap *MultiSignInfo, addrs []btcutil.Address, redeem []byte, tx *wire.MsgTx, pkScripts [][]byte) (*wire.MsgTx, error) {
 	for i := 0; i < len(tx.TxIn); i++ {
 		var (
 			script []byte
-			err    error
+			err error
 		)
 		builder := txscript.NewScriptBuilder()
 		switch c := txscript.GetScriptClass(pkScripts[i]); c {
@@ -553,11 +534,11 @@ func addSigToTx(sigMap *MultiSignInfo, addrs []btcutil.Address, redeem []byte, t
 			}
 			script, err = builder.Script()
 			if err != nil {
-				return fmt.Errorf("failed to build sigscript for input %d: %v", i, err)
+				return nil, fmt.Errorf("failed to build sigscript for input %d: %v", i, err)
 			}
 			tx.TxIn[i].SignatureScript = script
 		case txscript.WitnessV0ScriptHashTy:
-			data := make([][]byte, len(sigMap.MultiSignInfo)+2)
+			data := make([][]byte, len(sigMap.MultiSignInfo) + 2)
 			idx := 1
 			for _, addr := range addrs {
 				signs, ok := sigMap.MultiSignInfo[addr.EncodeAddress()]
@@ -570,10 +551,10 @@ func addSigToTx(sigMap *MultiSignInfo, addrs []btcutil.Address, redeem []byte, t
 			data[idx] = redeem
 			tx.TxIn[i].Witness = wire.TxWitness(data)
 		default:
-			return fmt.Errorf("addSigToTx, type of no.%d utxo is %s which is not supported", i, c)
+			return nil, fmt.Errorf("addSigToTx, type of no.%d utxo is %s which is not supported", i, c)
 		}
 	}
-	return nil
+	return tx, nil
 }
 
 func putBtcFromInfo(native *native.NativeService, txid []byte, btcFromInfo *BtcFromInfo) error {
@@ -603,74 +584,4 @@ func getBtcFromInfo(native *native.NativeService, txid []byte) (*BtcFromInfo, er
 		return nil, fmt.Errorf("getBtcFromInfo, deserialize multiSignInfo err:%v", err)
 	}
 	return btcFromInfo, nil
-}
-
-func checkTxOuts(tx *wire.MsgTx, redeem []byte) error {
-	if len(tx.TxOut) < 2 {
-		return errors.New("checkTxOuts, number of transaction's outputs is at least greater" +
-			" than 2")
-	}
-	if tx.TxOut[0].Value <= 0 {
-		return fmt.Errorf("checkTxOuts, the value of crosschain transaction must be bigger "+
-			"than 0, but value is %d", tx.TxOut[0].Value)
-	}
-
-	switch txscript.GetScriptClass(tx.TxOut[0].PkScript) {
-	case txscript.MultiSigTy:
-		if !bytes.Equal(redeem, tx.TxOut[0].PkScript) {
-			return fmt.Errorf("wrong script: \"%x\" is not same as our \"%x\"",
-				tx.TxOut[0].PkScript, redeem)
-		}
-	case txscript.ScriptHashTy:
-		addr, err := btcutil.NewAddressScriptHash(redeem, netParam)
-		if err != nil {
-			return err
-		}
-		script, err := txscript.PayToAddrScript(addr)
-		if err != nil {
-			return err
-		}
-		if !bytes.Equal(script, tx.TxOut[0].PkScript) {
-			return fmt.Errorf("wrong script: \"%x\" is not same as our \"%x\"", tx.TxOut[0].PkScript, script)
-		}
-	case txscript.WitnessV0ScriptHashTy:
-		hasher := sha256.New()
-		hasher.Write(redeem)
-		addr, err := btcutil.NewAddressWitnessScriptHash(hasher.Sum(nil), netParam)
-		if err != nil {
-			return err
-		}
-		script, err := txscript.PayToAddrScript(addr)
-		if err != nil {
-			return err
-		}
-		if !bytes.Equal(script, tx.TxOut[0].PkScript) {
-			return fmt.Errorf("wrong script: \"%x\" is not same as our \"%x\"", tx.TxOut[0].PkScript, script)
-		}
-	default:
-		return errors.New("first output's pkScript is not supported")
-	}
-
-	c2 := txscript.GetScriptClass(tx.TxOut[1].PkScript)
-	if c2 != txscript.NullDataTy {
-		return errors.New("second output's pkScript is not NullData type")
-	}
-
-	return nil
-}
-
-func ifCanResolve(paramOutput *wire.TxOut, value int64) error {
-	script := paramOutput.PkScript
-	if script[2] != OP_RETURN_SCRIPT_FLAG {
-		return errors.New("wrong flag")
-	}
-	args := Args{}
-	err := args.Deserialization(common.NewZeroCopySource(script[3:]))
-	if err != nil {
-		return err
-	}
-	if value < args.Fee && args.Fee >= 0 {
-		return errors.New("the transfer amount cannot be less than the transaction fee")
-	}
-	return nil
 }

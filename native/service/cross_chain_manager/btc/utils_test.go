@@ -36,6 +36,13 @@ var (
 		service := native.NewNativeService(cacheDB, nil, 0, 200, common.Uint256{}, 0, nil, false, nil)
 		return service
 	}
+
+	getPkSs = func() [][]byte {
+		p2sh, _ := hex.DecodeString("a91487a9652e9b396545598c0fc72cb5a98848bf93d387") //p2sh
+		ss := make([][]byte, 1)
+		ss[0] = p2sh
+		return ss
+	}
 )
 
 func TestVerifySigs(t *testing.T) {
@@ -49,14 +56,14 @@ func TestVerifySigs(t *testing.T) {
 	mtx := wire.NewMsgTx(wire.TxVersion)
 	mtx.BtcDecode(bytes.NewBuffer(txb), wire.TxVersion, wire.LatestEncoding)
 
-	err := verifySigs(sigs, addrs[0].EncodeAddress(), addrs, rs, mtx)
+	err := verifySigs(sigs, addrs[0].EncodeAddress(), addrs, rs, mtx, getPkSs(),[]uint64{})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	sig2b, _ := hex.DecodeString(sig2)
 	sigs = [][]byte{sig2b}
-	err = verifySigs(sigs, addrs[0].EncodeAddress(), addrs, rs, mtx)
+	err = verifySigs(sigs, addrs[0].EncodeAddress(), addrs, rs, mtx, getPkSs(),[]uint64{})
 	if err == nil {
 		t.Fatal("err should not be nil")
 	}
@@ -89,7 +96,7 @@ func TestAddSigToTx(t *testing.T) {
 	mtx := wire.NewMsgTx(wire.TxVersion)
 	mtx.BtcDecode(bytes.NewBuffer(txb), wire.TxVersion, wire.LatestEncoding)
 
-	tx, err := addSigToTx(sigMap, addrs, rs, mtx, 1)
+	tx, err := addSigToTx(sigMap, addrs, rs, mtx, getPkSs())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -214,19 +221,16 @@ func TestUtxos_Choose(t *testing.T) {
 			},
 		},
 	}
-	err := putUtxos(ns, 0, utxos)
-	if err != nil {
-		t.Fatal(err)
-	}
+	putUtxos(ns, 0, utxos)
 
-	set, sum, err := chooseUtxos(ns, 0, 35e4, 0)
+	set, sum, err := chooseUtxos(ns, 0, 35e4)
 	if err != nil {
 		t.Fatal(err)
 	}
 	assert.Assert(t, sum == 4e5 && len(set) == 2 && bytes.Equal(set[0].ScriptPubkey, []byte("3")) &&
 		bytes.Equal(set[1].ScriptPubkey, []byte("1")), "wrong sum")
 
-	_, _, err = chooseUtxos(ns, 0, 100e4, 0)
+	_, _, err = chooseUtxos(ns, 0, 100e4)
 	if err == nil {
 		t.Fatal("err should not be nil")
 	}
