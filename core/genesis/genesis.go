@@ -116,6 +116,12 @@ func NewInvokeTransaction(invokeCode []byte) *types.Transaction {
 		TxType:  types.Invoke,
 		Payload: invokePayload,
 	}
+	sink := common.NewZeroCopySink(nil)
+	err := tx.Serialization(sink)
+	if err != nil {
+		return &types.Transaction{}
+	}
+	tx, err = types.TransactionFromRawBytes(sink.Bytes())
 	return tx
 }
 
