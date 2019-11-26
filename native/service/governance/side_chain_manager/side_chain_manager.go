@@ -107,7 +107,7 @@ func ApproveRegisterSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, getRegisterSideChain error: %v", err)
 	}
-	if registerSideChain != nil {
+	if registerSideChain == nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, chainid is not requested")
 	}
 	err = putSideChain(native, registerSideChain)
