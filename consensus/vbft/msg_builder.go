@@ -25,8 +25,9 @@ import (
 	"time"
 
 	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/consensus/vbft/config"
+	vconfig "github.com/ontio/multi-chain/consensus/vbft/config"
 	"github.com/ontio/multi-chain/core/ledger"
 	"github.com/ontio/multi-chain/core/signature"
 	"github.com/ontio/multi-chain/core/types"
@@ -198,8 +199,7 @@ func (self *Server) constructBlock(blkNum uint32, prevBlkHash common.Uint256, tx
 	}
 
 	blkHeader := &types.Header{
-		Version:          types.VERSION_SUPPORT_SHARD,
-		ChainID:          types.MAIN_CHAIN_ID,
+		Version:          types.CURR_HEADER_VERSION,
 		PrevBlockHash:    prevBlkHash,
 		TransactionsRoot: txRoot,
 		CrossStatesRoot:  crossStatesRoot,
@@ -209,6 +209,12 @@ func (self *Server) constructBlock(blkNum uint32, prevBlkHash common.Uint256, tx
 		NextBookkeeper:   nextBookkeeper,
 		ConsensusData:    common.GetNonce(),
 		ConsensusPayload: consensusPayload,
+	}
+
+	if config.DefConfig.P2PNode.NetworkId == config.NETWORK_ID_MAIN_NET {
+		blkHeader.ChainID = types.MAIN_CHAIN_ID
+	} else if config.DefConfig.P2PNode.NetworkId == config.NETWORK_ID_TEST_NET {
+		blkHeader.ChainID = types.TESTNET_CHAIN_ID
 	}
 
 	blk := &types.Block{

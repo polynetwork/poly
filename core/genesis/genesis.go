@@ -69,8 +69,7 @@ func BuildGenesisBlock(defaultBookkeeper []keypair.PublicKey, genesisConfig *con
 
 	//blockdata
 	genesisHeader := &types.Header{
-		Version:          types.VERSION_SUPPORT_SHARD,
-		ChainID:          types.MAIN_CHAIN_ID,
+		Version:          types.CURR_HEADER_VERSION,
 		PrevBlockHash:    common.Uint256{},
 		TransactionsRoot: common.Uint256{},
 		Timestamp:        constants.GENESIS_BLOCK_TIMESTAMP,
@@ -113,9 +112,17 @@ func NewInvokeTransaction(invokeCode []byte) *types.Transaction {
 		Code: invokeCode,
 	}
 	tx := &types.Transaction{
+		Version: types.CURR_TX_VERSION,
 		TxType:  types.Invoke,
 		Payload: invokePayload,
 	}
+
+	if config.DefConfig.P2PNode.NetworkId == config.NETWORK_ID_MAIN_NET {
+		tx.ChainID = types.MAIN_CHAIN_ID
+	} else if config.DefConfig.P2PNode.NetworkId == config.NETWORK_ID_TEST_NET {
+		tx.ChainID = types.TESTNET_CHAIN_ID
+	}
+
 	sink := common.NewZeroCopySink(nil)
 	err := tx.Serialization(sink)
 	if err != nil {

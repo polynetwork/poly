@@ -18,10 +18,9 @@
 
 package types
 
-const VERSION_SUPPORT_SHARD = 1 // add shard id in tx, add shard id and parent height in header
-const TESTNET_CHAIN_ID = 0
-const MAIN_CHAIN_ID = 4
+const MAIN_CHAIN_ID = 0
+const TESTNET_CHAIN_ID = 1
 
 const CURR_TX_VERSION = 0
-const CURR_HEADER_VERSION = 1
+const CURR_HEADER_VERSION = 0
 const MAX_ATTRIBUTES_LEN = 0
