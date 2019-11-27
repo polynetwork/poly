@@ -2,6 +2,7 @@ package btc
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -146,16 +147,22 @@ func getTxOuts(amountSum int64, amounts map[string]int64, fee uint64, relayer []
 }
 
 func getChangeTxOut(change int64, redeem []byte) (*wire.TxOut, error) {
-	p2shAddr, err := btcutil.NewAddressScriptHash(redeem, netParam)
+	script, err := getLockScript(redeem)
+	return wire.NewTxOut(change, script), err
+}
+
+func getLockScript(redeem []byte) ([]byte, error) {
+	hasher := sha256.New()
+	hasher.Write(redeem)
+	witAddr, err := btcutil.NewAddressWitnessScriptHash(hasher.Sum(nil), netParam)
 	if err != nil {
-		return nil, fmt.Errorf("getChangeTxOut, failed to get p2sh: %v", err)
+		return nil, fmt.Errorf("getChangeTxOut, failed to get witness address: %v", err)
 	}
-	p2shScript, err := txscript.PayToAddrScript(p2shAddr)
+	script, err := txscript.PayToAddrScript(witAddr)
 	if err != nil {
 		return nil, fmt.Errorf("getChangeTxOut, failed to get p2sh script: %v", err)
 	}
-
-	return wire.NewTxOut(change, p2shScript), nil
+	return script, nil
 }
 
 func estimateSerializedTxSize(inputCount int, txOuts []*wire.TxOut, potential *wire.TxOut) int {
@@ -392,6 +399,11 @@ func putBtcRedeemScript(native *native.NativeService, redeemScript string) error
 	redeem, err := hex.DecodeString(redeemScript)
 	if err != nil {
 		return fmt.Errorf("putBtcRedeemScript, failed to decode redeem script: %v", err)
+	}
+
+	cls := txscript.GetScriptClass(redeem)
+	if cls.String() != "multisig" {
+		return fmt.Errorf("putBtcRedeemScript, wrong type of redeem: %s", cls)
 	}
 	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(redeem))
 	return nil
