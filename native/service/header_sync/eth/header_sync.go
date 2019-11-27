@@ -133,12 +133,12 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 			return fmt.Errorf("SyncBlockHeader, invalid gas limit: have %d, want %d += %d", header.GasLimit, prevHeader.GasLimit, limit)
 		}
 
-		//verify difficulty
-		expected := difficultyCalculator(new(big.Int).SetUint64(header.Time), prevHeader)
-
-		if expected.Cmp(header.Difficulty) != 0 {
-			return fmt.Errorf("SyncBlockHeader, invalid difficulty: have %v, want %v", header.Difficulty, expected)
-		}
+		////verify difficulty
+		//expected := difficultyCalculator(new(big.Int).SetUint64(header.Time), prevHeader)
+		//
+		//if expected.Cmp(header.Difficulty) != 0 {
+		//	return fmt.Errorf("SyncBlockHeader, invalid difficulty: have %v, want %v", header.Difficulty, expected)
+		//}
 
 		//block header storage
 		err = putBlockHeader(native, header, v, headerParams.ChainID)
