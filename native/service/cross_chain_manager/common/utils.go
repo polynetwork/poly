@@ -45,14 +45,14 @@ func ConverDecimal(fromDecimal int, toDecimal int, fromAmount *big.Int) *big.Int
 	return fromAmount
 }
 
-func NotifyMakeProof(native *native.NativeService, txHash string, toChainID uint64, key string) {
+func NotifyMakeProof(native *native.NativeService, fromChainID, toChainID uint64, txHash string, key string) {
 	if !config.DefConfig.Common.EnableEventLog {
 		return
 	}
 	native.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
-			States:          []interface{}{NotifyMakeProofInfo[toChainID], txHash, toChainID, native.GetHeight(), key},
+			States:          []interface{}{NOTIFY_MAKE_PROOF, fromChainID, toChainID, txHash, native.GetHeight(), key},
 		})
 }
 

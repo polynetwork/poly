@@ -2,7 +2,6 @@ package common
 
 import (
 	"fmt"
-	"github.com/ontio/multi-chain/native/service/utils"
 	"sort"
 
 	"github.com/ontio/multi-chain/common"
@@ -17,13 +16,9 @@ var (
 	KEY_PREFIX_ETH_VOTE = "ethVote"
 	REQUEST             = "request"
 	DONE_TX             = "doneTx"
-)
 
-var NotifyMakeProofInfo = map[uint64]string{
-	utils.ETH_ROUTER: "makeToEthProof",
-	utils.ONT_ROUTER: "makeToOntProof",
-	utils.NEO_ROUTER: "makeToNeoProof",
-}
+	NOTIFY_MAKE_PROOF = "makeProof"
+)
 
 type ChainHandler interface {
 	MakeDepositProposal(service *native.NativeService) (*MakeTxParam, error)

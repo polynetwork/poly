@@ -176,7 +176,7 @@ func MakeTransaction(service *native.NativeService, params *scom.MakeTxParam, fr
 	service.PutMerkleVal(sink.Bytes())
 	chainIDBytes := utils.GetUint64Bytes(params.ToChainID)
 	key := hex.EncodeToString(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(scom.REQUEST), chainIDBytes, merkleValue.TxHash))
-	scom.NotifyMakeProof(service, hex.EncodeToString(params.TxHash), params.ToChainID, key)
+	scom.NotifyMakeProof(service, fromChainID, params.ToChainID, hex.EncodeToString(params.TxHash), key)
 	return nil
 }
 
