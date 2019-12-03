@@ -217,15 +217,17 @@ func (this *MultiSignInfo) Deserialization(source *common.ZeroCopySource) error 
 }
 
 type Args struct {
-	ToChainID         uint64
-	Fee               int64
-	ToContractAddress []byte
-	Address           []byte
+	ToChainID              uint64
+	Fee                    uint64
+	DestFeeContractAddress []byte
+	ToContractAddress      []byte
+	Address                []byte
 }
 
 func (this *Args) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteUint64(this.ToChainID)
-	sink.WriteInt64(this.Fee)
+	sink.WriteUint64(this.Fee)
+	sink.WriteVarBytes(this.DestFeeContractAddress)
 	sink.WriteVarBytes(this.ToContractAddress)
 	sink.WriteVarBytes(this.Address)
 }
@@ -235,9 +237,13 @@ func (this *Args) Deserialization(source *common.ZeroCopySource) error {
 	if eof {
 		return fmt.Errorf("Args deserialize toChainID error")
 	}
-	fee, eof := source.NextInt64()
+	fee, eof := source.NextUint64()
 	if eof {
 		return fmt.Errorf("Args deserialize fee error")
+	}
+	destFeeContractAddress, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("Args deserialize destFeeContractAddress error")
 	}
 	toContractAddress, eof := source.NextVarBytes()
 	if eof {
@@ -250,6 +256,7 @@ func (this *Args) Deserialization(source *common.ZeroCopySource) error {
 
 	this.ToChainID = toChainID
 	this.Fee = fee
+	this.DestFeeContractAddress = destFeeContractAddress
 	this.ToContractAddress = toContractAddress
 	this.Address = address
 	return nil
