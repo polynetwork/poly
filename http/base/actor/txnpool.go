@@ -22,7 +22,6 @@ package actor
 import (
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"github.com/ontio/multi-chain/core/genesis"
 	"github.com/ontio/multi-chain/native/service/governance/node_manager"
 	"github.com/ontio/ontology-crypto/keypair"
