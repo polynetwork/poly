@@ -23,7 +23,7 @@ import (
 
 const (
 	// TODO: Temporary setting
-	OP_RETURN_SCRIPT_FLAG                   = byte(0xcc)
+	OP_RETURN_SCRIPT_FLAG                   = byte(0x66)
 	FEE                                     = int64(4e3)
 	BTC_TX_PREFIX                           = "btctx"
 	BTC_FROM_TX_PREFIX                      = "btcfromtx"
@@ -523,7 +523,7 @@ func getBtcMultiSignInfo(native *native.NativeService, txid []byte) (*MultiSignI
 	return multiSignInfo, nil
 }
 
-func addSigToTx(sigMap *MultiSignInfo, addrs []btcutil.Address, redeem []byte, tx *wire.MsgTx, pkScripts [][]byte) (*wire.MsgTx, error) {
+func addSigToTx(sigMap *MultiSignInfo, addrs []btcutil.Address, redeem []byte, tx *wire.MsgTx, pkScripts [][]byte) error {
 	for i := 0; i < len(tx.TxIn); i++ {
 		var (
 			script []byte
@@ -546,7 +546,7 @@ func addSigToTx(sigMap *MultiSignInfo, addrs []btcutil.Address, redeem []byte, t
 			}
 			script, err = builder.Script()
 			if err != nil {
-				return nil, fmt.Errorf("failed to build sigscript for input %d: %v", i, err)
+				return fmt.Errorf("failed to build sigscript for input %d: %v", i, err)
 			}
 			tx.TxIn[i].SignatureScript = script
 		case txscript.WitnessV0ScriptHashTy:
@@ -563,10 +563,10 @@ func addSigToTx(sigMap *MultiSignInfo, addrs []btcutil.Address, redeem []byte, t
 			data[idx] = redeem
 			tx.TxIn[i].Witness = wire.TxWitness(data)
 		default:
-			return nil, fmt.Errorf("addSigToTx, type of no.%d utxo is %s which is not supported", i, c)
+			return fmt.Errorf("addSigToTx, type of no.%d utxo is %s which is not supported", i, c)
 		}
 	}
-	return tx, nil
+	return nil
 }
 
 func putBtcFromInfo(native *native.NativeService, txid []byte, btcFromInfo *BtcFromInfo) error {

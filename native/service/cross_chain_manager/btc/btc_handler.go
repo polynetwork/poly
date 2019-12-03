@@ -135,7 +135,7 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 				States:          []interface{}{"btcTxMultiSign", params.TxHash, multiSignInfo.MultiSignInfo},
 			})
 	} else {
-		mtx, err = addSigToTx(multiSignInfo, addrs, redeemScript, mtx, pkScripts)
+		err = addSigToTx(multiSignInfo, addrs, redeemScript, mtx, pkScripts)
 		if err != nil {
 			return fmt.Errorf("MultiSign, failed to add sig to tx: %v", err)
 		}
@@ -155,7 +155,7 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 		}
 		txid := mtx.TxHash()
 		for i, v := range mtx.TxOut {
-			if bytes.Compare(witScript, v.PkScript) == 0 {
+			if bytes.Equal(witScript, v.PkScript) {
 				newUtxo := &Utxo{
 					Op: &OutPoint{
 						Hash:  txid[:],
