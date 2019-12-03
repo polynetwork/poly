@@ -165,16 +165,23 @@ func getLockScript(redeem []byte) ([]byte, error) {
 	return script, nil
 }
 
-func estimateSerializedTxSize(inputCount int, txOuts []*wire.TxOut, potential *wire.TxOut) int {
-	multi5of7InputSize := 32 + 4 + 1 + 4 + REDEEM_P2SH_5_OF_7_MULTISIG_SCRIPT_SIZE
-
+func estimateSerializedTxSize(txIns []*wire.TxIn, txOuts []*wire.TxOut, potential *wire.TxOut) int {
+	p2shInputSize := 43 + REDEEM_P2SH_5_OF_7_MULTISIG_SCRIPT_SIZE
+	witnessInputSize := 41 + REDEEM_P2SH_5_OF_7_MULTISIG_SCRIPT_SIZE/4
 	outsSize := 0
 	for _, txOut := range txOuts {
 		outsSize += txOut.SerializeSize()
 	}
+	witNum := 0
+	for _, txIn := range txIns {
+		switch txscript.GetScriptClass(txIn.SignatureScript) {
+		case txscript.WitnessV0ScriptHashTy:
+			witNum++
+		}
+	}
 
-	return 10 + wire.VarIntSerializeSize(uint64(inputCount)) + wire.VarIntSerializeSize(uint64(len(txOuts)+1)) +
-		inputCount*multi5of7InputSize + potential.SerializeSize() + outsSize
+	return 10 + 2 + wire.VarIntSerializeSize(uint64(len(txIns))) + wire.VarIntSerializeSize(uint64(len(txOuts)+1)) +
+		(len(txIns) - witNum)*p2shInputSize + witNum*witnessInputSize + potential.SerializeSize() + outsSize
 }
 
 func putBtcRelayer(native *native.NativeService, txHash, relayer []byte) {
