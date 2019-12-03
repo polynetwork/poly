@@ -425,13 +425,13 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 		amts[i] = u.Value
 	}
 
-	fee := int64(float64(estimateSerializedTxSize(len(txIns), outs, out)*MIN_SATOSHI_TO_RELAY_PER_BYTE)*WEIGHT)
-	if amountSum <= fee {
+	gasFee := int64(float64(estimateSerializedTxSize(len(txIns), outs, out)*MIN_SATOSHI_TO_RELAY_PER_BYTE)*WEIGHT)
+	if amountSum <= gasFee {
 		return fmt.Errorf("makeBtcTx, amounts sum(%d) must greater than fee %d", amountSum, fee)
 	}
 
 	for i, _ := range outs {
-		outs[i].Value = outs[i].Value - int64(float64(gasfee)/float64(amountSum)*float64(outs[i].Value))
+		outs[i].Value = outs[i].Value - int64(float64(gasFee)/float64(amountSum)*float64(outs[i].Value))
 	}
 	out.Value = sum - amountSum
 	mtx, err := getUnsignedTx(txIns, outs, out, nil)
