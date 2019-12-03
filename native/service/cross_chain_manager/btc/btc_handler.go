@@ -323,6 +323,19 @@ func notifyBtcTx(native *native.NativeService, proof, tx []byte, height uint32, 
 	if err != nil {
 		return fmt.Errorf("notifyBtcTx, failed to decode the transaction %s: %s", hex.EncodeToString(tx), err)
 	}
+	redeem, err := getBtcRedeemScriptBytes(native)
+	if err != nil {
+		return fmt.Errorf("notifyBtcTx, failed to get redeem: %v", err)
+	}
+	err = checkTxOuts(mtx, redeem)
+	if err != nil {
+		return fmt.Errorf("notifyBtcTx, wrong outputs: %v", err)
+	}
+
+	err = ifCanResolve(mtx.TxOut[1], mtx.TxOut[0].Value)
+	if err != nil {
+		return fmt.Errorf("notifyBtcTx, failed to resolve parameter: %v", err)
+	}
 
 	mb := wire_bch.MsgMerkleBlock{}
 	err = mb.BchDecode(bytes.NewReader(proof), wire_bch.ProtocolVersion, wire_bch.LatestEncoding)
@@ -351,7 +364,7 @@ func notifyBtcTx(native *native.NativeService, proof, tx []byte, height uint32, 
 		return fmt.Errorf("notifyBtcTx, transaction %s not found in proof", txid.String())
 	}
 
-	btcProof := &BtcProof{
+	btcProof := &BtcProof {
 		Tx:           tx,
 		Proof:        proof,
 		Height:       height,

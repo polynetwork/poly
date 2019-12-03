@@ -597,3 +597,73 @@ func getBtcFromInfo(native *native.NativeService, txid []byte) (*BtcFromInfo, er
 	}
 	return btcFromInfo, nil
 }
+
+func checkTxOuts(tx *wire.MsgTx, redeem []byte) error {
+	if len(tx.TxOut) < 2 {
+		return errors.New("checkTxOuts, number of transaction's outputs is at least greater" +
+			" than 2")
+	}
+	if tx.TxOut[0].Value <= 0 {
+		return fmt.Errorf("checkTxOuts, the value of crosschain transaction must be bigger "+
+			"than 0, but value is %d", tx.TxOut[0].Value)
+	}
+
+	switch txscript.GetScriptClass(tx.TxOut[0].PkScript) {
+	case txscript.MultiSigTy:
+		if !bytes.Equal(redeem, tx.TxOut[0].PkScript) {
+			return fmt.Errorf("wrong script: \"%x\" is not same as our \"%x\"",
+				tx.TxOut[0].PkScript, redeem)
+		}
+	case txscript.ScriptHashTy:
+		addr, err := btcutil.NewAddressScriptHash(redeem, netParam)
+		if err != nil {
+			return err
+		}
+		script, err := txscript.PayToAddrScript(addr)
+		if err != nil {
+			return err
+		}
+		if !bytes.Equal(script, tx.TxOut[0].PkScript) {
+			return fmt.Errorf("wrong script: \"%x\" is not same as our \"%x\"", tx.TxOut[0].PkScript, script)
+		}
+	case txscript.WitnessV0ScriptHashTy:
+		hasher := sha256.New()
+		hasher.Write(redeem)
+		addr, err := btcutil.NewAddressWitnessScriptHash(hasher.Sum(nil), netParam)
+		if err != nil {
+			return err
+		}
+		script, err := txscript.PayToAddrScript(addr)
+		if err != nil {
+			return err
+		}
+		if !bytes.Equal(script, tx.TxOut[0].PkScript) {
+			return fmt.Errorf("wrong script: \"%x\" is not same as our \"%x\"", tx.TxOut[0].PkScript, script)
+		}
+	default:
+		return errors.New("first output's pkScript is not supported")
+	}
+
+	c2 := txscript.GetScriptClass(tx.TxOut[1].PkScript)
+	if c2 != txscript.NullDataTy {
+		return errors.New("second output's pkScript is not NullData type")
+	}
+
+	return nil
+}
+
+func ifCanResolve(paramOutput *wire.TxOut, value int64) error {
+	script := paramOutput.PkScript
+	if script[2] != OP_RETURN_SCRIPT_FLAG {
+		return errors.New("wrong flag")
+	}
+	args := Args{}
+	err := args.Deserialization(common.NewZeroCopySource(script[3:]))
+	if err != nil {
+		return err
+	}
+	if value < args.Fee && args.Fee >= 0 {
+		return errors.New("the transfer amount cannot be less than the transaction fee")
+	}
+	return nil
+}
