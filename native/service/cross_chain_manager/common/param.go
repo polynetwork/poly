@@ -96,15 +96,13 @@ func (this *EntranceParam) Serialization(sink *common.ZeroCopySink) {
 }
 
 type MakeTxParam struct {
-	TxHash                   []byte
-	FromContractAddress      []byte
-	ToChainID                uint64
-	ToContractAddress        []byte
-	Fee                      uint64
-	SourceFeeContractAddress []byte
-	DestFeeContractAddress   []byte
-	Method                   string
-	Args                     []byte
+	TxHash              []byte
+	FromContractAddress []byte
+	ToChainID           uint64
+	ToContractAddress   []byte
+	Fee                 uint64
+	Method              string
+	Args                []byte
 }
 
 func (this *MakeTxParam) Serialization(sink *common.ZeroCopySink) {
@@ -113,8 +111,6 @@ func (this *MakeTxParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteUint64(this.ToChainID)
 	sink.WriteVarBytes(this.ToContractAddress)
 	sink.WriteUint64(this.Fee)
-	sink.WriteVarBytes(this.SourceFeeContractAddress)
-	sink.WriteVarBytes(this.DestFeeContractAddress)
 	sink.WriteVarBytes([]byte(this.Method))
 	sink.WriteVarBytes(this.Args)
 }
@@ -140,14 +136,6 @@ func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 	if eof {
 		return fmt.Errorf("MakeTxParam deserialize fee error")
 	}
-	sourceFeeContractAddress, eof := source.NextVarBytes()
-	if eof {
-		return fmt.Errorf("MakeTxParam deserialize sourceFeeContractAddress error")
-	}
-	destFeeContractAddress, eof := source.NextVarBytes()
-	if eof {
-		return fmt.Errorf("MakeTxParam deserialize destFeeContractAddress error")
-	}
 	method, eof := source.NextString()
 	if eof {
 		return fmt.Errorf("MakeTxParam deserialize method error")
@@ -162,8 +150,6 @@ func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 	this.ToChainID = toChainID
 	this.ToContractAddress = toContractAddress
 	this.Fee = fee
-	this.SourceFeeContractAddress = sourceFeeContractAddress
-	this.DestFeeContractAddress = destFeeContractAddress
 	this.Method = method
 	this.Args = args
 	return nil
@@ -305,25 +291,25 @@ func (this *ToMerkleValue) Serialization(sink *common.ZeroCopySink) {
 func (this *ToMerkleValue) Deserialization(source *common.ZeroCopySource) error {
 	txHash, eof := source.NextVarBytes()
 	if eof {
-		return fmt.Errorf("ToMerkleValue deserialize txHash error")
+		return fmt.Errorf("MerkleValue deserialize txHash error")
 	}
 	fromChainID, eof := source.NextUint64()
 	if eof {
-		return fmt.Errorf("ToMerkleValue deserialize fromChainID error")
+		return fmt.Errorf("MerkleValue deserialize fromChainID error")
 	}
 	relayer, eof := source.NextVarBytes()
 	if eof {
-		return fmt.Errorf("ToMerkleValue deserialize relayer error")
+		return fmt.Errorf("MerkleValue deserialize relayer error")
 	}
 	ratio, eof := source.NextUint64()
 	if eof {
-		return fmt.Errorf("ToMerkleValue deserialize ratio error")
+		return fmt.Errorf("MerkleValue deserialize ratio error")
 	}
 
 	makeTxParam := new(MakeTxParam)
 	err := makeTxParam.Deserialization(source)
 	if err != nil {
-		return fmt.Errorf("ToMerkleValue deserialize makeTxParam error:%s", err)
+		return fmt.Errorf("MerkleValue deserialize makeTxParam error:%s", err)
 	}
 
 	this.TxHash = txHash

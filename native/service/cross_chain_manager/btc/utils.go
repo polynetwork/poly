@@ -24,7 +24,6 @@ import (
 const (
 	// TODO: Temporary setting
 	OP_RETURN_SCRIPT_FLAG                   = byte(0x66)
-	FEE                                     = int64(4e3)
 	BTC_TX_PREFIX                           = "btctx"
 	BTC_FROM_TX_PREFIX                      = "btcfromtx"
 	REDEEM_P2SH_5_OF_7_MULTISIG_SCRIPT_SIZE = 1 + 5*(1+72) + 1 + 1 + 7*(1+33) + 1 + 1
@@ -181,7 +180,7 @@ func estimateSerializedTxSize(txIns []*wire.TxIn, txOuts []*wire.TxOut, potentia
 	}
 
 	return 10 + 2 + wire.VarIntSerializeSize(uint64(len(txIns))) + wire.VarIntSerializeSize(uint64(len(txOuts)+1)) +
-		(len(txIns)-witNum)*p2shInputSize + witNum*witnessInputSize + potential.SerializeSize() + outsSize
+		(len(txIns) - witNum)*p2shInputSize + witNum*witnessInputSize + potential.SerializeSize() + outsSize
 }
 
 func putBtcRelayer(native *native.NativeService, txHash, relayer []byte) {
@@ -534,7 +533,7 @@ func addSigToTx(sigMap *MultiSignInfo, addrs []btcutil.Address, redeem []byte, t
 	for i := 0; i < len(tx.TxIn); i++ {
 		var (
 			script []byte
-			err    error
+			err error
 		)
 		builder := txscript.NewScriptBuilder()
 		switch c := txscript.GetScriptClass(pkScripts[i]); c {
@@ -557,7 +556,7 @@ func addSigToTx(sigMap *MultiSignInfo, addrs []btcutil.Address, redeem []byte, t
 			}
 			tx.TxIn[i].SignatureScript = script
 		case txscript.WitnessV0ScriptHashTy:
-			data := make([][]byte, len(sigMap.MultiSignInfo)+2)
+			data := make([][]byte, len(sigMap.MultiSignInfo) + 2)
 			idx := 1
 			for _, addr := range addrs {
 				signs, ok := sigMap.MultiSignInfo[addr.EncodeAddress()]
@@ -669,7 +668,7 @@ func ifCanResolve(paramOutput *wire.TxOut, value int64) error {
 	if err != nil {
 		return err
 	}
-	if value < int64(args.Fee) && args.Fee >= 0 {
+	if value < args.Fee && args.Fee >= 0 {
 		return errors.New("the transfer amount cannot be less than the transaction fee")
 	}
 	return nil
