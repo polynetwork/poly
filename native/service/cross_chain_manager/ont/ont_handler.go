@@ -20,9 +20,13 @@ package ont
 
 import (
 	"fmt"
+
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native"
 	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
+	"github.com/ontio/multi-chain/native/service/header_sync/ont"
+	ocommon "github.com/ontio/ontology/common"
+	bcommon "github.com/ontio/ontology/http/base/common"
 )
 
 type ONTHandler struct {
@@ -39,10 +43,28 @@ func (this *ONTHandler) MakeDepositProposal(service *native.NativeService) (*sco
 	}
 
 	if err := scom.CheckDoneTx(service, params.TxHash, params.Proof, params.SourceChainID); err != nil {
-		return nil, fmt.Errorf("MakeDepositProposal, check done transaction error:%s", err)
+		return nil, fmt.Errorf("ont MakeDepositProposal, check done transaction error:%s", err)
 	}
 
-	value, err := verifyFromOntTx(service, params.Proof, params.TxHash, params.SourceChainID, params.Height)
+	crossChainMsg, err := ont.GetCrossChainMsg(service, params.SourceChainID, params.Height)
+	if crossChainMsg == nil {
+		crossChainMsg2 := new(bcommon.CrossChainMsg)
+		err := crossChainMsg2.Deserialization(ocommon.NewZeroCopySource(params.HeaderOrCrossChainMsg))
+		if err != nil {
+			return nil, fmt.Errorf("ont MakeDepositProposal, deserialize crossChainMsg error: %v", err)
+		}
+		err = ont.VerifyCrossChainMsg(service, params.SourceChainID, crossChainMsg)
+		if err != nil {
+			return nil, fmt.Errorf("ont MakeDepositProposal, VerifyCrossChainMsg error: %v", err)
+		}
+		err = ont.PutCrossChainMsg(service, params.SourceChainID, crossChainMsg)
+		if err != nil {
+			return nil, fmt.Errorf("ont MakeDepositProposal, put PutCrossChainMsg error: %v", err)
+		}
+		crossChainMsg = crossChainMsg2
+	}
+
+	value, err := verifyFromOntTx(params.Proof, params.TxHash, crossChainMsg)
 	if err != nil {
 		return nil, fmt.Errorf("ont MakeDepositProposal, VerifyOntTx error: %v", err)
 	}

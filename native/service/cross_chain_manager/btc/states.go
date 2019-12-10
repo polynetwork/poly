@@ -2,9 +2,9 @@ package btc
 
 import (
 	"fmt"
+	"github.com/ontio/multi-chain/common"
 	"math/big"
 	"sort"
-	"github.com/ontio/multi-chain/common"
 )
 
 type BtcProof struct {

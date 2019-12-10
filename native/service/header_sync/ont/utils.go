@@ -152,7 +152,7 @@ func GetHeaderByHash(native *native.NativeService, chainID uint64, hash common.U
 	return header, nil
 }
 
-func verifyCrossChainMsg(native *native.NativeService, chainID uint64, crossChainMsg *bcommon.CrossChainMsg) error {
+func VerifyCrossChainMsg(native *native.NativeService, chainID uint64, crossChainMsg *bcommon.CrossChainMsg) error {
 	height := crossChainMsg.Height
 	//search consensus peer
 	keyHeight, err := findKeyHeight(native, height, chainID)

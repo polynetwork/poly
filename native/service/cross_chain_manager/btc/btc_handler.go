@@ -364,7 +364,7 @@ func notifyBtcTx(native *native.NativeService, proof, tx []byte, height uint32, 
 		return fmt.Errorf("notifyBtcTx, transaction %s not found in proof", txid.String())
 	}
 
-	btcProof := &BtcProof {
+	btcProof := &BtcProof{
 		Tx:           tx,
 		Proof:        proof,
 		Height:       height,
@@ -425,7 +425,7 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 		amts[i] = u.Value
 	}
 
-	gasFee := int64(float64(estimateSerializedTxSize(txIns, outs, out)*MIN_SATOSHI_TO_RELAY_PER_BYTE)*WEIGHT)
+	gasFee := int64(float64(estimateSerializedTxSize(txIns, outs, out)*MIN_SATOSHI_TO_RELAY_PER_BYTE) * WEIGHT)
 	if amountSum <= gasFee {
 		return fmt.Errorf("makeBtcTx, amounts sum(%d) must greater than fee %d", amountSum, fee)
 	}

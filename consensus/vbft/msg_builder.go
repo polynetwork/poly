@@ -200,6 +200,7 @@ func (self *Server) constructBlock(blkNum uint32, prevBlkHash common.Uint256, tx
 
 	blkHeader := &types.Header{
 		Version:          types.CURR_HEADER_VERSION,
+		ChainID: types.MAIN_CHAIN_ID,
 		PrevBlockHash:    prevBlkHash,
 		TransactionsRoot: txRoot,
 		CrossStatesRoot:  crossStatesRoot,
