@@ -259,14 +259,12 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 
 	txHash := mtx.TxHash()
 	return true, &crosscommon.MakeTxParam{
-		TxHash:                 txHash[:],
-		FromContractAddress:    []byte(BTC_ADDRESS),
-		ToChainID:              p.args.ToChainID,
-		ToContractAddress:      p.args.ToContractAddress,
-		Fee:                    p.args.Fee,
-		DestFeeContractAddress: p.args.DestFeeContractAddress,
-		Method:                 "unlock",
-		Args:                   p.AddrAndVal,
+		TxHash:              txHash[:],
+		FromContractAddress: []byte(BTC_ADDRESS),
+		ToChainID:           p.args.ToChainID,
+		ToContractAddress:   p.args.ToContractAddress,
+		Method:              "unlock",
+		Args:                p.AddrAndVal,
 	}, params.FromChainID, relayer, nil
 }
 
@@ -366,7 +364,7 @@ func notifyBtcTx(native *native.NativeService, proof, tx []byte, height uint32, 
 		return fmt.Errorf("notifyBtcTx, transaction %s not found in proof", txid.String())
 	}
 
-	btcProof := &BtcProof{
+	btcProof := &BtcProof {
 		Tx:           tx,
 		Proof:        proof,
 		Height:       height,
@@ -427,12 +425,12 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 		amts[i] = u.Value
 	}
 
-	gasFee := int64(float64(estimateSerializedTxSize(txIns, outs, out)*MIN_SATOSHI_TO_RELAY_PER_BYTE) * WEIGHT)
+	gasFee := int64(float64(estimateSerializedTxSize(txIns, outs, out)*MIN_SATOSHI_TO_RELAY_PER_BYTE)*WEIGHT)
 	if amountSum <= gasFee {
 		return fmt.Errorf("makeBtcTx, amounts sum(%d) must greater than fee %d", amountSum, fee)
 	}
 
-	for i, _ := range outs {
+	for i := range outs {
 		outs[i].Value = outs[i].Value - int64(float64(gasFee)/float64(amountSum)*float64(outs[i].Value))
 	}
 	out.Value = sum - amountSum
