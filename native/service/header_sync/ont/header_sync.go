@@ -27,9 +27,9 @@ import (
 	"github.com/ontio/multi-chain/native"
 	hscommon "github.com/ontio/multi-chain/native/service/header_sync/common"
 	"github.com/ontio/multi-chain/native/service/utils"
-	"github.com/ontio/ontology-crypto/keypair"
 	ocommon "github.com/ontio/ontology/common"
 	otypes "github.com/ontio/ontology/core/types"
+	bcommon "github.com/ontio/ontology/http/base/common"
 )
 
 type ONTHandler struct {
@@ -111,40 +111,23 @@ func (this *ONTHandler) SyncCrossChainMsg(native *native.NativeService) error {
 		return fmt.Errorf("SyncCrossChainMsg, contract params deserialize error: %v", err)
 	}
 	for _, v := range params.CrossChainMsgs {
-		source := ocommon.NewZeroCopySource(v)
-		crossChainMsg := new(otypes.CrossChainMsg)
-		err := crossChainMsg.Deserialization(source)
+		crossChainMsg := new(bcommon.CrossChainMsg)
+		err := crossChainMsg.Deserialization(ocommon.NewZeroCopySource(v))
 		if err != nil {
 			return fmt.Errorf("SyncCrossChainMsg, deserialize crossChainMsg error: %v", err)
-		}
-		n, _, irr, eof := source.NextVarUint()
-		if irr || eof {
-			return fmt.Errorf("SyncCrossChainMsg, deserialization bookkeeper length error")
-		}
-		var bookkeepers []keypair.PublicKey
-		for i := 0; uint64(i) < n; i++ {
-			v, _, irr, eof := source.NextVarBytes()
-			if irr || eof {
-				return fmt.Errorf("SyncCrossChainMsg, deserialization bookkeeper error")
-			}
-			bookkeeper, err := keypair.DeserializePublicKey(v)
-			if err != nil {
-				return fmt.Errorf("SyncCrossChainMsg, keypair.DeserializePublicKey error: %v", err)
-			}
-			bookkeepers = append(bookkeepers, bookkeeper)
 		}
 		_, err = GetCrossChainMsg(native, params.ChainID, crossChainMsg.Height)
 		if err == nil {
 			return fmt.Errorf("SyncCrossChainMsg, crossChainMsg already synced, %d, %d", params.ChainID,
 				crossChainMsg.Height)
 		}
-		err = VerifyCrossChainMsg(native, params.ChainID, crossChainMsg, bookkeepers)
+		err = verifyCrossChainMsg(native, params.ChainID, crossChainMsg)
 		if err != nil {
-			return fmt.Errorf("SyncCrossChainMsg, VerifyCrossChainMsg error: %v", err)
+			return fmt.Errorf("SyncBlockHeader, verifyHeader error: %v", err)
 		}
 		err = PutCrossChainMsg(native, params.ChainID, crossChainMsg)
 		if err != nil {
-			return fmt.Errorf("SyncCrossChainMsg, put PutCrossChainMsg error: %v", err)
+			return fmt.Errorf("SyncBlockHeader, put BlockHeader error: %v", err)
 		}
 	}
 	return nil
