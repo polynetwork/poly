@@ -2,8 +2,8 @@ package btc
 
 import (
 	"fmt"
+	"math/big"
 	"sort"
-
 	"github.com/ontio/multi-chain/common"
 )
 
@@ -80,7 +80,9 @@ func (this *Utxos) Len() int {
 }
 
 func (this *Utxos) Less(i, j int) bool {
-	return uint64(this.Utxos[i].Confs)*this.Utxos[i].Value < uint64(this.Utxos[j].Confs)*this.Utxos[j].Value
+	vai := new(big.Int).Mul(big.NewInt(int64(this.Utxos[i].Value)), big.NewInt(int64(this.Utxos[i].Confs)))
+	vaj := new(big.Int).Mul(big.NewInt(int64(this.Utxos[j].Value)), big.NewInt(int64(this.Utxos[j].Confs)))
+	return vai.Cmp(vaj) == -1
 }
 
 func (this *Utxos) Swap(i, j int) {

@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
@@ -166,7 +167,7 @@ func getLockScript(redeem []byte) ([]byte, error) {
 
 func estimateSerializedTxSize(txIns []*wire.TxIn, txOuts []*wire.TxOut, potential *wire.TxOut) int {
 	p2shInputSize := 43 + REDEEM_P2SH_5_OF_7_MULTISIG_SCRIPT_SIZE
-	witnessInputSize := 41 + REDEEM_P2SH_5_OF_7_MULTISIG_SCRIPT_SIZE/4
+	witnessInputSize := 41 + REDEEM_P2SH_5_OF_7_MULTISIG_SCRIPT_SIZE/blockchain.WitnessScaleFactor
 	outsSize := 0
 	for _, txOut := range txOuts {
 		outsSize += txOut.SerializeSize()
