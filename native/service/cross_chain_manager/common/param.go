@@ -42,12 +42,13 @@ func (this *InitRedeemScriptParam) Deserialization(source *common.ZeroCopySource
 }
 
 type EntranceParam struct {
-	SourceChainID  uint64 `json:"sourceChainId"`
-	TxHash         []byte `json:"txHash"`
-	Height         uint32 `json:"height"`
-	Proof          []byte `json:"proof"`
-	RelayerAddress []byte `json:"relayerAddress"`
-	Extra          []byte `json:"extra"`
+	SourceChainID         uint64 `json:"sourceChainId"`
+	TxHash                []byte `json:"txHash"`
+	Height                uint32 `json:"height"`
+	Proof                 []byte `json:"proof"`
+	RelayerAddress        []byte `json:"relayerAddress"`
+	Extra                 []byte `json:"extra"`
+	HeaderOrCrossChainMsg []byte `json:"headerOrCrossChainMsg"`
 }
 
 func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error {
@@ -77,12 +78,17 @@ func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error 
 	if eof {
 		return fmt.Errorf("EntranceParam deserialize txdata error")
 	}
+	headerOrCrossChainMsg, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("EntranceParam deserialize headerOrCrossChainMsg error")
+	}
 	this.SourceChainID = sourceChainID
 	this.TxHash = txHash
 	this.Height = height
 	this.Proof = proof
 	this.RelayerAddress = relayerAddr
 	this.Extra = extra
+	this.HeaderOrCrossChainMsg = headerOrCrossChainMsg
 	return nil
 }
 
@@ -93,6 +99,7 @@ func (this *EntranceParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteVarBytes(this.Proof)
 	sink.WriteVarBytes(this.RelayerAddress)
 	sink.WriteVarBytes(this.Extra)
+	sink.WriteVarBytes(this.HeaderOrCrossChainMsg)
 }
 
 type MakeTxParam struct {

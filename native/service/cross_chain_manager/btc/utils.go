@@ -181,7 +181,7 @@ func estimateSerializedTxSize(txIns []*wire.TxIn, txOuts []*wire.TxOut, potentia
 	}
 
 	return 10 + 2 + wire.VarIntSerializeSize(uint64(len(txIns))) + wire.VarIntSerializeSize(uint64(len(txOuts)+1)) +
-		(len(txIns) - witNum)*p2shInputSize + witNum*witnessInputSize + potential.SerializeSize() + outsSize
+		(len(txIns)-witNum)*p2shInputSize + witNum*witnessInputSize + potential.SerializeSize() + outsSize
 }
 
 func putBtcRelayer(native *native.NativeService, txHash, relayer []byte) {
@@ -534,7 +534,7 @@ func addSigToTx(sigMap *MultiSignInfo, addrs []btcutil.Address, redeem []byte, t
 	for i := 0; i < len(tx.TxIn); i++ {
 		var (
 			script []byte
-			err error
+			err    error
 		)
 		builder := txscript.NewScriptBuilder()
 		switch c := txscript.GetScriptClass(pkScripts[i]); c {
@@ -557,7 +557,7 @@ func addSigToTx(sigMap *MultiSignInfo, addrs []btcutil.Address, redeem []byte, t
 			}
 			tx.TxIn[i].SignatureScript = script
 		case txscript.WitnessV0ScriptHashTy:
-			data := make([][]byte, len(sigMap.MultiSignInfo) + 2)
+			data := make([][]byte, len(sigMap.MultiSignInfo)+2)
 			idx := 1
 			for _, addr := range addrs {
 				signs, ok := sigMap.MultiSignInfo[addr.EncodeAddress()]

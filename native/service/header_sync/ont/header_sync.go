@@ -121,13 +121,13 @@ func (this *ONTHandler) SyncCrossChainMsg(native *native.NativeService) error {
 			return fmt.Errorf("SyncCrossChainMsg, crossChainMsg already synced, %d, %d", params.ChainID,
 				crossChainMsg.Height)
 		}
-		err = verifyCrossChainMsg(native, params.ChainID, crossChainMsg)
+		err = VerifyCrossChainMsg(native, params.ChainID, crossChainMsg)
 		if err != nil {
-			return fmt.Errorf("SyncBlockHeader, verifyHeader error: %v", err)
+			return fmt.Errorf("SyncCrossChainMsg, VerifyCrossChainMsg error: %v", err)
 		}
 		err = PutCrossChainMsg(native, params.ChainID, crossChainMsg)
 		if err != nil {
-			return fmt.Errorf("SyncBlockHeader, put BlockHeader error: %v", err)
+			return fmt.Errorf("SyncCrossChainMsg, put PutCrossChainMsg error: %v", err)
 		}
 	}
 	return nil

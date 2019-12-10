@@ -23,19 +23,11 @@ import (
 	"fmt"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/merkle"
-	"github.com/ontio/multi-chain/native"
 	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
-	"github.com/ontio/multi-chain/native/service/header_sync/ont"
+	bcommon "github.com/ontio/ontology/http/base/common"
 )
 
-func verifyFromOntTx(native *native.NativeService, proof, txHash []byte, fromChainid uint64, height uint32) (*scom.MakeTxParam, error) {
-	//get cross chain msg
-	crossChainMsg, err := ont.GetCrossChainMsg(native, fromChainid, height)
-	if err != nil {
-		return nil, fmt.Errorf("VerifyFromOntTx, get header by height %d from chain %d error: %v",
-			height, fromChainid, err)
-	}
-
+func verifyFromOntTx(proof, txHash []byte, crossChainMsg *bcommon.CrossChainMsg) (*scom.MakeTxParam, error) {
 	v, err := merkle.MerkleProve(proof, crossChainMsg.StatesRoot.ToArray())
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromOntTx, merkle.MerkleProve verify merkle proof error")
