@@ -14,14 +14,16 @@ import (
 )
 
 const (
-	SYNC_GENESIS_HEADER = "syncGenesisHeader"
-	SYNC_BLOCK_HEADER   = "syncBlockHeader"
+	SYNC_GENESIS_HEADER  = "syncGenesisHeader"
+	SYNC_BLOCK_HEADER    = "syncBlockHeader"
+	SYNC_CROSS_CHAIN_MSG = "syncCrossChainMsg"
 )
 
 //Register methods of node_manager contract
 func RegisterHeaderSyncContract(native *native.NativeService) {
 	native.Register(SYNC_GENESIS_HEADER, SyncGenesisHeader)
 	native.Register(SYNC_BLOCK_HEADER, SyncBlockHeader)
+	native.Register(SYNC_CROSS_CHAIN_MSG, SyncCrossChainMsg)
 }
 
 func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
@@ -78,7 +80,7 @@ func SyncBlockHeader(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("SyncBlockHeader, side_chain_manager.GetSideChain error: %v", err)
 	}
 	if sideChain == nil {
-		return utils.BYTE_FALSE, fmt.Errorf("SyncGenesisHeader, side chain is not registered")
+		return utils.BYTE_FALSE, fmt.Errorf("SyncBlockHeader, side chain is not registered")
 	}
 
 	handler, err := GetChainHandler(sideChain.Router)
@@ -87,6 +89,34 @@ func SyncBlockHeader(native *native.NativeService) ([]byte, error) {
 	}
 
 	err = handler.SyncBlockHeader(native)
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
+	return utils.BYTE_TRUE, nil
+}
+
+func SyncCrossChainMsg(native *native.NativeService) ([]byte, error) {
+	params := new(hscommon.SyncCrossChainMsgParam)
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("SyncCrossChainMsg, contract params deserialize error: %v", err)
+	}
+	chainID := params.ChainID
+
+	//check if chainid exist
+	sideChain, err := side_chain_manager.GetSideChain(native, chainID)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("SyncCrossChainMsg, side_chain_manager.GetSideChain error: %v", err)
+	}
+	if sideChain == nil {
+		return utils.BYTE_FALSE, fmt.Errorf("SyncCrossChainMsg, side chain is not registered")
+	}
+
+	handler, err := GetChainHandler(sideChain.Router)
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
+
+	err = handler.SyncCrossChainMsg(native)
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}

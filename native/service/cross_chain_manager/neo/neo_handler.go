@@ -19,8 +19,6 @@
 package neo
 
 import (
-	"fmt"
-	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native"
 	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 )
@@ -33,22 +31,23 @@ func NewNEOHandler() *NEOHandler {
 }
 
 func (this *NEOHandler) MakeDepositProposal(service *native.NativeService) (*scom.MakeTxParam, error) {
-	params := new(scom.EntranceParam)
-	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
-		return nil, fmt.Errorf("ont MakeDepositProposal, contract params deserialize error: %v", err)
-	}
-
-	if err := scom.CheckDoneTx(service, params.TxHash, params.Proof, params.SourceChainID); err != nil {
-		return nil, fmt.Errorf("MakeDepositProposal, check done transaction error:%s", err)
-	}
-
-	value, err := verifyFromNEOTx(service, params.Proof, params.TxHash, params.SourceChainID, params.Height)
-	if err != nil {
-		return nil, fmt.Errorf("ont MakeDepositProposal, VerifyOntTx error: %v", err)
-	}
-
-	if err = scom.PutDoneTx(service, value.TxHash, params.Proof, params.SourceChainID); err != nil {
-		return nil, fmt.Errorf("VerifyFromOntTx, putDoneTx error:%s", err)
-	}
-	return value, nil
+	//params := new(scom.EntranceParam)
+	//if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
+	//	return nil, fmt.Errorf("ont MakeDepositProposal, contract params deserialize error: %v", err)
+	//}
+	//
+	//if err := scom.CheckDoneTx(service, params.TxHash, params.Proof, params.SourceChainID); err != nil {
+	//	return nil, fmt.Errorf("MakeDepositProposal, check done transaction error:%s", err)
+	//}
+	//
+	//value, err := verifyFromNEOTx(service, params.Proof, params.TxHash, params.SourceChainID, params.Height)
+	//if err != nil {
+	//	return nil, fmt.Errorf("ont MakeDepositProposal, VerifyOntTx error: %v", err)
+	//}
+	//
+	//if err = scom.PutDoneTx(service, value.TxHash, params.Proof, params.SourceChainID); err != nil {
+	//	return nil, fmt.Errorf("VerifyFromOntTx, putDoneTx error:%s", err)
+	//}
+	//return value, nil
+	return nil, nil
 }

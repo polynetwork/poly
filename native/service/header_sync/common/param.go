@@ -8,8 +8,10 @@ import (
 
 const (
 	//key prefix
+	CROSS_CHAIN_MSG             = "crossChainMsg"
+	CURRENT_MSG_HEIGHT          = "currentMsgHeight"
 	BLOCK_HEADER                = "blockHeader"
-	CURRENT_HEIGHT              = "currentHeight"
+	CURRENT_HEADER_HEIGHT       = "currentHeaderHeight"
 	HEADER_INDEX                = "headerIndex"
 	CONSENSUS_PEER              = "consensusPeer"
 	CONSENSUS_PEER_BLOCK_HEIGHT = "consensusPeerBlockHeight"
@@ -19,6 +21,7 @@ const (
 type HeaderSyncHandler interface {
 	SyncGenesisHeader(service *native.NativeService) error
 	SyncBlockHeader(service *native.NativeService) error
+	SyncCrossChainMsg(service *native.NativeService) error
 }
 
 type SyncGenesisHeaderParam struct {
@@ -85,5 +88,48 @@ func (this *SyncBlockHeaderParam) Deserialization(source *common.ZeroCopySource)
 	this.ChainID = chainID
 	this.Address = address
 	this.Headers = headers
+	return nil
+}
+
+type SyncCrossChainMsgParam struct {
+	ChainID        uint64
+	Address        common.Address
+	CrossChainMsgs [][]byte
+}
+
+func (this *SyncCrossChainMsgParam) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteUint64(this.ChainID)
+	sink.WriteAddress(this.Address)
+	sink.WriteUint64(uint64(len(this.CrossChainMsgs)))
+	for _, v := range this.CrossChainMsgs {
+		sink.WriteVarBytes(v)
+	}
+}
+
+func (this *SyncCrossChainMsgParam) Deserialization(source *common.ZeroCopySource) error {
+	chainID, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("SyncGenesisHeaderParam deserialize chainID error")
+	}
+	address, eof := source.NextAddress()
+	if eof {
+		return fmt.Errorf("utils.DecodeAddress, deserialize address error")
+	}
+	n, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("utils.DecodeVarUint, deserialize header count error")
+	}
+	var crossChainMsgs [][]byte
+	for i := 0; uint64(i) < n; i++ {
+		crossChainMsg, eof := source.NextVarBytes()
+		if eof {
+
+			return fmt.Errorf("utils.DecodeVarBytes, deserialize crossChainMsg error")
+		}
+		crossChainMsgs = append(crossChainMsgs, crossChainMsg)
+	}
+	this.ChainID = chainID
+	this.Address = address
+	this.CrossChainMsgs = crossChainMsgs
 	return nil
 }

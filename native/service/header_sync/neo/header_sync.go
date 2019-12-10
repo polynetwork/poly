@@ -19,13 +19,7 @@
 package neo
 
 import (
-	"fmt"
-	"github.com/joeqian10/neo-utils/neoutils/neorpc"
-	"strconv"
-
-	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native"
-	hscommon "github.com/ontio/multi-chain/native/service/header_sync/common"
 )
 
 type NEOHandler struct {
@@ -72,33 +66,37 @@ func (this *NEOHandler) SyncGenesisHeader(native *native.NativeService) error {
 }
 
 func (this *NEOHandler) SyncBlockHeader(native *native.NativeService) error {
-	params := new(hscommon.SyncBlockHeaderParam)
-	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
-		return fmt.Errorf("SyncBlockHeader, contract params deserialize error: %v", err)
-	}
-	for _, v := range params.Headers {
-		header := &neorpc.BlockHeader{}
-		header.ToBlockHeader(v)
-		chainID, err := strconv.Atoi(header.ChainID)
-		if err != nil {
-			return fmt.Errorf("SyncBlockHeader, strconv.Atoi shardID error: %v", err)
-		}
-		_, err = GetHeaderByHeight(native, params.ChainID, header.Index)
-		if err == nil {
-			return fmt.Errorf("SyncBlockHeader, %d, %d", chainID, header.Index)
-		}
-		//err = verifyHeader(native, header)
-		//if err != nil {
-		//	return fmt.Errorf("SyncBlockHeader, verifyHeader error: %v", err)
-		//}
-		err = PutBlockHeader(native, params.ChainID, header)
-		if err != nil {
-			return fmt.Errorf("SyncBlockHeader, put BlockHeader error: %v", err)
-		}
-		//err = UpdateConsensusPeer(native, header, params.Address)
-		//if err != nil {
-		//	return fmt.Errorf("SyncBlockHeader, update ConsensusPeer error: %v", err)
-		//}
-	}
+	//params := new(hscommon.SyncBlockHeaderParam)
+	//if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
+	//	return fmt.Errorf("SyncBlockHeader, contract params deserialize error: %v", err)
+	//}
+	//for _, v := range params.Headers {
+	//	header := &neorpc.BlockHeader{}
+	//	header.ToBlockHeader(v)
+	//	chainID, err := strconv.Atoi(header.ChainID)
+	//	if err != nil {
+	//		return fmt.Errorf("SyncBlockHeader, strconv.Atoi shardID error: %v", err)
+	//	}
+	//	_, err = GetHeaderByHeight(native, params.ChainID, header.Index)
+	//	if err == nil {
+	//		return fmt.Errorf("SyncBlockHeader, %d, %d", chainID, header.Index)
+	//	}
+	//	//err = verifyHeader(native, header)
+	//	//if err != nil {
+	//	//	return fmt.Errorf("SyncBlockHeader, verifyHeader error: %v", err)
+	//	//}
+	//	err = PutBlockHeader(native, params.ChainID, header)
+	//	if err != nil {
+	//		return fmt.Errorf("SyncBlockHeader, put BlockHeader error: %v", err)
+	//	}
+	//	//err = UpdateConsensusPeer(native, header, params.Address)
+	//	//if err != nil {
+	//	//	return fmt.Errorf("SyncBlockHeader, update ConsensusPeer error: %v", err)
+	//	//}
+	//}
+	return nil
+}
+
+func (this *NEOHandler) SyncCrossChainMsg(native *native.NativeService) error {
 	return nil
 }

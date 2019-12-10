@@ -149,6 +149,10 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 	return nil
 }
 
+func (this *ETHHandler) SyncCrossChainMsg(native *native.NativeService) error {
+	return nil
+}
+
 func getGenesisHeader(input []byte) (cty.Header, []byte, error) {
 	params := new(scom.SyncGenesisHeaderParam)
 	if err := params.Deserialization(common.NewZeroCopySource(input)); err != nil {

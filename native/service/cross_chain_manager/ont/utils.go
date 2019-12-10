@@ -29,14 +29,14 @@ import (
 )
 
 func verifyFromOntTx(native *native.NativeService, proof, txHash []byte, fromChainid uint64, height uint32) (*scom.MakeTxParam, error) {
-	//get block header
-	header, err := ont.GetHeaderByHeight(native, fromChainid, height)
+	//get cross chain msg
+	crossChainMsg, err := ont.GetCrossChainMsg(native, fromChainid, height)
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromOntTx, get header by height %d from chain %d error: %v",
 			height, fromChainid, err)
 	}
 
-	v, err := merkle.MerkleProve(proof, header.CrossStatesRoot.ToArray())
+	v, err := merkle.MerkleProve(proof, crossChainMsg.StatesRoot.ToArray())
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromOntTx, merkle.MerkleProve verify merkle proof error")
 	}

@@ -25,15 +25,18 @@ func putBlockHeader(native *native.NativeService, blockHeader types.Header, head
 	contract := utils.HeaderSyncContractAddress
 	blockHash := blockHeader.Hash().Bytes()
 
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), utils.GetUint64Bytes(blockHeader.Number.Uint64())),
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID),
+		utils.GetUint64Bytes(blockHeader.Number.Uint64())),
 		cstates.GenRawStorageItem(headerBytes))
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.CURRENT_HEIGHT), utils.GetUint64Bytes(chainID)), cstates.GenRawStorageItem(utils.GetUint64Bytes(blockHeader.Number.Uint64())))
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.CURRENT_HEADER_HEIGHT),
+		utils.GetUint64Bytes(chainID)), cstates.GenRawStorageItem(utils.GetUint64Bytes(blockHeader.Number.Uint64())))
 	notifyPutHeader(native, chainID, blockHeader.Number.Uint64(), hex.EncodeToString(blockHash))
 	return nil
 }
 
 func GetCurrentHeaderHeight(native *native.NativeService, chainID []byte) (uint64, error) {
-	heightStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.CURRENT_HEIGHT), chainID))
+	heightStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress,
+		[]byte(scom.CURRENT_HEADER_HEIGHT), chainID))
 	if err != nil {
 		return 0, fmt.Errorf("getPrevHeaderHeight error: %v", err)
 	}
@@ -48,7 +51,8 @@ func GetCurrentHeaderHeight(native *native.NativeService, chainID []byte) (uint6
 }
 
 func GetHeaderByHeight(native *native.NativeService, height, chainID uint64) (*cty.Header, error) {
-	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), utils.GetUint64Bytes(height)))
+	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress,
+		[]byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), utils.GetUint64Bytes(height)))
 	if err != nil {
 		return nil, fmt.Errorf("GetHeaderByHeight, get blockHashStore error: %v", err)
 	}

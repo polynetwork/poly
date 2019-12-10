@@ -27,7 +27,9 @@ import (
 	"github.com/ontio/multi-chain/native"
 	hscommon "github.com/ontio/multi-chain/native/service/header_sync/common"
 	"github.com/ontio/multi-chain/native/service/utils"
+	ocommon "github.com/ontio/ontology/common"
 	otypes "github.com/ontio/ontology/core/types"
+	bcommon "github.com/ontio/ontology/http/base/common"
 )
 
 type ONTHandler struct {
@@ -85,7 +87,7 @@ func (this *ONTHandler) SyncBlockHeader(native *native.NativeService) error {
 		}
 		_, err = GetHeaderByHeight(native, params.ChainID, header.Height)
 		if err == nil {
-			return fmt.Errorf("SyncBlockHeader, %d, %d", params.ChainID, header.Height)
+			return fmt.Errorf("SyncBlockHeader, header already synced, %d, %d", params.ChainID, header.Height)
 		}
 		err = verifyHeader(native, params.ChainID, header)
 		if err != nil {
@@ -98,6 +100,34 @@ func (this *ONTHandler) SyncBlockHeader(native *native.NativeService) error {
 		err = UpdateConsensusPeer(native, params.ChainID, header)
 		if err != nil {
 			return fmt.Errorf("SyncBlockHeader, update ConsensusPeer error: %v", err)
+		}
+	}
+	return nil
+}
+
+func (this *ONTHandler) SyncCrossChainMsg(native *native.NativeService) error {
+	params := new(hscommon.SyncCrossChainMsgParam)
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
+		return fmt.Errorf("SyncCrossChainMsg, contract params deserialize error: %v", err)
+	}
+	for _, v := range params.CrossChainMsgs {
+		crossChainMsg := new(bcommon.CrossChainMsg)
+		err := crossChainMsg.Deserialization(ocommon.NewZeroCopySource(v))
+		if err != nil {
+			return fmt.Errorf("SyncCrossChainMsg, deserialize crossChainMsg error: %v", err)
+		}
+		_, err = GetCrossChainMsg(native, params.ChainID, crossChainMsg.Height)
+		if err == nil {
+			return fmt.Errorf("SyncCrossChainMsg, crossChainMsg already synced, %d, %d", params.ChainID,
+				crossChainMsg.Height)
+		}
+		err = verifyCrossChainMsg(native, params.ChainID, crossChainMsg)
+		if err != nil {
+			return fmt.Errorf("SyncBlockHeader, verifyHeader error: %v", err)
+		}
+		err = PutCrossChainMsg(native, params.ChainID, crossChainMsg)
+		if err != nil {
+			return fmt.Errorf("SyncBlockHeader, put BlockHeader error: %v", err)
 		}
 	}
 	return nil

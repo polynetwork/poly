@@ -18,36 +18,26 @@
 
 package neo
 
-import (
-	"bytes"
-	"fmt"
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/merkle"
-	"github.com/ontio/multi-chain/native"
-	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
-	"github.com/ontio/multi-chain/native/service/header_sync/neo"
-)
-
-func verifyFromNEOTx(native *native.NativeService, proof, txHash []byte, fromChainid uint64, height uint32) (*scom.MakeTxParam, error) {
-	//get block header
-	header, err := neo.GetHeaderByHeight(native, fromChainid, height)
-	if err != nil {
-		return nil, fmt.Errorf("verifyFromOntTx, get header by height %d from chain %d error: %v",
-			height, fromChainid, err)
-	}
-
-	v, err := merkle.MerkleProve(proof, header.CrossStatesRoot.Bytes())
-	if err != nil {
-		return nil, fmt.Errorf("VerifyFromOntTx, merkle.MerkleProve verify merkle proof error")
-	}
-
-	s := common.NewZeroCopySource(v)
-	txParam := new(scom.MakeTxParam)
-	if err := txParam.Deserialization(s); err != nil {
-		return nil, fmt.Errorf("VerifyFromOntTx, deserialize merkleValue error:%s", err)
-	}
-	if !bytes.Equal(txHash, txParam.TxHash) {
-		return nil, fmt.Errorf("VerifyFromOntTx, relayer txHash:%x doesn't equal user txHash:%x", txParam.TxHash, txParam.TxHash)
-	}
-	return txParam, nil
-}
+//func verifyFromNEOTx(native *native.NativeService, proof, txHash []byte, fromChainid uint64, height uint32) (*scom.MakeTxParam, error) {
+////get block header
+//header, err := neo.GetHeaderByHeight(native, fromChainid, height)
+//if err != nil {
+//	return nil, fmt.Errorf("verifyFromOntTx, get header by height %d from chain %d error: %v",
+//		height, fromChainid, err)
+//}
+//
+//v, err := merkle.MerkleProve(proof, header.CrossStatesRoot.Bytes())
+//if err != nil {
+//	return nil, fmt.Errorf("VerifyFromOntTx, merkle.MerkleProve verify merkle proof error")
+//}
+//
+//s := common.NewZeroCopySource(v)
+//txParam := new(scom.MakeTxParam)
+//if err := txParam.Deserialization(s); err != nil {
+//	return nil, fmt.Errorf("VerifyFromOntTx, deserialize merkleValue error:%s", err)
+//}
+//if !bytes.Equal(txHash, txParam.TxHash) {
+//	return nil, fmt.Errorf("VerifyFromOntTx, relayer txHash:%x doesn't equal user txHash:%x", txParam.TxHash, txParam.TxHash)
+//}
+//return txParam, nil
+//}
