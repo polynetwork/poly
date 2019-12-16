@@ -96,7 +96,7 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	}
 
 	if sideChain.Router == utils.BTC_ROUTER {
-		err := btc.NewBTCHandler().MakeTransaction(native, txParam, chainID, params.RelayerAddress)
+		err := btc.NewBTCHandler().MakeTransaction(native, txParam, chainID)
 		if err != nil {
 			return utils.BYTE_FALSE, err
 		}
@@ -104,7 +104,7 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	}
 
 	//NOTE, you need to store the tx in this
-	err = MakeTransaction(native, txParam, chainID, params.RelayerAddress)
+	err = MakeTransaction(native, txParam, chainID)
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
@@ -113,7 +113,7 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 
 func Vote(native *native.NativeService) ([]byte, error) {
 	//1. vote
-	ok, txParam, fromChainID, relayer, err := btc.NewBTCHandler().Vote(native)
+	ok, txParam, fromChainID, err := btc.NewBTCHandler().Vote(native)
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
@@ -130,7 +130,7 @@ func Vote(native *native.NativeService) ([]byte, error) {
 			return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side chain is not registered")
 		}
 		//NOTE, you need to store the tx in this
-		err = MakeTransaction(native, txParam, fromChainID, relayer)
+		err = MakeTransaction(native, txParam, fromChainID)
 		if err != nil {
 			return utils.BYTE_FALSE, err
 		}
@@ -161,13 +161,11 @@ func InitRedeemScript(native *native.NativeService) ([]byte, error) {
 	return utils.BYTE_TRUE, nil
 }
 
-func MakeTransaction(service *native.NativeService, params *scom.MakeTxParam, fromChainID uint64, relayer []byte) error {
+func MakeTransaction(service *native.NativeService, params *scom.MakeTxParam, fromChainID uint64) error {
 	txHash := service.GetTx().Hash()
 	merkleValue := &scom.ToMerkleValue{
 		TxHash:      txHash.ToArray(),
 		FromChainID: fromChainID,
-		Relayer:     relayer,
-		Ratio:       RATIO,
 		MakeTxParam: params,
 	}
 

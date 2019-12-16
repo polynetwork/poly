@@ -9,8 +9,7 @@ import (
 )
 
 var (
-	KEY_PREFIX_BTC         = "btc"
-	KEY_PREFIX_BTC_RELAYER = "btcRelayer"
+	KEY_PREFIX_BTC = "btc"
 
 	KEY_PREFIX_BTC_VOTE = "btcVote"
 	REQUEST             = "request"
@@ -107,9 +106,9 @@ type MakeTxParam struct {
 	FromContractAddress []byte
 	ToChainID           uint64
 	ToContractAddress   []byte
-	Fee                 uint64
-	Method              string
-	Args                []byte
+	//Fee                 uint64
+	Method string
+	Args   []byte
 }
 
 func (this *MakeTxParam) Serialization(sink *common.ZeroCopySink) {
@@ -117,7 +116,7 @@ func (this *MakeTxParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteVarBytes(this.FromContractAddress)
 	sink.WriteUint64(this.ToChainID)
 	sink.WriteVarBytes(this.ToContractAddress)
-	sink.WriteUint64(this.Fee)
+	//sink.WriteUint64(this.Fee)
 	sink.WriteVarBytes([]byte(this.Method))
 	sink.WriteVarBytes(this.Args)
 }
@@ -139,10 +138,10 @@ func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 	if eof {
 		return fmt.Errorf("MakeTxParam deserialize toContractAddress error")
 	}
-	fee, eof := source.NextUint64()
-	if eof {
-		return fmt.Errorf("MakeTxParam deserialize fee error")
-	}
+	//fee, eof := source.NextUint64()
+	//if eof {
+	//	return fmt.Errorf("MakeTxParam deserialize fee error")
+	//}
 	method, eof := source.NextString()
 	if eof {
 		return fmt.Errorf("MakeTxParam deserialize method error")
@@ -156,7 +155,7 @@ func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 	this.FromContractAddress = fromContractAddress
 	this.ToChainID = toChainID
 	this.ToContractAddress = toContractAddress
-	this.Fee = fee
+	//this.Fee = fee
 	this.Method = method
 	this.Args = args
 	return nil
@@ -282,16 +281,12 @@ func (this *Vote) Deserialization(source *common.ZeroCopySource) error {
 type ToMerkleValue struct {
 	TxHash      []byte
 	FromChainID uint64
-	Relayer     []byte
-	Ratio       uint64
 	MakeTxParam *MakeTxParam
 }
 
 func (this *ToMerkleValue) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteVarBytes(this.TxHash)
 	sink.WriteUint64(this.FromChainID)
-	sink.WriteVarBytes(this.Relayer)
-	sink.WriteUint64(this.Ratio)
 	this.MakeTxParam.Serialization(sink)
 }
 
@@ -304,14 +299,6 @@ func (this *ToMerkleValue) Deserialization(source *common.ZeroCopySource) error 
 	if eof {
 		return fmt.Errorf("MerkleValue deserialize fromChainID error")
 	}
-	relayer, eof := source.NextVarBytes()
-	if eof {
-		return fmt.Errorf("MerkleValue deserialize relayer error")
-	}
-	ratio, eof := source.NextUint64()
-	if eof {
-		return fmt.Errorf("MerkleValue deserialize ratio error")
-	}
 
 	makeTxParam := new(MakeTxParam)
 	err := makeTxParam.Deserialization(source)
@@ -321,8 +308,6 @@ func (this *ToMerkleValue) Deserialization(source *common.ZeroCopySource) error 
 
 	this.TxHash = txHash
 	this.FromChainID = fromChainID
-	this.Relayer = relayer
-	this.Ratio = ratio
 	this.MakeTxParam = makeTxParam
 	return nil
 }
