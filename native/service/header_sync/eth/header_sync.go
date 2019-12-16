@@ -2,14 +2,20 @@ package eth
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/rlp"
+	"golang.org/x/crypto/sha3"
+	"hash"
 	"math/big"
 	"time"
 
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/core/types"
 	cty "github.com/ethereum/go-ethereum/core/types"
+	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
 
 	"github.com/ontio/multi-chain/common"
@@ -29,10 +35,13 @@ var (
 )
 
 type ETHHandler struct {
+	caches    *Caches
 }
 
 func NewETHHandler() *ETHHandler {
-	return &ETHHandler{}
+	return &ETHHandler{
+		caches : NewCaches(3),
+	}
 }
 
 func (this *ETHHandler) SyncGenesisHeader(native *native.NativeService) error {
@@ -133,12 +142,17 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 			return fmt.Errorf("SyncBlockHeader, invalid gas limit: have %d, want %d += %d", header.GasLimit, prevHeader.GasLimit, limit)
 		}
 
-		////verify difficulty
-		//expected := difficultyCalculator(new(big.Int).SetUint64(header.Time), prevHeader)
+		//verify difficulty
+		expected := difficultyCalculator(new(big.Int).SetUint64(header.Time), prevHeader)
+		if expected.Cmp(header.Difficulty) != 0 {
+			return fmt.Errorf("SyncBlockHeader, invalid difficulty: have %v, want %v", header.Difficulty, expected)
+		}
+
 		//
-		//if expected.Cmp(header.Difficulty) != 0 {
-		//	return fmt.Errorf("SyncBlockHeader, invalid difficulty: have %v, want %v", header.Difficulty, expected)
-		//}
+		err = this.verifyHeader(&header)
+		if err != nil {
+			return err
+		}
 
 		//block header storage
 		err = putBlockHeader(native, header, v, headerParams.ChainID)
@@ -212,4 +226,112 @@ func difficultyCalculator(time *big.Int, parent *types.Header) *big.Int {
 		x.Add(x, y)
 	}
 	return x
+}
+
+func (this *ETHHandler) verifyHeader(header *cty.Header) error {
+	// try to verfify header
+	number := header.Number.Uint64()
+	size := datasetSize(number)
+	headerHash := HashHeader(header).Bytes()
+	nonce := header.Nonce.Uint64()
+	// get seed and seed head
+	seed := make([]byte, 40)
+	copy(seed, headerHash)
+	binary.LittleEndian.PutUint64(seed[32:], nonce)
+	seed = crypto.Keccak512(seed)
+	// get mix
+	mix  :=make([]uint32, mixBytes/4)
+	for i := 0;i < len(mix);i ++ {
+		mix[i] = binary.LittleEndian.Uint32(seed[i%16*4:])
+	}
+	// get cache
+	cache := this.caches.getCache(number)
+	// get new mix with DAG data
+	rows := uint32(size / mixBytes)
+	temp := make([]uint32, len(mix))
+	seedHead := binary.LittleEndian.Uint32(seed)
+	for i := 0;i < loopAccesses;i ++ {
+		parent := fnv(uint32(i)^seedHead, mix[i%len(mix)]) % rows
+		for j := uint32(0);j < mixBytes/hashBytes;j ++ {
+			xx := lookup(cache, 2*parent+j)
+			copy(temp[j*hashWords:], xx)
+		}
+		fnvHash(mix, temp)
+	}
+	// get new mix by compress
+	for i := 0;i < len(mix);i += 4 {
+		mix[i/4] = fnv(fnv(fnv(mix[i], mix[i+1]),mix[i+2]),mix[i+3])
+	}
+	mix = mix[:len(mix)/4]
+	// get digest by compressed mix
+	digest := make([]byte, ethcommon.HashLength)
+	for i,val := range mix {
+		binary.LittleEndian.PutUint32(digest[i*4:], val)
+	}
+	// get header result hash
+	result := crypto.Keccak256(append(seed, digest...))
+	// Verify the calculated digest against the ones provided in the header
+	if !bytes.Equal(header.MixDigest[:], digest) {
+		return fmt.Errorf("invalid mix digest\n")
+	}
+	// compare result hash with target hash
+	target := new(big.Int).Div(two256, header.Difficulty)
+	if new(big.Int).SetBytes(result).Cmp(target) > 0 {
+		return fmt.Errorf("invalid proof-of-work\n")
+	}
+	return nil
+}
+
+func HashHeader(header *types.Header) (hash ethcommon.Hash) {
+	hasher := sha3.NewLegacyKeccak256()
+	rlp.Encode(hasher, []interface{}{
+		header.ParentHash,
+		header.UncleHash,
+		header.Coinbase,
+		header.Root,
+		header.TxHash,
+		header.ReceiptHash,
+		header.Bloom,
+		header.Difficulty,
+		header.Number,
+		header.GasLimit,
+		header.GasUsed,
+		header.Time,
+		header.Extra,
+	})
+	hasher.Sum(hash[:0])
+	return hash
+}
+
+type hasher func(dest []byte, data []byte)
+
+func makeHasher(h hash.Hash) hasher {
+	// sha3.state supports Read to get the sum, use it to avoid the overhead of Sum.
+	// Read alters the state but we reset the hash before every operation.
+	type readerHash interface {
+		hash.Hash
+		Read([]byte) (int, error)
+	}
+	rh, ok := h.(readerHash)
+	if !ok {
+		panic("can't find Read method on hash")
+	}
+	outputLen := rh.Size()
+	return func(dest []byte, data []byte) {
+		rh.Reset()
+		rh.Write(data)
+		rh.Read(dest[:outputLen])
+	}
+}
+
+func seedHash(block uint64) []byte {
+	seed := make([]byte, 32)
+	if block < epochLength {
+		return seed
+	}
+	keccak256 := makeHasher(sha3.NewLegacyKeccak256())
+	for i := 0; i < int(block/epochLength); i++ {
+		keccak256(seed, seed)
+	}
+	return seed
 }
