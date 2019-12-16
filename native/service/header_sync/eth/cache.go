@@ -4,42 +4,31 @@ import (
 	"encoding/binary"
 	"github.com/ethereum/go-ethereum/common/bitutil"
 	"golang.org/x/crypto/sha3"
-	"math"
 	"reflect"
 	"unsafe"
 )
 
 type Caches struct {
 	items map[uint64][]uint32
-	cap   int
+	cap uint32
 }
 
-func NewCaches(size int) *Caches {
-	caches := &Caches{
-		cap:   size,
-		items: make(map[uint64][]uint32),
+func NewCaches(size uint32) *Caches {
+	caches := &Caches {
+		cap : size,
+		items : make(map[uint64][]uint32),
 	}
 	return caches
 }
 
-func (self *Caches) tryCache(epoch uint64) ([]uint32, []uint32) {
+func (self *Caches) tryCache (epoch uint64) ([]uint32, []uint32) {
 	current := self.items[epoch]
-	future := self.items[epoch+1]
+	future := self.items[epoch + 1]
 	return current, future
 }
 
 func (self *Caches) addCache(epoch uint64, item []uint32) {
 	self.items[epoch] = item
-	if len(self.items) <= self.cap {
-		return
-	}
-	var min uint64 = math.MaxUint64
-	for key, _ := range self.items {
-		if key < min {
-			min = key
-		}
-	}
-	delete(self.items, min)
 }
 
 func (self *Caches) getCache(block uint64) []uint32 {
@@ -58,7 +47,6 @@ func (self *Caches) getCache(block uint64) []uint32 {
 		return cache
 	}
 	if future == nil {
-		self.addCache(epoch+1, []uint32{})
 		go func(newepoch uint64) {
 			size := cacheSize(newepoch*epochLength + 1)
 			seed := seedHash(newepoch*epochLength + 1)

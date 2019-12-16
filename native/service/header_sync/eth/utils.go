@@ -22,18 +22,18 @@ import (
 const (
 	// source from https://github.com/ethereum/go-ethereum/blob/master/consensus/ethash/consensus.go#L45
 	allowedFutureBlockTime = 15 * time.Second // Max time from current time allowed for blocks, before they're considered future blocks
-	epochLength            = 30000
-	maxEpoch               = 2048
-	datasetInitBytes       = 1 << 30
-	datasetGrowthBytes     = 1 << 23
-	mixBytes               = 128
-	loopAccesses           = 64
-	hashBytes              = 64
-	hashWords              = 16
-	datasetParents         = 256
-	cacheInitBytes         = 1 << 24
-	cacheGrowthBytes       = 1 << 17
-	cacheRounds            = 3
+	epochLength        = 30000
+	maxEpoch           = 2048
+	datasetInitBytes  = 1 << 30
+	datasetGrowthBytes = 1 << 23
+	mixBytes           = 128
+	loopAccesses       = 64
+	hashBytes          = 64
+	hashWords          = 16
+	datasetParents     = 256
+	cacheInitBytes     = 1 << 24
+	cacheGrowthBytes   = 1 << 17
+	cacheRounds        = 3
 )
 
 func putBlockHeader(native *native.NativeService, blockHeader types.Header, headerBytes []byte, chainID uint64) error {
