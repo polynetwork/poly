@@ -109,7 +109,7 @@ func getUnsignedTx(txIns []*wire.TxIn, outs []*wire.TxOut, changeOut *wire.TxOut
 	return mtx, nil
 }
 
-func getTxOuts(amountSum int64, amounts map[string]int64, fee uint64, relayer []byte) ([]*wire.TxOut, error) {
+func getTxOuts(amounts map[string]int64) ([]*wire.TxOut, error) {
 	outs := make([]*wire.TxOut, 0)
 	for encodedAddr, amount := range amounts {
 		// Decode the provided address.
@@ -128,20 +128,9 @@ func getTxOuts(amountSum int64, amounts map[string]int64, fee uint64, relayer []
 			return nil, fmt.Errorf("getTxOuts, failed to generate pay-to-address script: %v", err)
 		}
 
-		txOut := wire.NewTxOut(int64(float64(fee)/float64(amountSum)*float64(amount)), pkScript)
+		txOut := wire.NewTxOut(amount, pkScript)
 		outs = append(outs, txOut)
 	}
-	// Create a new script which pays to the provided address.
-	addr, err := btcutil.DecodeAddress(string(relayer), netParam)
-	if err != nil {
-		return nil, fmt.Errorf("getTxOuts, decode addr fail: %v", err)
-	}
-	pkScriptRelayer, err := txscript.PayToAddrScript(addr)
-	if err != nil {
-		return nil, fmt.Errorf("getTxOuts, failed to generate pay-to-address script: %v", err)
-	}
-	txOut := wire.NewTxOut(int64(fee), pkScriptRelayer)
-	outs = append(outs, txOut)
 
 	return outs, nil
 }
@@ -182,27 +171,6 @@ func estimateSerializedTxSize(txIns []*wire.TxIn, txOuts []*wire.TxOut, potentia
 
 	return 10 + 2 + wire.VarIntSerializeSize(uint64(len(txIns))) + wire.VarIntSerializeSize(uint64(len(txOuts)+1)) +
 		(len(txIns)-witNum)*p2shInputSize + witNum*witnessInputSize + potential.SerializeSize() + outsSize
-}
-
-func putBtcRelayer(native *native.NativeService, txHash, relayer []byte) {
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_BTC_RELAYER), txHash)
-	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(relayer))
-}
-
-func getBtcRelayer(native *native.NativeService, txHash []byte) ([]byte, error) {
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_BTC_RELAYER), txHash)
-	btcRelayerStore, err := native.GetCacheDB().Get(key)
-	if err != nil {
-		return nil, fmt.Errorf("getBtcRelayer, get btcProofStore error: %v", err)
-	}
-	if btcRelayerStore == nil {
-		return nil, fmt.Errorf("getBtcRelayer, can not find any records")
-	}
-	btcRelayerBytes, err := cstates.GetValueFromRawStorageItem(btcRelayerStore)
-	if err != nil {
-		return nil, fmt.Errorf("getBtcRelayer, deserialize from raw storage item err:%v", err)
-	}
-	return btcRelayerBytes, nil
 }
 
 func putBtcProof(native *native.NativeService, txHash, proof []byte) {

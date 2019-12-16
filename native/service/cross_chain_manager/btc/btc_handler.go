@@ -184,34 +184,34 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 	return nil
 }
 
-func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.MakeTxParam, uint64, []byte, error) {
+func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.MakeTxParam, uint64, error) {
 	params := new(crosscommon.VoteParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
-		return false, nil, 0, nil, fmt.Errorf("btc Vote, contract params deserialize error: %v", err)
+		return false, nil, 0, fmt.Errorf("btc Vote, contract params deserialize error: %v", err)
 	}
 
 	address, err := common.AddressFromBase58(params.Address)
 	if err != nil {
-		return false, nil, 0, nil, fmt.Errorf("btc Vote, common.AddressFromBase58 error: %v", err)
+		return false, nil, 0, fmt.Errorf("btc Vote, common.AddressFromBase58 error: %v", err)
 	}
 	//check witness
 	err = utils.ValidateOwner(service, address)
 	if err != nil {
-		return false, nil, 0, nil, fmt.Errorf("btc Vote, utils.ValidateOwner error: %v", err)
+		return false, nil, 0, fmt.Errorf("btc Vote, utils.ValidateOwner error: %v", err)
 	}
 
 	vote, err := getBtcVote(service, params.TxHash)
 	if err != nil {
-		return false, nil, 0, nil, fmt.Errorf("btc Vote, getBtcVote error: %v", err)
+		return false, nil, 0, fmt.Errorf("btc Vote, getBtcVote error: %v", err)
 	}
 	_, ok := vote.VoteMap[params.Address]
 	if ok {
-		return false, nil, 0, nil, fmt.Errorf("btc Vote, address %s already voted", params.Address)
+		return false, nil, 0, fmt.Errorf("btc Vote, address %s already voted", params.Address)
 	}
 	vote.VoteMap[params.Address] = params.Address
 	err = putBtcVote(service, params.TxHash, vote)
 	if err != nil {
-		return false, nil, 0, nil, fmt.Errorf("btc Vote, putBtcVote error: %v", err)
+		return false, nil, 0, fmt.Errorf("btc Vote, putBtcVote error: %v", err)
 	}
 	service.AddNotify(
 		&event.NotifyEventInfo{
@@ -221,40 +221,35 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 
 	err = crosscommon.ValidateVote(service, vote)
 	if err != nil {
-		return false, nil, 0, nil, nil
-	}
-
-	relayer, err := getBtcRelayer(service, params.TxHash)
-	if err != nil {
-		return false, nil, 0, nil, fmt.Errorf("btc Vote, getBtcRelayer error: %v", err)
+		return false, nil, 0, nil
 	}
 
 	proofBytes, err := getBtcProof(service, params.TxHash)
 	if err != nil {
-		return false, nil, 0, nil, fmt.Errorf("btc Vote, getBtcTx error: %v", err)
+		return false, nil, 0, fmt.Errorf("btc Vote, getBtcTx error: %v", err)
 	}
 	proof := new(BtcProof)
 	err = proof.Deserialization(common.NewZeroCopySource(proofBytes))
 	if err != nil {
-		return false, nil, 0, nil, fmt.Errorf("btc Vote, proof.Deserialization error: %v", err)
+		return false, nil, 0, fmt.Errorf("btc Vote, proof.Deserialization error: %v", err)
 	}
 
 	mtx := wire.NewMsgTx(wire.TxVersion)
 	reader := bytes.NewReader(proof.Tx)
 	err = mtx.BtcDecode(reader, wire.ProtocolVersion, wire.LatestEncoding)
 	if err != nil {
-		return false, nil, 0, nil, fmt.Errorf("btc Vote, failed to decode the transaction")
+		return false, nil, 0, fmt.Errorf("btc Vote, failed to decode the transaction")
 	}
 
 	err = addUtxos(service, params.FromChainID, service.GetHeight(), mtx)
 	if err != nil {
-		return false, nil, 0, nil, fmt.Errorf("btc Vote, updateUtxo error: %s", err)
+		return false, nil, 0, fmt.Errorf("btc Vote, updateUtxo error: %s", err)
 	}
 
 	var p targetChainParam
 	err = p.resolve(mtx.TxOut[0].Value, mtx.TxOut[1])
 	if err != nil {
-		return false, nil, 0, nil, fmt.Errorf("btc Vote, failed to resolve parameter: %v", err)
+		return false, nil, 0, fmt.Errorf("btc Vote, failed to resolve parameter: %v", err)
 	}
 
 	txHash := mtx.TxHash()
@@ -265,7 +260,7 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 		ToContractAddress:   p.args.ToContractAddress,
 		Method:              "unlock",
 		Args:                p.AddrAndVal,
-	}, params.FromChainID, relayer, nil
+	}, params.FromChainID, nil
 }
 
 func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*crosscommon.MakeTxParam, error) {
@@ -276,7 +271,7 @@ func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*cro
 	if len(params.Proof) == 0 || len(params.Extra) == 0 {
 		return nil, fmt.Errorf("btc MakeDepositProposal, GetInput() data can't be empty")
 	}
-	err := notifyBtcTx(service, params.Proof, params.Extra, params.Height, params.SourceChainID, params.RelayerAddress)
+	err := notifyBtcTx(service, params.Proof, params.Extra, params.Height, params.SourceChainID)
 	if err != nil {
 		return nil, fmt.Errorf("btc MakeDepositProposal, failed to verify: %v", err)
 	}
@@ -285,7 +280,7 @@ func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*cro
 }
 
 func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *crosscommon.MakeTxParam,
-	fromChainID uint64, relayer []byte) error {
+	fromChainID uint64) error {
 	if !bytes.Equal(param.ToContractAddress, []byte(BTC_ADDRESS)) {
 		return fmt.Errorf("btc MakeTransaction, destContractAddr is %s not btc", string(param.ToContractAddress))
 	}
@@ -301,14 +296,14 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *cr
 	}
 	amounts[string(toAddrBytes)] = int64(amount)
 
-	err := makeBtcTx(service, param.ToChainID, amounts, param.TxHash, fromChainID, param.Fee, relayer)
+	err := makeBtcTx(service, param.ToChainID, amounts, param.TxHash, fromChainID)
 	if err != nil {
 		return fmt.Errorf("btc MakeTransaction, failed to make transaction: %v", err)
 	}
 	return nil
 }
 
-func notifyBtcTx(native *native.NativeService, proof, tx []byte, height uint32, btcChainID uint64, relayer []byte) error {
+func notifyBtcTx(native *native.NativeService, proof, tx []byte, height uint32, btcChainID uint64) error {
 	sideChain, err := side_chain_manager.GetSideChain(native, btcChainID)
 	if err != nil {
 		return fmt.Errorf("notifyBtcTx, side_chain_manager.GetSideChain error: %v", err)
@@ -374,14 +369,13 @@ func notifyBtcTx(native *native.NativeService, proof, tx []byte, height uint32, 
 	btcProof.Serialization(sink)
 
 	putBtcProof(native, txid[:], sink.Bytes())
-	putBtcRelayer(native, txid[:], relayer)
 
 	notifyBtcProof(native, txid.String(), hex.EncodeToString(sink.Bytes()))
 	return nil
 }
 
 func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string]int64, fromTxHash []byte,
-	fromChainID, fee uint64, relayer []byte) error {
+	fromChainID uint64) error {
 	if len(amounts) == 0 {
 		return fmt.Errorf("makeBtcTx, GetInput() no amount")
 	}
@@ -397,7 +391,7 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 	}
 
 	// get tx outs
-	outs, err := getTxOuts(amountSum, amounts, fee, relayer)
+	outs, err := getTxOuts(amounts)
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, %v", err)
 	}
@@ -427,7 +421,7 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 
 	gasFee := int64(float64(estimateSerializedTxSize(txIns, outs, out)*MIN_SATOSHI_TO_RELAY_PER_BYTE) * WEIGHT)
 	if amountSum <= gasFee {
-		return fmt.Errorf("makeBtcTx, amounts sum(%d) must greater than fee %d", amountSum, fee)
+		return fmt.Errorf("makeBtcTx, amounts sum(%d) must greater than fee %d", amountSum, gasFee)
 	}
 
 	for i := range outs {
