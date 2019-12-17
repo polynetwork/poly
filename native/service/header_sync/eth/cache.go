@@ -4,16 +4,17 @@ import (
 	"encoding/binary"
 	"github.com/ethereum/go-ethereum/common/bitutil"
 	"golang.org/x/crypto/sha3"
+	"math"
 	"reflect"
 	"unsafe"
 )
 
 type Caches struct {
 	items map[uint64][]uint32
-	cap uint32
+	cap int
 }
 
-func NewCaches(size uint32) *Caches {
+func NewCaches(size int) *Caches {
 	caches := &Caches {
 		cap : size,
 		items : make(map[uint64][]uint32),
@@ -28,6 +29,17 @@ func (self *Caches) tryCache (epoch uint64) ([]uint32, []uint32) {
 }
 
 func (self *Caches) addCache(epoch uint64, item []uint32) {
+	if len(self.items) < self.cap {
+		self.items[epoch] = item
+		return
+	}
+	var min uint64 = math.MaxUint64
+	for key,_ := range self.items {
+		if key < min {
+			min = key
+		}
+	}
+	delete(self.items, min)
 	self.items[epoch] = item
 }
 
