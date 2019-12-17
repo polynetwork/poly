@@ -12,14 +12,9 @@ import (
 type Caches struct {
 	items map[uint64][]uint32
 	cap   int
-	cap   uint32
 }
 
 func NewCaches(size int) *Caches {
-	caches := &Caches{
-		cap:   size,
-		items: make(map[uint64][]uint32),
-func NewCaches(size uint32) *Caches {
 	caches := &Caches{
 		cap:   size,
 		items: make(map[uint64][]uint32),
