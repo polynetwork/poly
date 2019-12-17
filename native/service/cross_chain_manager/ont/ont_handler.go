@@ -20,13 +20,14 @@ package ont
 
 import (
 	"fmt"
+	"github.com/ontio/ontology-crypto/keypair"
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native"
 	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/header_sync/ont"
 	ocommon "github.com/ontio/ontology/common"
-	bcommon "github.com/ontio/ontology/http/base/common"
+	otypes "github.com/ontio/ontology/core/types"
 )
 
 type ONTHandler struct {
@@ -48,12 +49,29 @@ func (this *ONTHandler) MakeDepositProposal(service *native.NativeService) (*sco
 
 	crossChainMsg, err := ont.GetCrossChainMsg(service, params.SourceChainID, params.Height)
 	if crossChainMsg == nil {
-		crossChainMsg2 := new(bcommon.CrossChainMsg)
-		err := crossChainMsg2.Deserialization(ocommon.NewZeroCopySource(params.HeaderOrCrossChainMsg))
+		source := ocommon.NewZeroCopySource(params.HeaderOrCrossChainMsg)
+		crossChainMsg = new(otypes.CrossChainMsg)
+		err := crossChainMsg.Deserialization(source)
 		if err != nil {
 			return nil, fmt.Errorf("ont MakeDepositProposal, deserialize crossChainMsg error: %v", err)
 		}
-		err = ont.VerifyCrossChainMsg(service, params.SourceChainID, crossChainMsg)
+		n, _, irr, eof := source.NextVarUint()
+		if irr || eof {
+			return nil, fmt.Errorf("ont MakeDepositProposal, deserialization bookkeeper length error")
+		}
+		var bookkeepers []keypair.PublicKey
+		for i := 0; uint64(i) < n; i++ {
+			v, _, irr, eof := source.NextVarBytes()
+			if irr || eof {
+				return nil, fmt.Errorf("ont MakeDepositProposal, deserialization bookkeeper error")
+			}
+			bookkeeper, err := keypair.DeserializePublicKey(v)
+			if err != nil {
+				return nil, fmt.Errorf("ont MakeDepositProposal, keypair.DeserializePublicKey error: %v", err)
+			}
+			bookkeepers = append(bookkeepers, bookkeeper)
+		}
+		err = ont.VerifyCrossChainMsg(service, params.SourceChainID, crossChainMsg, bookkeepers)
 		if err != nil {
 			return nil, fmt.Errorf("ont MakeDepositProposal, VerifyCrossChainMsg error: %v", err)
 		}
@@ -61,7 +79,6 @@ func (this *ONTHandler) MakeDepositProposal(service *native.NativeService) (*sco
 		if err != nil {
 			return nil, fmt.Errorf("ont MakeDepositProposal, put PutCrossChainMsg error: %v", err)
 		}
-		crossChainMsg = crossChainMsg2
 	}
 
 	value, err := verifyFromOntTx(params.Proof, params.TxHash, crossChainMsg)

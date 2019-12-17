@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/native/event"
+	"github.com/ontio/ontology-crypto/keypair"
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/consensus/vbft/config"
@@ -34,10 +35,9 @@ import (
 	ocommon "github.com/ontio/ontology/common"
 	"github.com/ontio/ontology/core/signature"
 	otypes "github.com/ontio/ontology/core/types"
-	bcommon "github.com/ontio/ontology/http/base/common"
 )
 
-func PutCrossChainMsg(native *native.NativeService, chainID uint64, crossChainMsg *bcommon.CrossChainMsg) error {
+func PutCrossChainMsg(native *native.NativeService, chainID uint64, crossChainMsg *otypes.CrossChainMsg) error {
 	contract := utils.HeaderSyncContractAddress
 	sink := ocommon.NewZeroCopySink(nil)
 	crossChainMsg.Serialization(sink)
@@ -52,12 +52,12 @@ func PutCrossChainMsg(native *native.NativeService, chainID uint64, crossChainMs
 	return nil
 }
 
-func GetCrossChainMsg(native *native.NativeService, chainID uint64, height uint32) (*bcommon.CrossChainMsg, error) {
+func GetCrossChainMsg(native *native.NativeService, chainID uint64, height uint32) (*otypes.CrossChainMsg, error) {
 	contract := utils.HeaderSyncContractAddress
 	chainIDBytes := utils.GetUint64Bytes(chainID)
 	heightBytes := utils.GetUint32Bytes(height)
 
-	crossChainMsg := new(bcommon.CrossChainMsg)
+	crossChainMsg := new(otypes.CrossChainMsg)
 	crossChainMsgStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(hscommon.CROSS_CHAIN_MSG),
 		chainIDBytes, heightBytes))
 	if err != nil {
@@ -152,7 +152,8 @@ func GetHeaderByHash(native *native.NativeService, chainID uint64, hash common.U
 	return header, nil
 }
 
-func VerifyCrossChainMsg(native *native.NativeService, chainID uint64, crossChainMsg *bcommon.CrossChainMsg) error {
+func VerifyCrossChainMsg(native *native.NativeService, chainID uint64, crossChainMsg *otypes.CrossChainMsg,
+	bookkeepers []keypair.PublicKey) error {
 	height := crossChainMsg.Height
 	//search consensus peer
 	keyHeight, err := findKeyHeight(native, height, chainID)
@@ -165,11 +166,11 @@ func VerifyCrossChainMsg(native *native.NativeService, chainID uint64, crossChai
 		return fmt.Errorf("verifyCrossChainMsg, get ConsensusPeer error:%v", err)
 	}
 	//TODO
-	if len(crossChainMsg.Bookkeepers)*3 < len(consensusPeer.PeerMap) {
+	if len(bookkeepers)*3 < len(consensusPeer.PeerMap) {
 		return fmt.Errorf("verifyCrossChainMsg, header Bookkeepers num %d must more than 2/3 consensus node num %d",
-			len(crossChainMsg.Bookkeepers), len(consensusPeer.PeerMap))
+			len(bookkeepers), len(consensusPeer.PeerMap))
 	}
-	for _, bookkeeper := range crossChainMsg.Bookkeepers {
+	for _, bookkeeper := range bookkeepers {
 		pubkey := vconfig.PubkeyID(bookkeeper)
 		_, present := consensusPeer.PeerMap[pubkey]
 		if !present {
@@ -177,7 +178,7 @@ func VerifyCrossChainMsg(native *native.NativeService, chainID uint64, crossChai
 		}
 	}
 	hash := crossChainMsg.Hash()
-	err = signature.VerifyMultiSignature(hash[:], crossChainMsg.Bookkeepers, len(crossChainMsg.Bookkeepers),
+	err = signature.VerifyMultiSignature(hash[:], bookkeepers, len(bookkeepers),
 		crossChainMsg.SigData)
 	if err != nil {
 		return fmt.Errorf("verifyCrossChainMsg, VerifyMultiSignature error:%s, heigh:%d", err,
