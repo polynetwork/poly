@@ -12,10 +12,10 @@ import (
 	"math/big"
 	"time"
 
+	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/core/types"
 	cty "github.com/ethereum/go-ethereum/core/types"
-	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/params"
 
 	"github.com/ontio/multi-chain/common"
@@ -35,12 +35,12 @@ var (
 )
 
 type ETHHandler struct {
-	caches    *Caches
+	caches *Caches
 }
 
 func NewETHHandler() *ETHHandler {
 	return &ETHHandler{
-		caches : NewCaches(3),
+		caches: NewCaches(3),
 	}
 }
 
@@ -240,8 +240,8 @@ func (this *ETHHandler) verifyHeader(header *cty.Header) error {
 	binary.LittleEndian.PutUint64(seed[32:], nonce)
 	seed = crypto.Keccak512(seed)
 	// get mix
-	mix  :=make([]uint32, mixBytes/4)
-	for i := 0;i < len(mix);i ++ {
+	mix := make([]uint32, mixBytes/4)
+	for i := 0; i < len(mix); i++ {
 		mix[i] = binary.LittleEndian.Uint32(seed[i%16*4:])
 	}
 	// get cache
@@ -253,22 +253,22 @@ func (this *ETHHandler) verifyHeader(header *cty.Header) error {
 	rows := uint32(size / mixBytes)
 	temp := make([]uint32, len(mix))
 	seedHead := binary.LittleEndian.Uint32(seed)
-	for i := 0;i < loopAccesses;i ++ {
+	for i := 0; i < loopAccesses; i++ {
 		parent := fnv(uint32(i)^seedHead, mix[i%len(mix)]) % rows
-		for j := uint32(0);j < mixBytes/hashBytes;j ++ {
+		for j := uint32(0); j < mixBytes/hashBytes; j++ {
 			xx := lookup(cache, 2*parent+j)
 			copy(temp[j*hashWords:], xx)
 		}
 		fnvHash(mix, temp)
 	}
 	// get new mix by compress
-	for i := 0;i < len(mix);i += 4 {
-		mix[i/4] = fnv(fnv(fnv(mix[i], mix[i+1]),mix[i+2]),mix[i+3])
+	for i := 0; i < len(mix); i += 4 {
+		mix[i/4] = fnv(fnv(fnv(mix[i], mix[i+1]), mix[i+2]), mix[i+3])
 	}
 	mix = mix[:len(mix)/4]
 	// get digest by compressed mix
 	digest := make([]byte, ethcommon.HashLength)
-	for i,val := range mix {
+	for i, val := range mix {
 		binary.LittleEndian.PutUint32(digest[i*4:], val)
 	}
 	// get header result hash
