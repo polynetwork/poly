@@ -29,8 +29,8 @@ func (self *Caches) tryCache (epoch uint64) ([]uint32, []uint32) {
 }
 
 func (self *Caches) addCache(epoch uint64, item []uint32) {
-	if len(self.items) < self.cap {
-		self.items[epoch] = item
+	self.items[epoch] = item
+	if len(self.items) <= self.cap {
 		return
 	}
 	var min uint64 = math.MaxUint64
@@ -40,7 +40,6 @@ func (self *Caches) addCache(epoch uint64, item []uint32) {
 		}
 	}
 	delete(self.items, min)
-	self.items[epoch] = item
 }
 
 func (self *Caches) getCache(block uint64) []uint32 {
@@ -59,6 +58,7 @@ func (self *Caches) getCache(block uint64) []uint32 {
 		return cache
 	}
 	if future == nil {
+		self.addCache(epoch + 1, []uint32{})
 		go func(newepoch uint64) {
 			size := cacheSize(newepoch*epochLength + 1)
 			seed := seedHash(newepoch*epochLength + 1)

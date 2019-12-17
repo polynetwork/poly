@@ -246,6 +246,9 @@ func (this *ETHHandler) verifyHeader(header *cty.Header) error {
 	}
 	// get cache
 	cache := this.caches.getCache(number)
+	if len(cache) <= 0 {
+		return fmt.Errorf("cache of proof-of-work is not generated!")
+	}
 	// get new mix with DAG data
 	rows := uint32(size / mixBytes)
 	temp := make([]uint32, len(mix))
@@ -272,12 +275,12 @@ func (this *ETHHandler) verifyHeader(header *cty.Header) error {
 	result := crypto.Keccak256(append(seed, digest...))
 	// Verify the calculated digest against the ones provided in the header
 	if !bytes.Equal(header.MixDigest[:], digest) {
-		return fmt.Errorf("invalid mix digest\n")
+		return fmt.Errorf("invalid mix digest!")
 	}
 	// compare result hash with target hash
 	target := new(big.Int).Div(two256, header.Difficulty)
 	if new(big.Int).SetBytes(result).Cmp(target) > 0 {
-		return fmt.Errorf("invalid proof-of-work\n")
+		return fmt.Errorf("invalid proof-of-work!")
 	}
 	return nil
 }
