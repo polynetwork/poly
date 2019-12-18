@@ -24,10 +24,10 @@ import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/merkle"
 	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
-	bcommon "github.com/ontio/ontology/http/base/common"
+	otypes "github.com/ontio/ontology/core/types"
 )
 
-func verifyFromOntTx(proof, txHash []byte, crossChainMsg *bcommon.CrossChainMsg) (*scom.MakeTxParam, error) {
+func verifyFromOntTx(proof, txHash []byte, crossChainMsg *otypes.CrossChainMsg) (*scom.MakeTxParam, error) {
 	v, err := merkle.MerkleProve(proof, crossChainMsg.StatesRoot.ToArray())
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromOntTx, merkle.MerkleProve verify merkle proof error")
