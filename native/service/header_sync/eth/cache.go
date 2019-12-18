@@ -85,9 +85,11 @@ func (self *Caches) tryCache(epoch uint64) ([]uint32, []uint32) {
 	return current, future
 }
 
-func (self *Caches) addCache(epoch uint64, items []uint32) {
+func (self *Caches) addCache(epoch uint64, cache []uint32) {
 	contract := utils.HeaderSyncContractAddress
-	self.native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(common.ETH_CACHE), utils.GetUint64Bytes(epoch)), states.GenRawStorageItem(self.serialize(items)))
+	self.native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(common.ETH_CACHE), utils.GetUint64Bytes(epoch)), states.GenRawStorageItem(self.serialize(cache)))
+	self.native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(common.ETH_CACHE), utils.GetUint64Bytes(epoch - 3)))
+	self.items[epoch] = cache
 }
 
 func (self *Caches) getCache(block uint64) []uint32 {
