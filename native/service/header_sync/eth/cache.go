@@ -23,9 +23,15 @@ func NewCaches(size int, native *native.NativeService) *Caches {
 		cap:   size,
 		native: native,
 		items : make(map[uint64][]uint32),
-
 	}
 	return caches
+}
+
+func (self *Caches) deleteCaches() {
+	for key,_ := range self.items {
+		delete(self.items, key)
+	}
+	self.items = nil
 }
 
 func (self *Caches) serialize(values []uint32) []byte {

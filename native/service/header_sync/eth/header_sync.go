@@ -159,6 +159,7 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 			return fmt.Errorf("SyncGenesisHeader, put blockHeader error: %v", err)
 		}
 	}
+	caches.deleteCaches()
 	return nil
 }
 
