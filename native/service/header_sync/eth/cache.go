@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"github.com/ethereum/go-ethereum/common/bitutil"
 	"github.com/ontio/multi-chain/common/log"
+	"github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/service/header_sync/common"
 	"github.com/ontio/multi-chain/native/service/utils"
@@ -15,12 +16,15 @@ import (
 type Caches struct {
 	native *native.NativeService
 	cap   int
+	items map[uint64][]uint32
 }
 
 func NewCaches(size int, native *native.NativeService) *Caches {
 	caches := &Caches{
 		cap:   size,
 		native: native,
+		items : make(map[uint64][]uint32),
+
 	}
 	return caches
 }
@@ -43,25 +47,42 @@ func (self *Caches) deserialize(buf []byte) []uint32 {
 
 func (self *Caches) tryCache(epoch uint64) ([]uint32, []uint32) {
 	contract := utils.HeaderSyncContractAddress
-	var current, future []uint32
-	current1, err := self.native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(common.ETH_CACHE), utils.GetUint64Bytes(epoch)))
-	if current1 == nil || err != nil {
-		current = nil
-	} else {
-		current = self.deserialize(current1)
+	current := self.items[epoch]
+	future := self.items[epoch + 1]
+	if current == nil {
+		currentStorge, err := self.native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(common.ETH_CACHE), utils.GetUint64Bytes(epoch)))
+		if currentStorge == nil || err != nil {
+			current = nil
+		} else {
+			current1, err := states.GetValueFromRawStorageItem(currentStorge)
+			if err != nil {
+				current = nil
+			} else {
+				current = self.deserialize(current1)
+				self.items[epoch] = current
+			}
+		}
 	}
-	future1, err := self.native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(common.ETH_CACHE), utils.GetUint64Bytes(epoch + 1)))
-	if future1 == nil || err != nil {
-		future = nil
-	} else {
-		future = self.deserialize(future1)
+	if future == nil {
+		futureStorge, err := self.native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(common.ETH_CACHE), utils.GetUint64Bytes(epoch+1)))
+		if futureStorge == nil || err != nil {
+			future = nil
+		} else {
+			future1, err := states.GetValueFromRawStorageItem(futureStorge)
+			if err != nil {
+				future = nil
+			} else {
+				future = self.deserialize(future1)
+				self.items[epoch + 1] = future
+			}
+		}
 	}
 	return current, future
 }
 
 func (self *Caches) addCache(epoch uint64, items []uint32) {
 	contract := utils.HeaderSyncContractAddress
-	self.native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(common.ETH_CACHE), utils.GetUint64Bytes(epoch)), self.serialize(items))
+	self.native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(common.ETH_CACHE), utils.GetUint64Bytes(epoch)), states.GenRawStorageItem(self.serialize(items)))
 }
 
 func (self *Caches) getCache(block uint64) []uint32 {
@@ -81,7 +102,7 @@ func (self *Caches) getCache(block uint64) []uint32 {
 		return cache
 	}
 	if future == nil {
-		self.addCache(epoch+1, []uint32{})
+		self.addCache(epoch+1, []uint32{1})
 		go func(newepoch uint64) {
 			size := cacheSize(newepoch*epochLength + 1)
 			seed := seedHash(newepoch*epochLength + 1)

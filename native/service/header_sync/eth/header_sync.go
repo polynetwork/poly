@@ -245,7 +245,7 @@ func (this *ETHHandler) verifyHeader(header *cty.Header, native *native.NativeSe
 	// get cache
 	caches := NewCaches(3, native)
 	cache := caches.getCache(number)
-	if len(cache) <= 0 {
+	if len(cache) <= 1 {
 		return fmt.Errorf("cache of proof-of-work is not generated!")
 	}
 	// get new mix with DAG data
