@@ -3,43 +3,65 @@ package eth
 import (
 	"encoding/binary"
 	"github.com/ethereum/go-ethereum/common/bitutil"
+	"github.com/ontio/multi-chain/common/log"
+	"github.com/ontio/multi-chain/native"
+	"github.com/ontio/multi-chain/native/service/header_sync/common"
+	"github.com/ontio/multi-chain/native/service/utils"
 	"golang.org/x/crypto/sha3"
-	"math"
 	"reflect"
 	"unsafe"
 )
 
 type Caches struct {
-	items map[uint64][]uint32
+	native *native.NativeService
 	cap   int
 }
 
-func NewCaches(size int) *Caches {
+func NewCaches(size int, native *native.NativeService) *Caches {
 	caches := &Caches{
 		cap:   size,
-		items: make(map[uint64][]uint32),
+		native: native,
 	}
 	return caches
 }
 
+func (self *Caches) serialize(values []uint32) []byte {
+	buf := make([]byte, len(values) * 4)
+	for i, value := range values {
+		binary.LittleEndian.PutUint32(buf[i*4:], value)
+	}
+	return buf
+}
+
+func (self *Caches) deserialize(buf []byte) []uint32 {
+	values := make([]uint32, len(buf) / 4)
+	for i := 0; i < len(values); i++ {
+		values[i] = binary.LittleEndian.Uint32(buf[i*4:])
+	}
+	return values
+}
+
 func (self *Caches) tryCache(epoch uint64) ([]uint32, []uint32) {
-	current := self.items[epoch]
-	future := self.items[epoch+1]
+	contract := utils.HeaderSyncContractAddress
+	var current, future []uint32
+	current1, err := self.native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(common.ETH_CACHE), utils.GetUint64Bytes(epoch)))
+	if current1 == nil || err != nil {
+		current = nil
+	} else {
+		current = self.deserialize(current1)
+	}
+	future1, err := self.native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(common.ETH_CACHE), utils.GetUint64Bytes(epoch + 1)))
+	if future1 == nil || err != nil {
+		future = nil
+	} else {
+		future = self.deserialize(future1)
+	}
 	return current, future
 }
 
-func (self *Caches) addCache(epoch uint64, item []uint32) {
-	self.items[epoch] = item
-	if len(self.items) <= self.cap {
-		return
-	}
-	var min uint64 = math.MaxUint64
-	for key, _ := range self.items {
-		if key < min {
-			min = key
-		}
-	}
-	delete(self.items, min)
+func (self *Caches) addCache(epoch uint64, items []uint32) {
+	contract := utils.HeaderSyncContractAddress
+	self.native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(common.ETH_CACHE), utils.GetUint64Bytes(epoch)), self.serialize(items))
 }
 
 func (self *Caches) getCache(block uint64) []uint32 {
@@ -53,6 +75,7 @@ func (self *Caches) getCache(block uint64) []uint32 {
 		seed := seedHash(epoch*epochLength + 1)
 		// If we don't store anything on disk, generate and return.
 		cache := make([]uint32, size/4)
+		log.Infof("current generate cache...... epoch: %d--------------------------", epoch)
 		self.generateCache(cache, seed)
 		self.addCache(epoch, cache)
 		return cache
@@ -64,6 +87,7 @@ func (self *Caches) getCache(block uint64) []uint32 {
 			seed := seedHash(newepoch*epochLength + 1)
 			// If we don't store anything on disk, generate and return.
 			cache := make([]uint32, size/4)
+			log.Infof("future generate cache......epoch: %d--------------------------", newepoch)
 			self.generateCache(cache, seed)
 			self.addCache(newepoch, cache)
 		}(epoch + 1)

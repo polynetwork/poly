@@ -16,6 +16,7 @@ const (
 	CONSENSUS_PEER              = "consensusPeer"
 	CONSENSUS_PEER_BLOCK_HEIGHT = "consensusPeerBlockHeight"
 	KEY_HEIGHTS                 = "keyHeights"
+	ETH_CACHE                   = "ethCaches"
 )
 
 type HeaderSyncHandler interface {

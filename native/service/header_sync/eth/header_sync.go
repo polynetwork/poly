@@ -35,12 +35,10 @@ var (
 )
 
 type ETHHandler struct {
-	caches *Caches
 }
 
 func NewETHHandler() *ETHHandler {
 	return &ETHHandler{
-		caches: NewCaches(3),
 	}
 }
 
@@ -149,7 +147,7 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 		}
 
 		//
-		err = this.verifyHeader(&header)
+		err = this.verifyHeader(&header, native)
 		if err != nil {
 			return err
 		}
@@ -228,7 +226,7 @@ func difficultyCalculator(time *big.Int, parent *types.Header) *big.Int {
 	return x
 }
 
-func (this *ETHHandler) verifyHeader(header *cty.Header) error {
+func (this *ETHHandler) verifyHeader(header *cty.Header, native *native.NativeService) error {
 	// try to verfify header
 	number := header.Number.Uint64()
 	size := datasetSize(number)
@@ -245,7 +243,8 @@ func (this *ETHHandler) verifyHeader(header *cty.Header) error {
 		mix[i] = binary.LittleEndian.Uint32(seed[i%16*4:])
 	}
 	// get cache
-	cache := this.caches.getCache(number)
+	caches := NewCaches(3, native)
+	cache := caches.getCache(number)
 	if len(cache) <= 0 {
 		return fmt.Errorf("cache of proof-of-work is not generated!")
 	}
