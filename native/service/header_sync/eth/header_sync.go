@@ -86,6 +86,7 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 	if err := headerParams.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return fmt.Errorf("SyncBlockHeader, contract params deserialize error: %v", err)
 	}
+	caches := NewCaches(3, native)
 	for _, v := range headerParams.Headers {
 		var header cty.Header
 		err := json.Unmarshal(v, &header)
@@ -147,7 +148,7 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 		}
 
 		//
-		err = this.verifyHeader(&header, native)
+		err = this.verifyHeader(&header, caches)
 		if err != nil {
 			return err
 		}
@@ -226,7 +227,7 @@ func difficultyCalculator(time *big.Int, parent *types.Header) *big.Int {
 	return x
 }
 
-func (this *ETHHandler) verifyHeader(header *cty.Header, native *native.NativeService) error {
+func (this *ETHHandler) verifyHeader(header *cty.Header, caches *Caches) error {
 	// try to verfify header
 	number := header.Number.Uint64()
 	size := datasetSize(number)
@@ -243,7 +244,6 @@ func (this *ETHHandler) verifyHeader(header *cty.Header, native *native.NativeSe
 		mix[i] = binary.LittleEndian.Uint32(seed[i%16*4:])
 	}
 	// get cache
-	caches := NewCaches(3, native)
 	cache := caches.getCache(number)
 	if len(cache) <= 1 {
 		return fmt.Errorf("cache of proof-of-work is not generated!")

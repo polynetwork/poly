@@ -3,7 +3,6 @@ package eth
 import (
 	"encoding/binary"
 	"github.com/ethereum/go-ethereum/common/bitutil"
-	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/service/header_sync/common"
@@ -96,7 +95,6 @@ func (self *Caches) getCache(block uint64) []uint32 {
 		seed := seedHash(epoch*epochLength + 1)
 		// If we don't store anything on disk, generate and return.
 		cache := make([]uint32, size/4)
-		log.Infof("current generate cache...... epoch: %d--------------------------", epoch)
 		self.generateCache(cache, seed)
 		self.addCache(epoch, cache)
 		return cache
@@ -108,7 +106,6 @@ func (self *Caches) getCache(block uint64) []uint32 {
 			seed := seedHash(newepoch*epochLength + 1)
 			// If we don't store anything on disk, generate and return.
 			cache := make([]uint32, size/4)
-			log.Infof("future generate cache......epoch: %d--------------------------", newepoch)
 			self.generateCache(cache, seed)
 			self.addCache(newepoch, cache)
 		}(epoch + 1)
