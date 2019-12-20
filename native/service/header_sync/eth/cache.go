@@ -50,10 +50,9 @@ func (self *Caches) deserialize(buf []byte) []uint32 {
 	return values
 }
 
-func (self *Caches) tryCache(epoch uint64) ([]uint32, []uint32) {
+func (self *Caches) tryCache(epoch uint64) ([]uint32) {
 	contract := utils.HeaderSyncContractAddress
 	current := self.items[epoch]
-	future := self.items[epoch + 1]
 	if current == nil {
 		currentStorge, err := self.native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(common.ETH_CACHE), utils.GetUint64Bytes(epoch)))
 		if currentStorge == nil || err != nil {
@@ -68,21 +67,7 @@ func (self *Caches) tryCache(epoch uint64) ([]uint32, []uint32) {
 			}
 		}
 	}
-	if future == nil {
-		futureStorge, err := self.native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(common.ETH_CACHE), utils.GetUint64Bytes(epoch+1)))
-		if futureStorge == nil || err != nil {
-			future = nil
-		} else {
-			future1, err := states.GetValueFromRawStorageItem(futureStorge)
-			if err != nil {
-				future = nil
-			} else {
-				future = self.deserialize(future1)
-				self.items[epoch + 1] = future
-			}
-		}
-	}
-	return current, future
+	return current
 }
 
 func (self *Caches) addCache(epoch uint64, cache []uint32) {
@@ -94,31 +79,17 @@ func (self *Caches) addCache(epoch uint64, cache []uint32) {
 
 func (self *Caches) getCache(block uint64) []uint32 {
 	epoch := block / epochLength
-	current, future := self.tryCache(epoch)
-	if current != nil && future != nil {
+	current := self.tryCache(epoch)
+	if current != nil {
 		return current
 	}
-	if current == nil {
-		size := cacheSize(epoch*epochLength + 1)
-		seed := seedHash(epoch*epochLength + 1)
-		// If we don't store anything on disk, generate and return.
-		cache := make([]uint32, size/4)
-		self.generateCache(cache, seed)
-		self.addCache(epoch, cache)
-		return cache
-	}
-	if future == nil {
-		self.addCache(epoch+1, []uint32{1})
-		go func(newepoch uint64) {
-			size := cacheSize(newepoch*epochLength + 1)
-			seed := seedHash(newepoch*epochLength + 1)
-			// If we don't store anything on disk, generate and return.
-			cache := make([]uint32, size/4)
-			self.generateCache(cache, seed)
-			self.addCache(newepoch, cache)
-		}(epoch + 1)
-	}
-	return current
+	size := cacheSize(epoch*epochLength + 1)
+	seed := seedHash(epoch*epochLength + 1)
+	// If we don't store anything on disk, generate and return.
+	cache := make([]uint32, size/4)
+	self.generateCache(cache, seed)
+	self.addCache(epoch, cache)
+	return cache
 }
 
 func (self *Caches) generateCache(dest []uint32, seed []byte) {
