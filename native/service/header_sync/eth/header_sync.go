@@ -30,8 +30,8 @@ var (
 	BIG_9             = big.NewInt(9)
 	BIG_MINUS_99      = big.NewInt(-99)
 	BLOCK_DIFF_FACTOR = big.NewInt(2048)
-	DIFF_PERIOD       = big.NewInt(10000)
-	BOMB_DELAY        = big.NewInt(5000001)
+	DIFF_PERIOD       = big.NewInt(100000)
+	BOMB_DELAY        = big.NewInt(4999999)
 )
 
 type ETHHandler struct {
@@ -204,7 +204,8 @@ func difficultyCalculator(time *big.Int, parent *types.Header) *big.Int {
 	}
 
 	y := new(big.Int).Div(parent.Difficulty, BLOCK_DIFF_FACTOR)
-	x.Mul(x, y)
+	x.Mul(y, x)
+	x.Add(parent.Difficulty, x)
 
 	if x.Cmp(params.MinimumDifficulty) < 0 {
 		x.Set(params.MinimumDifficulty)
