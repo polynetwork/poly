@@ -36,6 +36,21 @@ const (
 	cacheRounds            = 3
 )
 
+func putGenesisBlockHeader(native *native.NativeService, blockHeader types.Header, headerBytes []byte, chainID uint64) error {
+	contract := utils.HeaderSyncContractAddress
+	blockHash := blockHeader.Hash().Bytes()
+
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.GENESIS_HEADER), utils.GetUint64Bytes(chainID)),
+		cstates.GenRawStorageItem(headerBytes))
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID),
+		utils.GetUint64Bytes(blockHeader.Number.Uint64())),
+		cstates.GenRawStorageItem(headerBytes))
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.CURRENT_HEADER_HEIGHT),
+		utils.GetUint64Bytes(chainID)), cstates.GenRawStorageItem(utils.GetUint64Bytes(blockHeader.Number.Uint64())))
+	notifyPutHeader(native, chainID, blockHeader.Number.Uint64(), hex.EncodeToString(blockHash))
+	return nil
+}
+
 func putBlockHeader(native *native.NativeService, blockHeader types.Header, headerBytes []byte, chainID uint64) error {
 	contract := utils.HeaderSyncContractAddress
 	blockHash := blockHeader.Hash().Bytes()

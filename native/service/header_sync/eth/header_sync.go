@@ -64,7 +64,7 @@ func (this *ETHHandler) SyncGenesisHeader(native *native.NativeService) error {
 		return fmt.Errorf("ETHHandler SyncGenesisHeader: %s", err)
 	}
 
-	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(params.ChainID), header.Number.Bytes()))
+	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.GENESIS_HEADER), utils.GetUint64Bytes(params.ChainID)))
 	if err != nil {
 		return fmt.Errorf("ETHHandler GetHeaderByHeight, get blockHashStore error: %v", err)
 	}
@@ -73,7 +73,7 @@ func (this *ETHHandler) SyncGenesisHeader(native *native.NativeService) error {
 	}
 
 	//block header storage
-	err = putBlockHeader(native, header, headerByte, params.ChainID)
+	err = putGenesisBlockHeader(native, header, headerByte, params.ChainID)
 	if err != nil {
 		return fmt.Errorf("ETHHandler SyncGenesisHeader, put blockHeader error: %v", err)
 	}
