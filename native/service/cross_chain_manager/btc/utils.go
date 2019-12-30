@@ -6,7 +6,6 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
@@ -27,7 +26,7 @@ const (
 	OP_RETURN_SCRIPT_FLAG                   = byte(0x66)
 	BTC_TX_PREFIX                           = "btctx"
 	BTC_FROM_TX_PREFIX                      = "btcfromtx"
-	REDEEM_P2SH_5_OF_7_MULTISIG_SCRIPT_SIZE = 1 + 5*(1+72) + 1 + 1 + 7*(1+33) + 1 + 1
+	REDEEM_P2SH_5_OF_7_MULTISIG_SCRIPT_SIZE = 1 + 5*(1+75) + 1 + 1 + 7*(1+33) + 1 + 1
 	MIN_SATOSHI_TO_RELAY_PER_BYTE           = 1
 	WEIGHT                                  = 1.2
 	MIN_CHANGE                              = 2000
@@ -37,6 +36,9 @@ const (
 	STXOS                                   = "stxos"
 	REDEEM_SCRIPT                           = "redeemScript"
 	MULTI_SIGN_INFO                         = "multiSignInfo"
+	MAX_FEE_COST_PERCENTS = 0.4
+	MAX_SELECTING_TRY_LIMIT = 1000000
+	SELECTING_K = 2.0
 )
 
 var netParam = &chaincfg.TestNet3Params
@@ -154,25 +156,6 @@ func getLockScript(redeem []byte) ([]byte, error) {
 	return script, nil
 }
 
-func estimateSerializedTxSize(txIns []*wire.TxIn, txOuts []*wire.TxOut, potential *wire.TxOut) int {
-	p2shInputSize := 43 + REDEEM_P2SH_5_OF_7_MULTISIG_SCRIPT_SIZE
-	witnessInputSize := 41 + REDEEM_P2SH_5_OF_7_MULTISIG_SCRIPT_SIZE/blockchain.WitnessScaleFactor
-	outsSize := 0
-	for _, txOut := range txOuts {
-		outsSize += txOut.SerializeSize()
-	}
-	witNum := 0
-	for _, txIn := range txIns {
-		switch txscript.GetScriptClass(txIn.SignatureScript) {
-		case txscript.WitnessV0ScriptHashTy:
-			witNum++
-		}
-	}
-
-	return 10 + 2 + wire.VarIntSerializeSize(uint64(len(txIns))) + wire.VarIntSerializeSize(uint64(len(txOuts)+1)) +
-		(len(txIns)-witNum)*p2shInputSize + witNum*witnessInputSize + potential.SerializeSize() + outsSize
-}
-
 func putBtcProof(native *native.NativeService, txHash, proof []byte) {
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_BTC), txHash)
 	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(proof))
@@ -257,42 +240,44 @@ func addUtxos(native *native.NativeService, chainID uint64, height uint32, mtx *
 	return nil
 }
 
-func chooseUtxos(native *native.NativeService, chainID uint64, amount int64) ([]*Utxo, int64, error) {
+func chooseUtxos(native *native.NativeService, chainID uint64, amount int64, outs []*wire.TxOut) ([]*Utxo, int64, int64, error) {
 	utxos, err := getUtxos(native, chainID)
 	if err != nil {
-		return nil, 0, fmt.Errorf("chooseUtxos, getUtxos error: %v", err)
+		return nil, 0, 0, fmt.Errorf("chooseUtxos, getUtxos error: %v", err)
 	}
-	result := make([]*Utxo, 0)
-	for i := 0; i < len(utxos.Utxos); i++ {
-		utxos.Utxos[i].Confs = native.GetHeight() - utxos.Utxos[i].AtHeight + 1
+	sort.Sort(sort.Reverse(utxos))
+	cs := &CoinSelector {
+		SortedUtxos: utxos,
+		Target: uint64(amount),
+		MaxP: MAX_FEE_COST_PERCENTS,
+		Tries: MAX_SELECTING_TRY_LIMIT,
+		Mc: MIN_CHANGE,
+		K: SELECTING_K,
+		TxOuts: outs,
 	}
-	sort.Sort(utxos)
-	var sum int64 = 0
-	idx := len(utxos.Utxos) - 1
-	for idx >= 0 && !satisfiesTargetValue(amount, sum) {
-		sum += int64(utxos.Utxos[idx].Value)
-		result = append(result, utxos.Utxos[idx])
-		idx--
+	result, sum, fee := cs.Select()
+	if result == nil || len(result) == 0 {
+		return nil, 0, 0, fmt.Errorf("chooseUtxos, current utxo is not enough")
 	}
-	if sum < amount {
-		return nil, sum, fmt.Errorf("chooseUtxos, current utxo is not enough")
-	}
-
 	stxos, err := getStxos(native, chainID)
 	if err != nil {
-		return nil, sum, fmt.Errorf("chooseUtxos, failed to get stxos: %v", err)
+		return nil, 0, 0, fmt.Errorf("chooseUtxos, failed to get stxos: %v", err)
 	}
-	stxos.Utxos = append(stxos.Utxos, utxos.Utxos[idx+1:]...)
+	stxos.Utxos = append(stxos.Utxos, result...)
 	putStxos(native, chainID, stxos)
 
-	utxos.Utxos = utxos.Utxos[:idx+1] //end == 0 ???
+	toSort := new(Utxos)
+	toSort.Utxos = result
+	sort.Sort(sort.Reverse(toSort))
+	idx := 0
+	for _, v := range toSort.Utxos {
+		for utxos.Utxos[idx].Op.String() != v.Op.String() {
+			idx++
+		}
+		utxos.Utxos = append(utxos.Utxos[:idx], utxos.Utxos[idx+1:]...)
+	}
 	putUtxos(native, chainID, utxos)
-	return result, sum, nil
-}
-
-// avoid making dust utxo by setting minChange
-func satisfiesTargetValue(targetValue, totalValue int64) bool {
-	return totalValue == targetValue || totalValue >= targetValue+MIN_CHANGE
+	return result, int64(sum), int64(fee), nil
 }
 
 func putTxos(k string, native *native.NativeService, chainID uint64, txos *Utxos) {

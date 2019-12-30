@@ -1,10 +1,14 @@
 package btc
 
 import (
+	"encoding/hex"
 	"fmt"
+	"github.com/btcsuite/btcd/blockchain"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcd/wire"
 	"github.com/ontio/multi-chain/common"
-	"math/big"
 	"sort"
+	"strconv"
 )
 
 type BtcProof struct {
@@ -80,9 +84,7 @@ func (this *Utxos) Len() int {
 }
 
 func (this *Utxos) Less(i, j int) bool {
-	vai := new(big.Int).Mul(big.NewInt(int64(this.Utxos[i].Value)), big.NewInt(int64(this.Utxos[i].Confs)))
-	vaj := new(big.Int).Mul(big.NewInt(int64(this.Utxos[j].Value)), big.NewInt(int64(this.Utxos[j].Confs)))
-	return vai.Cmp(vaj) == -1
+	return this.Utxos[i].Value < this.Utxos[j].Value
 }
 
 func (this *Utxos) Swap(i, j int) {
@@ -96,16 +98,13 @@ type Utxo struct {
 	Op *OutPoint
 
 	// Block height where this tx was confirmed, 0 for unconfirmed
-	AtHeight uint32
+	AtHeight uint32 // TODO: del ??
 
 	// The higher the better
 	Value uint64
 
 	// Output script
 	ScriptPubkey []byte
-
-	// no need to save
-	Confs uint32
 }
 
 func (this *Utxo) Serialization(sink *common.ZeroCopySink) {
@@ -141,6 +140,158 @@ func (this *Utxo) Deserialization(source *common.ZeroCopySource) error {
 	return nil
 }
 
+type CoinSelector struct {
+	SortedUtxos *Utxos
+	Mc          uint64
+	Target      uint64
+	MaxP        float64
+	TxOuts      []*wire.TxOut
+	K           float64
+	Tries       int64
+}
+
+func (selector *CoinSelector) Select() ([]*Utxo, uint64, uint64) {
+	if selector.SortedUtxos == nil || len(selector.SortedUtxos.Utxos) == 0 {
+		return nil, 0, 0
+	}
+	//selector.mixUpUtxos()
+	result, sum, fee := selector.SimpleBnbSearch(0, make([]*Utxo, 0), 0)
+	if result != nil {
+		return result, sum, fee
+	}
+	//sort.Sort(sort.Reverse(selector.SortedUtxos))
+	result, sum, fee = selector.SortedSearch()
+	return result, sum, fee
+}
+
+func (selector *CoinSelector) SimpleBnbSearch(depth int, selection []*Utxo, sum uint64) ([]*Utxo, uint64, uint64) {
+	fee, lr := selector.getLossRatio(selection)
+	switch {
+	case lr >= selector.MaxP, float64(sum) > selector.K*float64(selector.Target) || (sum > selector.Target &&
+		sum < selector.Target + selector.Mc):
+		return nil, 0, 0
+	case sum == selector.Target || (sum >= selector.Target+selector.Mc && float64(sum) <= selector.K*float64(selector.Target)):
+		return selection, sum, fee
+	case selector.Tries <= 0, depth == -1:
+		return nil, 0, 0
+	default:
+		selector.Tries--
+		var next int
+		if depth > selector.SortedUtxos.Len()/2 {
+			next = selector.SortedUtxos.Len() - depth
+		} else if depth < selector.SortedUtxos.Len()/2 {
+			next = selector.SortedUtxos.Len() - depth - 1
+		} else {
+			next = -1
+		}
+		result, resSum, fee := selector.SimpleBnbSearch(next, append(selection, selector.SortedUtxos.Utxos[depth]),
+			sum+selector.SortedUtxos.Utxos[depth].Value)
+		if result != nil {
+			return result, resSum, fee
+		}
+		if next == -1 {
+			return nil, 0, 0
+		}
+		result, resSum, fee = selector.SimpleBnbSearch(next, selection, sum)
+		return result, resSum, fee
+	}
+}
+
+func (selector *CoinSelector) SortedSearch() ([]*Utxo, uint64, uint64) {
+	selection := make([]*Utxo, 0)
+	sum := uint64(0)
+	pass := 0
+	fee := uint64(0)
+	lr := 0.0
+	for _, u := range selector.SortedUtxos.Utxos {
+		switch pass {
+		case 0:
+			selection = append(selection, u)
+			sum += u.Value
+			fee, lr = selector.getLossRatio(selection)
+			if lr >= selector.MaxP {
+				return nil, 0, 0
+			}
+			if sum == selector.Target || sum >= selector.Target+selector.Mc {
+				pass = 1
+			}
+		case 1:
+			if sumTemp := sum - selection[len(selection)-1].Value + u.Value; sumTemp == selector.Target ||
+				sumTemp >= selector.Target+selector.Mc {
+				sum = sumTemp
+				selection[len(selection)-1] = u
+			} else {
+				fee, _ := selector.getLossRatio(selection)
+				return selection, sum, fee
+			}
+		}
+	}
+	if pass == 1 {
+		return selection, sum, fee
+	}
+	return nil, 0, 0
+}
+
+//func (selector *CoinSelector) mixUpUtxos() {
+//	length := selector.SortedUtxos.Len()
+//	if length <= 2 {
+//		return
+//	}
+//	mid := func() int {
+//		if length%2 == 0 {
+//			return selector.SortedUtxos.Len()/2 - 1
+//		} else {
+//			return selector.SortedUtxos.Len()/2
+//		}
+//	}()
+//
+//	last := selector.SortedUtxos.Utxos[length-1]
+//	selector.swapUtxo(1, mid)
+//	selector.SortedUtxos.Utxos[1] = last
+//}
+//
+//func (selector *CoinSelector) swapUtxo(n, mid int) {
+//	if n == selector.SortedUtxos.Len()-1 {
+//		return
+//	}
+//	var next int
+//	if n <= mid {
+//		next = 2*n
+//	} else {
+//		next = 2*(selector.SortedUtxos.Len()-n)-1
+//	}
+//	selector.swapUtxo(next, mid)
+//	selector.SortedUtxos.Swap(n, next)
+//}
+
+func (selector *CoinSelector) getLossRatio(selection []*Utxo) (uint64, float64) {
+	fee := selector.estimateTxFee(selection)
+	return fee, float64(fee) / float64(selector.Target)
+}
+
+func (selector *CoinSelector) estimateTxFee(selection []*Utxo) uint64 {
+	size := selector.estimateTxSize(selection, selector.TxOuts)
+	return uint64(float64(size*MIN_SATOSHI_TO_RELAY_PER_BYTE) * WEIGHT)
+}
+
+func (selector *CoinSelector) estimateTxSize(selection []*Utxo, txOuts []*wire.TxOut) int {
+	p2shInputSize := 43 + REDEEM_P2SH_5_OF_7_MULTISIG_SCRIPT_SIZE
+	witnessInputSize := 41 + REDEEM_P2SH_5_OF_7_MULTISIG_SCRIPT_SIZE/blockchain.WitnessScaleFactor
+	outsSize := 0
+	for _, txOut := range txOuts {
+		outsSize += txOut.SerializeSize()
+	}
+	witNum := 0
+	for _, u := range selection {
+		switch txscript.GetScriptClass(u.ScriptPubkey) {
+		case txscript.WitnessV0ScriptHashTy:
+			witNum++
+		}
+	}
+	return 10 + 2 + wire.VarIntSerializeSize(uint64(len(selection))) + wire.VarIntSerializeSize(uint64(len(txOuts)+1)) +
+		(len(selection)-witNum)*p2shInputSize + witNum*witnessInputSize + outsSize
+}
+
 type OutPoint struct {
 	Hash  []byte
 	Index uint32
@@ -164,6 +315,11 @@ func (this *OutPoint) Deserialization(source *common.ZeroCopySource) error {
 	this.Hash = hash
 	this.Index = index
 	return nil
+}
+
+func (this *OutPoint) String() string {
+	pre := hex.EncodeToString(this.Hash)
+	return pre + ":" + strconv.FormatUint(uint64(this.Index), 10)
 }
 
 type MultiSignInfo struct {

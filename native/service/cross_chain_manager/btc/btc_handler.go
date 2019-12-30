@@ -326,7 +326,6 @@ func notifyBtcTx(native *native.NativeService, proof, tx []byte, height uint32, 
 	if err != nil {
 		return fmt.Errorf("notifyBtcTx, wrong outputs: %v", err)
 	}
-
 	err = ifCanResolve(mtx.TxOut[1], mtx.TxOut[0].Value)
 	if err != nil {
 		return fmt.Errorf("notifyBtcTx, failed to resolve parameter: %v", err)
@@ -337,9 +336,7 @@ func notifyBtcTx(native *native.NativeService, proof, tx []byte, height uint32, 
 	if err != nil {
 		return fmt.Errorf("notifyBtcTx, failed to decode proof: %v", err)
 	}
-
 	txid := mtx.TxHash()
-
 	ok, err := checkBtcProof(native, txid[:])
 	if err != nil {
 		return fmt.Errorf("notifyBtcTx, checkBtcProof error: %v", err)
@@ -347,7 +344,6 @@ func notifyBtcTx(native *native.NativeService, proof, tx []byte, height uint32, 
 	if !ok {
 		return fmt.Errorf("notifyBtcTx, btc proof already exist")
 	}
-
 	isExist := false
 	for _, hash := range mb.Hashes {
 		if bytes.Equal(hash[:], txid[:]) {
@@ -404,7 +400,7 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 		return fmt.Errorf("makeBtcTx, %v", err)
 	}
 
-	choosed, sum, err := chooseUtxos(service, chainID, amountSum)
+	choosed, sum, gasFee, err := chooseUtxos(service, chainID, amountSum, append(outs, out))
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, chooseUtxos error: %v", err)
 	}
@@ -418,12 +414,6 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 		txIns[i] = wire.NewTxIn(wire.NewOutPoint(hash, u.Op.Index), u.ScriptPubkey, nil)
 		amts[i] = u.Value
 	}
-
-	gasFee := int64(float64(estimateSerializedTxSize(txIns, outs, out)*MIN_SATOSHI_TO_RELAY_PER_BYTE) * WEIGHT)
-	if amountSum <= gasFee {
-		return fmt.Errorf("makeBtcTx, amounts sum(%d) must greater than fee %d", amountSum, gasFee)
-	}
-
 	for i := range outs {
 		outs[i].Value = outs[i].Value - int64(float64(gasFee)/float64(amountSum)*float64(outs[i].Value))
 	}
