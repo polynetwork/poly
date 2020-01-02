@@ -14,28 +14,28 @@ import (
 
 type Caches struct {
 	native *native.NativeService
-	cap   int
-	items map[uint64][]uint32
+	cap    int
+	items  map[uint64][]uint32
 }
 
 func NewCaches(size int, native *native.NativeService) *Caches {
 	caches := &Caches{
-		cap:   size,
+		cap:    size,
 		native: native,
-		items : make(map[uint64][]uint32),
+		items:  make(map[uint64][]uint32),
 	}
 	return caches
 }
 
 func (self *Caches) deleteCaches() {
-	for key,_ := range self.items {
+	for key, _ := range self.items {
 		delete(self.items, key)
 	}
 	self.items = nil
 }
 
 func (self *Caches) serialize(values []uint32) []byte {
-	buf := make([]byte, len(values) * 4)
+	buf := make([]byte, len(values)*4)
 	for i, value := range values {
 		binary.LittleEndian.PutUint32(buf[i*4:], value)
 	}
@@ -43,14 +43,14 @@ func (self *Caches) serialize(values []uint32) []byte {
 }
 
 func (self *Caches) deserialize(buf []byte) []uint32 {
-	values := make([]uint32, len(buf) / 4)
+	values := make([]uint32, len(buf)/4)
 	for i := 0; i < len(values); i++ {
 		values[i] = binary.LittleEndian.Uint32(buf[i*4:])
 	}
 	return values
 }
 
-func (self *Caches) tryCache(epoch uint64) ([]uint32) {
+func (self *Caches) tryCache(epoch uint64) []uint32 {
 	contract := utils.HeaderSyncContractAddress
 	current := self.items[epoch]
 	if current == nil {
@@ -73,7 +73,7 @@ func (self *Caches) tryCache(epoch uint64) ([]uint32) {
 func (self *Caches) addCache(epoch uint64, cache []uint32) {
 	contract := utils.HeaderSyncContractAddress
 	self.native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(common.ETH_CACHE), utils.GetUint64Bytes(epoch)), states.GenRawStorageItem(self.serialize(cache)))
-	self.native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(common.ETH_CACHE), utils.GetUint64Bytes(epoch - 3)))
+	self.native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(common.ETH_CACHE), utils.GetUint64Bytes(epoch-3)))
 	self.items[epoch] = cache
 }
 

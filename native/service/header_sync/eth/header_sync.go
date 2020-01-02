@@ -38,8 +38,7 @@ type ETHHandler struct {
 }
 
 func NewETHHandler() *ETHHandler {
-	return &ETHHandler{
-	}
+	return &ETHHandler{}
 }
 
 func (this *ETHHandler) SyncGenesisHeader(native *native.NativeService) error {

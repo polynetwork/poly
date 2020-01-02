@@ -26,12 +26,15 @@ import (
 	"math"
 
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/serialization"
 )
 
 const (
 	LEFT byte = iota
 	RIGHT
+)
+
+const (
+	MAX_SIZE = 1024 * 1024
 )
 
 var debugCheck = false

@@ -168,7 +168,7 @@ func (selector *CoinSelector) SimpleBnbSearch(depth int, selection []*Utxo, sum 
 	fee, lr := selector.getLossRatio(selection)
 	switch {
 	case lr >= selector.MaxP, float64(sum) > selector.K*float64(selector.Target) || (sum > selector.Target &&
-		sum < selector.Target + selector.Mc):
+		sum < selector.Target+selector.Mc):
 		return nil, 0, 0
 	case sum == selector.Target || (sum >= selector.Target+selector.Mc && float64(sum) <= selector.K*float64(selector.Target)):
 		return selection, sum, fee

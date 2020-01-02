@@ -36,9 +36,9 @@ const (
 	STXOS                                   = "stxos"
 	REDEEM_SCRIPT                           = "redeemScript"
 	MULTI_SIGN_INFO                         = "multiSignInfo"
-	MAX_FEE_COST_PERCENTS = 0.4
-	MAX_SELECTING_TRY_LIMIT = 1000000
-	SELECTING_K = 2.0
+	MAX_FEE_COST_PERCENTS                   = 0.4
+	MAX_SELECTING_TRY_LIMIT                 = 1000000
+	SELECTING_K                             = 2.0
 )
 
 var netParam = &chaincfg.TestNet3Params
@@ -246,14 +246,14 @@ func chooseUtxos(native *native.NativeService, chainID uint64, amount int64, out
 		return nil, 0, 0, fmt.Errorf("chooseUtxos, getUtxos error: %v", err)
 	}
 	sort.Sort(sort.Reverse(utxos))
-	cs := &CoinSelector {
+	cs := &CoinSelector{
 		SortedUtxos: utxos,
-		Target: uint64(amount),
-		MaxP: MAX_FEE_COST_PERCENTS,
-		Tries: MAX_SELECTING_TRY_LIMIT,
-		Mc: MIN_CHANGE,
-		K: SELECTING_K,
-		TxOuts: outs,
+		Target:      uint64(amount),
+		MaxP:        MAX_FEE_COST_PERCENTS,
+		Tries:       MAX_SELECTING_TRY_LIMIT,
+		Mc:          MIN_CHANGE,
+		K:           SELECTING_K,
+		TxOuts:      outs,
 	}
 	result, sum, fee := cs.Select()
 	if result == nil || len(result) == 0 {

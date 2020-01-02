@@ -41,7 +41,7 @@ var (
 	wTx = "010000000168d852fcfee59bb68304feda29e78e9e5c508ff7fa7abbce3cc448c41da7b9250000000000ffffffff0130d9f505000000001976a91428d2e8cee08857f569e5a1b147c5d5e87339e08188ac00000000"
 
 	witPubScript, _ = hex.DecodeString("002044978a77e4e983136bf1cca277c45e5bd4eff6a7848e900416daf86fd32c2743")
-	utxos = &Utxos{
+	utxos           = &Utxos{
 		Utxos: []*Utxo{
 			{ // 10000000
 				Value:    1e5,
@@ -312,12 +312,12 @@ func TestCoinSelector_SimpleBnbSearch(t *testing.T) {
 	sort.Sort(sort.Reverse(utxos))
 
 	s := &CoinSelector{
-		TxOuts: mtx.TxOut,
-		K: 1.5,
-		Mc: 2000,
-		Tries: 10000,
-		MaxP: 0.2,
-		Target: 35e4,
+		TxOuts:      mtx.TxOut,
+		K:           1.5,
+		Mc:          2000,
+		Tries:       10000,
+		MaxP:        0.2,
+		Target:      35e4,
 		SortedUtxos: utxos,
 	}
 	res, sum, _ := s.SimpleBnbSearch(0, make([]*Utxo, 0), 0)
@@ -357,13 +357,13 @@ func TestCoinSelector_SortedSearch(t *testing.T) {
 	mtx.BtcDecode(bytes.NewBuffer(txb), wire.TxVersion, wire.LatestEncoding)
 	sort.Sort(sort.Reverse(utxos))
 
-	s := &CoinSelector {
-		TxOuts: mtx.TxOut,
-		K: 1.5,
-		Mc: 2000,
-		Tries: 10000,
-		MaxP: 0.2,
-		Target: 35e4,
+	s := &CoinSelector{
+		TxOuts:      mtx.TxOut,
+		K:           1.5,
+		Mc:          2000,
+		Tries:       10000,
+		MaxP:        0.2,
+		Target:      35e4,
 		SortedUtxos: utxos,
 	}
 
