@@ -7,6 +7,7 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/log"
 	"sort"
 	"strconv"
 )
@@ -157,10 +158,33 @@ func (selector *CoinSelector) Select() ([]*Utxo, uint64, uint64) {
 	//selector.mixUpUtxos()
 	result, sum, fee := selector.SimpleBnbSearch(0, make([]*Utxo, 0), 0)
 	if result != nil {
+		content := "{"
+		for _, v := range result {
+			pubk, err := txscript.DisasmString(v.ScriptPubkey)
+			if err != nil {
+				log.Fatalf("WTF disasm failed: %v", err)
+				return nil, 0, 0
+			}
+			content += fmt.Sprintf("[%s: pubk %s, val %d]\n", v.Op.String(), pubk, v.Value)
+		}
+		content += "\n}"
+		log.Warnf("utxos is %s", content)
 		return result, sum, fee
 	}
 	//sort.Sort(sort.Reverse(selector.SortedUtxos))
 	result, sum, fee = selector.SortedSearch()
+
+	content := "{"
+	for _, v := range result {
+		pubk, err := txscript.DisasmString(v.ScriptPubkey)
+		if err != nil {
+			log.Fatalf("WTF disasm failed: %v", err)
+			return nil, 0, 0
+		}
+		content += fmt.Sprintf("[%s: pubk %s, val %d]\n", v.Op.String(), pubk, v.Value)
+	}
+	content += "\n}"
+	log.Warnf("utxos is %s", content)
 	return result, sum, fee
 }
 

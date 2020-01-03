@@ -14,7 +14,6 @@ import (
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/service/utils"
 	"github.com/ontio/multi-chain/native/storage"
-	"gotest.tools/assert"
 	"sort"
 	"testing"
 )
@@ -226,7 +225,7 @@ func TestBTCHandler_MakeTransaction(t *testing.T) {
 	utxos := Utxos{
 		Utxos: []*Utxo{&Utxo{
 			Op:           &OutPoint{Hash: txid[:], Index: 1},
-			Value:        3000,
+			Value:        5000,
 			ScriptPubkey: mtx.TxOut[1].PkScript,
 			AtHeight:     0,
 		}},
@@ -279,7 +278,9 @@ func TestUtxos_Sort(t *testing.T) {
 	vals := []uint64{5, 10, 30}
 	for i, u := range utxos.Utxos {
 		//fmt.Println(u.Value, vals[i])
-		assert.Assert(t, u.Value == vals[i], "not equal %d", i)
+		if u.Value != vals[i] {
+			t.Fatalf("not equal %d", i)
+		}
 	}
 }
 
@@ -294,8 +295,11 @@ func TestUtxos_Choose(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	assert.Assert(t, sum == 4e5 && len(set) == 2 && bytes.Equal(set[0].ScriptPubkey, witPubScript) &&
-		bytes.Equal(set[1].ScriptPubkey, witPubScript), "wrong sum")
+
+	if !(sum == 35e4 && len(set) == 2 && bytes.Equal(set[0].ScriptPubkey, witPubScript) &&
+		bytes.Equal(set[1].ScriptPubkey, []byte("2"))) {
+		t.Fatal("wrong sum")
+	}
 	fmt.Println("fee is :", fee)
 	_, _, _, err = chooseUtxos(ns, 0, 100e4, mtx.TxOut)
 	if err == nil {
@@ -321,22 +325,28 @@ func TestCoinSelector_SimpleBnbSearch(t *testing.T) {
 		SortedUtxos: utxos,
 	}
 	res, sum, _ := s.SimpleBnbSearch(0, make([]*Utxo, 0), 0)
-	assert.Assert(t, len(res) == 2, sum == 35e4, res[0].AtHeight == 3 && res[1].AtHeight == 2 && s.Tries == 9998, "wrong selection")
+	if !(len(res) == 2 && sum == 35e4 && res[0].AtHeight == 3 && res[1].AtHeight == 2 && s.Tries == 9998) {
+		t.Fatal("wrong selection")
+	}
 
 	s.Target = 12e4
 	res, sum, _ = s.SimpleBnbSearch(0, make([]*Utxo, 0), 0)
-	assert.Assert(t, len(res) == 2 && sum == 15e4 && res[0].AtHeight == 2 && res[1].AtHeight == 1 && s.Tries == 9995,
-		"wrong selection")
+	if !(len(res) == 2 && sum == 15e4 && res[0].AtHeight == 2 && res[1].AtHeight == 1 && s.Tries == 9995) {
+		t.Fatal("wrong selection")
+	}
 
 	s.Target = 34e4
 	s.Mc = 3e4
 	res, sum, _ = s.SimpleBnbSearch(0, make([]*Utxo, 0), 0)
-	assert.Assert(t, len(res) == 2 && sum == 4e5 && res[0].AtHeight == 3 && res[1].AtHeight == 1 && s.Tries == 9992, "wrong selection")
-
+	if !(len(res) == 2 && sum == 4e5 && res[0].AtHeight == 3 && res[1].AtHeight == 1 && s.Tries == 9992) {
+		t.Fatal("wrong selection")
+	}
 	s.Target = 5e5
 	s.Mc = 2000
 	res, sum, _ = s.SimpleBnbSearch(0, make([]*Utxo, 0), 0)
-	assert.Assert(t, res == nil, "wrong selection")
+	if res != nil {
+		t.Fatal("wrong selection")
+	}
 	//
 	//s.MaxP = 0.001
 	//s.Target = 35e4
@@ -346,7 +356,9 @@ func TestCoinSelector_SimpleBnbSearch(t *testing.T) {
 	s.Tries = 1
 	//s.MaxP = 0.2
 	res, sum, _ = s.SimpleBnbSearch(0, make([]*Utxo, 0), 0)
-	assert.Assert(t, res == nil, "wrong selection")
+	if res != nil {
+		t.Fatal("wrong selection")
+	}
 }
 
 func TestCoinSelector_SortedSearch(t *testing.T) {
@@ -368,19 +380,26 @@ func TestCoinSelector_SortedSearch(t *testing.T) {
 	}
 
 	res, sum, _ := s.SortedSearch()
-	assert.Assert(t, len(res) == 2 && sum == 35e4 && res[0].AtHeight == 3 && res[1].AtHeight == 2,
-		"wrong selection")
+	if !(len(res) == 2 && sum == 35e4 && res[0].AtHeight == 3 && res[1].AtHeight == 2) {
+		t.Fatal("wrong selection")
+	}
 
 	s.Target = 5e4
 	res, sum, _ = s.SortedSearch()
-	assert.Assert(t, len(res) == 1 && sum == 5e4 && res[0].AtHeight == 2, "wrong selection")
+	if !(len(res) == 1 && sum == 5e4 && res[0].AtHeight == 2) {
+		t.Fatal("wrong selection")
+	}
 
 	s.Target = 5e5
 	res, sum, _ = s.SortedSearch()
-	assert.Assert(t, res == nil, "wrong selection")
+	if res != nil {
+		t.Fatal("wrong")
+	}
 
 	s.Target = 41e4
 	s.Mc = 5e4
 	res, sum, _ = s.SortedSearch()
-	assert.Assert(t, res == nil, "wrong selection")
+	if res != nil {
+		t.Fatal("wrong")
+	}
 }

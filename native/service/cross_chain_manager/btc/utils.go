@@ -13,6 +13,7 @@ import (
 	"github.com/btcsuite/btcutil"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
+	"github.com/ontio/multi-chain/common/log"
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/event"
@@ -235,6 +236,12 @@ func addUtxos(native *native.NativeService, chainID uint64, height uint32, mtx *
 		Value:        uint64(mtx.TxOut[0].Value),
 		ScriptPubkey: mtx.TxOut[0].PkScript,
 	}
+
+	pk, err := txscript.DisasmString(newUtxo.ScriptPubkey)
+	if err != nil {
+		return err
+	}
+	log.Warnf("input utxo: %s: %s", op.String(), pk)
 	utxos.Utxos = append(utxos.Utxos, newUtxo)
 	putUtxos(native, chainID, utxos)
 	return nil
