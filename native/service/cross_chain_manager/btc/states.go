@@ -234,6 +234,10 @@ func (selector *CoinSelector) SortedSearch() ([]*Utxo, uint64, uint64) {
 			sum += u.Value
 			fee, lr = selector.getLossRatio(selection)
 			if lr >= selector.MaxP {
+				if txscript.IsPayToScriptHash(u.ScriptPubkey) {
+					selection = selection[:len(selection)-1]
+					continue
+				}
 				return nil, 0, 0
 			}
 			if sum == selector.Target || sum >= selector.Target+selector.Mc {
