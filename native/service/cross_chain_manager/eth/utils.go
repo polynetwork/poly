@@ -55,7 +55,7 @@ func verifyFromEthTx(native *native.NativeService, proof, extra, txHash []byte, 
 		return nil, fmt.Errorf("VerifyFromEthProof, deserialize merkleValue error:%s", err)
 	}
 	if !bytes.Equal(txHash, txParam.TxHash) {
-		return nil, fmt.Errorf("VerifyFromEthProof, relayer txHash:%x doesn't equal user txHash:%x", txParam.TxHash, txParam.TxHash)
+		return nil, fmt.Errorf("VerifyFromEthProof, relayer txHash:%x doesn't equal user txHash:%x", txHash, txParam.TxHash)
 	}
 	return txParam, nil
 }

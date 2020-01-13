@@ -11,6 +11,7 @@ import (
 	"github.com/ontio/multi-chain/native/service/header_sync/neo"
 	"github.com/ontio/multi-chain/native/service/header_sync/ont"
 	"github.com/ontio/multi-chain/native/service/utils"
+	"github.com/ontio/multi-chain/native/service/header_sync/btc"
 )
 
 const (
@@ -28,6 +29,8 @@ func RegisterHeaderSyncContract(native *native.NativeService) {
 
 func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
 	switch router {
+	case utils.BTC_ROUTER:
+		return btc.NewBTCHandler(), nil
 	case utils.ETH_ROUTER:
 		return eth.NewETHHandler(), nil
 	case utils.ONT_ROUTER:

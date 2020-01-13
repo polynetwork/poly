@@ -26,14 +26,10 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
-	wire_bch "github.com/gcash/bchd/wire"
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/core/genesis"
-	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/event"
 	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
-	"github.com/ontio/multi-chain/native/service/governance/side_chain_manager"
 	"github.com/ontio/multi-chain/native/service/utils"
 )
 
@@ -44,51 +40,59 @@ func NewBTCHandler() *BTCHandler {
 	return &BTCHandler{}
 }
 
-func (this *BTCHandler) InitRedeemScript(service *native.NativeService) error {
-	params := new(crosscommon.InitRedeemScriptParam)
-	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
-		return fmt.Errorf("InitRedeemScript, contract params deserialize error: %v", err)
-	}
-
-	// get operator from database
-	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
-	if err != nil {
-		return err
-	}
-
-	//check witness
-	err = utils.ValidateOwner(service, operatorAddress)
-	if err != nil {
-		return fmt.Errorf("InitRedeemScript, checkWitness error: %v", err)
-	}
-
-	err = putBtcRedeemScript(service, params.RedeemScript)
-	if err != nil {
-		return fmt.Errorf("InitRedeemScript, putBtcRedeemScript error: %v", err)
-	}
-
-	return nil
-}
+//func (this *BTCHandler) InitRedeemScript(service *native.NativeService) error {
+//	params := new(crosscommon.InitRedeemScriptParam)
+//	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
+//		return fmt.Errorf("InitRedeemScript, contract params deserialize error: %v", err)
+//	}
+//
+//	// get operator from database
+//	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
+//	if err != nil {
+//		return err
+//	}
+//
+//	//check witness
+//	err = utils.ValidateOwner(service, operatorAddress)
+//	if err != nil {
+//		return fmt.Errorf("InitRedeemScript, checkWitness error: %v", err)
+//	}
+//
+//	err = putBtcRedeemScript(service, params.RedeemScript)
+//	if err != nil {
+//		return fmt.Errorf("InitRedeemScript, putBtcRedeemScript error: %v", err)
+//	}
+//
+//	return nil
+//}
 
 func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 	params := new(crosscommon.MultiSignParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
 		return fmt.Errorf("MultiSign, contract params deserialize error: %v", err)
 	}
-
+	//TODO -> Done: get multiSignInfo which should be initialized when make btc tx
 	multiSignInfo, err := getBtcMultiSignInfo(service, params.TxHash)
 	if err != nil {
 		return fmt.Errorf("MultiSign, getBtcMultiSignInfo error: %v", err)
 	}
+	//sig, ok := multiSignInfo.MultiSignInfo[params.Address]
+	//if !ok {
+	//	return fmt.Errorf("MultiSign, signed address is invalid", params.Address)
+	//}
+	//if sig != nil {
+	//	return fmt.Errorf("MultiSign, address %s already sign", params.Address)
+	//}
 	_, ok := multiSignInfo.MultiSignInfo[params.Address]
 	if ok {
 		return fmt.Errorf("MultiSign, address %s already sign", params.Address)
 	}
 
-	redeemScript, err := getBtcRedeemScriptBytes(service)
+	redeemScript, err := getBtcRedeemScriptBytes(service, params.RedeemKey)
 	if err != nil {
-		return fmt.Errorf("MultiSign, getBtcRedeemScript error: %v", err)
+		return fmt.Errorf("MultiSign, get btc redeem script with redeem key %v from db error: %v", params.RedeemKey, err)
 	}
+
 	_, addrs, n, err := txscript.ExtractPkScriptAddrs(redeemScript, netParam)
 	if err != nil {
 		return fmt.Errorf("MultiSign, failed to extract pkscript addrs: %v", err)
@@ -96,6 +100,7 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 	if len(multiSignInfo.MultiSignInfo) == n {
 		return fmt.Errorf("MultiSign, already enough signature: %d", n)
 	}
+
 
 	txb, err := service.GetCacheDB().Get(utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(BTC_TX_PREFIX),
 		params.TxHash))
@@ -113,7 +118,7 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 		pkScripts[i] = in.SignatureScript
 		in.SignatureScript = nil
 	}
-	amts, stxos, err := getStxoAmts(service, params.ChainID, mtx.TxIn)
+	amts, stxos, err := getStxoAmts(service, params.ChainID, mtx.TxIn, params.RedeemKey)
 	if err != nil {
 		return fmt.Errorf("MultiSign, failed to get stxos: %v", err)
 	}
@@ -149,7 +154,7 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 		if err != nil {
 			return fmt.Errorf("MultiSign, failed to get lock script: %v", err)
 		}
-		utxos, err := getUtxos(service, params.ChainID)
+		utxos, err := getUtxos(service, params.ChainID, params.RedeemKey)
 		if err != nil {
 			return fmt.Errorf("MultiSign, getUtxos error: %v", err)
 		}
@@ -167,13 +172,13 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 				utxos.Utxos = append(utxos.Utxos, newUtxo)
 			}
 		}
-		putUtxos(service, params.ChainID, utxos)
+		putUtxos(service, params.ChainID, params.RedeemKey, utxos)
 		btcFromTxInfo, err := getBtcFromInfo(service, params.TxHash)
 		if err != nil {
 			return fmt.Errorf("MultiSign, failed to get from tx hash %s from cacheDB: %v",
 				hex.EncodeToString(params.TxHash), err)
 		}
-		putStxos(service, params.ChainID, stxos)
+		putStxos(service, params.ChainID, params.RedeemKey, stxos)
 		service.AddNotify(
 			&event.NotifyEventInfo{
 				ContractAddress: utils.CrossChainManagerContractAddress,
@@ -264,6 +269,19 @@ func (this *BTCHandler) Vote(service *native.NativeService) (bool, *crosscommon.
 }
 
 func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*crosscommon.MakeTxParam, error) {
+	//params := new(crosscommon.EntranceParam)
+	//if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
+	//	return nil, fmt.Errorf("btc MakeDepositProposal, contract params deserialize error: %v", err)
+	//}
+	//if len(params.Proof) == 0 || len(params.Extra) == 0 {
+	//	return nil, fmt.Errorf("btc MakeDepositProposal, GetInput() data can't be empty")
+	//}
+	//err := notifyBtcTx(service, params.Proof, params.Extra, params.Height, params.SourceChainID)
+	//if err != nil {
+	//	return nil, fmt.Errorf("btc MakeDepositProposal, failed to verify: %v", err)
+	//}
+	//
+	//return nil, nil
 	params := new(crosscommon.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
 		return nil, fmt.Errorf("btc MakeDepositProposal, contract params deserialize error: %v", err)
@@ -271,12 +289,34 @@ func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*cro
 	if len(params.Proof) == 0 || len(params.Extra) == 0 {
 		return nil, fmt.Errorf("btc MakeDepositProposal, GetInput() data can't be empty")
 	}
-	err := notifyBtcTx(service, params.Proof, params.Extra, params.Height, params.SourceChainID)
-	if err != nil {
-		return nil, fmt.Errorf("btc MakeDepositProposal, failed to verify: %v", err)
+
+	if err := crosscommon.CheckDoneTx(service, params.TxHash, params.Proof, params.SourceChainID); err != nil {
+		return nil, fmt.Errorf("MakeDepositProposal, check done transaction error:%s", err)
 	}
 
-	return nil, nil
+	value, err := verifyFromBtcTx(service, params.Proof, params.Extra, params.SourceChainID, params.Height)
+
+	if err != nil {
+		return nil, fmt.Errorf("MakeDepositProposal, verifyFromEthTx error: %s", err)
+	}
+
+	if err := crosscommon.PutDoneTx(service, value.TxHash, params.Proof, params.SourceChainID); err != nil {
+		return nil, fmt.Errorf("MakeDepositProposal, PutDoneTx error:%s", err)
+	}
+
+	// decode tx and then update utxos
+	mtx := wire.NewMsgTx(wire.TxVersion)
+	reader := bytes.NewReader(params.Extra)
+	err = mtx.BtcDecode(reader, wire.ProtocolVersion, wire.LatestEncoding)
+	if err != nil {
+		return nil, fmt.Errorf("VerifyFromBtcProof, failed to decode the transaction %s: %s", hex.EncodeToString(params.Extra), err)
+	}
+	err = addUtxos(service, params.SourceChainID, service.GetHeight(), mtx)
+	if err != nil {
+		return nil, fmt.Errorf("btc Vote, updateUtxo error: %s", err)
+	}
+
+	return value, nil
 }
 
 func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *crosscommon.MakeTxParam,
@@ -295,83 +335,86 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *cr
 		return fmt.Errorf("btc MakeTransaction, deserialize amount error")
 	}
 	amounts[string(toAddrBytes)] = int64(amount)
-
-	err := makeBtcTx(service, param.ToChainID, amounts, param.TxHash, fromChainID)
+	redeemScriptBytes, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("btc MakeTransaction, deserialize redeem script error")
+	}
+	err := makeBtcTx(service, param.ToChainID, amounts, param.TxHash, fromChainID, redeemScriptBytes)
 	if err != nil {
 		return fmt.Errorf("btc MakeTransaction, failed to make transaction: %v", err)
 	}
 	return nil
 }
 
-func notifyBtcTx(native *native.NativeService, proof, tx []byte, height uint32, btcChainID uint64) error {
-	sideChain, err := side_chain_manager.GetSideChain(native, btcChainID)
-	if err != nil {
-		return fmt.Errorf("notifyBtcTx, side_chain_manager.GetSideChain error: %v", err)
-	}
-	if sideChain == nil {
-		return fmt.Errorf("notifyBtcTx, side chain is not registered")
-	}
-
-	mtx := wire.NewMsgTx(wire.TxVersion)
-	reader := bytes.NewReader(tx)
-	err = mtx.BtcDecode(reader, wire.ProtocolVersion, wire.LatestEncoding)
-	if err != nil {
-		return fmt.Errorf("notifyBtcTx, failed to decode the transaction %s: %s", hex.EncodeToString(tx), err)
-	}
-	redeem, err := getBtcRedeemScriptBytes(native)
-	if err != nil {
-		return fmt.Errorf("notifyBtcTx, failed to get redeem: %v", err)
-	}
-	err = checkTxOuts(mtx, redeem)
-	if err != nil {
-		return fmt.Errorf("notifyBtcTx, wrong outputs: %v", err)
-	}
-	err = ifCanResolve(mtx.TxOut[1], mtx.TxOut[0].Value)
-	if err != nil {
-		return fmt.Errorf("notifyBtcTx, failed to resolve parameter: %v", err)
-	}
-
-	mb := wire_bch.MsgMerkleBlock{}
-	err = mb.BchDecode(bytes.NewReader(proof), wire_bch.ProtocolVersion, wire_bch.LatestEncoding)
-	if err != nil {
-		return fmt.Errorf("notifyBtcTx, failed to decode proof: %v", err)
-	}
-	txid := mtx.TxHash()
-	ok, err := checkBtcProof(native, txid[:])
-	if err != nil {
-		return fmt.Errorf("notifyBtcTx, checkBtcProof error: %v", err)
-	}
-	if !ok {
-		return fmt.Errorf("notifyBtcTx, btc proof already exist")
-	}
-	isExist := false
-	for _, hash := range mb.Hashes {
-		if bytes.Equal(hash[:], txid[:]) {
-			isExist = true
-			break
-		}
-	}
-	if !isExist {
-		return fmt.Errorf("notifyBtcTx, transaction %s not found in proof", txid.String())
-	}
-
-	btcProof := &BtcProof{
-		Tx:           tx,
-		Proof:        proof,
-		Height:       height,
-		BlocksToWait: sideChain.BlocksToWait,
-	}
-	sink := common.NewZeroCopySink(nil)
-	btcProof.Serialization(sink)
-
-	putBtcProof(native, txid[:], sink.Bytes())
-
-	notifyBtcProof(native, txid.String(), hex.EncodeToString(sink.Bytes()))
-	return nil
-}
+//func notifyBtcTx(native *native.NativeService, proof, tx []byte, height uint32, btcChainID uint64) error {
+//	sideChain, err := side_chain_manager.GetSideChain(native, btcChainID)
+//	if err != nil {
+//		return fmt.Errorf("notifyBtcTx, side_chain_manager.GetSideChain error: %v", err)
+//	}
+//	if sideChain == nil {
+//		return fmt.Errorf("notifyBtcTx, side chain is not registered")
+//	}
+//
+//	mtx := wire.NewMsgTx(wire.TxVersion)
+//	reader := bytes.NewReader(tx)
+//	err = mtx.BtcDecode(reader, wire.ProtocolVersion, wire.LatestEncoding)
+//	if err != nil {
+//		return fmt.Errorf("notifyBtcTx, failed to decode the transaction %s: %s", hex.EncodeToString(tx), err)
+//	}
+//	redeem, err := getBtcRedeemScriptBytes(native)
+//	if err != nil {
+//		return fmt.Errorf("notifyBtcTx, failed to get redeem: %v", err)
+//	}
+//	err = checkTxOuts(mtx, redeem)
+//	if err != nil {
+//		return fmt.Errorf("notifyBtcTx, wrong outputs: %v", err)
+//	}
+//	err = ifCanResolve(mtx.TxOut[1], mtx.TxOut[0].Value)
+//	if err != nil {
+//		return fmt.Errorf("notifyBtcTx, failed to resolve parameter: %v", err)
+//	}
+//
+//	mb := wire_bch.MsgMerkleBlock{}
+//	err = mb.BchDecode(bytes.NewReader(proof), wire_bch.ProtocolVersion, wire_bch.LatestEncoding)
+//	if err != nil {
+//		return fmt.Errorf("notifyBtcTx, failed to decode proof: %v", err)
+//	}
+//	txid := mtx.TxHash()
+//	ok, err := checkBtcProof(native, txid[:])
+//	if err != nil {
+//		return fmt.Errorf("notifyBtcTx, checkBtcProof error: %v", err)
+//	}
+//	if !ok {
+//		return fmt.Errorf("notifyBtcTx, btc proof already exist")
+//	}
+//	isExist := false
+//	for _, hash := range mb.Hashes {
+//		if bytes.Equal(hash[:], txid[:]) {
+//			isExist = true
+//			break
+//		}
+//	}
+//	if !isExist {
+//		return fmt.Errorf("notifyBtcTx, transaction %s not found in proof", txid.String())
+//	}
+//
+//	btcProof := &BtcProof{
+//		Tx:           tx,
+//		Proof:        proof,
+//		Height:       height,
+//		BlocksToWait: sideChain.BlocksToWait,
+//	}
+//	sink := common.NewZeroCopySink(nil)
+//	btcProof.Serialization(sink)
+//
+//	putBtcProof(native, txid[:], sink.Bytes())
+//
+//	notifyBtcProof(native, txid.String(), hex.EncodeToString(sink.Bytes()))
+//	return nil
+//}
 
 func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string]int64, fromTxHash []byte,
-	fromChainID uint64) error {
+	fromChainID uint64, redeemScript []byte) error {
 	if len(amounts) == 0 {
 		return fmt.Errorf("makeBtcTx, GetInput() no amount")
 	}
@@ -391,11 +434,12 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, %v", err)
 	}
-	redeemScript, err := getBtcRedeemScriptBytes(service)
-	if err != nil {
-		return fmt.Errorf("makeBtcTx, getBtcRedeemScript error: %v", err)
-	}
+	//redeemScript, err := getBtcRedeemScriptBytes(service)
+	//if err != nil {
+	//	return fmt.Errorf("makeBtcTx, getBtcRedeemScript error: %v", err)
+	//}
 	out, err := getChangeTxOut(0, redeemScript)
+	outRedeemScriptKey := GetUtxoKey(out.PkScript)
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, %v", err)
 	}
@@ -441,10 +485,15 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 		return fmt.Errorf("makeBtcTx, putBtcFromInfo failed: %v", err)
 	}
 
+	err = putBtcRedeemScript(service, outRedeemScriptKey, redeemScript)
+	if err != nil {
+		return fmt.Errorf("makeBtcTx, failed to save redeemscript %v with key %v, error: %v", hex.EncodeToString(redeemScript), outRedeemScriptKey, err)
+	}
+	//TODO -> Done: add string to the notify, to calculate the key for storing the pk of redeem script
 	service.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
-			States:          []interface{}{"makeBtcTx", hex.EncodeToString(buf.Bytes()), amts},
+			States:          []interface{}{"makeBtcTx", outRedeemScriptKey, hex.EncodeToString(buf.Bytes()), amts},
 		})
 
 	return nil

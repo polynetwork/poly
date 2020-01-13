@@ -20,6 +20,11 @@ import (
 	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/utils"
 	"sort"
+	"github.com/ontio/multi-chain/native/service/header_sync/btc"
+	wire_bch "github.com/gcash/bchd/wire"
+	"github.com/gcash/bchutil/merkleblock"
+	"github.com/ontio/multi-chain/native/service/governance/side_chain_manager"
+	"golang.org/x/crypto/ripemd160"
 )
 
 const (
@@ -43,6 +48,116 @@ const (
 )
 
 var netParam = &chaincfg.TestNet3Params
+
+
+
+func verifyFromBtcTx(native *native.NativeService, proof, tx []byte, fromChainID uint64, height uint32) (*crosscommon.MakeTxParam, error) {
+	// decode tx
+	mtx := wire.NewMsgTx(wire.TxVersion)
+	reader := bytes.NewReader(tx)
+	err := mtx.BtcDecode(reader, wire.ProtocolVersion, wire.LatestEncoding)
+	if err != nil {
+		return nil, fmt.Errorf("VerifyFromBtcProof, failed to decode the transaction %s: %s", hex.EncodeToString(tx), err)
+	}
+	// check tx is legal format for btc cross chain transaction
+	err = ifCanResolve(mtx.TxOut[1], mtx.TxOut[0].Value)
+	if err != nil {
+		return nil, fmt.Errorf("VerifyFromBtcProof, not crosschain btc tx, since failed to resolve parameter: %v", err)
+	}
+
+	// make sure the header with height is already synced, meaning the tx is already confirmed in btc block chain
+	bestHeader, err := btc.GetBestBlockHeader(native, fromChainID)
+	if err != nil {
+		return nil, fmt.Errorf("VerifyFromBtcProof, get best block header error:%s", err)
+	}
+	sideChain, err := side_chain_manager.GetSideChain(native, fromChainID)
+	if err != nil {
+		return nil, fmt.Errorf("VerifyFromBtcProof, side_chain_manager.GetSideChain error: %v", err)
+	}
+	if sideChain == nil {
+		return nil, fmt.Errorf("VerifyFromBtcProof, side chain is not registered")
+	}
+	bestHeight := bestHeader.Height
+	if bestHeight < height || bestHeight-height < uint32(sideChain.BlocksToWait-1) {
+		return nil, fmt.Errorf("verify, transaction is not confirmed, current height: %d, input height: %d", bestHeight, height)
+	}
+
+	// verify btc merkle proof
+	blockHash, err := btc.GetBlockHash(native, fromChainID, uint64(height))
+	if err != nil {
+		return nil, fmt.Errorf("VerifyFromBtcProof, get block hash at height %d to verify btc merkle proof error:%s", height, err)
+	}
+	header, err := btc.GetBlockHeader(native, fromChainID, *blockHash)
+	if err != nil {
+		return nil, fmt.Errorf("VerifyFromBtcProof, get header at height %d to verify btc merkle proof error:%s", height, err)
+	}
+	if verified, err := verifyBtcMerkleProof(mtx, header.Header, proof); !verified {
+		return nil, fmt.Errorf("VerifyFromBtcProof, verify merkle proof error:%s", err)
+	}
+
+
+	// decode the extra data from tx and construct MakeTxParam
+	var p targetChainParam
+	err = p.resolve(mtx.TxOut[0].Value, mtx.TxOut[1])
+	if err != nil {
+		return nil, fmt.Errorf("btc Vote, failed to resolve parameter: %v", err)
+	}
+	txHash := mtx.TxHash()
+	return &crosscommon.MakeTxParam{
+		TxHash:              txHash[:],
+		FromContractAddress: []byte(BTC_ADDRESS),
+		ToChainID:           p.args.ToChainID,
+		ToContractAddress:   p.args.ToContractAddress,
+		Method:              "unlock",
+		Args:                p.AddrAndVal,
+	}, nil
+
+}
+
+func verifyValidBlockHeight(bestHeader *btc.StoredHeader, item *BtcProof) (bool, error ) {
+	bestHeight := bestHeader.Height
+	if bestHeight < item.Height || bestHeight-item.Height < uint32(item.BlocksToWait-1) {
+		return false, fmt.Errorf("verify, transaction is not confirmed, current height: %d, input height: %d", bestHeight, item.Height)
+	}
+	return true, nil
+}
+
+func verifyBtcMerkleProof(mtx *wire.MsgTx, blockHeader wire.BlockHeader, proof []byte) (bool, error) {
+	merkleBlockMsg := wire_bch.MsgMerkleBlock{}
+	err := merkleBlockMsg.BchDecode(bytes.NewReader(proof), wire_bch.ProtocolVersion, wire_bch.LatestEncoding)
+	if err != nil {
+		return false, fmt.Errorf("verify, failed to decode proof: %v", err)
+	}
+	merkleBlock := merkleblock.NewMerkleBlockFromMsg(merkleBlockMsg)
+	merkleRootCalc := merkleBlock.ExtractMatches()
+	if merkleRootCalc == nil || merkleBlock.BadTree() || len(merkleBlock.GetMatches()) == 0 {
+		return false, fmt.Errorf("verify, bad merkle tree")
+	}
+	if !bytes.Equal(merkleRootCalc[:], blockHeader.MerkleRoot[:]) {
+		return false, fmt.Errorf("verify, merkle root not equal, merkle root should be %s not %s, block hash in proof is %s",
+			blockHeader.MerkleRoot.String(), merkleRootCalc.String(), merkleBlockMsg.Header.BlockHash().String())
+	}
+
+	// make sure txid exists in proof
+	txid := mtx.TxHash()
+
+	isExist := false
+	for _, hash := range merkleBlockMsg.Hashes {
+		if bytes.Equal(hash[:], txid[:]) {
+			isExist = true
+			break
+		}
+	}
+	if !isExist {
+		return false, fmt.Errorf("verify, transaction %s not found in proof", txid.String())
+	}
+
+	return true, nil
+
+}
+
+
+
 
 // not sure now
 type targetChainParam struct {
@@ -220,8 +335,23 @@ func getBtcVote(native *native.NativeService, txHash []byte) (*crosscommon.Vote,
 	return vote, nil
 }
 
+func GetUtxoKey(scriptPk []byte) string {
+	switch txscript.GetScriptClass(scriptPk) {
+	case txscript.ScriptHashTy:
+		return hex.EncodeToString(scriptPk[2:22])
+	case txscript.WitnessV0ScriptHashTy:
+		hasher := ripemd160.New()
+		hasher.Write(scriptPk[2:34])
+		return hex.EncodeToString(hasher.Sum(nil))
+	default:
+		return ""
+	}
+}
+
 func addUtxos(native *native.NativeService, chainID uint64, height uint32, mtx *wire.MsgTx) error {
-	utxos, err := getUtxos(native, chainID)
+	utxoKey := GetUtxoKey(mtx.TxOut[0].PkScript)
+
+	utxos, err := getUtxos(native, chainID, utxoKey)
 	if err != nil {
 		return fmt.Errorf("addUtxos, getUtxos err:%v", err)
 	}
@@ -243,12 +373,13 @@ func addUtxos(native *native.NativeService, chainID uint64, height uint32, mtx *
 	}
 	log.Warnf("input utxo: %s: %s", op.String(), pk)
 	utxos.Utxos = append(utxos.Utxos, newUtxo)
-	putUtxos(native, chainID, utxos)
+	putUtxos(native, chainID, utxoKey, utxos)
 	return nil
 }
 
 func chooseUtxos(native *native.NativeService, chainID uint64, amount int64, outs []*wire.TxOut) ([]*Utxo, int64, int64, error) {
-	utxos, err := getUtxos(native, chainID)
+	utxoKey := GetUtxoKey(outs[len(outs) - 1].PkScript)
+	utxos, err := getUtxos(native, chainID, utxoKey)
 	if err != nil {
 		return nil, 0, 0, fmt.Errorf("chooseUtxos, getUtxos error: %v", err)
 	}
@@ -266,12 +397,12 @@ func chooseUtxos(native *native.NativeService, chainID uint64, amount int64, out
 	if result == nil || len(result) == 0 {
 		return nil, 0, 0, fmt.Errorf("chooseUtxos, current utxo is not enough")
 	}
-	stxos, err := getStxos(native, chainID)
+	stxos, err := getStxos(native, chainID, utxoKey)
 	if err != nil {
 		return nil, 0, 0, fmt.Errorf("chooseUtxos, failed to get stxos: %v", err)
 	}
 	stxos.Utxos = append(stxos.Utxos, result...)
-	putStxos(native, chainID, stxos)
+	putStxos(native, chainID, utxoKey, stxos)
 
 	toSort := new(Utxos)
 	toSort.Utxos = result
@@ -283,21 +414,21 @@ func chooseUtxos(native *native.NativeService, chainID uint64, amount int64, out
 		}
 		utxos.Utxos = append(utxos.Utxos[:idx], utxos.Utxos[idx+1:]...)
 	}
-	putUtxos(native, chainID, utxos)
+	putUtxos(native, chainID, utxoKey, utxos)
 	return result, int64(sum), int64(fee), nil
 }
 
-func putTxos(k string, native *native.NativeService, chainID uint64, txos *Utxos) {
+func putTxos(k string, native *native.NativeService, chainID uint64, txoKey string, txos *Utxos) {
 	chainIDBytes := utils.GetUint64Bytes(chainID)
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(k), chainIDBytes)
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(k), chainIDBytes, []byte(txoKey))
 	sink := common.NewZeroCopySink(nil)
 	txos.Serialization(sink)
 	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(sink.Bytes()))
 }
 
-func getTxos(k string, native *native.NativeService, chainID uint64) (*Utxos, error) {
+func getTxos(k string, native *native.NativeService, chainID uint64, txoKey string) (*Utxos, error) {
 	chainIDBytes := utils.GetUint64Bytes(chainID)
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(k), chainIDBytes)
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(k), chainIDBytes, []byte(txoKey))
 	store, err := native.GetCacheDB().Get(key)
 	if err != nil {
 		return nil, fmt.Errorf("get%s, get btcTxStore error: %v", k, err)
@@ -318,26 +449,26 @@ func getTxos(k string, native *native.NativeService, chainID uint64) (*Utxos, er
 	return txos, nil
 }
 
-func putUtxos(native *native.NativeService, chainID uint64, utxos *Utxos) {
-	putTxos(UTXOS, native, chainID, utxos)
+func putUtxos(native *native.NativeService, chainID uint64, utxoKey string, utxos *Utxos) {
+	putTxos(UTXOS, native, chainID, utxoKey, utxos)
 }
 
-func getUtxos(native *native.NativeService, chainID uint64) (*Utxos, error) {
-	utxos, err := getTxos(UTXOS, native, chainID)
+func getUtxos(native *native.NativeService, chainID uint64, utxoKey string) (*Utxos, error) {
+	utxos, err := getTxos(UTXOS, native, chainID, utxoKey)
 	return utxos, err
 }
 
-func putStxos(native *native.NativeService, chainID uint64, stxos *Utxos) {
-	putTxos(STXOS, native, chainID, stxos)
+func putStxos(native *native.NativeService, chainID uint64, stxoKey string, stxos *Utxos) {
+	putTxos(STXOS, native, chainID, stxoKey, stxos)
 }
 
-func getStxos(native *native.NativeService, chainID uint64) (*Utxos, error) {
-	stxos, err := getTxos(STXOS, native, chainID)
+func getStxos(native *native.NativeService, chainID uint64, stxoKey string) (*Utxos, error) {
+	stxos, err := getTxos(STXOS, native, chainID, stxoKey)
 	return stxos, err
 }
 
-func getStxoAmts(service *native.NativeService, chainID uint64, txIns []*wire.TxIn) ([]uint64, *Utxos, error) {
-	stxos, err := getStxos(service, chainID)
+func getStxoAmts(service *native.NativeService, chainID uint64, txIns []*wire.TxIn, redeemKey string) ([]uint64, *Utxos, error) {
+	stxos, err := getStxos(service, chainID, redeemKey)
 	if err != nil {
 		return nil, nil, fmt.Errorf("getStxoAmts, failed to get stxos: %v", err)
 	}
@@ -360,33 +491,33 @@ func getStxoAmts(service *native.NativeService, chainID uint64, txIns []*wire.Tx
 	return amts, stxos, nil
 }
 
-func putBtcRedeemScript(native *native.NativeService, redeemScript string) error {
+func putBtcRedeemScript(native *native.NativeService, redeemScriptKey string, redeemScriptBytes []byte) error {
 	chainIDBytes := utils.GetUint64Bytes(0)
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(REDEEM_SCRIPT), chainIDBytes)
-	redeem, err := hex.DecodeString(redeemScript)
-	if err != nil {
-		return fmt.Errorf("putBtcRedeemScript, failed to decode redeem script: %v", err)
-	}
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(REDEEM_SCRIPT), chainIDBytes, []byte(redeemScriptKey))
+	//redeem, err := hex.DecodeString(redeemScript)
+	//if err != nil {
+	//	return fmt.Errorf("putBtcRedeemScript, failed to decode redeem script: %v", err)
+	//}
 
-	cls := txscript.GetScriptClass(redeem)
+	cls := txscript.GetScriptClass(redeemScriptBytes)
 	if cls.String() != "multisig" {
 		return fmt.Errorf("putBtcRedeemScript, wrong type of redeem: %s", cls)
 	}
-	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(redeem))
+	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(redeemScriptBytes))
 	return nil
 }
 
-func getBtcRedeemScript(native *native.NativeService) (string, error) {
-	redeem, err := getBtcRedeemScriptBytes(native)
+func getBtcRedeemScript(native *native.NativeService, redeemScriptKey string) (string, error) {
+	redeem, err := getBtcRedeemScriptBytes(native, redeemScriptKey)
 	if err != nil {
 		return "", err
 	}
 	return hex.EncodeToString(redeem), nil
 }
 
-func getBtcRedeemScriptBytes(native *native.NativeService) ([]byte, error) {
+func getBtcRedeemScriptBytes(native *native.NativeService, redeemScriptKey string) ([]byte, error) {
 	chainIDBytes := utils.GetUint64Bytes(0)
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(REDEEM_SCRIPT), chainIDBytes)
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(REDEEM_SCRIPT), chainIDBytes, []byte(redeemScriptKey))
 	redeemStore, err := native.GetCacheDB().Get(key)
 	if err != nil {
 		return nil, fmt.Errorf("getBtcRedeemScript, get btcProofStore error: %v", err)
@@ -423,6 +554,7 @@ func verifySigs(sigs [][]byte, addr string, addrs []btcutil.Address, redeem []by
 			signerAddr = a
 		}
 	}
+
 	if signerAddr == nil {
 		return fmt.Errorf("address %s not found in redeem script", addr)
 	}
@@ -474,6 +606,20 @@ func getBtcMultiSignInfo(native *native.NativeService, txid []byte) (*MultiSignI
 	if err != nil {
 		return nil, fmt.Errorf("getBtcMultiSignInfo, get multiSignInfoStore error: %v", err)
 	}
+	//multiSignInfoBytes, err := cstates.GetValueFromRawStorageItem(multiSignInfoStore)
+	//if err != nil {
+	//	return nil, fmt.Errorf("getBtcMultiSignInfo, deserialize from raw storage item err:%v", err)
+	//}
+	//multiSigInfo := &MultiSignInfo{}
+	//err = multiSigInfo.Deserialization(common.NewZeroCopySource(multiSignInfoBytes))
+	//if err != nil {
+	//	return nil, fmt.Errorf("getBtcMultiSignInfo, deserialize from raw storage item err:%v", err)
+	//}
+	//return multiSigInfo, nil
+	//
+	//
+
+
 	multiSignInfo := &MultiSignInfo{
 		MultiSignInfo: make(map[string][][]byte),
 	}

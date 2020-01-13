@@ -195,6 +195,7 @@ func (this *VoteParam) Deserialization(source *common.ZeroCopySource) error {
 
 type MultiSignParam struct {
 	ChainID uint64
+	RedeemKey string
 	TxHash  []byte
 	Address string
 	Signs   [][]byte
@@ -202,6 +203,7 @@ type MultiSignParam struct {
 
 func (this *MultiSignParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteUint64(this.ChainID)
+	sink.WriteString(this.RedeemKey)
 	sink.WriteVarBytes(this.TxHash)
 	sink.WriteVarBytes([]byte(this.Address))
 	sink.WriteUint64(uint64(len(this.Signs)))
@@ -214,6 +216,10 @@ func (this *MultiSignParam) Deserialization(source *common.ZeroCopySource) error
 	chainID, eof := source.NextUint64()
 	if eof {
 		return fmt.Errorf("MultiSignParam deserialize txHash error")
+	}
+	redeemKey, eof := source.NextString()
+	if eof {
+		return fmt.Errorf("MultiSignParam deserialize redeemKey error")
 	}
 	txHash, eof := source.NextVarBytes()
 	if eof {
@@ -237,6 +243,7 @@ func (this *MultiSignParam) Deserialization(source *common.ZeroCopySource) error
 	}
 
 	this.ChainID = chainID
+	this.RedeemKey = redeemKey
 	this.TxHash = txHash
 	this.Address = address
 	this.Signs = signs

@@ -40,6 +40,7 @@ var (
 	wTx = "010000000168d852fcfee59bb68304feda29e78e9e5c508ff7fa7abbce3cc448c41da7b9250000000000ffffffff0130d9f505000000001976a91428d2e8cee08857f569e5a1b147c5d5e87339e08188ac00000000"
 
 	witPubScript, _ = hex.DecodeString("002044978a77e4e983136bf1cca277c45e5bd4eff6a7848e900416daf86fd32c2743")
+
 	utxos           = &Utxos{
 		Utxos: []*Utxo{
 			{ // 10000000
@@ -230,11 +231,13 @@ func TestBTCHandler_MakeTransaction(t *testing.T) {
 			AtHeight:     0,
 		}},
 	}
-	putUtxos(ns, 0, &utxos)
-	putBtcRedeemScript(ns, redeem)
+	rs, _ := hex.DecodeString(redeem)
+	redeemKey := GetUtxoKey(rs)
+	putUtxos(ns, 0, redeemKey, &utxos)
+	putBtcRedeemScript(ns, redeemKey, rs)
 	amounts := make(map[string]int64)
 	amounts["mjEoyyCPsLzJ23xMX6Mti13zMyN36kzn57"] = 2500
-	err := makeBtcTx(ns, 0, amounts, []byte("123"), 2)
+	err := makeBtcTx(ns, 0, amounts, []byte("123"), 2, rs)
 	if err != nil {
 		t.Fatalf("failed to make btc tx: %v", err)
 	}
@@ -286,7 +289,9 @@ func TestUtxos_Sort(t *testing.T) {
 
 func TestUtxos_Choose(t *testing.T) {
 	ns := getNativeFunc()
-	putUtxos(ns, 0, utxos)
+	rs, _ := hex.DecodeString(redeem)
+	redeemKey := GetUtxoKey(rs)
+	putUtxos(ns, 0, redeemKey, utxos)
 	txb, _ := hex.DecodeString(wTx)
 	mtx := wire.NewMsgTx(wire.TxVersion)
 	mtx.BtcDecode(bytes.NewBuffer(txb), wire.TxVersion, wire.LatestEncoding)
@@ -309,7 +314,9 @@ func TestUtxos_Choose(t *testing.T) {
 
 func TestCoinSelector_SimpleBnbSearch(t *testing.T) {
 	ns := getNativeFunc()
-	putUtxos(ns, 0, utxos)
+	rs, _ := hex.DecodeString(redeem)
+	redeemKey := GetUtxoKey(rs)
+	putUtxos(ns, 0, redeemKey, utxos)
 	txb, _ := hex.DecodeString(wTx)
 	mtx := wire.NewMsgTx(wire.TxVersion)
 	mtx.BtcDecode(bytes.NewBuffer(txb), wire.TxVersion, wire.LatestEncoding)
@@ -363,7 +370,9 @@ func TestCoinSelector_SimpleBnbSearch(t *testing.T) {
 
 func TestCoinSelector_SortedSearch(t *testing.T) {
 	ns := getNativeFunc()
-	putUtxos(ns, 0, utxos)
+	rs, _ := hex.DecodeString(redeem)
+	redeemKey := GetUtxoKey(rs)
+	putUtxos(ns, 0, redeemKey, utxos)
 	txb, _ := hex.DecodeString(wTx)
 	mtx := wire.NewMsgTx(wire.TxVersion)
 	mtx.BtcDecode(bytes.NewBuffer(txb), wire.TxVersion, wire.LatestEncoding)
