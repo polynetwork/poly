@@ -257,60 +257,56 @@ func GetEpoch(native *native.NativeService, chainID uint64) (*wire.BlockHeader, 
 	return &sh.Header, nil
 }
 
-func GetCommonAncestor(native *native.NativeService, chainID uint64, bestHeader, prevBestHeader *StoredHeader) (*StoredHeader, error) {
+func GetCommonAncestor(native *native.NativeService, chainID uint64, bestHeader, prevBestHeader *StoredHeader) (*StoredHeader, []*chainhash.Hash, error) {
 	var err error
-	rollback := func(parent *StoredHeader, n int) (*StoredHeader, error) {
-		for i := 0; i < n; i++ {
-			parent, err = GetPreviousHeader(native, chainID, parent.Header)
-			if err != nil {
-				return parent, err
-			}
-		}
-		return parent, nil
-	}
+	bestHash := bestHeader.Header.BlockHash()
+	hdrs := []*chainhash.Hash{&bestHash}
 
 	majority := bestHeader
 	minority := prevBestHeader
 	if bestHeader.Height > prevBestHeader.Height {
-		majority, err = rollback(majority, int(bestHeader.Height-prevBestHeader.Height))
-		if err != nil {
-			return nil, err
+		for i := 0; i < int(bestHeader.Height-prevBestHeader.Height); i++ {
+			majority, err = GetPreviousHeader(native, chainID, majority.Header)
+			if err != nil {
+				return nil, nil, fmt.Errorf("VerifyFromBtcProof, failed to get previous header for %s: %v",
+					majority.Header.BlockHash().String(), err)
+			}
+			majorityHash := majority.Header.BlockHash()
+			hdrs = append(hdrs, &majorityHash)
 		}
 	} else if prevBestHeader.Height > bestHeader.Height {
-		minority, err = rollback(minority, int(prevBestHeader.Height-bestHeader.Height))
+		minority, err = GetHeaderByHeight(native, chainID, bestHeader.Height)
 		if err != nil {
-			return nil, err
+			return nil, nil, fmt.Errorf("VerifyFromBtcProof, get header at height %d to verify btc merkle proof error:%s", bestHeader.Height, err)
 		}
 	}
 
-	for {
-		majorityHash := majority.Header.BlockHash()
-		minorityHash := minority.Header.BlockHash()
-		if majorityHash.IsEqual(&minorityHash) {
-			return majority, nil
-		}
+	majorityHash, minorityHash := majority.Header.BlockHash(), minority.Header.BlockHash()
+	for !majorityHash.IsEqual(&minorityHash) {
 		majority, err = GetPreviousHeader(native, chainID, majority.Header)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		minority, err = GetPreviousHeader(native, chainID, minority.Header)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
+		majorityHash, minorityHash = majority.Header.BlockHash(), minority.Header.BlockHash()
+		hdrs = append(hdrs, &majorityHash)
 	}
+
+	return majority, hdrs, nil
 }
 
-func ReIndexHeaderHeight(native *native.NativeService, chainID uint64, commonAncestorHeight, bestHeaderHeight uint32, newBlock *StoredHeader) error {
+func ReIndexHeaderHeight(native *native.NativeService, chainID uint64, bestHeaderHeight uint32, hdrs []*chainhash.Hash,
+	newBlock *StoredHeader) error {
 	contract := utils.HeaderSyncContractAddress
-
-	for i := bestHeaderHeight; i > commonAncestorHeight; i-- {
-		native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), utils.GetUint32Bytes(i)))
+	for i := bestHeaderHeight; i > newBlock.Height; i-- {
+		native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte("HeightToBlockHash"), utils.GetUint64Bytes(chainID), utils.GetUint32Bytes(i)))
 	}
 
-	best := newBlock
-	for best, _ = GetPreviousHeader(native, chainID, best.Header); best.Height > commonAncestorHeight; best, _ = GetPreviousHeader(native, chainID, best.Header) {
-		value := best.Header.BlockHash()
-		putBlockHash(native, chainID, best.Height, value)
+	for _, v := range hdrs {
+		putBlockHash(native, chainID, newBlock.Height, *v)
 	}
 
 	return nil

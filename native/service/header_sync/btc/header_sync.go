@@ -1,6 +1,7 @@
 package btc
 
 import (
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"math/big"
 
 	"fmt"
@@ -153,12 +154,13 @@ func commitHeader(native *native.NativeService, chainID uint64, header wire.Bloc
 
 	// If the cumulative work is greater than the total work of our best header
 	// then we have a new best header. Update the chain tip and check for a reorg.
+	var hdrsToUpdate []*chainhash.Hash
 	if cumulativeWork.Cmp(bestHeader.totalWork) == 1 {
 		newTip = true
 		prevHash := parentHeader.Header.BlockHash()
 		// If this header is not extending the previous best header then we have a reorg.
 		if !tipHash.IsEqual(&prevHash) {
-			commonAncestor, err = GetCommonAncestor(native, chainID, &StoredHeader{
+			commonAncestor, hdrsToUpdate, err = GetCommonAncestor(native, chainID, &StoredHeader{
 				Header: header,
 				Height: parentHeader.Height + 1,
 			}, bestHeader)
@@ -193,7 +195,7 @@ func commitHeader(native *native.NativeService, chainID uint64, header wire.Bloc
 		return newTip, commonAncestor, 0, err
 	}
 	if commonAncestor != nil {
-		err = ReIndexHeaderHeight(native, chainID, commonAncestor.Height, bestHeader.Height, &nb)
+		err = ReIndexHeaderHeight(native, chainID, bestHeader.Height, hdrsToUpdate, &nb)
 		if err != nil {
 			return newTip, commonAncestor, 0, err
 		}

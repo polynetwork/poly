@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/merkle"
+	common2 "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -22,5 +23,15 @@ func TestStateroot(t *testing.T) {
 	}
 
 	v, err := merkle.MerkleProve(proof, root[:])
+
+
+	s := common.NewZeroCopySource(v)
+	merkleValue := new(common2.ToMerkleValue)
+	err = merkleValue.Deserialization(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Printf("%d, %x\n", merkleValue.FromChainID, merkleValue.TxHash)
+	fmt.Printf("%s\n", merkleValue.MakeTxParam.FromContractAddress)
 	assert.NotNil(t, v)
 }
