@@ -1,6 +1,7 @@
 package btc
 
 import (
+	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"math/big"
 
@@ -150,7 +151,7 @@ func commitHeader(native *native.NativeService, chainID uint64, header wire.Bloc
 	}
 
 	// Add the work of this header to the total work stored at the previous header
-	cumulativeWork := new(big.Int).Add(parentHeader.totalWork, CalcWork(header.Bits))
+	cumulativeWork := new(big.Int).Add(parentHeader.totalWork, blockchain.CalcWork(header.Bits))
 
 	// If the cumulative work is greater than the total work of our best header
 	// then we have a new best header. Update the chain tip and check for a reorg.
