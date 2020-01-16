@@ -41,7 +41,7 @@ var (
 
 	witPubScript, _ = hex.DecodeString("002044978a77e4e983136bf1cca277c45e5bd4eff6a7848e900416daf86fd32c2743")
 
-	utxos           = &Utxos{
+	utxos = &Utxos{
 		Utxos: []*Utxo{
 			{ // 10000000
 				Value:    1e5,

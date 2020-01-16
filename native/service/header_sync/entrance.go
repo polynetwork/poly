@@ -6,12 +6,12 @@ import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/service/governance/side_chain_manager"
+	"github.com/ontio/multi-chain/native/service/header_sync/btc"
 	hscommon "github.com/ontio/multi-chain/native/service/header_sync/common"
 	"github.com/ontio/multi-chain/native/service/header_sync/eth"
 	"github.com/ontio/multi-chain/native/service/header_sync/neo"
 	"github.com/ontio/multi-chain/native/service/header_sync/ont"
 	"github.com/ontio/multi-chain/native/service/utils"
-	"github.com/ontio/multi-chain/native/service/header_sync/btc"
 )
 
 const (

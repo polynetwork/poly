@@ -18,18 +18,13 @@ import (
 
 const (
 	IMPORT_OUTER_TRANSFER_NAME = "ImportOuterTransfer"
-	//VOTE_NAME                  = "Vote"
 	MULTI_SIGN                 = "MultiSign"
-	//INIT_REDEEM_SCRIPT         = "initRedeemScript"
 
 	RATIO = 1
 )
 
 func RegisterCrossChainManagerContract(native *native.NativeService) {
-	//native.Register(INIT_REDEEM_SCRIPT, InitRedeemScript)
-
 	native.Register(IMPORT_OUTER_TRANSFER_NAME, ImportExTransfer)
-	//native.Register(VOTE_NAME, Vote)
 	native.Register(MULTI_SIGN, MultiSign)
 }
 
@@ -69,15 +64,7 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
-	////1. verify tx
-	//if sideChain.Router == utils.BTC_ROUTER {
-	//	_, err = handler.MakeDepositProposal(native)
-	//	if err != nil {
-	//		return utils.BYTE_FALSE, err
-	//	}
-	//	return utils.BYTE_TRUE, nil
-	//}
-
+	//1. verify tx
 	txParam, err := handler.MakeDepositProposal(native)
 	if err != nil {
 		return utils.BYTE_FALSE, err
@@ -110,34 +97,6 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	}
 	return utils.BYTE_TRUE, nil
 }
-//
-//func Vote(native *native.NativeService) ([]byte, error) {
-//	//1. vote
-//	ok, txParam, fromChainID, err := btc.NewBTCHandler().Vote(native)
-//	if err != nil {
-//		return utils.BYTE_FALSE, err
-//	}
-//	if ok {
-//		//2. make target chain tx
-//		targetid := txParam.ToChainID
-//
-//		//check if chainid exist
-//		sideChain, err := side_chain_manager.GetSideChain(native, targetid)
-//		if err != nil {
-//			return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side_chain_manager.GetSideChain error: %v", err)
-//		}
-//		if sideChain == nil {
-//			return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side chain is not registered")
-//		}
-//		//NOTE, you need to store the tx in this
-//		err = MakeTransaction(native, txParam, fromChainID)
-//		if err != nil {
-//			return utils.BYTE_FALSE, err
-//		}
-//		return utils.BYTE_TRUE, nil
-//	}
-//	return utils.BYTE_TRUE, nil
-//}
 
 func MultiSign(native *native.NativeService) ([]byte, error) {
 	handler := btc.NewBTCHandler()
@@ -149,17 +108,6 @@ func MultiSign(native *native.NativeService) ([]byte, error) {
 	}
 	return utils.BYTE_TRUE, nil
 }
-//
-//func InitRedeemScript(native *native.NativeService) ([]byte, error) {
-//	handler := btc.NewBTCHandler()
-//
-//	//1. multi sign
-//	err := handler.InitRedeemScript(native)
-//	if err != nil {
-//		return utils.BYTE_FALSE, err
-//	}
-//	return utils.BYTE_TRUE, nil
-//}
 
 func MakeTransaction(service *native.NativeService, params *scom.MakeTxParam, fromChainID uint64) error {
 	txHash := service.GetTx().Hash()

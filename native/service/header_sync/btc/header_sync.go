@@ -3,10 +3,10 @@ package btc
 import (
 	"math/big"
 
+	"fmt"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native"
 	scom "github.com/ontio/multi-chain/native/service/header_sync/common"
-	"fmt"
 	"github.com/ontio/multi-chain/native/service/utils"
 
 	"bytes"
@@ -24,7 +24,7 @@ var (
 	BOMB_DELAY        = big.NewInt(4999999)
 	// oneLsh256 is 1 shifted left 256 bits.  It is defined here to avoid
 	// the overhead of creating it multiple times.
-	ONE_LSH_256 	= new(big.Int).Lsh(BIG_1, 256)
+	ONE_LSH_256 = new(big.Int).Lsh(BIG_1, 256)
 )
 
 type BTCHandler struct {
@@ -53,7 +53,12 @@ func (this *BTCHandler) SyncGenesisHeader(native *native.NativeService) error {
 	}
 
 	//block header storage
-	putGenesisBlockHeader(native, params.ChainID, header)
+	storedHeader := StoredHeader{
+		Header:    *header,
+		Height:    0,
+		totalWork: big.NewInt(0),
+	}
+	putGenesisBlockHeader(native, params.ChainID, storedHeader)
 
 	return nil
 }
@@ -69,6 +74,12 @@ func (this *BTCHandler) SyncBlockHeader(native *native.NativeService) error {
 		if err != nil {
 			return fmt.Errorf("SyncBlockHeader, deserialize header err: %v", err)
 		}
+
+		storedHeader, err := GetHeaderByHash(native, headerParams.ChainID, blockHeader.BlockHash())
+		if err == nil {
+			return fmt.Errorf("SyncBlockHeader, header already synced, block hash = %s, at height = %d",  blockHeader.BlockHash().String(), storedHeader.Height)
+		}
+
 		//isBestHeader, commonAncestor, heightOfHeader, err := commitHeader(native, headerParams.ChainID, blockHeader)
 		_, _, _, err = commitHeader(native, headerParams.ChainID, blockHeader)
 		if err != nil {
@@ -83,20 +94,20 @@ func (this *BTCHandler) SyncCrossChainMsg(native *native.NativeService) error {
 	return nil
 }
 
-
-func getGenesisHeader(input []byte) (StoredHeader, error) {
+func getGenesisHeader(input []byte) (*wire.BlockHeader, error) {
 
 	params := new(scom.SyncGenesisHeaderParam)
 	if err := params.Deserialization(common.NewZeroCopySource(input)); err != nil {
-		return StoredHeader{}, fmt.Errorf("getGenesisHeader, contract params deserialize error: %v", err)
+		return nil, fmt.Errorf("getGenesisHeader, contract params deserialize error: %v", err)
 	}
 
-	header := new(StoredHeader)
-	if err := header.Deserialization(common.NewZeroCopySource(params.GenesisHeader)); err != nil {
-		return StoredHeader{}, fmt.Errorf("getGenesisHeader, deserialize StoredHeader err: %v", err)
+	header := new(wire.BlockHeader)
+	err := header.Deserialize(bytes.NewBuffer(params.GenesisHeader))
+	if err != nil {
+		return nil, fmt.Errorf("getGenesisHeader, deserialize wire.BlockHeader err: %v", err)
 	}
 
-	return *header, nil
+	return header, nil
 }
 
 // the bool value indicates whether header is the newest
@@ -121,7 +132,7 @@ func commitHeader(native *native.NativeService, chainID uint64, header wire.Bloc
 	} else {
 		parentHeader, err = GetPreviousHeader(native, chainID, header)
 		if err != nil {
-			return false, nil, 0, OrphanHeaderError
+			return false, nil, 0, fmt.Errorf("GetPreviousHeader error: %v", OrphanHeaderError, ", with details: %v", err)
 		}
 	}
 	valid, err := CheckHeader(native, chainID, header, parentHeader)
@@ -171,20 +182,18 @@ func commitHeader(native *native.NativeService, chainID uint64, header wire.Bloc
 	// whether newTip is false or true, update hash -> blockheader
 	putBlockHeader(native, chainID, nb)
 
-	// TODO, check put returned result,
-
 	if newTip {
 		// update fixedkey -> bestblockheader
 		putBestBlockHeader(native, chainID, nb)
 		// update height -> blockhash
-		putBlockHash(native, chainID, uint64(nb.Height), nb.Header.BlockHash())
+		putBlockHash(native, chainID, nb.Height, nb.Header.BlockHash())
 
 	}
 	if err != nil {
 		return newTip, commonAncestor, 0, err
 	}
 	if commonAncestor != nil {
-		err = ReIndexHeaderHeight(native, chainID, uint64(commonAncestor.Height), uint64(bestHeader.Height), &nb)
+		err = ReIndexHeaderHeight(native, chainID, commonAncestor.Height, bestHeader.Height, &nb)
 		if err != nil {
 			return newTip, commonAncestor, 0, err
 		}
@@ -192,7 +201,3 @@ func commitHeader(native *native.NativeService, chainID uint64, header wire.Bloc
 
 	return newTip, commonAncestor, newHeight, nil
 }
-
-
-
-

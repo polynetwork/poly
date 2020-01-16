@@ -11,20 +11,18 @@ import (
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/btcsuite/btcutil"
+	wire_bch "github.com/gcash/bchd/wire"
+	"github.com/gcash/bchutil/merkleblock"
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/common/log"
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/native"
-	"github.com/ontio/multi-chain/native/event"
 	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
-	"github.com/ontio/multi-chain/native/service/utils"
-	"sort"
-	"github.com/ontio/multi-chain/native/service/header_sync/btc"
-	wire_bch "github.com/gcash/bchd/wire"
-	"github.com/gcash/bchutil/merkleblock"
 	"github.com/ontio/multi-chain/native/service/governance/side_chain_manager"
+	"github.com/ontio/multi-chain/native/service/header_sync/btc"
+	"github.com/ontio/multi-chain/native/service/utils"
 	"golang.org/x/crypto/ripemd160"
+	"sort"
 )
 
 const (
@@ -47,9 +45,11 @@ const (
 	SELECTING_K                             = 2.0
 )
 
-var netParam = &chaincfg.TestNet3Params
+var netParam = &chaincfg.RegressionNetParams
 
-
+func GetNetParam() *chaincfg.Params{
+	return netParam
+}
 
 func verifyFromBtcTx(native *native.NativeService, proof, tx []byte, fromChainID uint64, height uint32) (*crosscommon.MakeTxParam, error) {
 	// decode tx
@@ -83,18 +83,13 @@ func verifyFromBtcTx(native *native.NativeService, proof, tx []byte, fromChainID
 	}
 
 	// verify btc merkle proof
-	blockHash, err := btc.GetBlockHash(native, fromChainID, uint64(height))
-	if err != nil {
-		return nil, fmt.Errorf("VerifyFromBtcProof, get block hash at height %d to verify btc merkle proof error:%s", height, err)
-	}
-	header, err := btc.GetBlockHeader(native, fromChainID, *blockHash)
+	header, err := btc.GetHeaderByHeight(native, fromChainID, height)
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromBtcProof, get header at height %d to verify btc merkle proof error:%s", height, err)
 	}
 	if verified, err := verifyBtcMerkleProof(mtx, header.Header, proof); !verified {
 		return nil, fmt.Errorf("VerifyFromBtcProof, verify merkle proof error:%s", err)
 	}
-
 
 	// decode the extra data from tx and construct MakeTxParam
 	var p targetChainParam
@@ -112,14 +107,6 @@ func verifyFromBtcTx(native *native.NativeService, proof, tx []byte, fromChainID
 		Args:                p.AddrAndVal,
 	}, nil
 
-}
-
-func verifyValidBlockHeight(bestHeader *btc.StoredHeader, item *BtcProof) (bool, error ) {
-	bestHeight := bestHeader.Height
-	if bestHeight < item.Height || bestHeight-item.Height < uint32(item.BlocksToWait-1) {
-		return false, fmt.Errorf("verify, transaction is not confirmed, current height: %d, input height: %d", bestHeight, item.Height)
-	}
-	return true, nil
 }
 
 func verifyBtcMerkleProof(mtx *wire.MsgTx, blockHeader wire.BlockHeader, proof []byte) (bool, error) {
@@ -156,9 +143,6 @@ func verifyBtcMerkleProof(mtx *wire.MsgTx, blockHeader wire.BlockHeader, proof [
 
 }
 
-
-
-
 // not sure now
 type targetChainParam struct {
 	args       *Args
@@ -185,14 +169,6 @@ func (p *targetChainParam) resolve(amount int64, paramOutput *wire.TxOut) error 
 	p.AddrAndVal = sink.Bytes()
 
 	return nil
-}
-
-func prefixAppendUint256(src []byte) []byte {
-	x := make([]byte, 32)
-	for i := 0; i < len(src); i++ {
-		x[32-len(src)+i] = byte(src[i])
-	}
-	return x
 }
 
 // This function needs to input the input and output information of the transaction
@@ -272,69 +248,6 @@ func getLockScript(redeem []byte) ([]byte, error) {
 	return script, nil
 }
 
-func putBtcProof(native *native.NativeService, txHash, proof []byte) {
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_BTC), txHash)
-	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(proof))
-}
-
-func getBtcProof(native *native.NativeService, txHash []byte) ([]byte, error) {
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_BTC), txHash)
-	btcProofStore, err := native.GetCacheDB().Get(key)
-	if err != nil {
-		return nil, fmt.Errorf("getBtcProof, get btcProofStore error: %v", err)
-	}
-	if btcProofStore == nil {
-		return nil, fmt.Errorf("getBtcProof, can not find any records")
-	}
-	btcProofBytes, err := cstates.GetValueFromRawStorageItem(btcProofStore)
-	if err != nil {
-		return nil, fmt.Errorf("getBtcProof, deserialize from raw storage item err:%v", err)
-	}
-	return btcProofBytes, nil
-}
-
-func checkBtcProof(native *native.NativeService, txHash []byte) (bool, error) {
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_BTC), txHash)
-	btcProofStore, err := native.GetCacheDB().Get(key)
-	if err != nil {
-		return false, fmt.Errorf("getBtcProof, get btcProofStore error: %v", err)
-	}
-	if btcProofStore == nil {
-		return true, nil
-	}
-	return false, nil
-}
-
-func putBtcVote(native *native.NativeService, txHash []byte, vote *crosscommon.Vote) error {
-	sink := common.NewZeroCopySink(nil)
-	vote.Serialization(sink)
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_BTC_VOTE), txHash)
-	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(sink.Bytes()))
-	return nil
-}
-
-func getBtcVote(native *native.NativeService, txHash []byte) (*crosscommon.Vote, error) {
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.KEY_PREFIX_BTC_VOTE), txHash)
-	btcVoteStore, err := native.GetCacheDB().Get(key)
-	if err != nil {
-		return nil, fmt.Errorf("getBtcVote, get btcTxStore error: %v", err)
-	}
-	vote := &crosscommon.Vote{
-		VoteMap: make(map[string]string),
-	}
-	if btcVoteStore != nil {
-		btcVoteBytes, err := cstates.GetValueFromRawStorageItem(btcVoteStore)
-		if err != nil {
-			return nil, fmt.Errorf("getBtcVote, deserialize from raw storage item err:%v", err)
-		}
-		err = vote.Deserialization(common.NewZeroCopySource(btcVoteBytes))
-		if err != nil {
-			return nil, fmt.Errorf("getBtcVote, vote.Deserialization err:%v", err)
-		}
-	}
-	return vote, nil
-}
-
 func GetUtxoKey(scriptPk []byte) string {
 	switch txscript.GetScriptClass(scriptPk) {
 	case txscript.ScriptHashTy:
@@ -378,7 +291,7 @@ func addUtxos(native *native.NativeService, chainID uint64, height uint32, mtx *
 }
 
 func chooseUtxos(native *native.NativeService, chainID uint64, amount int64, outs []*wire.TxOut) ([]*Utxo, int64, int64, error) {
-	utxoKey := GetUtxoKey(outs[len(outs) - 1].PkScript)
+	utxoKey := GetUtxoKey(outs[len(outs)-1].PkScript)
 	utxos, err := getUtxos(native, chainID, utxoKey)
 	if err != nil {
 		return nil, 0, 0, fmt.Errorf("chooseUtxos, getUtxos error: %v", err)
@@ -494,10 +407,6 @@ func getStxoAmts(service *native.NativeService, chainID uint64, txIns []*wire.Tx
 func putBtcRedeemScript(native *native.NativeService, redeemScriptKey string, redeemScriptBytes []byte) error {
 	chainIDBytes := utils.GetUint64Bytes(0)
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(REDEEM_SCRIPT), chainIDBytes, []byte(redeemScriptKey))
-	//redeem, err := hex.DecodeString(redeemScript)
-	//if err != nil {
-	//	return fmt.Errorf("putBtcRedeemScript, failed to decode redeem script: %v", err)
-	//}
 
 	cls := txscript.GetScriptClass(redeemScriptBytes)
 	if cls.String() != "multisig" {
@@ -530,17 +439,6 @@ func getBtcRedeemScriptBytes(native *native.NativeService, redeemScriptKey strin
 		return nil, fmt.Errorf("getBtcRedeemScript, deserialize from raw storage item err:%v", err)
 	}
 	return redeemBytes, nil
-}
-
-func notifyBtcProof(native *native.NativeService, txid, btcProof string) {
-	if !config.DefConfig.Common.EnableEventLog {
-		return
-	}
-	native.AddNotify(
-		&event.NotifyEventInfo{
-			ContractAddress: utils.CrossChainManagerContractAddress,
-			States:          []interface{}{NOTIFY_BTC_PROOF, txid, btcProof},
-		})
 }
 
 func verifySigs(sigs [][]byte, addr string, addrs []btcutil.Address, redeem []byte, tx *wire.MsgTx,
@@ -606,19 +504,6 @@ func getBtcMultiSignInfo(native *native.NativeService, txid []byte) (*MultiSignI
 	if err != nil {
 		return nil, fmt.Errorf("getBtcMultiSignInfo, get multiSignInfoStore error: %v", err)
 	}
-	//multiSignInfoBytes, err := cstates.GetValueFromRawStorageItem(multiSignInfoStore)
-	//if err != nil {
-	//	return nil, fmt.Errorf("getBtcMultiSignInfo, deserialize from raw storage item err:%v", err)
-	//}
-	//multiSigInfo := &MultiSignInfo{}
-	//err = multiSigInfo.Deserialization(common.NewZeroCopySource(multiSignInfoBytes))
-	//if err != nil {
-	//	return nil, fmt.Errorf("getBtcMultiSignInfo, deserialize from raw storage item err:%v", err)
-	//}
-	//return multiSigInfo, nil
-	//
-	//
-
 
 	multiSignInfo := &MultiSignInfo{
 		MultiSignInfo: make(map[string][][]byte),
@@ -709,60 +594,6 @@ func getBtcFromInfo(native *native.NativeService, txid []byte) (*BtcFromInfo, er
 		return nil, fmt.Errorf("getBtcFromInfo, deserialize multiSignInfo err:%v", err)
 	}
 	return btcFromInfo, nil
-}
-
-func checkTxOuts(tx *wire.MsgTx, redeem []byte) error {
-	if len(tx.TxOut) < 2 {
-		return errors.New("checkTxOuts, number of transaction's outputs is at least greater" +
-			" than 2")
-	}
-	if tx.TxOut[0].Value <= 0 {
-		return fmt.Errorf("checkTxOuts, the value of crosschain transaction must be bigger "+
-			"than 0, but value is %d", tx.TxOut[0].Value)
-	}
-
-	switch txscript.GetScriptClass(tx.TxOut[0].PkScript) {
-	case txscript.MultiSigTy:
-		if !bytes.Equal(redeem, tx.TxOut[0].PkScript) {
-			return fmt.Errorf("wrong script: \"%x\" is not same as our \"%x\"",
-				tx.TxOut[0].PkScript, redeem)
-		}
-	case txscript.ScriptHashTy:
-		addr, err := btcutil.NewAddressScriptHash(redeem, netParam)
-		if err != nil {
-			return err
-		}
-		script, err := txscript.PayToAddrScript(addr)
-		if err != nil {
-			return err
-		}
-		if !bytes.Equal(script, tx.TxOut[0].PkScript) {
-			return fmt.Errorf("wrong script: \"%x\" is not same as our \"%x\"", tx.TxOut[0].PkScript, script)
-		}
-	case txscript.WitnessV0ScriptHashTy:
-		hasher := sha256.New()
-		hasher.Write(redeem)
-		addr, err := btcutil.NewAddressWitnessScriptHash(hasher.Sum(nil), netParam)
-		if err != nil {
-			return err
-		}
-		script, err := txscript.PayToAddrScript(addr)
-		if err != nil {
-			return err
-		}
-		if !bytes.Equal(script, tx.TxOut[0].PkScript) {
-			return fmt.Errorf("wrong script: \"%x\" is not same as our \"%x\"", tx.TxOut[0].PkScript, script)
-		}
-	default:
-		return errors.New("first output's pkScript is not supported")
-	}
-
-	c2 := txscript.GetScriptClass(tx.TxOut[1].PkScript)
-	if c2 != txscript.NullDataTy {
-		return errors.New("second output's pkScript is not NullData type")
-	}
-
-	return nil
 }
 
 func ifCanResolve(paramOutput *wire.TxOut, value int64) error {

@@ -1,25 +1,23 @@
 package btc
 
 import (
-	"testing"
-	"github.com/ontio/multi-chain/native"
-	"github.com/ontio/multi-chain/core/store/leveldbstore"
-	"github.com/ontio/multi-chain/native/storage"
-	"github.com/ontio/multi-chain/core/store/overlaydb"
-	"github.com/ontio/multi-chain/common"
-	scom "github.com/ontio/multi-chain/native/service/header_sync/common"
-	"math/big"
-	"github.com/stretchr/testify/assert"
-	"fmt"
-	"time"
-	"github.com/btcsuite/btcd/wire"
-	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"crypto/rand"
-	"github.com/ontio/eth_tools/log"
+	"fmt"
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/chaincfg/chainhash"
+	"github.com/btcsuite/btcd/wire"
+	"github.com/ontio/eth_tools/log"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/core/store/leveldbstore"
+	"github.com/ontio/multi-chain/core/store/overlaydb"
+	"github.com/ontio/multi-chain/native"
+	scom "github.com/ontio/multi-chain/native/service/header_sync/common"
+	"github.com/ontio/multi-chain/native/storage"
+	"github.com/stretchr/testify/assert"
+	"math/big"
+	"testing"
+	"time"
 )
-
-
 
 var (
 	getNativeFunc = func() *native.NativeService {
@@ -55,14 +53,13 @@ var (
 		"0000002067cf05afedc2b5956c10845006358fe480893e1199a0c0e2b70d5ecf2787af760385ca3d191d1800cd7b6a56d8b44853109f3e5983a94c7e10818541278ec6027b6dd158ffff7f2004e2c75c",
 		"00000020b2227c6c858a36af167d9667dcf4f58df604ab7962a660d69d233a63e7269f06ecb669fff090b7f2f6952d52c96ca0c8abe1e266d9740f8548eeb10eea9e3536906dd158ffff7f20c0ac3d1e",
 	}
-
 )
 
 func TestHeaderSync_BTC_SyncGenesisHeader(t *testing.T) {
 
 	genesisHeader := StoredHeader{
-		Header: netParam.GenesisBlock.Header,
-		Height: 0,
+		Header:    netParam.GenesisBlock.Header,
+		Height:    0,
 		totalWork: big.NewInt(0),
 	}
 	cacheDB, err := syncGenesisHeader(genesisHeader)
@@ -70,7 +67,7 @@ func TestHeaderSync_BTC_SyncGenesisHeader(t *testing.T) {
 
 	nativeService := native.NewNativeService(cacheDB, nil, 0, 200, common.Uint256{}, 0, nil, false, nil)
 
-	genesisBlockHash, err := GetBlockHash(nativeService, 0, uint64(genesisHeader.Height))
+	genesisBlockHash, err := GetBlockHashByHeight(nativeService, 0, genesisHeader.Height)
 	assert.Nil(t, err)
 	assert.Equal(t, genesisBlockHash.String(), genesisHeader.Header.BlockHash().String())
 	bestBlockHeader, err := GetBestBlockHeader(nativeService, 0)
@@ -84,11 +81,10 @@ func TestHeaderSync_BTC_SyncGenesisHeader(t *testing.T) {
 	assert.Equal(t, s1.Bytes(), s1.Bytes())
 }
 
-
 func Test_GetEpoch(t *testing.T) {
 	genesisHeader := StoredHeader{
-		Header: chaincfg.RegressionNetParams.GenesisBlock.Header,
-		Height: 0,
+		Header:    chaincfg.RegressionNetParams.GenesisBlock.Header,
+		Height:    0,
 		totalWork: big.NewInt(0),
 	}
 	cacheDB, err := syncGenesisHeader(genesisHeader)
@@ -109,7 +105,6 @@ func Test_GetEpoch(t *testing.T) {
 
 }
 
-
 func Test_CalcRequiredWork(t *testing.T) {
 	testnet3Prev1, _ := chainhash.NewHashFromStr("000000000003e8e7755d9b8299b28c71d9f0e18909f25bc9f3eeec3464ece1dd")
 	testnet3Merk1, _ := chainhash.NewHashFromStr("7b91fe22059063bcbb1cfac6fd376cf459f4387d1bc1989989252495b06b52be")
@@ -122,7 +117,7 @@ func Test_CalcRequiredWork(t *testing.T) {
 			Bits:       453210804,
 			Nonce:      2456211891,
 		},
-		Height: 0,
+		Height:    0,
 		totalWork: big.NewInt(0),
 	}
 	cacheDB, err := syncGenesisHeader(genesisHeader)
@@ -165,8 +160,7 @@ func Test_CalcRequiredWork(t *testing.T) {
 	// update fixedkey -> bestblockheader
 	putBestBlockHeader(nativeService, 0, sh)
 	// update height -> blockhash
-	putBlockHash(nativeService, 0, uint64(sh.Height), sh.Header.BlockHash())
-
+	putBlockHash(nativeService, 0, sh.Height, sh.Header.BlockHash())
 
 	// Test during normal adjustment
 	netParam.ReduceMinDifficulty = false
@@ -189,9 +183,7 @@ func Test_CalcRequiredWork(t *testing.T) {
 	// update fixedkey -> bestblockheader
 	putBestBlockHeader(nativeService, 0, sh)
 	// update height -> blockhash
-	putBlockHash(nativeService, 0, uint64(sh.Height), sh.Header.BlockHash())
-
-
+	putBlockHash(nativeService, 0, sh.Height, sh.Header.BlockHash())
 
 	// Test with reduced difficult flag
 	netParam.ReduceMinDifficulty = true
@@ -214,8 +206,7 @@ func Test_CalcRequiredWork(t *testing.T) {
 	// update fixedkey -> bestblockheader
 	putBestBlockHeader(nativeService, 0, sh)
 	// update height -> blockhash
-	putBlockHash(nativeService, 0, uint64(sh.Height), sh.Header.BlockHash())
-
+	putBlockHash(nativeService, 0, sh.Height, sh.Header.BlockHash())
 
 	// Test testnet exemption
 	newHdr3 := wire.BlockHeader{}
@@ -238,8 +229,7 @@ func Test_CalcRequiredWork(t *testing.T) {
 	// update fixedkey -> bestblockheader
 	putBestBlockHeader(nativeService, 0, sh)
 	// update height -> blockhash
-	putBlockHash(nativeService, 0, uint64(sh.Height), sh.Header.BlockHash())
-
+	putBlockHash(nativeService, 0, sh.Height, sh.Header.BlockHash())
 
 	// Test multiple special difficulty blocks in a row
 	netParam.ReduceMinDifficulty = true
@@ -255,24 +245,20 @@ func Test_CalcRequiredWork(t *testing.T) {
 
 }
 
-
 func TestBlockchain_CommitHeader(t *testing.T) {
 
 }
 
-
-
-func syncGenesisHeader (genesisHeader StoredHeader) (*storage.CacheDB, error) {
+func syncGenesisHeader(genesisHeader StoredHeader) (*storage.CacheDB, error) {
 	store, _ := leveldbstore.NewMemLevelDBStore()
 	cacheDB := storage.NewCacheDB(overlaydb.NewOverlayDB(store))
-
 
 	btcHander := getBtcHanderFunc()
 
 	sink := new(common.ZeroCopySink)
 	genesisHeader.Serialization(sink)
 	params := &scom.SyncGenesisHeaderParam{
-		ChainID: 0,
+		ChainID:       0,
 		GenesisHeader: sink.Bytes(),
 	}
 	sink = new(common.ZeroCopySink)
@@ -286,7 +272,7 @@ func syncGenesisHeader (genesisHeader StoredHeader) (*storage.CacheDB, error) {
 	return cacheDB, nil
 }
 
-func syncAssumedBtcBlockChain(cacheDB *storage.CacheDB) (error) {
+func syncAssumedBtcBlockChain(cacheDB *storage.CacheDB) error {
 	nativeService := native.NewNativeService(cacheDB, nil, 0, 200, common.Uint256{}, 0, nil, false, nil)
 	bestHeader, err := GetBestBlockHeader(nativeService, 0)
 	if err != nil {
@@ -295,7 +281,7 @@ func syncAssumedBtcBlockChain(cacheDB *storage.CacheDB) (error) {
 	}
 	x := bestHeader.Height
 	last := bestHeader.Header
-	for i:= 0; i < 2015; i++ {
+	for i := 0; i < 2015; i++ {
 		x++
 		hdr := wire.BlockHeader{}
 		hdr.PrevBlock = last.BlockHash()
