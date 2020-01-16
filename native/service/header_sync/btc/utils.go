@@ -261,7 +261,7 @@ func GetCommonAncestor(native *native.NativeService, chainID uint64, bestHeader,
 		for i := 0; i < int(bestHeader.Height-prevBestHeader.Height); i++ {
 			majority, err = GetPreviousHeader(native, chainID, majority.Header)
 			if err != nil {
-				return nil, nil, fmt.Errorf("VerifyFromBtcProof, failed to get previous header for %s: %v",
+				return nil, nil, fmt.Errorf("GetCommonAncestor, failed to get previous header for %s: %v",
 					majority.Header.BlockHash().String(), err)
 			}
 			majorityHash := majority.Header.BlockHash()
@@ -270,7 +270,7 @@ func GetCommonAncestor(native *native.NativeService, chainID uint64, bestHeader,
 	} else if prevBestHeader.Height > bestHeader.Height {
 		minority, err = GetHeaderByHeight(native, chainID, bestHeader.Height)
 		if err != nil {
-			return nil, nil, fmt.Errorf("VerifyFromBtcProof, get header at height %d to verify btc merkle proof error:%s", bestHeader.Height, err)
+			return nil, nil, fmt.Errorf("GetCommonAncestor, get header at height %d to verify btc merkle proof error:%s", bestHeader.Height, err)
 		}
 	}
 
@@ -295,7 +295,7 @@ func ReIndexHeaderHeight(native *native.NativeService, chainID uint64, bestHeade
 	newBlock *StoredHeader) error {
 	contract := utils.HeaderSyncContractAddress
 	for i := bestHeaderHeight; i > newBlock.Height; i-- {
-		native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte("HeightToBlockHash"), utils.GetUint64Bytes(chainID), utils.GetUint32Bytes(i)))
+		native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), utils.GetUint32Bytes(i)))
 	}
 
 	for i, v := range hdrs {
