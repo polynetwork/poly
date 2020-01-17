@@ -164,17 +164,17 @@ func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*cro
 		return nil, fmt.Errorf("btc MakeDepositProposal, GetInput() data can't be empty")
 	}
 
-	if err := crosscommon.CheckDoneTx(service, params.TxHash, params.Proof, params.SourceChainID); err != nil {
-		return nil, fmt.Errorf("MakeDepositProposal, check done transaction error:%s", err)
-	}
-
 	value, err := verifyFromBtcTx(service, params.Proof, params.Extra, params.SourceChainID, params.Height)
 
 	if err != nil {
 		return nil, fmt.Errorf("MakeDepositProposal, verifyFromBtcTx error: %s", err)
 	}
 
-	if err := crosscommon.PutDoneTx(service, value.TxHash, params.Proof, params.SourceChainID); err != nil {
+	if err := crosscommon.CheckDoneTx(service, value.CrossChainID, params.SourceChainID); err != nil {
+		return nil, fmt.Errorf("MakeDepositProposal, check done transaction error:%s", err)
+	}
+
+	if err := crosscommon.PutDoneTx(service, value.CrossChainID, params.SourceChainID); err != nil {
 		return nil, fmt.Errorf("MakeDepositProposal, PutDoneTx error:%s", err)
 	}
 

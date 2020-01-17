@@ -19,7 +19,6 @@
 package ont
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/merkle"
@@ -27,7 +26,7 @@ import (
 	otypes "github.com/ontio/ontology/core/types"
 )
 
-func verifyFromOntTx(proof, txHash []byte, crossChainMsg *otypes.CrossChainMsg) (*scom.MakeTxParam, error) {
+func verifyFromOntTx(proof []byte, crossChainMsg *otypes.CrossChainMsg) (*scom.MakeTxParam, error) {
 	v, err := merkle.MerkleProve(proof, crossChainMsg.StatesRoot.ToArray())
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromOntTx, merkle.MerkleProve verify merkle proof error")
@@ -37,9 +36,6 @@ func verifyFromOntTx(proof, txHash []byte, crossChainMsg *otypes.CrossChainMsg) 
 	txParam := new(scom.MakeTxParam)
 	if err := txParam.Deserialization(s); err != nil {
 		return nil, fmt.Errorf("VerifyFromOntTx, deserialize merkleValue error:%s", err)
-	}
-	if !bytes.Equal(txHash, txParam.TxHash) {
-		return nil, fmt.Errorf("VerifyFromOntTx, relayer txHash:%x doesn't equal user txHash:%x", txHash, txParam.TxHash)
 	}
 	return txParam, nil
 }

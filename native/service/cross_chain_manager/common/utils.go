@@ -56,17 +56,20 @@ func NotifyMakeProof(native *native.NativeService, fromChainID, toChainID uint64
 		})
 }
 
-func PutDoneTx(native *native.NativeService, txHash, proof []byte, chainID uint64) error {
+func PutDoneTx(native *native.NativeService, crossChainID, chainID uint64) error {
 	contract := utils.CrossChainManagerContractAddress
+	crossChainIDBytes := utils.GetUint64Bytes(crossChainID)
 	chainIDBytes := utils.GetUint64Bytes(chainID)
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(DONE_TX), chainIDBytes, txHash, proof), states.GenRawStorageItem(txHash))
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(DONE_TX), chainIDBytes, crossChainIDBytes),
+		states.GenRawStorageItem(crossChainIDBytes))
 	return nil
 }
 
-func CheckDoneTx(native *native.NativeService, txHash, proof []byte, chainID uint64) error {
+func CheckDoneTx(native *native.NativeService, crossChainID, chainID uint64) error {
 	contract := utils.CrossChainManagerContractAddress
+	crossChainIDBytes := utils.GetUint64Bytes(crossChainID)
 	chainIDBytes := utils.GetUint64Bytes(chainID)
-	value, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(DONE_TX), chainIDBytes, txHash, proof))
+	value, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(DONE_TX), chainIDBytes, crossChainIDBytes))
 	if err != nil {
 		return fmt.Errorf("checkDoneTx, native.GetCacheDB().Get error: %v", err)
 	}

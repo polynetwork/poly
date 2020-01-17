@@ -42,7 +42,6 @@ func (this *InitRedeemScriptParam) Deserialization(source *common.ZeroCopySource
 
 type EntranceParam struct {
 	SourceChainID         uint64 `json:"sourceChainId"`
-	TxHash                []byte `json:"txHash"`
 	Height                uint32 `json:"height"`
 	Proof                 []byte `json:"proof"`
 	RelayerAddress        []byte `json:"relayerAddress"`
@@ -50,13 +49,17 @@ type EntranceParam struct {
 	HeaderOrCrossChainMsg []byte `json:"headerOrCrossChainMsg"`
 }
 
+func (this *EntranceParam) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteUint64(this.SourceChainID)
+	sink.WriteUint32(this.Height)
+	sink.WriteVarBytes(this.Proof)
+	sink.WriteVarBytes(this.RelayerAddress)
+	sink.WriteVarBytes(this.Extra)
+	sink.WriteVarBytes(this.HeaderOrCrossChainMsg)
+}
+
 func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error {
 	sourceChainID, eof := source.NextUint64()
-	if eof {
-		return fmt.Errorf("EntranceParam deserialize sourcechainid error")
-	}
-
-	txHash, eof := source.NextVarBytes()
 	if eof {
 		return fmt.Errorf("EntranceParam deserialize sourcechainid error")
 	}
@@ -82,7 +85,6 @@ func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error 
 		return fmt.Errorf("EntranceParam deserialize headerOrCrossChainMsg error")
 	}
 	this.SourceChainID = sourceChainID
-	this.TxHash = txHash
 	this.Height = height
 	this.Proof = proof
 	this.RelayerAddress = relayerAddr
@@ -91,18 +93,9 @@ func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error 
 	return nil
 }
 
-func (this *EntranceParam) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteUint64(this.SourceChainID)
-	sink.WriteVarBytes(this.TxHash)
-	sink.WriteUint32(this.Height)
-	sink.WriteVarBytes(this.Proof)
-	sink.WriteVarBytes(this.RelayerAddress)
-	sink.WriteVarBytes(this.Extra)
-	sink.WriteVarBytes(this.HeaderOrCrossChainMsg)
-}
-
 type MakeTxParam struct {
 	TxHash              []byte
+	CrossChainID        uint64
 	FromContractAddress []byte
 	ToChainID           uint64
 	ToContractAddress   []byte
@@ -113,6 +106,7 @@ type MakeTxParam struct {
 
 func (this *MakeTxParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteVarBytes(this.TxHash)
+	sink.WriteVarUint(this.CrossChainID)
 	sink.WriteVarBytes(this.FromContractAddress)
 	sink.WriteUint64(this.ToChainID)
 	sink.WriteVarBytes(this.ToContractAddress)
@@ -125,6 +119,10 @@ func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 	txHash, eof := source.NextVarBytes()
 	if eof {
 		return fmt.Errorf("MakeTxParam deserialize txHash error")
+	}
+	crossChainID, eof := source.NextVarUint()
+	if eof {
+		return fmt.Errorf("MakeTxParam deserialize crossChainID error")
 	}
 	fromContractAddress, eof := source.NextVarBytes()
 	if eof {
@@ -152,6 +150,7 @@ func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 	}
 
 	this.TxHash = txHash
+	this.CrossChainID = crossChainID
 	this.FromContractAddress = fromContractAddress
 	this.ToChainID = toChainID
 	this.ToContractAddress = toContractAddress

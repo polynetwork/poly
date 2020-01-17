@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/ontio/eth_tools/log"
 	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/log"
 	"math/big"
 )
 

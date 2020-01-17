@@ -43,10 +43,6 @@ func (this *ONTHandler) MakeDepositProposal(service *native.NativeService) (*sco
 		return nil, fmt.Errorf("ont MakeDepositProposal, contract params deserialize error: %v", err)
 	}
 
-	if err := scom.CheckDoneTx(service, params.TxHash, params.Proof, params.SourceChainID); err != nil {
-		return nil, fmt.Errorf("ont MakeDepositProposal, check done transaction error:%s", err)
-	}
-
 	crossChainMsg, err := ont.GetCrossChainMsg(service, params.SourceChainID, params.Height)
 	if crossChainMsg == nil {
 		source := ocommon.NewZeroCopySource(params.HeaderOrCrossChainMsg)
@@ -81,12 +77,14 @@ func (this *ONTHandler) MakeDepositProposal(service *native.NativeService) (*sco
 		}
 	}
 
-	value, err := verifyFromOntTx(params.Proof, params.TxHash, crossChainMsg)
+	value, err := verifyFromOntTx(params.Proof, crossChainMsg)
 	if err != nil {
 		return nil, fmt.Errorf("ont MakeDepositProposal, VerifyOntTx error: %v", err)
 	}
-
-	if err = scom.PutDoneTx(service, value.TxHash, params.Proof, params.SourceChainID); err != nil {
+	if err := scom.CheckDoneTx(service, value.CrossChainID, params.SourceChainID); err != nil {
+		return nil, fmt.Errorf("ont MakeDepositProposal, check done transaction error:%s", err)
+	}
+	if err = scom.PutDoneTx(service, value.CrossChainID, params.SourceChainID); err != nil {
 		return nil, fmt.Errorf("VerifyFromOntTx, putDoneTx error:%s", err)
 	}
 	return value, nil
