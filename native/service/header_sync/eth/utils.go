@@ -37,13 +37,14 @@ const (
 )
 
 type HeaderWithDifficultySum struct {
-	Header types.Header       `json:"header"`
+	Header        types.Header `json:"header"`
 	DifficultySum *big.Int     `json:"difficultySum"`
 }
+
 func putGenesisBlockHeader(native *native.NativeService, blockHeader types.Header, chainID uint64) error {
 	contract := utils.HeaderSyncContractAddress
-	headerWithDifficultySum := HeaderWithDifficultySum {
-		Header: blockHeader,
+	headerWithDifficultySum := HeaderWithDifficultySum{
+		Header:        blockHeader,
 		DifficultySum: blockHeader.Difficulty,
 	}
 	storeBytes, _ := json.Marshal(&headerWithDifficultySum)
@@ -60,8 +61,8 @@ func putGenesisBlockHeader(native *native.NativeService, blockHeader types.Heade
 }
 func putBlockHeader(native *native.NativeService, blockHeader types.Header, difficultySum *big.Int, chainID uint64) error {
 	contract := utils.HeaderSyncContractAddress
-	headerWithDifficultySum := HeaderWithDifficultySum {
-		Header: blockHeader,
+	headerWithDifficultySum := HeaderWithDifficultySum{
+		Header:        blockHeader,
 		DifficultySum: difficultySum,
 	}
 	storeBytes, _ := json.Marshal(&headerWithDifficultySum)
@@ -69,7 +70,7 @@ func putBlockHeader(native *native.NativeService, blockHeader types.Header, diff
 		cstates.GenRawStorageItem(storeBytes))
 	return nil
 }
-func appendHeader2Main(native *native.NativeService, height uint64, txhash common.Hash,  chainID uint64) error {
+func appendHeader2Main(native *native.NativeService, height uint64, txhash common.Hash, chainID uint64) error {
 	contract := utils.HeaderSyncContractAddress
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.MAIN_CHAIN), utils.GetUint64Bytes(chainID), utils.GetUint64Bytes(height)),
 		cstates.GenRawStorageItem(txhash.Bytes()))
@@ -169,13 +170,13 @@ func RestructChain(native *native.NativeService, current, new *types.Header, cha
 	for ti > si {
 		newHashs = append(newHashs, new.Hash())
 		new, _, _ = GetHeaderByHash(native, new.ParentHash.Bytes(), chainID)
-		ti --
+		ti--
 	}
 	for current.ParentHash != new.ParentHash {
 		newHashs = append(newHashs, new.Hash())
 		new, _, _ = GetHeaderByHash(native, new.ParentHash.Bytes(), chainID)
-		ti --
-		si --
+		ti--
+		si--
 		current, _, _ = GetHeaderByHeight(native, si, chainID)
 	}
 	for _, hash := range newHashs {

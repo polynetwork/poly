@@ -100,6 +100,7 @@ func verifyFromBtcTx(native *native.NativeService, proof, tx []byte, fromChainID
 	txHash := mtx.TxHash()
 	return &crosscommon.MakeTxParam{
 		TxHash:              txHash[:],
+		CrossChainID:        0,
 		FromContractAddress: []byte(BTC_ADDRESS),
 		ToChainID:           p.args.ToChainID,
 		ToContractAddress:   p.args.ToContractAddress,

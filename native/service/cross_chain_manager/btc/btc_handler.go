@@ -170,11 +170,11 @@ func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*cro
 		return nil, fmt.Errorf("MakeDepositProposal, verifyFromBtcTx error: %s", err)
 	}
 
-	if err := crosscommon.CheckDoneTx(service, value.CrossChainID, params.SourceChainID); err != nil {
+	if err := crosscommon.CheckBtcDoneTx(service, value.TxHash, params.SourceChainID); err != nil {
 		return nil, fmt.Errorf("MakeDepositProposal, check done transaction error:%s", err)
 	}
 
-	if err := crosscommon.PutDoneTx(service, value.CrossChainID, params.SourceChainID); err != nil {
+	if err := crosscommon.PutBtcDoneTx(service, value.TxHash, params.SourceChainID); err != nil {
 		return nil, fmt.Errorf("MakeDepositProposal, PutDoneTx error:%s", err)
 	}
 
