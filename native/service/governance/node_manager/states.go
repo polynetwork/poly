@@ -20,10 +20,26 @@ package node_manager
 
 import (
 	"fmt"
+	"io"
 	"sort"
 
 	"github.com/ontio/multi-chain/common"
 )
+
+type Status uint8
+
+func (this *Status) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteUint8(uint8(*this))
+}
+
+func (this *Status) Deserialization(source *common.ZeroCopySource) error {
+	status, eof := source.NextUint8()
+	if eof {
+		return fmt.Errorf("serialization.ReadUint8, deserialize status error: %v", io.ErrUnexpectedEOF)
+	}
+	*this = Status(status)
+	return nil
+}
 
 type BlackListItem struct {
 	PeerPubkey string //peerPubkey in black list
@@ -88,12 +104,20 @@ type PeerPoolItem struct {
 	Index      uint32 //peer index
 	PeerPubkey string //peer pubkey
 	Address    []byte //peer owner
+	Status     Status
+	Pos        uint64
+	LockPos    uint64
+	FreePos    uint64
 }
 
 func (this *PeerPoolItem) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteUint32(this.Index)
 	sink.WriteString(this.PeerPubkey)
 	sink.WriteVarBytes(this.Address)
+	this.Status.Serialization(sink)
+	sink.WriteVarUint(this.Pos)
+	sink.WriteVarUint(this.LockPos)
+	sink.WriteVarUint(this.FreePos)
 }
 
 func (this *PeerPoolItem) Deserialization(source *common.ZeroCopySource) error {
@@ -107,10 +131,63 @@ func (this *PeerPoolItem) Deserialization(source *common.ZeroCopySource) error {
 	}
 	address, eof := source.NextVarBytes()
 	if eof {
-		return fmt.Errorf("source.NextString, deserialize address error")
+		return fmt.Errorf("source.NextVarBytes, deserialize address error")
 	}
+	status := new(Status)
+	err := status.Deserialization(source)
+	if err != nil {
+		return fmt.Errorf("status.Deserialize. deserialize status error: %v", err)
+	}
+	pos, eof := source.NextVarUint()
+	if eof {
+		return fmt.Errorf("source.NextVarUint, deserialize pos error")
+	}
+	lockPos, eof := source.NextVarUint()
+	if eof {
+		return fmt.Errorf("source.NextVarUint, deserialize lockPos error")
+	}
+	freePos, eof := source.NextVarUint()
+	if eof {
+		return fmt.Errorf("source.NextVarUint, deserialize freePos error")
+	}
+
 	this.Index = index
 	this.PeerPubkey = peerPubkey
 	this.Address = address
+	this.Status = *status
+	this.Pos = pos
+	this.LockPos = lockPos
+	this.FreePos = freePos
+	return nil
+}
+
+type GovernanceView struct {
+	View   uint32
+	Height uint32
+	TxHash common.Uint256
+}
+
+func (this *GovernanceView) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteUint32(this.View)
+	sink.WriteUint32(this.Height)
+	sink.WriteHash(this.TxHash)
+}
+
+func (this *GovernanceView) Deserialization(source *common.ZeroCopySource) error {
+	view, eof := source.NextUint32()
+	if eof {
+		return fmt.Errorf("source.NextUint32, deserialize view error")
+	}
+	height, eof := source.NextUint32()
+	if eof {
+		return fmt.Errorf("source.NextUint32, deserialize height error")
+	}
+	txHash, eof := source.NextHash()
+	if eof {
+		return fmt.Errorf("source.NextHash, deserialize txHash error")
+	}
+	this.View = view
+	this.Height = height
+	this.TxHash = txHash
 	return nil
 }

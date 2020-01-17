@@ -66,12 +66,13 @@ func putPeerApply(native *native.NativeService, peer *PeerPoolItem) error {
 	return nil
 }
 
-func GetPeerPoolMap(native *native.NativeService) (*PeerPoolMap, error) {
+func GetPeerPoolMap(native *native.NativeService, view uint32) (*PeerPoolMap, error) {
 	contract := utils.NodeManagerContractAddress
+	viewBytes := utils.GetUint32Bytes(view)
 	peerPoolMap := &PeerPoolMap{
 		PeerPoolMap: make(map[string]*PeerPoolItem),
 	}
-	peerPoolMapBytes, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(PEER_POOL)))
+	peerPoolMapBytes, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(PEER_POOL), viewBytes))
 	if err != nil {
 		return nil, fmt.Errorf("getPeerPoolMap, get all peerPoolMap error: %v", err)
 	}
@@ -90,11 +91,12 @@ func GetPeerPoolMap(native *native.NativeService) (*PeerPoolMap, error) {
 	return peerPoolMap, nil
 }
 
-func putPeerPoolMap(native *native.NativeService, peerPoolMap *PeerPoolMap) error {
+func putPeerPoolMap(native *native.NativeService, peerPoolMap *PeerPoolMap, view uint32) error {
 	contract := utils.NodeManagerContractAddress
+	viewBytes := utils.GetUint32Bytes(view)
 	sink := common.NewZeroCopySink(nil)
 	peerPoolMap.Serialization(sink)
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(PEER_POOL)), cstates.GenRawStorageItem(sink.Bytes()))
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(PEER_POOL), viewBytes), cstates.GenRawStorageItem(sink.Bytes()))
 	return nil
 }
 
@@ -173,6 +175,31 @@ func putConfig(native *native.NativeService, config *Configuration) error {
 	return nil
 }
 
+func getPreConfig(native *native.NativeService) (*PreConfig, error) {
+	contract := utils.NodeManagerContractAddress
+	preConfig := new(PreConfig)
+	preConfigBytes, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(PRE_CONFIG)))
+	if err != nil {
+		return nil, fmt.Errorf("native.CacheDB.Get, get preConfigBytes error: %v", err)
+	}
+	if preConfigBytes != nil {
+		preConfigStore, err := cstates.GetValueFromRawStorageItem(preConfigBytes)
+		if err != nil {
+			return nil, fmt.Errorf("getConfig, preConfigBytes is not available")
+		}
+		if err := preConfig.Deserialization(common.NewZeroCopySource(preConfigStore)); err != nil {
+			return nil, fmt.Errorf("deserialize, deserialize preConfig error: %v", err)
+		}
+	}
+	return preConfig, nil
+}
+
+func putPreConfig(native *native.NativeService, contract common.Address, preConfig *PreConfig) error {
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(PRE_CONFIG)),
+		cstates.GenRawStorageItem(common.SerializeToBytes(preConfig)))
+	return nil
+}
+
 func getCandidateIndex(native *native.NativeService) (uint32, error) {
 	contract := utils.NodeManagerContractAddress
 	candidateIndexBytes, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(CANDIDITE_INDEX)))
@@ -195,5 +222,69 @@ func putCandidateIndex(native *native.NativeService, candidateIndex uint32) erro
 	contract := utils.NodeManagerContractAddress
 	candidateIndexBytes := utils.GetUint32Bytes(candidateIndex)
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(CANDIDITE_INDEX)), cstates.GenRawStorageItem(candidateIndexBytes))
+	return nil
+}
+
+func GetGovernanceView(native *native.NativeService) (*GovernanceView, error) {
+	contract := utils.NodeManagerContractAddress
+	governanceViewBytes, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(GOVERNANCE_VIEW)))
+	if err != nil {
+		return nil, fmt.Errorf("getGovernanceView, get governanceViewBytes error: %v", err)
+	}
+	governanceView := new(GovernanceView)
+	if governanceViewBytes == nil {
+		return nil, fmt.Errorf("getGovernanceView, get nil governanceViewBytes")
+	} else {
+		value, err := cstates.GetValueFromRawStorageItem(governanceViewBytes)
+		if err != nil {
+			return nil, fmt.Errorf("getGovernanceView, deserialize from raw storage item err:%v", err)
+		}
+		if err := governanceView.Deserialization(common.NewZeroCopySource(value)); err != nil {
+			return nil, fmt.Errorf("getGovernanceView, deserialize governanceView error: %v", err)
+		}
+	}
+	return governanceView, nil
+}
+
+func putGovernanceView(native *native.NativeService, governanceView *GovernanceView) error {
+	contract := utils.NodeManagerContractAddress
+	sink := common.NewZeroCopySink(nil)
+	governanceView.Serialization(sink)
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(GOVERNANCE_VIEW)), cstates.GenRawStorageItem(sink.Bytes()))
+	return nil
+}
+
+func GetView(native *native.NativeService) (uint32, error) {
+	governanceView, err := GetGovernanceView(native)
+	if err != nil {
+		return 0, fmt.Errorf("getView, getGovernanceView error: %v", err)
+	}
+	return governanceView.View, nil
+}
+
+func getGlobalParam(native *native.NativeService) (*GlobalParam, error) {
+	contract := utils.NodeManagerContractAddress
+	globalParamBytes, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(GLOBAL_PARAM)))
+	if err != nil {
+		return nil, fmt.Errorf("getGlobalParam, get globalParamBytes error: %v", err)
+	}
+	globalParam := new(GlobalParam)
+	if globalParamBytes == nil {
+		return nil, fmt.Errorf("getGlobalParam, get nil globalParamBytes")
+	} else {
+		value, err := cstates.GetValueFromRawStorageItem(globalParamBytes)
+		if err != nil {
+			return nil, fmt.Errorf("getGlobalParam, deserialize from raw storage item err:%v", err)
+		}
+		if err := globalParam.Deserialization(common.NewZeroCopySource(value)); err != nil {
+			return nil, fmt.Errorf("deserialize, deserialize globalParam error: %v", err)
+		}
+	}
+	return globalParam, nil
+}
+
+func putGlobalParam(native *native.NativeService, globalParam *GlobalParam) error {
+	contract := utils.NodeManagerContractAddress
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(GLOBAL_PARAM)), cstates.GenRawStorageItem(common.SerializeToBytes(globalParam)))
 	return nil
 }

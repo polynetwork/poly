@@ -41,6 +41,21 @@ func (self *Address) ToHexString() string {
 }
 
 // Serialize serialize Address into io.Writer
+func (self *Address) Serialization(sink *ZeroCopySink) {
+	sink.WriteAddress(*self)
+}
+
+// Deserialize deserialize Address from io.Reader
+func (self *Address) Deserialization(source *ZeroCopySource) error {
+	var eof bool
+	*self, eof = source.NextAddress()
+	if eof {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+
+// Serialize serialize Address into io.Writer
 func (self *Address) Serialize(w io.Writer) error {
 	_, err := w.Write(self[:])
 	return err

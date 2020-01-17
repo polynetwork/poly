@@ -19,7 +19,6 @@
 package genesis
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/ontio/multi-chain/native/service/utils"
 	"time"
@@ -57,9 +56,9 @@ func BuildGenesisBlock(defaultBookkeeper []keypair.PublicKey, genesisConfig *con
 	if err != nil {
 		return nil, fmt.Errorf("[Block],BuildGenesisBlock err with GetBookkeeperAddress: %s", err)
 	}
-	conf := bytes.NewBuffer(nil)
+	conf := common.NewZeroCopySink(nil)
 	if genesisConfig.VBFT != nil {
-		genesisConfig.VBFT.Serialize(conf)
+		genesisConfig.VBFT.Serialization(conf)
 	}
 	nodeManagerConfig := newNodeManagerInit(conf.Bytes())
 	consensusPayload, err := vconfig.GenesisConsensusPayload(0)

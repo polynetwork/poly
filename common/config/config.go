@@ -29,7 +29,6 @@ import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/constants"
 	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/common/serialization"
 	"github.com/ontio/multi-chain/errors"
 	"github.com/ontio/ontology-crypto/keypair"
 )
@@ -247,79 +246,108 @@ func NewGenesisConfig() *GenesisConfig {
 // VBFT genesis config, from local config file
 //
 type VBFTConfig struct {
+	N                    uint32               `json:"n"` // network size
+	C                    uint32               `json:"c"` // consensus quorum
+	K                    uint32               `json:"k"`
+	L                    uint32               `json:"l"`
 	BlockMsgDelay        uint32               `json:"block_msg_delay"`
 	HashMsgDelay         uint32               `json:"hash_msg_delay"`
 	PeerHandshakeTimeout uint32               `json:"peer_handshake_timeout"`
+	MaxBlockChangeView   uint32               `json:"max_block_change_view"`
+	MinInitStake         uint32               `json:"min_init_stake"`
 	VrfValue             string               `json:"vrf_value"`
 	VrfProof             string               `json:"vrf_proof"`
 	Peers                []*VBFTPeerStakeInfo `json:"peers"`
 }
 
-func (this *VBFTConfig) Serialize(w io.Writer) error {
-	if err := serialization.WriteUint32(w, this.BlockMsgDelay); err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.WriteUint32, serialize block_msg_delay error!")
-	}
-	if err := serialization.WriteUint32(w, this.HashMsgDelay); err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.WriteUint32, serialize hash_msg_delay error!")
-	}
-	if err := serialization.WriteUint32(w, this.PeerHandshakeTimeout); err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.WriteUint32, serialize peer_handshake_timeout error!")
-	}
-	if err := serialization.WriteString(w, this.VrfValue); err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.WriteString, serialize vrf_value error!")
-	}
-	if err := serialization.WriteString(w, this.VrfProof); err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.WriteString, serialize vrf_proof error!")
-	}
-	if err := serialization.WriteVarUint(w, uint64(len(this.Peers))); err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.WriteVarUint, serialize peer length error!")
-	}
-	for _, peer := range this.Peers {
-		if err := peer.Serialize(w); err != nil {
-			return errors.NewDetailErr(err, errors.ErrNoCode, "serialize peer error!")
+func (self *VBFTConfig) Serialization(sink *common.ZeroCopySink) error {
+	sink.WriteUint32(self.N)
+	sink.WriteUint32(self.C)
+	sink.WriteUint32(self.K)
+	sink.WriteUint32(self.L)
+	sink.WriteUint32(self.BlockMsgDelay)
+	sink.WriteUint32(self.HashMsgDelay)
+	sink.WriteUint32(self.PeerHandshakeTimeout)
+	sink.WriteUint32(self.MaxBlockChangeView)
+	sink.WriteUint32(self.MinInitStake)
+	sink.WriteString(self.VrfValue)
+	sink.WriteString(self.VrfProof)
+	sink.WriteVarUint(uint64(len(self.Peers)))
+	for _, peer := range self.Peers {
+		if err := peer.Serialization(sink); err != nil {
+			return err
 		}
 	}
 	return nil
 }
 
-func (this *VBFTConfig) Deserialize(r io.Reader) error {
-	blockMsgDelay, err := serialization.ReadUint32(r)
-	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.ReadUint32, deserialize blockMsgDelay error!")
+func (this *VBFTConfig) Deserialization(source *common.ZeroCopySource) error {
+	n, eof := source.NextUint32()
+	if eof {
+		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadUint32, deserialize n error!")
 	}
-	hashMsgDelay, err := serialization.ReadUint32(r)
-	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.ReadUint32, deserialize hashMsgDelay error!")
+	c, eof := source.NextUint32()
+	if eof {
+		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadUint32, deserialize c error!")
 	}
-	peerHandshakeTimeout, err := serialization.ReadUint32(r)
-	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.ReadUint32, deserialize peerHandshakeTimeout error!")
+	k, eof := source.NextUint32()
+	if eof {
+		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadUint32, deserialize k error!")
 	}
-	vrfValue, err := serialization.ReadString(r)
-	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.ReadString, deserialize vrfValue error!")
+	l, eof := source.NextUint32()
+	if eof {
+		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadUint32, deserialize l error!")
 	}
-	vrfProof, err := serialization.ReadString(r)
-	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.ReadString, deserialize vrfProof error!")
+	blockMsgDelay, eof := source.NextUint32()
+	if eof {
+		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadUint32, deserialize blockMsgDelay error!")
 	}
-	length, err := serialization.ReadVarUint(r, 0)
-	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.ReadVarUint, deserialize peer length error!")
+	hashMsgDelay, eof := source.NextUint32()
+	if eof {
+		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadUint32, deserialize hashMsgDelay error!")
+	}
+	peerHandshakeTimeout, eof := source.NextUint32()
+	if eof {
+		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadUint32, deserialize peerHandshakeTimeout error!")
+	}
+	maxBlockChangeView, eof := source.NextUint32()
+	if eof {
+		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadUint32, deserialize maxBlockChangeView error!")
+	}
+	minInitStake, eof := source.NextUint32()
+	if eof {
+		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadUint32, deserialize minInitStake error!")
+	}
+	vrfValue, eof := source.NextString()
+	if eof {
+		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadString, deserialize vrfValue error!")
+	}
+	vrfProof, eof := source.NextString()
+	if eof {
+		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadString, deserialize vrfProof error!")
+	}
+	length, eof := source.NextVarUint()
+	if eof {
+		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadVarUint, deserialize peer length error!")
 	}
 	peers := make([]*VBFTPeerStakeInfo, 0)
 	for i := 0; uint64(i) < length; i++ {
 		peer := new(VBFTPeerStakeInfo)
-		err = peer.Deserialize(r)
+		err := peer.Deserialization(source)
 		if err != nil {
 			return errors.NewDetailErr(err, errors.ErrNoCode, "deserialize peer error!")
 		}
 		peers = append(peers, peer)
 	}
-
+	this.N = n
+	this.C = c
+	this.K = k
+	this.L = l
 	this.BlockMsgDelay = blockMsgDelay
 	this.HashMsgDelay = hashMsgDelay
 	this.PeerHandshakeTimeout = peerHandshakeTimeout
+	this.MaxBlockChangeView = maxBlockChangeView
+	this.MinInitStake = minInitStake
 	this.VrfValue = vrfValue
 	this.VrfProof = vrfProof
 	this.Peers = peers
@@ -330,42 +358,44 @@ type VBFTPeerStakeInfo struct {
 	Index      uint32 `json:"index"`
 	PeerPubkey string `json:"peerPubkey"`
 	Address    string `json:"address"`
+	Pos        uint64 `json:"pos"`
 }
 
-func (this *VBFTPeerStakeInfo) Serialize(w io.Writer) error {
-	if err := serialization.WriteUint32(w, this.Index); err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.WriteUint32, serialize index error!")
-	}
-	if err := serialization.WriteString(w, this.PeerPubkey); err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.WriteUint32, serialize peerPubkey error!")
-	}
+func (this *VBFTPeerStakeInfo) Serialization(sink *common.ZeroCopySink) error {
+	sink.WriteUint32(this.Index)
+	sink.WriteString(this.PeerPubkey)
+
 	address, err := common.AddressFromBase58(this.Address)
 	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "common.AddressFromBase58, address format error!")
+		return fmt.Errorf("serialize VBFTPeerStackInfo error: %v", err)
 	}
-	if err := address.Serialize(w); err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.WriteUint32, serialize address error!")
-	}
+	address.Serialization(sink)
+	sink.WriteUint64(this.Pos)
 	return nil
 }
 
-func (this *VBFTPeerStakeInfo) Deserialize(r io.Reader) error {
-	index, err := serialization.ReadUint32(r)
-	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.ReadUint32, deserialize index error!")
+func (this *VBFTPeerStakeInfo) Deserialization(source *common.ZeroCopySource) error {
+	index, eof := source.NextUint32()
+	if eof {
+		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadUint32, deserialize index error!")
 	}
-	peerPubkey, err := serialization.ReadString(r)
-	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "serialization.ReadUint32, deserialize peerPubkey error!")
+	peerPubkey, eof := source.NextString()
+	if eof {
+		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadUint32, deserialize peerPubkey error!")
 	}
 	address := new(common.Address)
-	err = address.Deserialize(r)
+	err := address.Deserialization(source)
 	if err != nil {
 		return errors.NewDetailErr(err, errors.ErrNoCode, "address.Deserialize, deserialize address error!")
+	}
+	pos, eof := source.NextUint64()
+	if eof {
+		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadUint32, deserialize pos error!")
 	}
 	this.Index = index
 	this.PeerPubkey = peerPubkey
 	this.Address = address.ToBase58()
+	this.Pos = pos
 	return nil
 }
 

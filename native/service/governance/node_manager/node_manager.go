@@ -32,6 +32,13 @@ import (
 )
 
 const (
+	//status
+	CandidateStatus Status = iota
+	ConsensusStatus
+	QuitConsensusStatus
+	QuitingStatus
+	BlackStatus
+
 	//function name
 	REGISTER_CANDIDATE   = "registerCandidate"
 	UNREGISTER_CANDIDATE = "unRegisterCandidate"
@@ -43,12 +50,15 @@ const (
 	UPDATE_CONFIG        = "updateConfig"
 
 	//key prefix
+	GOVERNANCE_VIEW = "governanceView"
 	VBFT_CONFIG     = "vbftConfig"
+	PRE_CONFIG      = "preConfig"
 	CANDIDITE_INDEX = "candidateIndex"
 	PEER_APPLY      = "peerApply"
 	PEER_POOL       = "peerPool"
 	PEER_INDEX      = "peerIndex"
 	BLACK_LIST      = "blackList"
+	GLOBAL_PARAM    = "globalParam"
 )
 
 //Register methods of node_manager contract
@@ -67,7 +77,7 @@ func RegisterNodeManagerContract(native *native.NativeService) {
 //Init node_manager contract
 func InitConfig(native *native.NativeService) ([]byte, error) {
 	configuration := new(config.VBFTConfig)
-	if err := configuration.Deserialize(bytes.NewBuffer(native.GetInput())); err != nil {
+	if err := configuration.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("initConfig, contract params deserialize error: %v", err)
 	}
 	contract := utils.NodeManagerContractAddress
@@ -87,6 +97,17 @@ func InitConfig(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("initConfig, checkVBFTConfig failed: %v", err)
 	}
 
+	//init globalParam
+	globalParam := &GlobalParam{
+		MinInitStake: configuration.MinInitStake,
+		CandidateNum: 7 * 7,
+	}
+	err = putGlobalParam(native, globalParam)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("putGlobalParam, put globalParam error: %v", err)
+	}
+
+	var view uint32 = 1
 	var maxId uint32
 
 	peerPoolMap := &PeerPoolMap{
@@ -105,6 +126,8 @@ func InitConfig(native *native.NativeService) ([]byte, error) {
 		peerPoolItem.Index = peer.Index
 		peerPoolItem.PeerPubkey = peer.PeerPubkey
 		peerPoolItem.Address = address[:]
+		peerPoolItem.Status = ConsensusStatus
+		peerPoolItem.Pos = peer.Pos
 		peerPoolMap.PeerPoolMap[peerPoolItem.PeerPubkey] = peerPoolItem
 
 		peerPubkeyPrefix, err := hex.DecodeString(peerPoolItem.PeerPubkey)
@@ -117,18 +140,38 @@ func InitConfig(native *native.NativeService) ([]byte, error) {
 	}
 
 	//init peer pool
-	err = putPeerPoolMap(native, peerPoolMap)
+	err = putPeerPoolMap(native, peerPoolMap, 0)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("initConfig, put peerPoolMap error: %v", err)
+	}
+	err = putPeerPoolMap(native, peerPoolMap, view)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("initConfig, put peerPoolMap error: %v", err)
 	}
 	indexBytes := utils.GetUint32Bytes(maxId + 1)
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(CANDIDITE_INDEX)), cstates.GenRawStorageItem(indexBytes))
 
+	//init governance view
+	governanceView := &GovernanceView{
+		View:   view,
+		Height: native.GetHeight(),
+		TxHash: native.GetTx().Hash(),
+	}
+	err = putGovernanceView(native, governanceView)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("putGovernanceView, put governanceView error: %v", err)
+	}
+
 	//init config
 	config := &Configuration{
+		N:                    configuration.N,
+		C:                    configuration.C,
+		K:                    configuration.K,
+		L:                    configuration.L,
 		BlockMsgDelay:        configuration.BlockMsgDelay,
 		HashMsgDelay:         configuration.HashMsgDelay,
 		PeerHandshakeTimeout: configuration.PeerHandshakeTimeout,
+		MaxBlockChangeView:   configuration.MaxBlockChangeView,
 	}
 	err = putConfig(native, config)
 	if err != nil {
@@ -197,6 +240,7 @@ func RegisterCandidate(native *native.NativeService) ([]byte, error) {
 	peerPoolItem := &PeerPoolItem{
 		PeerPubkey: params.PeerPubkey,
 		Address:    params.Address,
+		Pos:        params.Pos,
 	}
 	err = putPeerApply(native, peerPoolItem)
 	if err != nil {
@@ -518,7 +562,39 @@ func UpdateConfig(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("updateConfig, deserialize configuration error: %v", err)
 	}
 
+	//get current view
+	view, err := GetView(native)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("getView, get view error: %v", err)
+	}
+	//get peerPoolMap
+	peerPoolMap, err := GetPeerPoolMap(native, view)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("getPeerPoolMap, get peerPoolMap error: %v", err)
+	}
+	candidateNum := 0
+	for _, peerPoolItem := range peerPoolMap.PeerPoolMap {
+		if peerPoolItem.Status == CandidateStatus || peerPoolItem.Status == ConsensusStatus {
+			candidateNum = candidateNum + 1
+		}
+	}
+
 	//check the configuration
+	if configuration.C == 0 {
+		return utils.BYTE_FALSE, fmt.Errorf("updateConfig. C can not be 0 in config")
+	}
+	if int(configuration.K) > candidateNum {
+		return utils.BYTE_FALSE, fmt.Errorf("updateConfig. K can not be larger than num of candidate peer in config")
+	}
+	if configuration.L < 16*configuration.K || configuration.L%configuration.K != 0 {
+		return utils.BYTE_FALSE, fmt.Errorf("updateConfig. L can not be less than 16*K and K must be times of L in config")
+	}
+	if configuration.K < 2*configuration.C+1 {
+		return utils.BYTE_FALSE, fmt.Errorf("updateConfig. K can not be less than 2*C+1 in config")
+	}
+	if configuration.N < configuration.K || configuration.K < 7 {
+		return utils.BYTE_FALSE, fmt.Errorf("updateConfig. config not match N >= K >= 7")
+	}
 	if configuration.BlockMsgDelay < 5000 {
 		return utils.BYTE_FALSE, fmt.Errorf("updateConfig. BlockMsgDelay must >= 5000")
 	}
@@ -527,6 +603,9 @@ func UpdateConfig(native *native.NativeService) ([]byte, error) {
 	}
 	if configuration.PeerHandshakeTimeout < 10 {
 		return utils.BYTE_FALSE, fmt.Errorf("updateConfig. PeerHandshakeTimeout must >= 10")
+	}
+	if configuration.MaxBlockChangeView < 10000 {
+		return utils.BYTE_FALSE, fmt.Errorf("updateConfig. MaxBlockChangeView must >= 10000")
 	}
 
 	err = putConfig(native, configuration)
