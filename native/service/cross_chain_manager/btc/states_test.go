@@ -71,35 +71,35 @@ func TestCoinSelector_SimpleBnbSearch2(t *testing.T) {
 	p2pkh, _ := hex.DecodeString("76a91428d2e8cee08857f569e5a1b147c5d5e87339e08188ac")
 
 	us := &Utxos{
-		Utxos: []*Utxo {
+		Utxos: []*Utxo{
 			{
 				Op: &OutPoint{
-					Hash: []byte{1},
+					Hash:  []byte{1},
 					Index: 0,
 				},
-				Value: 1e8,
+				Value:        1e8,
 				ScriptPubkey: p2ws,
-				AtHeight: 1,
+				AtHeight:     1,
 			},
 			{
 				Op: &OutPoint{
-					Hash: []byte{2},
+					Hash:  []byte{2},
 					Index: 0,
 				},
-				Value: 27589,
+				Value:        27589,
 				ScriptPubkey: p2sh,
-				AtHeight: 1,
+				AtHeight:     1,
 			},
 		},
 	}
 
-	outs := []*wire.TxOut {
+	outs := []*wire.TxOut{
 		{
-			Value: 9904,
+			Value:    9904,
 			PkScript: p2pkh,
 		},
 		{
-			Value: 0,
+			Value:    0,
 			PkScript: p2ws,
 		},
 	}

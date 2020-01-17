@@ -47,7 +47,7 @@ const (
 
 var netParam = &chaincfg.RegressionNetParams
 
-func GetNetParam() *chaincfg.Params{
+func GetNetParam() *chaincfg.Params {
 	return netParam
 }
 

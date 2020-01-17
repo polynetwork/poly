@@ -79,7 +79,7 @@ func (this *BTCHandler) SyncBlockHeader(native *native.NativeService) error {
 
 		storedHeader, err := GetHeaderByHash(native, headerParams.ChainID, blockHeader.BlockHash())
 		if err == nil {
-			return fmt.Errorf("SyncBlockHeader, header already synced, block hash = %s, at height = %d",  blockHeader.BlockHash().String(), storedHeader.Height)
+			return fmt.Errorf("SyncBlockHeader, header already synced, block hash = %s, at height = %d", blockHeader.BlockHash().String(), storedHeader.Height)
 		}
 
 		//isBestHeader, commonAncestor, heightOfHeader, err := commitHeader(native, headerParams.ChainID, blockHeader)

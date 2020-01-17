@@ -24,7 +24,6 @@ func TestStateroot(t *testing.T) {
 
 	v, err := merkle.MerkleProve(proof, root[:])
 
-
 	s := common.NewZeroCopySource(v)
 	merkleValue := new(common2.ToMerkleValue)
 	err = merkleValue.Deserialization(s)

@@ -33,7 +33,6 @@ const (
 
 var netParam = &chaincfg.RegressionNetParams
 
-
 func putGenesisBlockHeader(native *native.NativeService, chainID uint64, blockHeader StoredHeader) {
 	contract := utils.HeaderSyncContractAddress
 	blockHash := blockHeader.Header.BlockHash()
@@ -137,7 +136,6 @@ func GetHeaderByHeight(native *native.NativeService, chainID uint64, height uint
 	}
 	return storedHeader, nil
 }
-
 
 func putBestBlockHeader(native *native.NativeService, chainID uint64, bestHeader StoredHeader) {
 	contract := utils.HeaderSyncContractAddress

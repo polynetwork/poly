@@ -193,11 +193,11 @@ func (this *VoteParam) Deserialization(source *common.ZeroCopySource) error {
 }
 
 type MultiSignParam struct {
-	ChainID uint64
+	ChainID   uint64
 	RedeemKey string
-	TxHash  []byte
-	Address string
-	Signs   [][]byte
+	TxHash    []byte
+	Address   string
+	Signs     [][]byte
 }
 
 func (this *MultiSignParam) Serialization(sink *common.ZeroCopySink) {
