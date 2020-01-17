@@ -220,7 +220,8 @@ func (selector *CoinSelector) SortedSearch() ([]*Utxo, uint64, uint64) {
 				pass = 1
 			}
 		case 1:
-			feeReplaced, lr := selector.getLossRatio(append(selection[:len(selection)-1], u))
+			feeReplaced, lr := selector.getLossRatio(append(selection[:len(selection)-1:cap(selection)-1], u))
+			fmt.Println(sum, selection[len(selection)-1].Value, u.Value)
 			if sumTemp := sum - selection[len(selection)-1].Value + u.Value; (sumTemp == selector.Target ||
 				sumTemp >= selector.Target+selector.Mc) && lr < selector.MaxP {
 				fee, sum = feeReplaced, sumTemp
