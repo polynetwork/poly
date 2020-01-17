@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
+	"github.com/ontio/multi-chain/common/log"
 	"golang.org/x/crypto/sha3"
 	"hash"
 	"math/big"
@@ -98,12 +99,13 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 			return fmt.Errorf("SyncBlockHeader, check header exist err: %v", err)
 		}
 		if exist == true {
-			return fmt.Errorf("SyncBlockHeader, header has exist.")
+			log.Warnf("SyncBlockHeader, header has exist. Header: %s", string(v))
+			continue
 		}
 		// get pre header
 		parentHeader, parentDifficultySum, err := GetHeaderByHash(native, header.ParentHash.Bytes(), headerParams.ChainID)
 		if err != nil {
-			return fmt.Errorf("SyncBlockHeader, get the parent block failed. hash: %s, error:%s", header.ParentHash.String(), err)
+			return fmt.Errorf("SyncBlockHeader, get the parent block failed. Error:%s, header: %s", err, string(v))
 		}
 		parentHeaderHash := parentHeader.Hash()
 		/**
@@ -115,28 +117,28 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 		*/
 		//verify whether parent hash validity
 		if !bytes.Equal(parentHeaderHash.Bytes(), header.ParentHash.Bytes()) {
-			return fmt.Errorf("SyncBlockHeader, current header height:%d, parentHash:%x, prevent header height:%d, hash:%x", header.Number, header.ParentHash, parentHeader.Number, parentHeaderHash)
+			return fmt.Errorf("SyncBlockHeader, parent header is not right. Header: %s", string(v))
 		}
 		//verify whether extra size validity
 		if uint64(len(header.Extra)) > params.MaximumExtraDataSize {
-			return fmt.Errorf("SyncBlockHeader, SyncBlockHeader extra-data too long: %d > %d", len(header.Extra), params.MaximumExtraDataSize)
+			return fmt.Errorf("SyncBlockHeader, SyncBlockHeader extra-data too long: %d > %d, header: %s", len(header.Extra), params.MaximumExtraDataSize, string(v))
 		}
 		//verify current time validity
 		if header.Time > uint64(time.Now().Add(allowedFutureBlockTime).Unix()) {
-			return fmt.Errorf("SyncBlockHeader,  verify header time error:%s", consensus.ErrFutureBlock)
+			return fmt.Errorf("SyncBlockHeader,  verify header time error:%s, checktime: %d, header: %s", consensus.ErrFutureBlock, time.Now().Add(allowedFutureBlockTime).Unix(), string(v))
 		}
 		//verify whether current header time and prevent header time validity
 		if header.Time <= parentHeader.Time {
-			return fmt.Errorf("SyncBlockHeader, verify header time fail, current header time:%d, prevent header time:%d", header.Time, parentHeader.Time)
+			return fmt.Errorf("SyncBlockHeader, verify header time fail. Header: %s", string(v))
 		}
 		// Verify that the gas limit is <= 2^63-1
 		cap := uint64(0x7fffffffffffffff)
 		if header.GasLimit > cap {
-			return fmt.Errorf("SyncBlockHeader, invalid gasLimit: have %v, max %v", header.GasLimit, cap)
+			return fmt.Errorf("SyncBlockHeader, invalid gasLimit: have %v, max %v, header: %s", header.GasLimit, cap, string(v))
 		}
 		// Verify that the gasUsed is <= gasLimit
 		if header.GasUsed > header.GasLimit {
-			return fmt.Errorf("SyncBlockHeader, invalid gasUsed: have %d, gasLimit %d", header.GasUsed, header.GasLimit)
+			return fmt.Errorf("SyncBlockHeader, invalid gasUsed: have %d, gasLimit %d, header: %s", header.GasUsed, header.GasLimit, string(v))
 		}
 		// GasLimit adjustment range 0.0976%（=1/1024 ）
 		diff := int64(parentHeader.GasLimit) - int64(header.GasLimit)
@@ -145,30 +147,30 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 		}
 		limit := parentHeader.GasLimit / params.GasLimitBoundDivisor
 		if uint64(diff) >= limit || header.GasLimit < params.MinGasLimit {
-			return fmt.Errorf("SyncBlockHeader, invalid gas limit: have %d, want %d += %d", header.GasLimit, parentHeader.GasLimit, limit)
+			return fmt.Errorf("SyncBlockHeader, invalid gas limit: have %d, want %d += %d, header: %s", header.GasLimit, parentHeader.GasLimit, limit, string(v))
 		}
 		//verify difficulty
 		expected := difficultyCalculator(new(big.Int).SetUint64(header.Time), parentHeader)
 		if expected.Cmp(header.Difficulty) != 0 {
-			return fmt.Errorf("SyncBlockHeader, invalid difficulty: have %v, want %v", header.Difficulty, expected)
+			return fmt.Errorf("SyncBlockHeader, invalid difficulty: have %v, want %v, header: %s", header.Difficulty, expected, string(v))
 		}
 		// verfify header
 		err = this.verifyHeader(&header, caches)
 		if err != nil {
-			return err
+			return fmt.Errorf("SyncBlockHeader, verify header error: %v, header: %s", err, string(v))
 		}
 		//block header storage
 		hederDifficultySum := new(big.Int).Add(header.Difficulty, parentDifficultySum)
 		err = putBlockHeader(native, header, hederDifficultySum, headerParams.ChainID)
 		if err != nil {
-			return fmt.Errorf("SyncGenesisHeader, put blockHeader error: %v", err)
+			return fmt.Errorf("SyncGenesisHeader, put blockHeader error: %v, header: %s", err, string(v))
 		}
 		// get current header of main
 		currentHeader, currentDifficultySum, err := GetCurrentHeader(native, headerParams.ChainID)
 		if err != nil {
 			return fmt.Errorf("SyncBlockHeader, get the current block failed. error:%s", err)
 		}
-		if currentHeader.Hash() == header.ParentHash {
+		if bytes.Equal(currentHeader.Hash().Bytes(), header.ParentHash.Bytes()) {
 			appendHeader2Main(native, header.Number.Uint64(), headerHash, headerParams.ChainID)
 		} else {
 			//
