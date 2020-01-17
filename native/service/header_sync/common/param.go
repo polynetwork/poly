@@ -18,6 +18,7 @@ const (
 	KEY_HEIGHTS                 = "keyHeights"
 	ETH_CACHE                   = "ethCaches"
 	GENESIS_HEADER              = "genesisHeader"
+	MAIN_CHAIN                  = "mainChain"
 )
 
 type HeaderSyncHandler interface {

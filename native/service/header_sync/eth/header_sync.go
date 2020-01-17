@@ -31,7 +31,7 @@ var (
 	BIG_MINUS_99      = big.NewInt(-99)
 	BLOCK_DIFF_FACTOR = big.NewInt(2048)
 	DIFF_PERIOD       = big.NewInt(100000)
-	BOMB_DELAY        = big.NewInt(4999999)
+	BOMB_DELAY        = big.NewInt(8999999)
 )
 
 type ETHHandler struct {
@@ -58,7 +58,7 @@ func (this *ETHHandler) SyncGenesisHeader(native *native.NativeService) error {
 	//	return fmt.Errorf("ETHHandler SyncGenesisHeader, checkWitness error: %v", err)
 	//}
 
-	header, headerByte, err := getGenesisHeader(native.GetInput())
+	header, err := getGenesisHeader(native.GetInput())
 	if err != nil {
 		return fmt.Errorf("ETHHandler SyncGenesisHeader: %s", err)
 	}
@@ -72,7 +72,7 @@ func (this *ETHHandler) SyncGenesisHeader(native *native.NativeService) error {
 	}
 
 	//block header storage
-	err = putGenesisBlockHeader(native, header, headerByte, params.ChainID)
+	err = putGenesisBlockHeader(native, header, params.ChainID)
 	if err != nil {
 		return fmt.Errorf("ETHHandler SyncGenesisHeader, put blockHeader error: %v", err)
 	}
@@ -92,10 +92,20 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 		if err != nil {
 			return fmt.Errorf("SyncBlockHeader, deserialize header err: %v", err)
 		}
-		prevHeader, err := GetHeaderByHeight(native, header.Number.Uint64()-1, headerParams.ChainID)
+		headerHash := header.Hash()
+		exist, err := IsHeaderExist(native, headerHash.Bytes(), headerParams.ChainID)
 		if err != nil {
-			return fmt.Errorf("SyncBlockHeader, height:%d, error:%s", header.Number.Uint64()-1, err)
+			return fmt.Errorf("SyncBlockHeader, check header exist err: %v", err)
 		}
+		if exist == true {
+			return fmt.Errorf("SyncBlockHeader, header has exist.")
+		}
+		// get pre header
+		parentHeader, parentDifficultySum, err := GetHeaderByHash(native, header.ParentHash.Bytes(), headerParams.ChainID)
+		if err != nil {
+			return fmt.Errorf("SyncBlockHeader, get the parent block failed. hash: %s, error:%s", header.ParentHash.String(), err)
+		}
+		parentHeaderHash := parentHeader.Hash()
 		/**
 		this code source refer to https://github.com/ethereum/go-ethereum/blob/master/consensus/ethash/consensus.go
 		verify header need to verify:
@@ -104,8 +114,8 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 		3. current time
 		*/
 		//verify whether parent hash validity
-		if !bytes.Equal(prevHeader.Hash().Bytes(), header.ParentHash.Bytes()) {
-			return fmt.Errorf("SyncBlockHeader, current header height:%d, parentHash:%x, prevent header height:%d, hash:%x", header.Number, header.ParentHash, prevHeader.Number, prevHeader.Hash())
+		if !bytes.Equal(parentHeaderHash.Bytes(), header.ParentHash.Bytes()) {
+			return fmt.Errorf("SyncBlockHeader, current header height:%d, parentHash:%x, prevent header height:%d, hash:%x", header.Number, header.ParentHash, parentHeader.Number, parentHeaderHash)
 		}
 		//verify whether extra size validity
 		if uint64(len(header.Extra)) > params.MaximumExtraDataSize {
@@ -116,10 +126,9 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 			return fmt.Errorf("SyncBlockHeader,  verify header time error:%s", consensus.ErrFutureBlock)
 		}
 		//verify whether current header time and prevent header time validity
-		if header.Time <= prevHeader.Time {
-			return fmt.Errorf("SyncBlockHeader, verify header time fail, current header time:%d, prevent header time:%d", header.Time, prevHeader.Time)
+		if header.Time <= parentHeader.Time {
+			return fmt.Errorf("SyncBlockHeader, verify header time fail, current header time:%d, prevent header time:%d", header.Time, parentHeader.Time)
 		}
-
 		// Verify that the gas limit is <= 2^63-1
 		cap := uint64(0x7fffffffffffffff)
 		if header.GasLimit > cap {
@@ -129,33 +138,43 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 		if header.GasUsed > header.GasLimit {
 			return fmt.Errorf("SyncBlockHeader, invalid gasUsed: have %d, gasLimit %d", header.GasUsed, header.GasLimit)
 		}
-
 		// GasLimit adjustment range 0.0976%（=1/1024 ）
-		diff := int64(prevHeader.GasLimit) - int64(header.GasLimit)
+		diff := int64(parentHeader.GasLimit) - int64(header.GasLimit)
 		if diff < 0 {
 			diff *= -1
 		}
-		limit := prevHeader.GasLimit / params.GasLimitBoundDivisor
+		limit := parentHeader.GasLimit / params.GasLimitBoundDivisor
 		if uint64(diff) >= limit || header.GasLimit < params.MinGasLimit {
-			return fmt.Errorf("SyncBlockHeader, invalid gas limit: have %d, want %d += %d", header.GasLimit, prevHeader.GasLimit, limit)
+			return fmt.Errorf("SyncBlockHeader, invalid gas limit: have %d, want %d += %d", header.GasLimit, parentHeader.GasLimit, limit)
 		}
-
 		//verify difficulty
-		expected := difficultyCalculator(new(big.Int).SetUint64(header.Time), prevHeader)
+		expected := difficultyCalculator(new(big.Int).SetUint64(header.Time), parentHeader)
 		if expected.Cmp(header.Difficulty) != 0 {
 			return fmt.Errorf("SyncBlockHeader, invalid difficulty: have %v, want %v", header.Difficulty, expected)
 		}
-
-		//
+		// verfify header
 		err = this.verifyHeader(&header, caches)
 		if err != nil {
 			return err
 		}
-
 		//block header storage
-		err = putBlockHeader(native, header, v, headerParams.ChainID)
+		hederDifficultySum := new(big.Int).Add(header.Difficulty, parentDifficultySum)
+		err = putBlockHeader(native, header, hederDifficultySum, headerParams.ChainID)
 		if err != nil {
 			return fmt.Errorf("SyncGenesisHeader, put blockHeader error: %v", err)
+		}
+		// get current header of main
+		currentHeader, currentDifficultySum, err := GetCurrentHeader(native, headerParams.ChainID)
+		if err != nil {
+			return fmt.Errorf("SyncBlockHeader, get the current block failed. error:%s", err)
+		}
+		if currentHeader.Hash() == header.ParentHash {
+			appendHeader2Main(native, header.Number.Uint64(), headerHash, headerParams.ChainID)
+		} else {
+			//
+			if hederDifficultySum.Cmp(currentDifficultySum) > 0 {
+				RestructChain(native, currentHeader, &header, headerParams.ChainID)
+			}
 		}
 	}
 	caches.deleteCaches()
@@ -166,17 +185,17 @@ func (this *ETHHandler) SyncCrossChainMsg(native *native.NativeService) error {
 	return nil
 }
 
-func getGenesisHeader(input []byte) (cty.Header, []byte, error) {
+func getGenesisHeader(input []byte) (cty.Header, error) {
 	params := new(scom.SyncGenesisHeaderParam)
 	if err := params.Deserialization(common.NewZeroCopySource(input)); err != nil {
-		return cty.Header{}, nil, fmt.Errorf("getGenesisHeader, contract params deserialize error: %v", err)
+		return cty.Header{}, fmt.Errorf("getGenesisHeader, contract params deserialize error: %v", err)
 	}
 	var header cty.Header
 	err := json.Unmarshal(params.GenesisHeader, &header)
 	if err != nil {
-		return cty.Header{}, nil, fmt.Errorf("getGenesisHeader, deserialize header err: %v", err)
+		return cty.Header{}, fmt.Errorf("getGenesisHeader, deserialize header err: %v", err)
 	}
-	return header, params.GenesisHeader, nil
+	return header, nil
 }
 
 func difficultyCalculator(time *big.Int, parent *types.Header) *big.Int {

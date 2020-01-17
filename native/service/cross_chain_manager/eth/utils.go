@@ -20,7 +20,7 @@ import (
 )
 
 func verifyFromEthTx(native *native.NativeService, proof, extra []byte, fromChainID uint64, height uint32) (*scom.MakeTxParam, error) {
-	blockData, err := eth.GetHeaderByHeight(native, uint64(height), fromChainID)
+	blockData, _, err := eth.GetHeaderByHeight(native, uint64(height), fromChainID)
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromEthProof, get header by height, height:%d, error:%s", height, err)
 	}

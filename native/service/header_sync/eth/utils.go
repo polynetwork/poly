@@ -2,9 +2,9 @@ package eth
 
 import (
 	"encoding/binary"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/ethereum/go-ethereum/common"
 	"math/big"
 	"time"
 	"unsafe"
@@ -36,37 +36,62 @@ const (
 	cacheRounds            = 3
 )
 
-func putGenesisBlockHeader(native *native.NativeService, blockHeader types.Header, headerBytes []byte, chainID uint64) error {
+type HeaderWithDifficultySum struct {
+	Header types.Header       `json:"header"`
+	DifficultySum *big.Int     `json:"difficultySum"`
+}
+func putGenesisBlockHeader(native *native.NativeService, blockHeader types.Header, chainID uint64) error {
 	contract := utils.HeaderSyncContractAddress
-	blockHash := blockHeader.Hash().Bytes()
-
+	headerWithDifficultySum := HeaderWithDifficultySum {
+		Header: blockHeader,
+		DifficultySum: blockHeader.Difficulty,
+	}
+	storeBytes, _ := json.Marshal(&headerWithDifficultySum)
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.GENESIS_HEADER), utils.GetUint64Bytes(chainID)),
-		cstates.GenRawStorageItem(headerBytes))
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID),
-		utils.GetUint64Bytes(blockHeader.Number.Uint64())),
-		cstates.GenRawStorageItem(headerBytes))
+		cstates.GenRawStorageItem(storeBytes))
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), blockHeader.Hash().Bytes()),
+		cstates.GenRawStorageItem(storeBytes))
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.MAIN_CHAIN), utils.GetUint64Bytes(chainID), utils.GetUint64Bytes(blockHeader.Number.Uint64())),
+		cstates.GenRawStorageItem(blockHeader.Hash().Bytes()))
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.CURRENT_HEADER_HEIGHT),
 		utils.GetUint64Bytes(chainID)), cstates.GenRawStorageItem(utils.GetUint64Bytes(blockHeader.Number.Uint64())))
-	notifyPutHeader(native, chainID, blockHeader.Number.Uint64(), hex.EncodeToString(blockHash))
+	notifyPutHeader(native, chainID, blockHeader.Number.Uint64(), blockHeader.Hash().String())
 	return nil
 }
-
-func putBlockHeader(native *native.NativeService, blockHeader types.Header, headerBytes []byte, chainID uint64) error {
+func putBlockHeader(native *native.NativeService, blockHeader types.Header, difficultySum *big.Int, chainID uint64) error {
 	contract := utils.HeaderSyncContractAddress
-	blockHash := blockHeader.Hash().Bytes()
-
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID),
-		utils.GetUint64Bytes(blockHeader.Number.Uint64())),
-		cstates.GenRawStorageItem(headerBytes))
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.CURRENT_HEADER_HEIGHT),
-		utils.GetUint64Bytes(chainID)), cstates.GenRawStorageItem(utils.GetUint64Bytes(blockHeader.Number.Uint64())))
-	notifyPutHeader(native, chainID, blockHeader.Number.Uint64(), hex.EncodeToString(blockHash))
+	headerWithDifficultySum := HeaderWithDifficultySum {
+		Header: blockHeader,
+		DifficultySum: difficultySum,
+	}
+	storeBytes, _ := json.Marshal(&headerWithDifficultySum)
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), blockHeader.Hash().Bytes()),
+		cstates.GenRawStorageItem(storeBytes))
 	return nil
 }
-
-func GetCurrentHeaderHeight(native *native.NativeService, chainID []byte) (uint64, error) {
+func appendHeader2Main(native *native.NativeService, height uint64, txhash common.Hash,  chainID uint64) error {
+	contract := utils.HeaderSyncContractAddress
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.MAIN_CHAIN), utils.GetUint64Bytes(chainID), utils.GetUint64Bytes(height)),
+		cstates.GenRawStorageItem(txhash.Bytes()))
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.CURRENT_HEADER_HEIGHT),
+		utils.GetUint64Bytes(chainID)), cstates.GenRawStorageItem(utils.GetUint64Bytes(height)))
+	notifyPutHeader(native, chainID, height, txhash.String())
+	return nil
+}
+func GetCurrentHeader(native *native.NativeService, chainID uint64) (*cty.Header, *big.Int, error) {
+	height, err := GetCurrentHeaderHeight(native, chainID)
+	if err != nil {
+		return nil, big.NewInt(0), err
+	}
+	header, difficultySum, err := GetHeaderByHeight(native, height, chainID)
+	if err != nil {
+		return nil, big.NewInt(0), err
+	}
+	return header, difficultySum, nil
+}
+func GetCurrentHeaderHeight(native *native.NativeService, chainID uint64) (uint64, error) {
 	heightStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress,
-		[]byte(scom.CURRENT_HEADER_HEIGHT), chainID))
+		[]byte(scom.CURRENT_HEADER_HEIGHT), utils.GetUint64Bytes(chainID)))
 	if err != nil {
 		return 0, fmt.Errorf("getPrevHeaderHeight error: %v", err)
 	}
@@ -79,25 +104,84 @@ func GetCurrentHeaderHeight(native *native.NativeService, chainID []byte) (uint6
 	}
 	return utils.GetBytesUint64(heightBytes), err
 }
-
-func GetHeaderByHeight(native *native.NativeService, height, chainID uint64) (*cty.Header, error) {
-	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress,
-		[]byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), utils.GetUint64Bytes(height)))
+func GetHeaderByHeight(native *native.NativeService, height, chainID uint64) (*cty.Header, *big.Int, error) {
+	latestHeight, err := GetCurrentHeaderHeight(native, chainID)
 	if err != nil {
-		return nil, fmt.Errorf("GetHeaderByHeight, get blockHashStore error: %v", err)
+		return nil, big.NewInt(0), err
+	}
+	if height > latestHeight {
+		return nil, big.NewInt(0), fmt.Errorf("GetHeaderByHeight, height is too big")
+	}
+	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress,
+		[]byte(scom.MAIN_CHAIN), utils.GetUint64Bytes(chainID), utils.GetUint64Bytes(height)))
+	if err != nil {
+		return nil, big.NewInt(0), fmt.Errorf("GetHeaderByHeight, get blockHashStore error: %v", err)
 	}
 	if headerStore == nil {
-		return nil, fmt.Errorf("GetHeaderByHeight, can not find any header records")
+		return nil, big.NewInt(0), fmt.Errorf("GetHeaderByHeight, can not find any header records")
 	}
-	headerBytes, err := cstates.GetValueFromRawStorageItem(headerStore)
+	hashBytes, err := cstates.GetValueFromRawStorageItem(headerStore)
 	if err != nil {
-		return nil, fmt.Errorf("GetHeaderByHeight, deserialize headerBytes from raw storage item err:%v", err)
+		return nil, big.NewInt(0), fmt.Errorf("GetHeaderByHeight, deserialize headerBytes from raw storage item err:%v", err)
 	}
-	var header cty.Header
-	if err := json.Unmarshal(headerBytes, &header); err != nil {
-		return nil, fmt.Errorf("GetHeaderByHeight, deserialize header error: %v", err)
+	return GetHeaderByHash(native, hashBytes, chainID)
+}
+
+func GetHeaderByHash(native *native.NativeService, hash []byte, chainID uint64) (*cty.Header, *big.Int, error) {
+	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress,
+		[]byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), hash))
+	if err != nil {
+		return nil, big.NewInt(0), fmt.Errorf("GetHeaderByHash, get blockHashStore error: %v", err)
 	}
-	return &header, nil
+	if headerStore == nil {
+		return nil, big.NewInt(0), fmt.Errorf("GetHeaderByHash, can not find any header records")
+	}
+	storeBytes, err := cstates.GetValueFromRawStorageItem(headerStore)
+	if err != nil {
+		return nil, big.NewInt(0), fmt.Errorf("GetHeaderByHash, deserialize headerBytes from raw storage item err:%v", err)
+	}
+	var headerWithDifficultySum HeaderWithDifficultySum
+	if err := json.Unmarshal(storeBytes, &headerWithDifficultySum); err != nil {
+		return nil, big.NewInt(0), fmt.Errorf("GetHeaderByHash, deserialize header error: %v", err)
+	}
+	return &headerWithDifficultySum.Header, headerWithDifficultySum.DifficultySum, nil
+}
+
+func IsHeaderExist(native *native.NativeService, hash []byte, chainID uint64) (bool, error) {
+	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress,
+		[]byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), hash))
+	if err != nil {
+		return false, fmt.Errorf("IsHeaderExist, get blockHashStore error: %v", err)
+	}
+	if headerStore == nil {
+		return false, nil
+	} else {
+		return true, nil
+	}
+}
+func RestructChain(native *native.NativeService, current, new *types.Header, chainID uint64) error {
+	si, ti := current.Number.Uint64(), new.Number.Uint64()
+	if si > ti {
+		current, _, _ = GetHeaderByHeight(native, ti, chainID)
+		si = ti
+	}
+	newHashs := make([]common.Hash, 0)
+	for ti > si {
+		newHashs = append(newHashs, new.Hash())
+		new, _, _ = GetHeaderByHash(native, new.ParentHash.Bytes(), chainID)
+		ti --
+	}
+	for current.ParentHash != new.ParentHash {
+		newHashs = append(newHashs, new.Hash())
+		new, _, _ = GetHeaderByHash(native, new.ParentHash.Bytes(), chainID)
+		ti --
+		si --
+		current, _, _ = GetHeaderByHeight(native, si, chainID)
+	}
+	for _, hash := range newHashs {
+		appendHeader2Main(native, ti, hash, chainID)
+	}
+	return nil
 }
 
 func notifyPutHeader(native *native.NativeService, chainID uint64, height uint64, blockHash string) {
