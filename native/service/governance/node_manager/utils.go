@@ -194,7 +194,8 @@ func getPreConfig(native *native.NativeService) (*PreConfig, error) {
 	return preConfig, nil
 }
 
-func putPreConfig(native *native.NativeService, contract common.Address, preConfig *PreConfig) error {
+func putPreConfig(native *native.NativeService, preConfig *PreConfig) error {
+	contract := utils.NodeManagerContractAddress
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(PRE_CONFIG)),
 		cstates.GenRawStorageItem(common.SerializeToBytes(preConfig)))
 	return nil

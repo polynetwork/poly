@@ -44,11 +44,13 @@ func (this *Status) Deserialization(source *common.ZeroCopySource) error {
 type BlackListItem struct {
 	PeerPubkey string //peerPubkey in black list
 	Address    []byte //the owner of this peer
+	Pos        uint64 //initPos of this peer
 }
 
 func (this *BlackListItem) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteString(this.PeerPubkey)
 	sink.WriteVarBytes(this.Address)
+	sink.WriteUint64(this.Pos)
 }
 
 func (this *BlackListItem) Deserialization(source *common.ZeroCopySource) error {
@@ -60,8 +62,13 @@ func (this *BlackListItem) Deserialization(source *common.ZeroCopySource) error 
 	if eof {
 		return fmt.Errorf("source.NextVarBytes, deserialize address error")
 	}
+	pos, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("serialization.ReadUint64, deserialize pos error: %v", io.ErrUnexpectedEOF)
+	}
 	this.PeerPubkey = peerPubkey
 	this.Address = address
+	this.Pos = pos
 	return nil
 }
 
