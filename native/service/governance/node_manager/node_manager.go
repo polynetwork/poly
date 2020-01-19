@@ -22,6 +22,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/core/genesis"
@@ -48,6 +49,7 @@ const (
 	QUIT_NODE            = "quitNode"
 	UPDATE_CONFIG        = "updateConfig"
 	UPDATE_GLOBAL_PARAM  = "updateGlobalParam"
+	COMMIT_DPOS          = "commitDpos"
 
 	//key prefix
 	GOVERNANCE_VIEW = "governanceView"
@@ -73,6 +75,7 @@ func RegisterNodeManagerContract(native *native.NativeService) {
 	native.Register(WHITE_NODE, WhiteNode)
 	native.Register(UPDATE_CONFIG, UpdateConfig)
 	native.Register(UPDATE_GLOBAL_PARAM, UpdateGlobalParam)
+	native.Register(COMMIT_DPOS, CommitDpos)
 }
 
 //Init node_manager contract

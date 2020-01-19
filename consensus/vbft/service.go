@@ -30,11 +30,15 @@ import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/log"
 	actorTypes "github.com/ontio/multi-chain/consensus/actor"
-	"github.com/ontio/multi-chain/consensus/vbft/config"
+	vconfig "github.com/ontio/multi-chain/consensus/vbft/config"
+	"github.com/ontio/multi-chain/core/genesis"
 	"github.com/ontio/multi-chain/core/ledger"
 	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/events"
 	"github.com/ontio/multi-chain/events/message"
+	"github.com/ontio/multi-chain/native/service/governance/node_manager"
+	"github.com/ontio/multi-chain/native/service/utils"
+	"github.com/ontio/multi-chain/native/states"
 	p2pmsg "github.com/ontio/multi-chain/p2pserver/message/types"
 	"github.com/ontio/multi-chain/validator/increment"
 	"github.com/ontio/ontology-crypto/keypair"
@@ -216,11 +220,7 @@ func (self *Server) handleBlockPersistCompleted(block *types.Block) {
 		self.metaLock.Unlock()
 	}
 
-	peersinfo, err := GetPeersConfig(self.chainStore.GetExecWriteSet(self.completedBlockNum - 1))
-	if err != nil {
-		log.Errorf("handleBlockPersistCompleted, failed to get peersinfo from leveldb: %s", err)
-	}
-	if peersChange(peersinfo, self.config.Peers) {
+	if self.checkNeedUpdateChainConfig(self.completedBlockNum) || self.checkUpdateChainConfig(self.completedBlockNum) {
 		err := self.updateChainConfig()
 		if err != nil {
 			log.Errorf("updateChainConfig failed:%s", err)
@@ -286,8 +286,8 @@ func (self *Server) LoadChainConfig(chainStore *ChainStore) error {
 	self.metaLock.RLock()
 	defer self.metaLock.RUnlock()
 
-	if self.config.View == 0 {
-		panic("invalid view")
+	if self.config.View == 0 || self.config.MaxBlockChangeView == 0 {
+		panic("invalid view or maxblockchangeview ")
 	}
 	// update msg delays
 	makeProposalTimeout = time.Duration(self.config.BlockMsgDelay * 2)
@@ -1077,8 +1077,8 @@ func (self *Server) processProposalMsg(msg *blockProposalMsg) {
 	if blk.getNewChainConfig() != nil {
 		cfg = *blk.getNewChainConfig()
 		if cfg.Hash() != self.config.Hash() {
-			log.Errorf("processProposalMsg chainconfig unqeual to blockinfo cfg,view:(%d,%d),N:(%d,%d),C:(%d,%d),BlockMsgDelay:(%d,%d),HashMsgDelay:(%d,%d),PeerHandshakeTimeout:(%d,%d),posTable:(%v,%v)", cfg.View, self.config.View, cfg.N, self.config.N, cfg.C,
-				self.config.C, cfg.BlockMsgDelay, self.config.BlockMsgDelay, cfg.HashMsgDelay, self.config.HashMsgDelay, cfg.PeerHandshakeTimeout, self.config.PeerHandshakeTimeout, cfg.PosTable, self.config.PosTable)
+			log.Errorf("processProposalMsg chainconfig unqeual to blockinfo cfg,view:(%d,%d),N:(%d,%d),C:(%d,%d),BlockMsgDelay:(%d,%d),HashMsgDelay:(%d,%d),PeerHandshakeTimeout:(%d,%d),posTable:(%v,%v),MaxBlockChangeView:(%d,%d)", cfg.View, self.config.View, cfg.N, self.config.N, cfg.C,
+				self.config.C, cfg.BlockMsgDelay, self.config.BlockMsgDelay, cfg.HashMsgDelay, self.config.HashMsgDelay, cfg.PeerHandshakeTimeout, self.config.PeerHandshakeTimeout, cfg.PosTable, self.config.PosTable, cfg.MaxBlockChangeView, self.config.MaxBlockChangeView)
 			self.msgPool.DropMsg(msg)
 			return
 		}
@@ -2070,6 +2070,41 @@ func (self *Server) msgSendLoop() {
 	}
 }
 
+//creategovernaceTransaction invoke governance native contract commit_pos
+func (self *Server) creategovernaceTransaction(blkNum uint32) (*types.Transaction, error) {
+	contractInvokeParam := &states.ContractInvokeParam{Address: utils.NodeManagerContractAddress,
+		Method: node_manager.COMMIT_DPOS, Args: []byte{}}
+	invokeCode := new(common.ZeroCopySink)
+	contractInvokeParam.Serialization(invokeCode)
+	tx := genesis.NewInvokeTransaction(invokeCode.Bytes())
+	return tx, nil
+}
+
+//checkNeedUpdateChainConfig use blockcount
+func (self *Server) checkNeedUpdateChainConfig(blockNum uint32) bool {
+	prevBlk, _ := self.blockPool.getSealedBlock(blockNum - 1)
+	if prevBlk == nil {
+		log.Errorf("failed to get prevBlock (%d)", blockNum-1)
+		return false
+	}
+	lastConfigBlkNum := prevBlk.getLastConfigBlockNum()
+	if (blockNum - lastConfigBlkNum) >= self.config.MaxBlockChangeView {
+		return true
+	}
+	return false
+}
+
+//checkUpdateChainConfig query leveldb check is force update
+func (self *Server) checkUpdateChainConfig(blkNum uint32) bool {
+	force, err := isUpdate(self.blockPool.getExecWriteSet(blkNum-1), self.config.View)
+	if err != nil {
+		log.Errorf("checkUpdateChainConfig err:%s", err)
+		return false
+	}
+	log.Debugf("checkUpdateChainConfig force: %v", force)
+	return force
+}
+
 func (self *Server) validHeight(blkNum uint32) uint32 {
 	height := blkNum - 1
 	validHeight := height
@@ -2099,26 +2134,32 @@ func (self *Server) makeProposal(blkNum uint32, forEmpty bool) error {
 	//check need upate chainconfig
 	cfg := &vconfig.ChainConfig{}
 	cfg = nil
-
-	peersinfo, err := GetPeersConfig(self.chainStore.GetExecWriteSet(blkNum - 1))
-	if err != nil {
-		return fmt.Errorf("failed to get peersinfo from leveldb: %s", err)
-	}
-	if peersChange(peersinfo, self.config.Peers) {
-		chainconfig, err := getChainConfig(self.chainStore.GetExecWriteSet(blkNum-1), blkNum)
+	if self.checkNeedUpdateChainConfig(blkNum) || self.checkUpdateChainConfig(blkNum) {
+		chainconfig, err := getChainConfig(self.blockPool.getExecWriteSet(blkNum-1), blkNum)
 		if err != nil {
 			return fmt.Errorf("getChainConfig failed:%s", err)
 		}
+		//add transaction invoke governance native commit_pos contract
+		if self.checkNeedUpdateChainConfig(blkNum) {
+			tx, err := self.creategovernaceTransaction(blkNum)
+			if err != nil {
+				return fmt.Errorf("construct governace transaction error: %v", err)
+			}
+			sysTxs = append(sysTxs, tx)
+			chainconfig.View++
+		}
+		forEmpty = true
 		cfg = chainconfig
 	}
-
 	if self.nonConsensusNode() {
 		return fmt.Errorf("%d quit consensus node", self.Index)
 	}
 
-	for _, e := range self.poolActor.GetTxnPool(true, uint32(validHeight)) {
-		if err := self.incrValidator.Verify(e.Tx, uint32(validHeight)); err == nil {
-			userTxs = append(userTxs, e.Tx)
+	if !forEmpty {
+		for _, e := range self.poolActor.GetTxnPool(true, validHeight) {
+			if err := self.incrValidator.Verify(e.Tx, validHeight); err == nil {
+				userTxs = append(userTxs, e.Tx)
+			}
 		}
 	}
 	proposal, err := self.constructProposalMsg(blkNum, sysTxs, userTxs, cfg)
@@ -2132,7 +2173,8 @@ func (self *Server) makeProposal(blkNum uint32, forEmpty bool) error {
 	h, _ := HashMsg(proposal)
 	self.msgPool.AddMsg(proposal, h)
 	self.processProposalMsg(proposal)
-	return self.broadcast(proposal)
+	self.broadcast(proposal)
+	return nil
 }
 
 func (self *Server) makeCommitment(proposal *blockProposalMsg, blkNum uint32, forEmpty bool) error {

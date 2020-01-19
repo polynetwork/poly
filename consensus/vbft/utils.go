@@ -23,8 +23,6 @@ import (
 	"crypto/sha512"
 	"encoding/json"
 	"fmt"
-	"sort"
-
 	"github.com/ontio/multi-chain/account"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
@@ -128,26 +126,69 @@ func verifyVrf(pk keypair.PublicKey, blkNum uint32, prevVrf, newVrf, proof []byt
 	return nil
 }
 func GetVbftConfigInfo(memdb *overlaydb.MemDB) (*config.VBFTConfig, error) {
-	data, err := GetStorageValue(memdb, ledger.DefLedger, nutils.NodeManagerContractAddress, []byte(node_manager.VBFT_CONFIG))
+	//get governance view
+	goveranceview, err := GetGovernanceView(memdb)
 	if err != nil {
 		return nil, err
-	}
-	cfg := new(node_manager.Configuration)
-	err = cfg.Deserialization(common.NewZeroCopySource(data))
-	if err != nil {
-		return nil, err
-	}
-	chainconfig := &config.VBFTConfig{
-		BlockMsgDelay:        uint32(cfg.BlockMsgDelay),
-		HashMsgDelay:         uint32(cfg.HashMsgDelay),
-		PeerHandshakeTimeout: uint32(cfg.PeerHandshakeTimeout),
 	}
 
+	//get preConfig
+	preCfg := new(node_manager.PreConfig)
+	data, err := GetStorageValue(memdb, ledger.DefLedger, nutils.NodeManagerContractAddress, []byte(node_manager.PRE_CONFIG))
+	if err != nil && err != scommon.ErrNotFound {
+		return nil, err
+	}
+	if data != nil {
+		err = preCfg.Deserialization(common.NewZeroCopySource(data))
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	chainconfig := new(config.VBFTConfig)
+	if preCfg.SetView == goveranceview.View {
+		chainconfig = &config.VBFTConfig{
+			N:                    uint32(preCfg.Configuration.N),
+			C:                    uint32(preCfg.Configuration.C),
+			K:                    uint32(preCfg.Configuration.K),
+			L:                    uint32(preCfg.Configuration.L),
+			BlockMsgDelay:        uint32(preCfg.Configuration.BlockMsgDelay),
+			HashMsgDelay:         uint32(preCfg.Configuration.HashMsgDelay),
+			PeerHandshakeTimeout: uint32(preCfg.Configuration.PeerHandshakeTimeout),
+			MaxBlockChangeView:   uint32(preCfg.Configuration.MaxBlockChangeView),
+		}
+	} else {
+		data, err := GetStorageValue(memdb, ledger.DefLedger, nutils.NodeManagerContractAddress, []byte(node_manager.VBFT_CONFIG))
+		if err != nil {
+			return nil, err
+		}
+		cfg := new(node_manager.Configuration)
+		err = cfg.Deserialization(common.NewZeroCopySource(data))
+		if err != nil {
+			return nil, err
+		}
+		chainconfig = &config.VBFTConfig{
+			N:                    uint32(cfg.N),
+			C:                    uint32(cfg.C),
+			K:                    uint32(cfg.K),
+			L:                    uint32(cfg.L),
+			BlockMsgDelay:        uint32(cfg.BlockMsgDelay),
+			HashMsgDelay:         uint32(cfg.HashMsgDelay),
+			PeerHandshakeTimeout: uint32(cfg.PeerHandshakeTimeout),
+			MaxBlockChangeView:   uint32(cfg.MaxBlockChangeView),
+		}
+	}
 	return chainconfig, nil
 }
 
 func GetPeersConfig(memdb *overlaydb.MemDB) ([]*config.VBFTPeerStakeInfo, error) {
-	data, err := GetStorageValue(memdb, ledger.DefLedger, nutils.NodeManagerContractAddress, []byte(node_manager.PEER_POOL))
+	goveranceview, err := GetGovernanceView(memdb)
+	if err != nil {
+		return nil, err
+	}
+	viewBytes := nutils.GetUint32Bytes(goveranceview.View)
+	key := append([]byte(node_manager.PEER_POOL), viewBytes...)
+	data, err := GetStorageValue(memdb, ledger.DefLedger, nutils.NodeManagerContractAddress, key)
 	if err != nil {
 		return nil, err
 	}
@@ -160,13 +201,27 @@ func GetPeersConfig(memdb *overlaydb.MemDB) ([]*config.VBFTPeerStakeInfo, error)
 	}
 	var peerstakes []*config.VBFTPeerStakeInfo
 	for _, id := range peerMap.PeerPoolMap {
-		config := &config.VBFTPeerStakeInfo{
-			Index:      uint32(id.Index),
-			PeerPubkey: id.PeerPubkey,
+		if id.Status == node_manager.CandidateStatus || id.Status == node_manager.ConsensusStatus {
+			config := &config.VBFTPeerStakeInfo{
+				Index:      uint32(id.Index),
+				PeerPubkey: id.PeerPubkey,
+				Pos:        id.Pos,
+			}
+			peerstakes = append(peerstakes, config)
 		}
-		peerstakes = append(peerstakes, config)
 	}
 	return peerstakes, nil
+}
+
+func isUpdate(memdb *overlaydb.MemDB, view uint32) (bool, error) {
+	goveranceview, err := GetGovernanceView(memdb)
+	if err != nil {
+		return false, err
+	}
+	if goveranceview.View > view {
+		return true, nil
+	}
+	return false, nil
 }
 
 func getRawStorageItemFromMemDb(memdb *overlaydb.MemDB, addr common.Address, key []byte) (value []byte, unkown bool) {
@@ -193,6 +248,19 @@ func GetStorageValue(memdb *overlaydb.MemDB, backend *ledger.Ledger, addr common
 	return
 }
 
+func GetGovernanceView(memdb *overlaydb.MemDB) (*node_manager.GovernanceView, error) {
+	value, err := GetStorageValue(memdb, ledger.DefLedger, nutils.NodeManagerContractAddress, []byte(node_manager.GOVERNANCE_VIEW))
+	if err != nil {
+		return nil, err
+	}
+	governanceView := new(node_manager.GovernanceView)
+	err = governanceView.Deserialization(common.NewZeroCopySource(value))
+	if err != nil {
+		return nil, err
+	}
+	return governanceView, nil
+}
+
 func getChainConfig(memdb *overlaydb.MemDB, blkNum uint32) (*vconfig.ChainConfig, error) {
 	config, err := GetVbftConfigInfo(memdb)
 	if err != nil {
@@ -203,35 +271,15 @@ func getChainConfig(memdb *overlaydb.MemDB, blkNum uint32) (*vconfig.ChainConfig
 	if err != nil {
 		return nil, fmt.Errorf("failed to get peersinfo from leveldb: %s", err)
 	}
+	goverview, err := GetGovernanceView(memdb)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get governanceview failed:%s", err)
+	}
 
 	cfg, err := vconfig.GenesisChainConfig(config, peersinfo, blkNum)
 	if err != nil {
 		return nil, fmt.Errorf("GenesisChainConfig failed: %s", err)
 	}
+	cfg.View = goverview.View
 	return cfg, err
-}
-
-func peersChange(new []*config.VBFTPeerStakeInfo, old []*vconfig.PeerConfig) bool {
-	sort.SliceStable(new, func(i, j int) bool {
-		return new[i].PeerPubkey > new[j].PeerPubkey
-	})
-	sort.SliceStable(old, func(i, j int) bool {
-		return old[i].ID > old[j].ID
-	})
-
-	if len(new) != len(old) {
-		return true
-	}
-
-	if (new == nil) != (old == nil) {
-		return true
-	}
-
-	for i, v := range new {
-		if v.PeerPubkey != old[i].ID {
-			return true
-		}
-	}
-
-	return false
 }

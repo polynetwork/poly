@@ -22,6 +22,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/ontio/multi-chain/core/store/overlaydb"
 	"math"
 	"sync"
 
@@ -745,4 +746,10 @@ func (pool *BlockPool) onBlockSealed(blockNum uint32) {
 	for _, n := range toFreeCandidates {
 		delete(pool.candidateBlocks, n)
 	}
+}
+
+func (pool *BlockPool) getExecWriteSet(blkNum uint32) *overlaydb.MemDB {
+	pool.lock.RLock()
+	defer pool.lock.RUnlock()
+	return pool.chainStore.GetExecWriteSet(blkNum)
 }
