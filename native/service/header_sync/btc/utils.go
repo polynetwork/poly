@@ -15,12 +15,9 @@ import (
 	"github.com/ontio/multi-chain/native/event"
 	scom "github.com/ontio/multi-chain/native/service/header_sync/common"
 	"github.com/ontio/multi-chain/native/service/utils"
-	"github.com/pkg/errors"
 	"math/big"
 	"time"
 )
-
-var OrphanHeaderError = errors.New("header does not extend any known headers")
 
 const (
 	targetTimespan      = time.Hour * 24 * 14
@@ -256,10 +253,10 @@ func GetEpoch(native *native.NativeService, chainID uint64) (*wire.BlockHeader, 
 	return &sh.Header, nil
 }
 
-func GetCommonAncestor(native *native.NativeService, chainID uint64, bestHeader, prevBestHeader *StoredHeader) (*StoredHeader, []*chainhash.Hash, error) {
+func GetCommonAncestor(native *native.NativeService, chainID uint64, bestHeader, prevBestHeader *StoredHeader) (*StoredHeader, []chainhash.Hash, error) {
 	var err error
 	bestHash := bestHeader.Header.BlockHash()
-	hdrs := []*chainhash.Hash{&bestHash}
+	hdrs := []chainhash.Hash{bestHash}
 
 	majority := bestHeader
 	minority := prevBestHeader
@@ -271,7 +268,7 @@ func GetCommonAncestor(native *native.NativeService, chainID uint64, bestHeader,
 					majority.Header.BlockHash().String(), err)
 			}
 			majorityHash := majority.Header.BlockHash()
-			hdrs = append(hdrs, &majorityHash)
+			hdrs = append(hdrs, majorityHash)
 		}
 	} else if prevBestHeader.Height > bestHeader.Height {
 		minority, err = GetHeaderByHeight(native, chainID, bestHeader.Height)
@@ -291,21 +288,21 @@ func GetCommonAncestor(native *native.NativeService, chainID uint64, bestHeader,
 			return nil, nil, err
 		}
 		majorityHash, minorityHash = majority.Header.BlockHash(), minority.Header.BlockHash()
-		hdrs = append(hdrs, &majorityHash)
+		hdrs = append(hdrs, majorityHash)
 	}
 
-	return majority, hdrs, nil
+	return majority, hdrs[:len(hdrs)-1], nil
 }
 
-func ReIndexHeaderHeight(native *native.NativeService, chainID uint64, bestHeaderHeight uint32, hdrs []*chainhash.Hash,
+func ReIndexHeaderHeight(native *native.NativeService, chainID uint64, bestHeaderHeight uint32, hdrs []chainhash.Hash,
 	newBlock *StoredHeader) error {
 	contract := utils.HeaderSyncContractAddress
 	for i := bestHeaderHeight; i > newBlock.Height; i-- {
 		native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte("HeightToBlockHash"), utils.GetUint64Bytes(chainID), utils.GetUint32Bytes(i)))
 	}
 
-	for _, v := range hdrs {
-		putBlockHash(native, chainID, newBlock.Height, *v)
+	for i, v := range hdrs {
+		putBlockHash(native, chainID, newBlock.Height-uint32(i), v)
 	}
 
 	return nil

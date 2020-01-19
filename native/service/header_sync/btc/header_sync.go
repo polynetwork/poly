@@ -16,19 +16,6 @@ import (
 	"github.com/ontio/multi-chain/common/log"
 )
 
-var (
-	BIG_1             = big.NewInt(1)
-	BIG_2             = big.NewInt(2)
-	BIG_9             = big.NewInt(9)
-	BIG_MINUS_99      = big.NewInt(-99)
-	BLOCK_DIFF_FACTOR = big.NewInt(2048)
-	DIFF_PERIOD       = big.NewInt(100000)
-	BOMB_DELAY        = big.NewInt(4999999)
-	// oneLsh256 is 1 shifted left 256 bits.  It is defined here to avoid
-	// the overhead of creating it multiple times.
-	ONE_LSH_256 = new(big.Int).Lsh(BIG_1, 256)
-)
-
 type BTCHandler struct {
 }
 
@@ -77,9 +64,9 @@ func (this *BTCHandler) SyncBlockHeader(native *native.NativeService) error {
 			return fmt.Errorf("SyncBlockHeader, deserialize header err: %v", err)
 		}
 
-		storedHeader, err := GetHeaderByHash(native, headerParams.ChainID, blockHeader.BlockHash())
+		_, err = GetHeaderByHash(native, headerParams.ChainID, blockHeader.BlockHash())
 		if err == nil {
-			return fmt.Errorf("SyncBlockHeader, header already synced, block hash = %s, at height = %d", blockHeader.BlockHash().String(), storedHeader.Height)
+			continue
 		}
 
 		//isBestHeader, commonAncestor, heightOfHeader, err := commitHeader(native, headerParams.ChainID, blockHeader)
@@ -126,6 +113,7 @@ func commitHeader(native *native.NativeService, chainID uint64, header wire.Bloc
 	}
 	tipHash := bestHeader.Header.BlockHash()
 	parentHeader := new(StoredHeader)
+	headerHash := header.BlockHash()
 
 	// If the tip is also the parent of this header, then we can save a database read by skipping
 	// the lookup of the parent header. Otherwise (ophan?) we need to fetch the parent.
@@ -134,7 +122,8 @@ func commitHeader(native *native.NativeService, chainID uint64, header wire.Bloc
 	} else {
 		parentHeader, err = GetPreviousHeader(native, chainID, header)
 		if err != nil {
-			return false, nil, 0, fmt.Errorf("GetPreviousHeader error: %v", OrphanHeaderError, ", with details: %v", err)
+			return false, nil, 0, fmt.Errorf("commit header error: header %s is an orphan with details: %v",
+				headerHash, err)
 		}
 	}
 	valid, err := CheckHeader(native, chainID, header, parentHeader)
@@ -145,7 +134,6 @@ func commitHeader(native *native.NativeService, chainID uint64, header wire.Bloc
 		return false, nil, 0, nil
 	}
 	// If this block is already the tip, return
-	headerHash := header.BlockHash()
 	if tipHash.IsEqual(&headerHash) {
 		return false, nil, 0, nil
 	}
@@ -155,7 +143,7 @@ func commitHeader(native *native.NativeService, chainID uint64, header wire.Bloc
 
 	// If the cumulative work is greater than the total work of our best header
 	// then we have a new best header. Update the chain tip and check for a reorg.
-	var hdrsToUpdate []*chainhash.Hash
+	var hdrsToUpdate []chainhash.Hash
 	if cumulativeWork.Cmp(bestHeader.totalWork) == 1 {
 		newTip = true
 		prevHash := parentHeader.Header.BlockHash()

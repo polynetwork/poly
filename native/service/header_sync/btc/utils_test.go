@@ -3,6 +3,7 @@ package btc
 import (
 	"crypto/rand"
 	"fmt"
+	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
@@ -20,12 +21,6 @@ import (
 )
 
 var (
-	getNativeFunc = func() *native.NativeService {
-		store, _ := leveldbstore.NewMemLevelDBStore()
-		cacheDB := storage.NewCacheDB(overlaydb.NewOverlayDB(store))
-		service := native.NewNativeService(cacheDB, nil, 0, 200, common.Uint256{}, 0, nil, false, nil)
-		return service
-	}
 	getBtcHanderFunc = func() *BTCHandler {
 		return NewBTCHandler()
 	}
@@ -154,7 +149,7 @@ func Test_CalcRequiredWork(t *testing.T) {
 	sh := StoredHeader{
 		Header:    newHdr,
 		Height:    2016,
-		totalWork: CompactToBig(work),
+		totalWork: blockchain.CompactToBig(work),
 	}
 	putBlockHeader(nativeService, 0, sh)
 	// update fixedkey -> bestblockheader
@@ -177,7 +172,7 @@ func Test_CalcRequiredWork(t *testing.T) {
 	sh = StoredHeader{
 		Header:    newHdr1,
 		Height:    2017,
-		totalWork: CompactToBig(work1),
+		totalWork: blockchain.CompactToBig(work1),
 	}
 	putBlockHeader(nativeService, 0, sh)
 	// update fixedkey -> bestblockheader
@@ -200,7 +195,7 @@ func Test_CalcRequiredWork(t *testing.T) {
 	sh = StoredHeader{
 		Header:    newHdr2,
 		Height:    2018,
-		totalWork: CompactToBig(work2),
+		totalWork: blockchain.CompactToBig(work2),
 	}
 	putBlockHeader(nativeService, 0, sh)
 	// update fixedkey -> bestblockheader
@@ -223,7 +218,7 @@ func Test_CalcRequiredWork(t *testing.T) {
 	sh = StoredHeader{
 		Header:    newHdr3,
 		Height:    2019,
-		totalWork: CompactToBig(work3),
+		totalWork: blockchain.CompactToBig(work3),
 	}
 	putBlockHeader(nativeService, 0, sh)
 	// update fixedkey -> bestblockheader
@@ -305,7 +300,7 @@ func syncAssumedBtcBlockChain(cacheDB *storage.CacheDB) error {
 		// update fixedkey -> bestblockheader
 		putBestBlockHeader(nativeService, 0, sh)
 		// update height -> blockhash
-		putBlockHash(nativeService, 0, uint64(sh.Height), sh.Header.BlockHash())
+		putBlockHash(nativeService, 0, sh.Height, sh.Header.BlockHash())
 		last = hdr
 	}
 	return nil
