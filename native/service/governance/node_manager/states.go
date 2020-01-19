@@ -198,3 +198,9 @@ func (this *GovernanceView) Deserialization(source *common.ZeroCopySource) error
 	this.TxHash = txHash
 	return nil
 }
+
+type PeerStakeInfo struct {
+	Index      uint32
+	PeerPubkey string
+	Stake      uint64
+}

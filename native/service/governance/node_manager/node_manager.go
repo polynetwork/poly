@@ -506,7 +506,7 @@ func BlackNode(native *native.NativeService) ([]byte, error) {
 
 	//commitDpos
 	if commit {
-		err = executeCommitDpos(native, contract)
+		err = executeCommitDpos(native)
 		if err != nil {
 			return utils.BYTE_FALSE, fmt.Errorf("blackNode, executeCommitDpos error: %v", err)
 		}
@@ -598,6 +598,13 @@ func QuitNode(native *native.NativeService) ([]byte, error) {
 	config, err := GetConfig(native)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("quitNode, get config error: %v", err)
+	}
+	preConfig, err := getPreConfig(native)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("quitNode, get preConfig error: %v", err)
+	}
+	if preConfig.SetView == view {
+		config = preConfig.Configuration
 	}
 
 	//check peers num
