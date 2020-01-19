@@ -22,6 +22,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
@@ -170,11 +171,11 @@ func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*cro
 		return nil, fmt.Errorf("MakeDepositProposal, verifyFromBtcTx error: %s", err)
 	}
 
-	if err := crosscommon.CheckBtcDoneTx(service, value.TxHash, params.SourceChainID); err != nil {
+	if err := crosscommon.CheckDoneTx(service, value.TxHash, params.SourceChainID); err != nil {
 		return nil, fmt.Errorf("MakeDepositProposal, check done transaction error:%s", err)
 	}
 
-	if err := crosscommon.PutBtcDoneTx(service, value.TxHash, params.SourceChainID); err != nil {
+	if err := crosscommon.PutDoneTx(service, value.TxHash, params.SourceChainID); err != nil {
 		return nil, fmt.Errorf("MakeDepositProposal, PutDoneTx error:%s", err)
 	}
 
