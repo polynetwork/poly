@@ -147,7 +147,15 @@ func (pool *BlockPool) newBlockProposal(msg *blockProposalMsg) error {
 
 	// add msg to proposals
 	candidate.Proposals = append(candidate.Proposals, msg)
-	return nil
+
+	// add endorse-sig
+	proposer := msg.Block.getProposer()
+	eSig := &CandidateEndorseSigInfo{
+		EndorsedProposer: proposer,
+		Signature:        msg.Block.Block.Header.SigData[0],
+		ForEmpty:         false,
+	}
+	return pool.addBlockEndorsementLocked(msg.GetBlockNum(), proposer, eSig)
 }
 
 func (pool *BlockPool) getBlockProposals(blkNum uint32) []*blockProposalMsg {
@@ -601,7 +609,7 @@ func (pool *BlockPool) addSignaturesToBlockLocked(block *Block, forEmpty bool) e
 	// add endorsers' sig
 	for endorser, eSigs := range c.EndorseSigs {
 		for _, sig := range eSigs {
-			if sig.EndorsedProposer == proposer && sig.ForEmpty == forEmpty {
+			if sig.EndorsedProposer == proposer && sig.ForEmpty == forEmpty && endorser != proposer {
 				endoresrPk := pool.server.peerPool.GetPeerPubKey(endorser)
 				if endoresrPk != nil {
 					bookkeepers = append(bookkeepers, endoresrPk)
