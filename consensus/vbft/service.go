@@ -746,7 +746,7 @@ func (self *Server) startNewProposal(blkNum uint32) error {
 // verify consensus messsage, then send msg to processMsgEvent
 func (self *Server) onConsensusMsg(peerIdx uint32, msg ConsensusMsg, msgHash common.Uint256) {
 
-	if self.msgPool.HasMsg(msg, msgHash) {
+	if self.msgPool.HasMsg(msg, msgHash) && msg.Type() != BlockCommitMessage{
 		// dup msg checking
 		log.Debugf("dup msg with msg type %d from %d", msg.Type(), peerIdx)
 		return
@@ -1223,11 +1223,6 @@ func (self *Server) processMsgEvent() error {
 			pMsg := msg.(*blockEndorseMsg)
 			msgBlkNum := pMsg.GetBlockNum()
 
-			// if had committed for current round, ignore the endorsement
-			if self.blockPool.committedForBlock(msgBlkNum) {
-				return nil
-			}
-
 			if msgBlkNum == self.GetCurrentBlockNo() {
 				// add endorse to block-pool
 				if err := self.blockPool.newBlockEndorsement(pMsg); err != nil {
@@ -1236,6 +1231,11 @@ func (self *Server) processMsgEvent() error {
 				}
 				log.Infof("server %d received endorse from %d, for proposer %d, block %d, empty: %t",
 					self.Index, pMsg.Endorser, pMsg.EndorsedProposer, msgBlkNum, pMsg.EndorseForEmpty)
+
+				// if had committed for current round, skip the following steps
+				if self.blockPool.committedForBlock(msgBlkNum) {
+					return nil
+				}
 
 				if self.isEndorser(msgBlkNum, pMsg.Endorser) {
 					//              if countOfEndrosement(msg.proposal) >= 2C + 1:
