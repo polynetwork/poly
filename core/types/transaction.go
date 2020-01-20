@@ -40,8 +40,7 @@ type Transaction struct {
 	Attributes []byte //this must be 0 now, Attribute Array length use VarUint encoding, so byte is enough for extension
 	Sigs       []Sig
 
-	UnSignRaw []byte
-	Raw       []byte // raw transaction data
+	Raw []byte // raw transaction data
 
 	hash       common.Uint256
 	SignedAddr []common.Address // this is assigned when passed signature verification
@@ -51,7 +50,7 @@ func (tx *Transaction) SerializeUnsigned(sink *common.ZeroCopySink) error {
 	if tx.Version > CURR_TX_VERSION {
 		return fmt.Errorf("invalid tx version:%d", tx.Version)
 	}
-	sink.WriteByte(byte(tx.Version))
+	sink.WriteByte(tx.Version)
 	sink.WriteByte(byte(tx.TxType))
 	sink.WriteUint32(tx.Nonce)
 	sink.WriteUint64(tx.ChainID)
@@ -112,10 +111,12 @@ func (tx *Transaction) Deserialization(source *common.ZeroCopySource) error {
 	pos := source.Pos()
 	lenUnsigned := pos - pstart
 	source.BackUp(lenUnsigned)
-	rawUnsigned, _ := source.NextBytes(lenUnsigned)
+	rawUnsigned, eof := source.NextBytes(lenUnsigned)
+	if eof {
+		return fmt.Errorf("read unsigned code error")
+	}
 	temp := sha256.Sum256(rawUnsigned)
-	tx.hash = common.Uint256(sha256.Sum256(temp[:]))
-	tx.UnSignRaw = rawUnsigned
+	tx.hash = sha256.Sum256(temp[:])
 
 	l, eof := source.NextVarUint()
 	if eof {
@@ -270,9 +271,8 @@ func (self *Transaction) GetSignatureAddresses() ([]common.Address, error) {
 type TransactionType byte
 
 const (
-	Bookkeeper TransactionType = 0x02
-	Deploy     TransactionType = 0xd0
-	Invoke     TransactionType = 0xd1
+	Deploy TransactionType = 0xd0
+	Invoke TransactionType = 0xd1
 )
 
 // Payload define the func for loading the payload data
