@@ -746,7 +746,7 @@ func (self *Server) startNewProposal(blkNum uint32) error {
 // verify consensus messsage, then send msg to processMsgEvent
 func (self *Server) onConsensusMsg(peerIdx uint32, msg ConsensusMsg, msgHash common.Uint256) {
 
-	if self.msgPool.HasMsg(msg, msgHash) && msg.Type() != BlockCommitMessage{
+	if self.msgPool.HasMsg(msg, msgHash) && msg.Type() != BlockCommitMessage {
 		// dup msg checking
 		log.Debugf("dup msg with msg type %d from %d", msg.Type(), peerIdx)
 		return
@@ -1405,6 +1405,7 @@ func (self *Server) actionLoop() {
 				for {
 					blkNum := self.GetCurrentBlockNo()
 					C := int(self.config.C)
+					N := int(self.config.N)
 
 					if err := self.updateParticipantConfig(); err != nil {
 						log.Errorf("server %d update config failed in forwarding: %s", self.Index, err)
@@ -1445,7 +1446,7 @@ func (self *Server) actionLoop() {
 					}
 
 					// check if consensused
-					proposer, forEmpty := getCommitConsensus(commitMsgs, C)
+					proposer, forEmpty := getCommitConsensus(commitMsgs, C, N)
 					if proposer == math.MaxUint32 {
 						if err := self.catchConsensus(blkNum); err != nil {
 							log.Infof("server %d fastforward done, catch consensus: %s", self.Index, err)
