@@ -49,7 +49,7 @@ type ChainConfig struct {
 	PeerHandshakeTimeout time.Duration `json:"peer_handshake_timeout"`
 	Peers                []*PeerConfig `json:"peers"`
 	PosTable             []uint32      `json:"pos_table"`
-	MaxBlockChangeView   uint32        `json:"MaxBlockChangeView"`
+	MaxBlockChangeView   uint32        `json:"max_block_change_view"`
 }
 
 //

@@ -192,6 +192,7 @@ func (self *Server) constructBlock(blkNum uint32, prevBlkHash common.Uint256, tx
 	}
 
 	txRoot := common.ComputeMerkleRoot(txHash)
+	log.Errorf("constructBlock %v", txHash)
 	blockRoot := ledger.DefLedger.GetBlockRootWithNewTxRoots(lastBlock.Block.Header.Height, []common.Uint256{lastBlock.Block.Header.TransactionsRoot, txRoot})
 	crossStatesRoot, err := self.chainStore.GetCrossStatesRoot(blkNum - 1)
 	if err != nil {
