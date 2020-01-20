@@ -20,11 +20,8 @@
 package actor
 
 import (
-	"encoding/hex"
 	"errors"
 	"github.com/ontio/multi-chain/core/genesis"
-	"github.com/ontio/multi-chain/native/service/governance/node_manager"
-	"github.com/ontio/ontology-crypto/keypair"
 	"time"
 
 	"github.com/ontio/multi-chain/common"
@@ -71,36 +68,6 @@ func AppendTxToPool(txn *types.Transaction) (ontErrors.ErrCode, string) {
 		}
 		if value1 != nil || address == operatorAddress {
 			flag = false
-			break
-		}
-
-		value2, err := GetStorageItem(utils.NodeManagerContractAddress, []byte(node_manager.PEER_POOL))
-		if err != nil {
-			return ontErrors.ErrUnknown, err.Error()
-		}
-		peerMap := &node_manager.PeerPoolMap{
-			PeerPoolMap: make(map[string]*node_manager.PeerPoolItem),
-		}
-		err = peerMap.Deserialization(common.NewZeroCopySource(value2))
-		if err != nil {
-			return ontErrors.ErrUnknown, err.Error()
-		}
-		for k := range peerMap.PeerPoolMap {
-			kb, err := hex.DecodeString(k)
-			if err != nil {
-				return ontErrors.ErrUnknown, err.Error()
-			}
-			pk, err := keypair.DeserializePublicKey(kb)
-			if err != nil {
-				return ontErrors.ErrUnknown, err.Error()
-			}
-			addr := types.AddressFromPubKey(pk)
-			if address == addr {
-				flag = false
-				break
-			}
-		}
-		if !flag {
 			break
 		}
 	}
