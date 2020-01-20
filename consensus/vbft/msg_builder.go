@@ -22,7 +22,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/ontio/multi-chain/core/payload"
 	"time"
 
 	"github.com/ontio/multi-chain/common"
