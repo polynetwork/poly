@@ -61,9 +61,7 @@ func notifyPutHeader(native *native.NativeService, chainID uint64, height uint32
 }
 
 func putBlockHash(native *native.NativeService, chainID uint64, height uint32, hash chainhash.Hash) {
-	contract := utils.HeaderSyncContractAddress
-
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), utils.GetUint32Bytes(height)),
+	native.GetCacheDB().Put(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), utils.GetUint32Bytes(height)),
 		cstates.GenRawStorageItem(hash.CloneBytes()))
 }
 
@@ -166,8 +164,7 @@ func GetBestBlockHeader(native *native.NativeService, chainID uint64) (*StoredHe
 }
 
 func GetPreviousHeader(native *native.NativeService, chainID uint64, header wire.BlockHeader) (*StoredHeader, error) {
-	hash := header.PrevBlock
-	return GetHeaderByHash(native, chainID, hash)
+	return GetHeaderByHash(native, chainID, header.PrevBlock)
 }
 
 func CheckHeader(native *native.NativeService, chainID uint64, header wire.BlockHeader, prevHeader *StoredHeader) (bool, error) {
@@ -310,7 +307,6 @@ func ReIndexHeaderHeight(native *native.NativeService, chainID uint64, bestHeade
 
 // Verifies the header hashes into something lower than specified by the 4-byte bits field.
 func checkProofOfWork(header wire.BlockHeader, p *chaincfg.Params) bool {
-
 	target := blockchain.CompactToBig(header.Bits)
 
 	// The target must more than 0.  Why can you even encode negative...
@@ -357,9 +353,9 @@ func calcDiffAdjust(start, end wire.BlockHeader, p *chaincfg.Params) uint32 {
 	newTarget := new(big.Int).Mul(prevTarget, big.NewInt(duration))
 	// divided by 2 weeks
 	newTarget.Div(newTarget, big.NewInt(int64(targetTimespan)))
-
 	// clip again if above minimum target (too easy)
 	if newTarget.Cmp(p.PowLimit) > 0 {
+		fmt.Println(p.PowLimit.String(), newTarget.String())
 		newTarget.Set(p.PowLimit)
 	}
 

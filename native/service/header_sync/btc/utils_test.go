@@ -1,16 +1,15 @@
 package btc
 
 import (
+	"bytes"
 	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
-	"github.com/ontio/eth_tools/log"
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/core/store/leveldbstore"
-	"github.com/ontio/multi-chain/core/store/overlaydb"
 	"github.com/ontio/multi-chain/native"
 	scom "github.com/ontio/multi-chain/native/service/header_sync/common"
 	"github.com/ontio/multi-chain/native/storage"
@@ -21,10 +20,6 @@ import (
 )
 
 var (
-	getBtcHanderFunc = func() *BTCHandler {
-		return NewBTCHandler()
-	}
-
 	// New chain starting from regtest genesis
 	chain = []string{
 		"0000002006226e46111a0b59caaf126043eb5bbf28c34f3a5e332a1fc7b2b73cf188910fc3ed4523bf94fc1fa184bee85af604c9ebeea6b39b498f62703fd3f03e7475534658d158ffff7f2001000000",
@@ -50,90 +45,29 @@ var (
 	}
 )
 
-func TestHeaderSync_BTC_SyncGenesisHeader(t *testing.T) {
-
-	genesisHeader := StoredHeader{
-		Header:    netParam.GenesisBlock.Header,
-		Height:    0,
-		totalWork: big.NewInt(0),
-	}
-	cacheDB, err := syncGenesisHeader(genesisHeader)
+func TestGetEpoch(t *testing.T) {
+	cacheDB, err := syncGenesisHeader(&chaincfg.RegressionNetParams.GenesisBlock.Header)
 	assert.Nil(t, err)
+ 	syncAssumedBtcBlockChain(cacheDB)
 
-	nativeService := native.NewNativeService(cacheDB, nil, 0, 200, common.Uint256{}, 0, nil, false, nil)
-
-	genesisBlockHash, err := GetBlockHashByHeight(nativeService, 0, genesisHeader.Height)
-	assert.Nil(t, err)
-	assert.Equal(t, genesisBlockHash.String(), genesisHeader.Header.BlockHash().String())
-	bestBlockHeader, err := GetBestBlockHeader(nativeService, 0)
-	assert.Nil(t, err)
-
-	s1 := new(common.ZeroCopySink)
-	genesisHeader.Serialization(s1)
-
-	s2 := common.NewZeroCopySink(nil)
-	bestBlockHeader.Serialization(s2)
-	assert.Equal(t, s1.Bytes(), s1.Bytes())
-}
-
-func Test_GetEpoch(t *testing.T) {
-	genesisHeader := StoredHeader{
-		Header:    chaincfg.RegressionNetParams.GenesisBlock.Header,
-		Height:    0,
-		totalWork: big.NewInt(0),
-	}
-	cacheDB, err := syncGenesisHeader(genesisHeader)
-	assert.Nil(t, err)
-	err = syncAssumedBtcBlockChain(cacheDB)
-	if err != nil {
-		fmt.Println("syncAssumedBtcBlockChain error is ", err)
-	}
-
-	nativeService := native.NewNativeService(cacheDB, nil, 0, 200, common.Uint256{}, 0, nil, false, nil)
+	nativeService := getNativeFunc(nil, cacheDB)
 	epoch, err := GetEpoch(nativeService, 0)
-	if err != nil {
-		t.Error(err)
-	}
-	if epoch.BlockHash().String() != "0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206" {
-		t.Error("Returned incorrect epoch")
-	}
-
+	assert.NoError(t, err)
+	assert.Equal(t, "0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206", epoch.BlockHash().String(),
+		"Returned incorrect epoch")
 }
 
-func Test_CalcRequiredWork(t *testing.T) {
-	testnet3Prev1, _ := chainhash.NewHashFromStr("000000000003e8e7755d9b8299b28c71d9f0e18909f25bc9f3eeec3464ece1dd")
-	testnet3Merk1, _ := chainhash.NewHashFromStr("7b91fe22059063bcbb1cfac6fd376cf459f4387d1bc1989989252495b06b52be")
-	genesisHeader := StoredHeader{
-		Header: wire.BlockHeader{
-			Version:    536870912,
-			PrevBlock:  *testnet3Prev1,
-			MerkleRoot: *testnet3Merk1,
-			Timestamp:  time.Unix(1517822323, 0),
-			Bits:       453210804,
-			Nonce:      2456211891,
-		},
-		Height:    0,
-		totalWork: big.NewInt(0),
-	}
-	cacheDB, err := syncGenesisHeader(genesisHeader)
+func TestCalcRequiredWork(t *testing.T) {
+	genesisHeader := chaincfg.TestNet3Params.GenesisBlock.Header
+	cacheDB, err := syncGenesisHeader(&genesisHeader)
 	assert.Nil(t, err)
-	err = syncAssumedBtcBlockChain(cacheDB)
-	if err != nil {
-		fmt.Println("syncAssumedBtcBlockChain error is ", err)
-	}
+	syncAssumedBtcBlockChain(cacheDB)
 
 	nativeService := native.NewNativeService(cacheDB, nil, 0, 0, common.Uint256{}, 0, nil, false, nil)
 	bestHeader, err := GetBestBlockHeader(nativeService, 0)
 	if err != nil {
 		t.Error(err)
 	}
-
-	epoch, err := GetEpoch(nativeService, 0)
-	if err != nil {
-		t.Error(err)
-	}
-	fmt.Println("getEpoch -- ", epoch.BlockHash().String())
-	fmt.Println("genesis -- ", genesisHeader.Header.BlockHash().String())
 
 	// Test during difficulty adjust period
 	newHdr := wire.BlockHeader{}
@@ -240,54 +174,175 @@ func Test_CalcRequiredWork(t *testing.T) {
 
 }
 
-func TestBlockchain_CommitHeader(t *testing.T) {
+func TestBlockchain_checkProofOfWork(t *testing.T) {
+	// Test valid
+	header0, err := hex.DecodeString(chain[0])
+	if err != nil {
+		t.Error(err)
+	}
+	var buf bytes.Buffer
+	buf.Write(header0)
+	hdr0 := wire.BlockHeader{}
+	hdr0.Deserialize(&buf)
+	if !checkProofOfWork(hdr0, &chaincfg.RegressionNetParams) {
+		t.Error("checkProofOfWork failed")
+	}
 
+	// Test negative target
+	neg := hdr0
+	neg.Bits = 1000000000
+	if checkProofOfWork(neg, &chaincfg.RegressionNetParams) {
+		t.Error("checkProofOfWork failed to negative target")
+	}
+
+	// Test too high diff
+	params := chaincfg.RegressionNetParams
+	params.PowLimit = big.NewInt(0)
+	if checkProofOfWork(hdr0, &params) {
+		t.Error("checkProofOfWork failed to detect above max PoW")
+	}
+
+	// Test to low work
+	badHeader := "1" + chain[0][1:]
+	header0, err = hex.DecodeString(badHeader)
+	if err != nil {
+		t.Error(err)
+	}
+	badHdr := wire.BlockHeader{}
+	buf.Write(header0)
+	badHdr.Deserialize(&buf)
+	if checkProofOfWork(badHdr, &chaincfg.RegressionNetParams) {
+		t.Error("checkProofOfWork failed to detect insuffient work")
+	}
 }
 
-func syncGenesisHeader(genesisHeader StoredHeader) (*storage.CacheDB, error) {
-	store, _ := leveldbstore.NewMemLevelDBStore()
-	cacheDB := storage.NewCacheDB(overlaydb.NewOverlayDB(store))
+func TestGetCommonAncestor(t *testing.T) {
+	db, _ := syncGenesisHeader(&chaincfg.RegressionNetParams.GenesisBlock.Header)
+	ns := getNativeFunc(nil, db)
 
-	btcHander := getBtcHanderFunc()
+	var hdr wire.BlockHeader
+	for i, c := range chain {
+		b, _ := hex.DecodeString(c)
+		hdr.Deserialize(bytes.NewReader(b))
+		sh := StoredHeader{
+			Header: hdr,
+			Height: uint32(i+1),
+			totalWork: big.NewInt(0),
+		}
+		putBlockHeader(ns, 0, sh)
+		putBestBlockHeader(ns, 0, sh)
+		putBlockHash(ns, 0, sh.Height, sh.Header.BlockHash())
+	}
+	prevBest := StoredHeader{Header: hdr, Height: 10}
+	prevs := make([]string, len(fork)-1)
+	for i := 0; i < len(fork)-1; i++ {
+		b, _ := hex.DecodeString(fork[i])
+		hdr.Deserialize(bytes.NewReader(b))
+		prevs[i] = hdr.BlockHash().String()
+		sh := StoredHeader{
+			Header: hdr,
+			Height: uint32(i+1),
+			totalWork: big.NewInt(0),
+		}
+		putBlockHeader(ns, 0, sh)
+		putBestBlockHeader(ns, 0, sh)
+		putBlockHash(ns, 0, sh.Height, sh.Header.BlockHash())
+	}
+	currentBest := StoredHeader{Header: hdr, Height: 11}
+
+	last, hashes, err := GetCommonAncestor(ns, 0, &currentBest, &prevBest)
+	assert.NoError(t, err)
+	assert.Equal(t, len(prevs), len(hashes))
+	for i, v := range prevs {
+		assert.Equal(t, v, hashes[len(hashes)-i-1].String(), fmt.Sprintf("prevs not equal: no.%d shoud be %s, " +
+			"not %s", i, v, hashes[len(hashes)-i-1].String()))
+	}
+	assert.Equal(t, last.Height, uint32(5))
+}
+
+func TestGetBestBlockHeader(t *testing.T) {
+	ns := getNativeFunc(nil, nil)
+	best, err := GetBestBlockHeader(ns, 0)
+	assert.Error(t, err)
+
+	db, _ := syncGenesisHeader(&netParam.GenesisBlock.Header)
+	ns = getNativeFunc(nil, db)
+	best, err = GetBestBlockHeader(ns, 0)
+	assert.NoError(t, err)
+	assert.Equal(t, best.Header.BlockHash().String(), netParam.GenesisBlock.Header.BlockHash().String())
+
+	best, err = GetBestBlockHeader(ns, 1)
+	assert.Error(t, err)
+}
+
+func TestGetHeaderByHash(t *testing.T) {
+	ns := getNativeFunc(nil, nil)
+	sh, err := GetHeaderByHash(ns, 0, *netParam.GenesisHash)
+	assert.Error(t, err)
+	if sh != nil {
+		t.Fatal("wrong hash")
+	}
+
+	db, _ := syncGenesisHeader(&netParam.GenesisBlock.Header)
+	ns = getNativeFunc(nil, db)
+	sh, err = GetHeaderByHash(ns, 0, *netParam.GenesisHash)
+	assert.NoError(t, err)
+	assert.Equal(t, netParam.GenesisHash.String(), sh.Header.BlockHash().String())
+
+	sh, err = GetHeaderByHash(ns, 1, *netParam.GenesisHash)
+	assert.Error(t, err)
+}
+
+func TestGetBlockHashByHeight(t *testing.T) {
+	ns := getNativeFunc(nil, nil)
+	hash, err := GetBlockHashByHeight(ns, 0, 0)
+	assert.Error(t, err)
+	if hash != nil {
+		t.Fatal("wrong hash")
+	}
+
+	db, _ := syncGenesisHeader(&netParam.GenesisBlock.Header)
+	ns = getNativeFunc(nil, db)
+	hash, err = GetBlockHashByHeight(ns, 0, 0)
+	assert.NoError(t, err)
+	assert.Equal(t, netParam.GenesisHash.String(), hash.String(), "wrong hash")
+
+	hash, err = GetBlockHashByHeight(ns, 0, 1)
+	assert.Error(t, err)
+}
+
+func syncGenesisHeader(genesisHeader *wire.BlockHeader) (*storage.CacheDB, error) {
+	var buf bytes.Buffer
+	_ = genesisHeader.BtcEncode(&buf, wire.ProtocolVersion, wire.LatestEncoding)
+	btcHander := NewBTCHandler()
 
 	sink := new(common.ZeroCopySink)
-	genesisHeader.Serialization(sink)
 	params := &scom.SyncGenesisHeaderParam{
 		ChainID:       0,
-		GenesisHeader: sink.Bytes(),
+		GenesisHeader: buf.Bytes(),
 	}
 	sink = new(common.ZeroCopySink)
 	params.Serialization(sink)
-	paramsBs := sink.Bytes()
+	ns := getNativeFunc(sink.Bytes(), nil)
+	_ = btcHander.SyncGenesisHeader(ns)
 
-	nativeService := native.NewNativeService(cacheDB, nil, 0, 200, common.Uint256{}, 0, paramsBs, false, nil)
-
-	btcHander.SyncGenesisHeader(nativeService)
-
-	return cacheDB, nil
+	return ns.GetCacheDB(), nil
 }
 
-func syncAssumedBtcBlockChain(cacheDB *storage.CacheDB) error {
-	nativeService := native.NewNativeService(cacheDB, nil, 0, 200, common.Uint256{}, 0, nil, false, nil)
-	bestHeader, err := GetBestBlockHeader(nativeService, 0)
-	if err != nil {
-		log.Errorf("syncBtcBlockChain error %v", err)
-		return err
-	}
+func syncAssumedBtcBlockChain(cacheDB *storage.CacheDB) {
+	nativeService := getNativeFunc(nil, cacheDB)
+	bestHeader, _ := GetBestBlockHeader(nativeService, 0)
 	x := bestHeader.Height
-	last := bestHeader.Header
+	last := bestHeader
 	for i := 0; i < 2015; i++ {
 		x++
 		hdr := wire.BlockHeader{}
-		hdr.PrevBlock = last.BlockHash()
+		hdr.PrevBlock = last.Header.BlockHash()
 		hdr.Nonce = 0
 		hdr.Timestamp = time.Now().Add(time.Minute * time.Duration(i))
 		mr := make([]byte, 32)
 		rand.Read(mr)
-		ch, err := chainhash.NewHash(mr)
-		if err != nil {
-			return err
-		}
+		ch, _ := chainhash.NewHash(mr)
 		hdr.MerkleRoot = *ch
 		hdr.Bits = bestHeader.Header.Bits
 		hdr.Version = 3
@@ -297,12 +352,9 @@ func syncAssumedBtcBlockChain(cacheDB *storage.CacheDB) error {
 			totalWork: big.NewInt(0),
 		}
 		putBlockHeader(nativeService, 0, sh)
-		// update fixedkey -> bestblockheader
 		putBestBlockHeader(nativeService, 0, sh)
-		// update height -> blockhash
 		putBlockHash(nativeService, 0, sh.Height, sh.Header.BlockHash())
-		last = hdr
-	}
-	return nil
 
+		last = &sh
+	}
 }

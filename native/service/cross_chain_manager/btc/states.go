@@ -1,11 +1,11 @@
 package btc
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/gcash/bchd/chaincfg/chainhash"
 	"github.com/ontio/multi-chain/common"
 	"sort"
 	"strconv"
@@ -323,8 +323,12 @@ func (this *OutPoint) Deserialization(source *common.ZeroCopySource) error {
 }
 
 func (this *OutPoint) String() string {
-	pre := hex.EncodeToString(this.Hash)
-	return pre + ":" + strconv.FormatUint(uint64(this.Index), 10)
+	hash, err := chainhash.NewHash(this.Hash)
+	if err != nil {
+		return ""
+	}
+
+	return hash.String() + ":" + strconv.FormatUint(uint64(this.Index), 10)
 }
 
 type MultiSignInfo struct {

@@ -73,7 +73,7 @@ var (
 		},
 	}
 
-	getNativeFunc = func() *native.NativeService {
+	getNative = func() *native.NativeService {
 		store, _ := leveldbstore.NewMemLevelDBStore()
 		cacheDB := storage.NewCacheDB(overlaydb.NewOverlayDB(store))
 		service := native.NewNativeService(cacheDB, nil, 0, 200, common.Uint256{}, 0, nil, false, nil)
@@ -222,7 +222,7 @@ func TestBTCHandler_MakeTransaction(t *testing.T) {
 	mtx.BtcDecode(bytes.NewBuffer(txb), wire.ProtocolVersion, wire.LatestEncoding)
 	txid := mtx.TxHash()
 
-	ns := getNativeFunc()
+	ns := getNativeFunc(nil, nil)
 	utxos := Utxos{
 		Utxos: []*Utxo{&Utxo{
 			Op:           &OutPoint{Hash: txid[:], Index: 1},
@@ -288,7 +288,7 @@ func TestUtxos_Sort(t *testing.T) {
 }
 
 func TestUtxos_Choose(t *testing.T) {
-	ns := getNativeFunc()
+	ns := getNativeFunc(nil, nil)
 	rs, _ := hex.DecodeString(redeem)
 	redeemKey := GetUtxoKey(rs)
 	putUtxos(ns, 0, redeemKey, utxos)
@@ -313,7 +313,7 @@ func TestUtxos_Choose(t *testing.T) {
 }
 
 func TestCoinSelector_SimpleBnbSearch(t *testing.T) {
-	ns := getNativeFunc()
+	ns := getNativeFunc(nil, nil)
 	rs, _ := hex.DecodeString(redeem)
 	redeemKey := GetUtxoKey(rs)
 	putUtxos(ns, 0, redeemKey, utxos)
@@ -369,7 +369,7 @@ func TestCoinSelector_SimpleBnbSearch(t *testing.T) {
 }
 
 func TestCoinSelector_SortedSearch(t *testing.T) {
-	ns := getNativeFunc()
+	ns := getNativeFunc(nil, nil)
 	rs, _ := hex.DecodeString(redeem)
 	redeemKey := GetUtxoKey(rs)
 	putUtxos(ns, 0, redeemKey, utxos)

@@ -184,5 +184,4 @@ func TestBTCHandler_SyncBlockHeader(t *testing.T) {
 	ns = getNativeFunc(sink.Bytes(), ns.GetCacheDB())
 	err = handler.SyncBlockHeader(ns)
 	assert.Error(t, err, "should be error")
-	fmt.Println(err)
 }

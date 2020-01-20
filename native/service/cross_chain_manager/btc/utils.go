@@ -14,7 +14,6 @@ import (
 	wire_bch "github.com/gcash/bchd/wire"
 	"github.com/gcash/bchutil/merkleblock"
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/log"
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/native"
 	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
@@ -281,11 +280,6 @@ func addUtxos(native *native.NativeService, chainID uint64, height uint32, mtx *
 		ScriptPubkey: mtx.TxOut[0].PkScript,
 	}
 
-	pk, err := txscript.DisasmString(newUtxo.ScriptPubkey)
-	if err != nil {
-		return err
-	}
-	log.Warnf("input utxo: %s: %s", op.String(), pk)
 	utxos.Utxos = append(utxos.Utxos, newUtxo)
 	putUtxos(native, chainID, utxoKey, utxos)
 	return nil
