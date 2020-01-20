@@ -179,8 +179,10 @@ func RestructChain(native *native.NativeService, current, new *types.Header, cha
 		si--
 		current, _, _ = GetHeaderByHeight(native, si, chainID)
 	}
-	for _, hash := range newHashs {
-		appendHeader2Main(native, ti, hash, chainID)
+	newHashs = append(newHashs, new.Hash())
+	for i := len(newHashs) - 1;i >= 0;i -- {
+		appendHeader2Main(native, ti, newHashs[i], chainID)
+		ti ++
 	}
 	return nil
 }
