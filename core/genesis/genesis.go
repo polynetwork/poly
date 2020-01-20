@@ -107,7 +107,7 @@ func newNodeManagerInit(config []byte) *types.Transaction {
 }
 
 //NewInvokeTransaction return smart contract invoke transaction
-func NewInvokeTransaction(invokeCode []byte) *types.Transaction {
+func NewInvokeTransaction(invokeCode []byte, nonce uint32) *types.Transaction {
 	invokePayload := &payload.InvokeCode{
 		Code: invokeCode,
 	}
@@ -116,6 +116,7 @@ func NewInvokeTransaction(invokeCode []byte) *types.Transaction {
 		ChainID: types.MAIN_CHAIN_ID,
 		TxType:  types.Invoke,
 		Payload: invokePayload,
+		Nonce:   nonce,
 	}
 
 	if config.DefConfig.P2PNode.NetworkId == config.NETWORK_ID_MAIN_NET {
@@ -141,5 +142,5 @@ func NewInitNodeManagerTransaction(
 	invokeCode := new(common.ZeroCopySink)
 	contractInvokeParam.Serialization(invokeCode)
 
-	return NewInvokeTransaction(invokeCode.Bytes()), nil
+	return NewInvokeTransaction(invokeCode.Bytes(), 0), nil
 }

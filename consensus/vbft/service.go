@@ -2077,8 +2077,7 @@ func (self *Server) creategovernaceTransaction(blkNum uint32) *types.Transaction
 		Method: node_manager.COMMIT_DPOS, Args: []byte{}}
 	invokeCode := new(common.ZeroCopySink)
 	contractInvokeParam.Serialization(invokeCode)
-	tx := genesis.NewInvokeTransaction(invokeCode.Bytes())
-	tx.Nonce = blkNum
+	tx := genesis.NewInvokeTransaction(invokeCode.Bytes(), blkNum)
 	return tx
 }
 
