@@ -33,6 +33,7 @@ import (
 	vconfig "github.com/ontio/multi-chain/consensus/vbft/config"
 	"github.com/ontio/multi-chain/core/genesis"
 	"github.com/ontio/multi-chain/core/ledger"
+	"github.com/ontio/multi-chain/core/payload"
 	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/events"
 	"github.com/ontio/multi-chain/events/message"
@@ -2071,13 +2072,14 @@ func (self *Server) msgSendLoop() {
 }
 
 //creategovernaceTransaction invoke governance native contract commit_pos
-func (self *Server) creategovernaceTransaction(blkNum uint32) (*types.Transaction, error) {
+func (self *Server) creategovernaceTransaction(blkNum uint32) *types.Transaction {
 	contractInvokeParam := &states.ContractInvokeParam{Address: utils.NodeManagerContractAddress,
 		Method: node_manager.COMMIT_DPOS, Args: []byte{}}
 	invokeCode := new(common.ZeroCopySink)
 	contractInvokeParam.Serialization(invokeCode)
 	tx := genesis.NewInvokeTransaction(invokeCode.Bytes())
-	return tx, nil
+	tx.Nonce = blkNum
+	return tx
 }
 
 //checkNeedUpdateChainConfig use blockcount
@@ -2118,6 +2120,17 @@ func (self *Server) validHeight(blkNum uint32) uint32 {
 }
 
 func (self *Server) nonSystxs(sysTxs []*types.Transaction, blkNum uint32) bool {
+	if self.checkNeedUpdateChainConfig(blkNum) && len(sysTxs) == 1 {
+		invoke := sysTxs[0].Payload.(*payload.InvokeCode)
+		if invoke == nil {
+			log.Errorf("nonSystxs invoke is nil,blocknum:%d", blkNum)
+			return true
+		}
+		tx := self.creategovernaceTransaction(blkNum)
+		if bytes.Compare(invoke.Code, tx.Payload.(*payload.InvokeCode).Code) == 0 {
+			return false
+		}
+	}
 	return true
 }
 
@@ -2141,10 +2154,7 @@ func (self *Server) makeProposal(blkNum uint32, forEmpty bool) error {
 		}
 		//add transaction invoke governance native commit_pos contract
 		if self.checkNeedUpdateChainConfig(blkNum) {
-			tx, err := self.creategovernaceTransaction(blkNum)
-			if err != nil {
-				return fmt.Errorf("construct governace transaction error: %v", err)
-			}
+			tx := self.creategovernaceTransaction(blkNum)
 			sysTxs = append(sysTxs, tx)
 			chainconfig.View++
 		}
