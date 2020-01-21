@@ -151,6 +151,10 @@ func (this *Configuration) Deserialization(source *common.ZeroCopySource) error 
 	if eof {
 		return fmt.Errorf("source.NextUint32, deserialize peerHandshakeTimeout error")
 	}
+	maxBlockChangeView, eof := source.NextUint32()
+	if eof {
+		return fmt.Errorf("source.NextUint32, deserialize maxBlockChangeView error")
+	}
 
 	this.N = n
 	this.C = c
@@ -159,6 +163,7 @@ func (this *Configuration) Deserialization(source *common.ZeroCopySource) error 
 	this.BlockMsgDelay = blockMsgDelay
 	this.HashMsgDelay = hashMsgDelay
 	this.PeerHandshakeTimeout = peerHandshakeTimeout
+	this.MaxBlockChangeView = maxBlockChangeView
 	return nil
 }
 
