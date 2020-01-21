@@ -1,12 +1,18 @@
 package ont
 
 import (
-	"github.com/ontio/multi-chain/native"
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/native/service/utils"
+	"bytes"
 	"fmt"
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/common/constants"
+	"github.com/ontio/multi-chain/core/genesis"
+	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/errors"
+	"github.com/ontio/multi-chain/native"
+	"github.com/ontio/multi-chain/native/event"
+	"github.com/ontio/multi-chain/native/service/utils"
+	"io"
 	"math/big"
 )
 
@@ -25,11 +31,8 @@ func RegisterOntContract(native *native.NativeService) {
 
 	native.Register(LOCK_NAME, OntLock)
 	native.Register(UNLOCK_NAME, OntUnlock)
-
-
+	native.Register(BIND_NAME, OntBind)
 }
-
-
 
 func OntName(native *native.NativeService) ([]byte, error) {
 	return []byte(constants.ONT_NAME), nil
@@ -42,7 +45,6 @@ func OntSymbol(native *native.NativeService) ([]byte, error) {
 func OntDecimals(native *native.NativeService) ([]byte, error) {
 	return big.NewInt(int64(constants.ONT_DECIMALS)).Bytes(), nil
 }
-
 
 func OntTotalSupply(native *native.NativeService) ([]byte, error) {
 	contract := utils.OntContractAddress
@@ -60,7 +62,6 @@ func OntBalanceOf(native *native.NativeService) ([]byte, error) {
 func OntAllowance(native *native.NativeService) ([]byte, error) {
 	return GetBalanceValue(native, APPROVE_FLAG)
 }
-
 
 func GetBalanceValue(native *native.NativeService, flag byte) ([]byte, error) {
 	source := common.NewZeroCopySource(native.GetInput())
@@ -101,15 +102,13 @@ func OntInit(native *native.NativeService) ([]byte, error) {
 	toAddress := contract
 	toAmount := constants.ONT_TOTAL_SUPPLY
 
-	balanceKey := GenBalanceKey(contract, toAddress)
 	item := utils.GenUInt64StorageItem(toAmount)
-	native.GetCacheDB().Put(balanceKey, item.ToArray())
+	native.GetCacheDB().Put(GenBalanceKey(contract, toAddress), item.ToArray())
 	AddTransferNotifications(native, utils.OntContractAddress, &State{To: toAddress, Value: toAmount})
-	native.GetCacheDB().Put(GenTotalSupplyKey(contract), utils.GenUInt64StorageItem(toAmount).ToArray())
+	native.GetCacheDB().Put(GenTotalSupplyKey(contract), item.ToArray())
 
 	return utils.BYTE_TRUE, nil
 }
-
 
 func OntTransfer(native *native.NativeService) ([]byte, error) {
 	var transfers Transfers
@@ -129,25 +128,11 @@ func OntTransfer(native *native.NativeService) ([]byte, error) {
 		if err != nil {
 			return utils.BYTE_FALSE, err
 		}
-		//// TODO: check how to deal with grantOng method
-		//fromBalance, toBalance, err := Transfer(native, contract, &v)
-		//if err != nil {
-		//	return utils.BYTE_FALSE, err
-		//}
-		//if err := grantOng(native, contract, v.From, fromBalance); err != nil {
-		//	return utils.BYTE_FALSE, err
-		//}
-		//
-		//if err := grantOng(native, contract, v.To, toBalance); err != nil {
-		//	return utils.BYTE_FALSE, err
-		//}
 
 		AddTransferNotifications(native, contract, &v)
 	}
 	return utils.BYTE_TRUE, nil
 }
-
-
 
 func OntApprove(native *native.NativeService) ([]byte, error) {
 	var state State
@@ -161,12 +146,11 @@ func OntApprove(native *native.NativeService) ([]byte, error) {
 	if native.CheckWitness(state.From) == false {
 		return utils.BYTE_FALSE, errors.NewErr("authentication failed!")
 	}
+
 	contract := utils.OntContractAddress
 	native.GetCacheDB().Put(GenApproveKey(contract, state.From, state.To), utils.GenUInt64StorageItem(state.Value).ToArray())
 	return utils.BYTE_TRUE, nil
 }
-
-
 
 func OntTransferFrom(native *native.NativeService) ([]byte, error) {
 	var state TransferFrom
@@ -187,71 +171,130 @@ func OntTransferFrom(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, err
 	}
 
-	//// TODO: check how to deal with grantOng method
-	//fromBalance, toBalance, err := TransferedFrom(native, contract, &state)
-	//if err != nil {
-	//	return utils.BYTE_FALSE, err
-	//}
-	//if err := grantOng(native, contract, state.From, fromBalance); err != nil {
-	//	return utils.BYTE_FALSE, err
-	//}
-	//if err := grantOng(native, contract, state.To, toBalance); err != nil {
-	//	return utils.BYTE_FALSE, err
-	//}
 	AddTransferNotifications(native, contract, &State{From: state.From, To: state.To, Value: state.Value})
 	return utils.BYTE_TRUE, nil
 }
 
+func OntBind(native *native.NativeService) ([]byte, error) {
+	source := common.NewZeroCopySource(native.GetInput())
+	targetChainId, eof := source.NextUint64()
+	if eof {
+		return utils.BYTE_FALSE, fmt.Errorf("[OntBind] decode targetChainId error")
+	}
+	targetChainContractHash, eof := source.NextVarBytes()
+	if eof {
+		return utils.BYTE_FALSE, fmt.Errorf("[OntBind] decode targetChainContractHasherror:%s", io.ErrUnexpectedEOF)
+	}
+	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("[OntBind] getAdmin, get admin error: %v", err)
+	}
+	if native.CheckWitness(operatorAddress) == false {
+		return utils.BYTE_FALSE, errors.NewErr("[OntBind] authentication failed!")
+	}
+	native.GetCacheDB().Put(GenBindKey(utils.OntContractAddress, targetChainId), utils.GenVarBytesStorageItem(targetChainContractHash).ToArray())
+	if config.DefConfig.Common.EnableEventLog {
+		native.AddNotify(
+			&event.NotifyEventInfo{
+				ContractAddress: utils.OntContractAddress,
+				States:          []interface{}{BIND_NAME, targetChainId, targetChainContractHash},
+			})
+	}
+
+	return utils.BYTE_TRUE, nil
+}
 
 func OntLock(native *native.NativeService) ([]byte, error) {
 	contract := utils.OntContractAddress
 	source := common.NewZeroCopySource(native.GetInput())
 
-	toChainID, eof := source.NextUint64()
-	if eof {
-		return utils.BYTE_FALSE, fmt.Errorf("[OntLock] input deseriaize toChainID error!")
+	var lockParam LockParam
+	err := lockParam.Deserialization(source)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("[OntLock] contract params deserialization error:%v", err)
 	}
 
-	from, eof := source.NextAddress()
-	if eof {
-		return utils.BYTE_FALSE, fmt.Errorf("[OntLock] input deseriaize from address error!")
-	}
-
-	var args Args
-	argsBytes, eof := source.NextVarBytes()
-	if eof {
-		return utils.BYTE_FALSE, fmt.Errorf("[OntLock] input deseriaize Args{ToAddress, Value} bytes error!")
-	}
-	if err := args.Deserialization(common.NewZeroCopySource(argsBytes)); err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("[OntLock] Args deserialize error:%v", err)
-	}
-	if args.Value == 0 {
+	if lockParam.Args.Value == 0 {
 		return utils.BYTE_FALSE, nil
 	}
-	if args.Value > constants.ONT_TOTAL_SUPPLY {
-		return utils.BYTE_FALSE, fmt.Errorf("[OntLock] ont amount:%d over totalSupply:%d", args.Value, constants.ONT_TOTAL_SUPPLY)
+	if lockParam.Args.Value > constants.ONT_TOTAL_SUPPLY {
+		return utils.BYTE_FALSE, fmt.Errorf("[OntLock] ont amount:%d over totalSupply:%d", lockParam.Args.Value, constants.ONT_TOTAL_SUPPLY)
 	}
 
 	state := &State{
-		From: from,
-		To: contract,
-		Value: args.Value,
+		From:  lockParam.FromAddress,
+		To:    contract,
+		Value: lockParam.Args.Value,
 	}
-	_, _, err := Transfer(native, utils.OntContractAddress, state)
+	_, _, err = Transfer(native, contract, state)
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
 
-	//targetChainContract := getContractAddressWithChainID(native, contract, toChainID)
+	contractHashBytes, err := utils.GetStorageVarBytes(native, GenBindKey(contract, lockParam.ToChainID))
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("[OntLock] get bind contract hash with chainID:%d error:%s", lockParam.ToChainID, err)
+	}
+	if len(contractHashBytes) == 0 {
+		return utils.BYTE_FALSE, fmt.Errorf("[OntLock] get bind contract hash with chainID:%d contractHash empty", lockParam.ToChainID)
+	}
 
+	AddLockNotifications(native, contract, contractHashBytes, &lockParam)
 
-	AddLockNotifications(native, contract, toChainID, from, args.ToAddress, args.Value)
+	sink := common.NewZeroCopySink(nil)
+	lockParam.Args.Serialization(sink)
+	input := getCreateTxArgs(lockParam.ToChainID, contractHashBytes, lockParam.Fee, "unlock", sink.Bytes())
+	_, err = native.NativeCall(utils.CrossChainManagerContractAddress, "createTx", input)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("[OntLock] createTx, error:%s", err)
+	}
 
 	return utils.BYTE_TRUE, nil
 }
 
-
 func OntUnlock(native *native.NativeService) ([]byte, error) {
+
+	//  this method cannot be invoked by anybody except verifyTxManagerContract
+	if !native.CheckWitness(utils.CrossChainManagerContractAddress) {
+		return utils.BYTE_FALSE, fmt.Errorf("[OntUnlock] should be invoked by VerirfyTxManager Contract, checkwitness failed!")
+	}
+	contract := utils.OntContractAddress
+	source := common.NewZeroCopySource(native.GetInput())
+
+	paramsBytes, eof := source.NextVarBytes()
+	var args Args
+	err := args.Deserialization(common.NewZeroCopySource(paramsBytes))
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("[OntUnlock] deserialize args error:%s", err)
+	}
+	fromContractHashBytes, eof := source.NextVarBytes()
+	if eof {
+		return utils.BYTE_FALSE, fmt.Errorf("[OntUnlock] input deseriaize from contract hash error!")
+	}
+	fromChainId, eof := source.NextUint64()
+	if eof {
+		return utils.BYTE_FALSE, fmt.Errorf("[OntUnlock] input deseriaize from chainID error!")
+	}
+	contractHashBytes, err := utils.GetStorageVarBytes(native, GenBindKey(contract, fromChainId))
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("[OntUnlock] get bind contract hash with chainID:%d error:%s", fromChainId, err)
+	}
+	if !bytes.Equal(contractHashBytes, fromContractHashBytes) {
+		return utils.BYTE_FALSE, fmt.Errorf("[OntUnlock] passed in contractHash NOT equal stored contractHash with chainID:%d, expect:%s, got:%s", fromChainId, contractHashBytes, fromContractHashBytes)
+	}
+	toAddress, err := common.AddressParseFromBytes(args.ToAddress)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("[OntUnlock] parse from bytes to address error:%s", err)
+	}
+	if args.Value == 0 {
+		return utils.BYTE_TRUE, nil
+	}
+	_, _, err = Transfer(native, contract, &State{contract, toAddress, args.Value})
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
+
+	AddUnLockNotifications(native, contract, fromChainId, fromContractHashBytes, toAddress, args.Value)
 
 	return utils.BYTE_TRUE, nil
 }

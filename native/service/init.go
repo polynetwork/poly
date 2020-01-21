@@ -25,8 +25,8 @@ import (
 	"github.com/ontio/multi-chain/native/service/governance/relayer_manager"
 	"github.com/ontio/multi-chain/native/service/governance/side_chain_manager"
 	"github.com/ontio/multi-chain/native/service/header_sync"
-	"github.com/ontio/multi-chain/native/service/utils"
 	"github.com/ontio/multi-chain/native/service/ont"
+	"github.com/ontio/multi-chain/native/service/utils"
 )
 
 func init() {

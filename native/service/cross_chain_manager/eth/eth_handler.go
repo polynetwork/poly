@@ -5,6 +5,7 @@ import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native"
 	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
+	"github.com/ontio/multi-chain/native/service/utils"
 )
 
 type ETHHandler struct {
@@ -31,4 +32,8 @@ func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*sco
 		return nil, fmt.Errorf("eth MakeDepositProposal, PutDoneTx error:%s", err)
 	}
 	return value, nil
+}
+
+func (this *ETHHandler) ProcessMultiChainTx(service *native.NativeService, txParam *scom.MakeTxParam) ([]byte, error) {
+	return utils.BYTE_TRUE, nil
 }

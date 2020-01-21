@@ -73,6 +73,21 @@ func GetStorageUInt32(native *native.NativeService, key []byte) (uint32, error) 
 	return v, nil
 }
 
+func GetStorageVarBytes(native *native.NativeService, key []byte) ([]byte, error) {
+	item, err := GetStorageItem(native, key)
+	if err != nil {
+		return []byte{}, err
+	}
+	if item == nil {
+		return nil, nil
+	}
+	v, err := serialization.ReadVarBytes(bytes.NewBuffer(item.Value))
+	if err != nil {
+		return nil, err
+	}
+	return v, nil
+}
+
 func GenUInt64StorageItem(value uint64) *cstates.StorageItem {
 	bf := new(bytes.Buffer)
 	serialization.WriteUint64(bf, value)
@@ -82,6 +97,12 @@ func GenUInt64StorageItem(value uint64) *cstates.StorageItem {
 func GenUInt32StorageItem(value uint32) *cstates.StorageItem {
 	bf := new(bytes.Buffer)
 	serialization.WriteUint32(bf, value)
+	return &cstates.StorageItem{Value: bf.Bytes()}
+}
+
+func GenVarBytesStorageItem(value []byte) *cstates.StorageItem {
+	bf := new(bytes.Buffer)
+	serialization.WriteVarBytes(bf, value)
 	return &cstates.StorageItem{Value: bf.Bytes()}
 }
 

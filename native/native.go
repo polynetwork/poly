@@ -89,12 +89,34 @@ func (this *NativeService) Invoke() (interface{}, error) {
 		return false, fmt.Errorf("[Invoke] Native contract %x doesn't support this function %s.",
 			invokParam.Address, invokParam.Method)
 	}
+	args := this.input
+
 	this.input = invokParam.Args
+
+	notifications := this.notifications
+	this.notifications = []*event.NotifyEventInfo{}
+
 	result, err := service(this)
 	if err != nil {
 		return result, fmt.Errorf("[Invoke] Native serivce function execute error:%s", err)
 	}
+
+	this.notifications = append(notifications, this.notifications...)
+	this.input = args
+
 	return result, nil
+}
+
+func (this *NativeService) NativeCall(address common.Address, method string, args []byte) (interface{}, error) {
+	c := states.ContractInvokeParam{
+		Address: address,
+		Method:  method,
+		Args:    args,
+	}
+	sink := common.NewZeroCopySink(nil)
+	c.Serialization(sink)
+	this.input = sink.Bytes()
+	return this.Invoke()
 }
 
 func (this *NativeService) PutMerkleVal(data []byte) {
