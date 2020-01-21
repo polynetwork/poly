@@ -31,7 +31,7 @@ import (
 )
 
 
-func VerifyFromOntTx(proof, txHash []byte, crossChainMsg *otypes.CrossChainMsg) (*scom.MakeTxParam, error) {
+func VerifyFromOntTx(proof []byte, crossChainMsg *otypes.CrossChainMsg) (*scom.MakeTxParam, error) {
 	v, err := merkle.MerkleProve(proof, crossChainMsg.StatesRoot.ToArray())
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromOntTx, merkle.MerkleProve verify merkle proof error")

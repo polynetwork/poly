@@ -82,7 +82,7 @@ func (this *ONTHandler) MakeDepositProposal(service *native.NativeService) (*sco
 		}
 	}
 
-	value, err := VerifyFromOntTx(params.Proof, params.TxHash, crossChainMsg)
+	value, err := VerifyFromOntTx(params.Proof, crossChainMsg)
 	if err != nil {
 		return nil, fmt.Errorf("ont MakeDepositProposal, VerifyOntTx error: %v", err)
 	}
