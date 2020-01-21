@@ -21,40 +21,16 @@ package relayer_manager
 import (
 	"fmt"
 
-	"github.com/ontio/multi-chain/common"
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/service/utils"
 )
 
-func putRelayer(native *native.NativeService, relayer *RelayerParam) error {
+func putRelayer(native *native.NativeService, relayer []byte) error {
 	contract := utils.RelayerManagerContractAddress
 
-	sink := common.NewZeroCopySink(nil)
-	relayer.Serialization(sink)
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(RELAYER), relayer.Address), cstates.GenRawStorageItem(sink.Bytes()))
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(RELAYER), relayer), cstates.GenRawStorageItem(relayer))
 	return nil
-}
-
-func GetRelayer(native *native.NativeService, address []byte) (*RelayerParam, error) {
-	contract := utils.RelayerManagerContractAddress
-
-	relayerBytes, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(RELAYER), address))
-	if err != nil {
-		return nil, fmt.Errorf("GetRelayer, get relayerBytes error: %v", err)
-	}
-	if relayerBytes == nil {
-		return nil, nil
-	}
-	relayerStore, err := cstates.GetValueFromRawStorageItem(relayerBytes)
-	if err != nil {
-		return nil, fmt.Errorf("GetRelayer, deserialize from raw storage item err:%v", err)
-	}
-	relayer := new(RelayerParam)
-	if err := relayer.Deserialization(common.NewZeroCopySource(relayerStore)); err != nil {
-		return nil, fmt.Errorf("GetRelayer, deserialize relayer error: %v", err)
-	}
-	return relayer, nil
 }
 
 func GetRelayerRaw(native *native.NativeService, address []byte) ([]byte, error) {

@@ -44,7 +44,7 @@ func RegisterRelayerManagerContract(native *native.NativeService) {
 }
 
 func RegisterRelayer(native *native.NativeService) ([]byte, error) {
-	params := new(RelayerParam)
+	params := new(RelayerListParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, contract params deserialize error: %v", err)
 	}
@@ -61,25 +61,27 @@ func RegisterRelayer(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, checkWitness error: %v", err)
 	}
 
-	//get relayer
-	relayerRaw, err := GetRelayerRaw(native, params.Address)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, get relayer error: %v", err)
-	}
-	if relayerRaw != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, relayer is already registered")
-	}
+	for _, address := range params.AddressList {
+		//get relayer
+		relayerRaw, err := GetRelayerRaw(native, address)
+		if err != nil {
+			return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, get relayer error: %v", err)
+		}
+		if relayerRaw != nil {
+			return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, relayer is already registered")
+		}
 
-	err = putRelayer(native, params)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, putRelayer error: %v", err)
+		err = putRelayer(native, address)
+		if err != nil {
+			return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, putRelayer error: %v", err)
+		}
 	}
 
 	return utils.BYTE_TRUE, nil
 }
 
 func RemoveRelayer(native *native.NativeService) ([]byte, error) {
-	params := new(RelayerParam)
+	params := new(RelayerListParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RemoveRelayer, contract params deserialize error: %v", err)
 	}
@@ -97,16 +99,18 @@ func RemoveRelayer(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("RemoveRelayer, checkWitness error: %v", err)
 	}
 
-	//get relayer
-	relayerRaw, err := GetRelayerRaw(native, params.Address)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RemoveRelayer, get relayer error: %v", err)
-	}
-	if relayerRaw == nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RemoveRelayer, relayer is not registered")
-	}
+	for _, address := range params.AddressList {
+		//get relayer
+		relayerRaw, err := GetRelayerRaw(native, address)
+		if err != nil {
+			return utils.BYTE_FALSE, fmt.Errorf("RemoveRelayer, get relayer error: %v", err)
+		}
+		if relayerRaw == nil {
+			return utils.BYTE_FALSE, fmt.Errorf("RemoveRelayer, relayer is not registered")
+		}
 
-	native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(RELAYER), params.Address))
+		native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(RELAYER), address))
+	}
 
 	return utils.BYTE_TRUE, nil
 }

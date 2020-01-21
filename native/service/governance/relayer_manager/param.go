@@ -23,23 +23,6 @@ import (
 	"github.com/ontio/multi-chain/common"
 )
 
-type RelayerParam struct {
-	Address []byte
-}
-
-func (this *RelayerParam) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteVarBytes(this.Address)
-}
-
-func (this *RelayerParam) Deserialization(source *common.ZeroCopySource) error {
-	address, eof := source.NextVarBytes()
-	if eof {
-		return fmt.Errorf("source.NextVarBytes, deserialize address error")
-	}
-	this.Address = address
-	return nil
-}
-
 type RelayerListParam struct {
 	AddressList [][]byte
 }
