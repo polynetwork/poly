@@ -24,12 +24,7 @@ import (
 	"github.com/ontio/multi-chain/merkle"
 	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 	otypes "github.com/ontio/ontology/core/types"
-	ontccm "github.com/ontio/ontology/smartcontract/service/native/cross_chain/cross_chain_manager"
-	//hsont "github.com/ontio/multi-chain/native/service/header_sync/ont"
-	"github.com/ontio/multi-chain/native"
-	"github.com/ontio/multi-chain/native/service/utils"
 )
-
 
 func VerifyFromOntTx(proof []byte, crossChainMsg *otypes.CrossChainMsg) (*scom.MakeTxParam, error) {
 	v, err := merkle.MerkleProve(proof, crossChainMsg.StatesRoot.ToArray())
@@ -43,24 +38,6 @@ func VerifyFromOntTx(proof []byte, crossChainMsg *otypes.CrossChainMsg) (*scom.M
 		return nil, fmt.Errorf("VerifyFromOntTx, deserialize merkleValue error:%s", err)
 	}
 	return txParam, nil
-}
-
-func MakeTxParam(native *native.NativeService, params *ontccm.CreateCrossChainTxParam) *scom.MakeTxParam {
-
-	txHash := native.GetTx().Hash()
-
-	txParam := &scom.MakeTxParam{
-		// TODO: add crosschain id
-		TxHash:              txHash.ToArray(),
-		FromContractAddress: utils.CrossChainManagerContractAddress[:],
-		ToChainID:           params.ToChainID,
-		ToContractAddress:   params.ToContractAddress,
-		Method:              params.Method,
-		Args:                params.Args,
-	}
-
-	return txParam
-
 }
 
 func getUnlockArgs(args []byte, fromContractAddress []byte, fromChainID uint64) []byte {

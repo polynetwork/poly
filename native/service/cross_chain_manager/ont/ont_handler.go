@@ -128,8 +128,8 @@ func (this *ONTHandler) CreateTx(service *native.NativeService) (*scom.MakeTxPar
 	txHash := service.GetTx().Hash()
 
 	txParam := &scom.MakeTxParam{
-		// TODO: add crosschain id
 		TxHash:              txHash.ToArray(),
+		CrossChainID:        txHash.ToArray(),
 		FromContractAddress: utils.CrossChainManagerContractAddress[:],
 		ToChainID:           params.ToChainID,
 		ToContractAddress:   params.ToContractAddress,
