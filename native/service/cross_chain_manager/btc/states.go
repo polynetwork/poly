@@ -148,6 +148,7 @@ type CoinSelector struct {
 	TxOuts      []*wire.TxOut
 	K           float64
 	Tries       int64
+	feeWeight   float64
 }
 
 func (selector *CoinSelector) Select() ([]*Utxo, uint64, uint64) {
@@ -167,8 +168,7 @@ func (selector *CoinSelector) Select() ([]*Utxo, uint64, uint64) {
 func (selector *CoinSelector) SimpleBnbSearch(depth int, selection []*Utxo, sum uint64) ([]*Utxo, uint64, uint64) {
 	fee, lr := selector.getLossRatio(selection)
 	switch {
-	case lr >= selector.MaxP, float64(sum) > selector.K*float64(selector.Target) || (sum > selector.Target &&
-		sum < selector.Target+selector.Mc):
+	case lr >= selector.MaxP, float64(sum) > selector.K*float64(selector.Target):
 		return nil, 0, 0
 	case sum == selector.Target || (sum >= selector.Target+selector.Mc && float64(sum) <= selector.K*float64(selector.Target)):
 		return selection, sum, fee
@@ -221,7 +221,6 @@ func (selector *CoinSelector) SortedSearch() ([]*Utxo, uint64, uint64) {
 			}
 		case 1:
 			feeReplaced, lr := selector.getLossRatio(append(selection[:len(selection)-1:cap(selection)-1], u))
-			fmt.Println(sum, selection[len(selection)-1].Value, u.Value)
 			if sumTemp := sum - selection[len(selection)-1].Value + u.Value; (sumTemp == selector.Target ||
 				sumTemp >= selector.Target+selector.Mc) && lr < selector.MaxP {
 				fee, sum = feeReplaced, sumTemp
@@ -276,7 +275,7 @@ func (selector *CoinSelector) getLossRatio(selection []*Utxo) (uint64, float64) 
 
 func (selector *CoinSelector) estimateTxFee(selection []*Utxo) uint64 {
 	size := selector.estimateTxSize(selection, selector.TxOuts)
-	return uint64(float64(size*MIN_SATOSHI_TO_RELAY_PER_BYTE) * WEIGHT)
+	return uint64(float64(size*MIN_SATOSHI_TO_RELAY_PER_BYTE) * selector.feeWeight)
 }
 
 func (selector *CoinSelector) estimateTxSize(selection []*Utxo, txOuts []*wire.TxOut) int {

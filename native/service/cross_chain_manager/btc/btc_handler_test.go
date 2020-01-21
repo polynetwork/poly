@@ -24,13 +24,13 @@ import (
 var (
 	acct *account.Account = account.NewAccount("")
 
-	fromBtcTxid = "f922ed4669f5f11910649133b582d476a316f3e7392dad9be09d08a1c4a81357"
-	fromBtcRawTx = "0100000001c8b3b4ee22c2bd31ea518bc159a412a7e873b739cc018bd063b9426c7862632a000000006a47304402202b79a1a2c2439dc2fc7dc1eab186566164cf0d317a8e23b340745dd73408ecab0220216b34a2ebfa9e84922f29f17ad54c9510d4b427ef17c960eacc302de10e54f7012103128a2c4525179e47f38cf3fefca37a61548ca4610255b3fb4ee86de2d3e80c0fffffffff03a17200000000000022002044978a77e4e983136bf1cca277c45e5bd4eff6a7848e900416daf86fd32c274300000000000000003d6a3b6602000000000000000000000000000000140876c408a5b0f3ad9a65995658494dd088926d3e14f3b8a17f1f957f60c88f105e32ebff3f022e56a48379052a010000001976a91428d2e8cee08857f569e5a1b147c5d5e87339e08188ac00000000"
-	fromBtcProof = "0000002008c4148bf546eef416ff870326532741c87fe540cca7dbc913bbf635f6900a61ebc2d2937be45e1cb45852b2c48bb533212d35b6cd08acd2094aab7418e97b58619d215effff7f2003000000020000000231f4144cace7184cecd1d6542ccacef88d8d504e507b0693c9fc14079a956dff5713a8c4a1089de09bad2d39e7f316a376d482b53391641019f1f56946ed22f90105"
+	fromBtcTxid       = "f922ed4669f5f11910649133b582d476a316f3e7392dad9be09d08a1c4a81357"
+	fromBtcRawTx      = "0100000001c8b3b4ee22c2bd31ea518bc159a412a7e873b739cc018bd063b9426c7862632a000000006a47304402202b79a1a2c2439dc2fc7dc1eab186566164cf0d317a8e23b340745dd73408ecab0220216b34a2ebfa9e84922f29f17ad54c9510d4b427ef17c960eacc302de10e54f7012103128a2c4525179e47f38cf3fefca37a61548ca4610255b3fb4ee86de2d3e80c0fffffffff03a17200000000000022002044978a77e4e983136bf1cca277c45e5bd4eff6a7848e900416daf86fd32c274300000000000000003d6a3b6602000000000000000000000000000000140876c408a5b0f3ad9a65995658494dd088926d3e14f3b8a17f1f957f60c88f105e32ebff3f022e56a48379052a010000001976a91428d2e8cee08857f569e5a1b147c5d5e87339e08188ac00000000"
+	fromBtcProof      = "0000002008c4148bf546eef416ff870326532741c87fe540cca7dbc913bbf635f6900a61ebc2d2937be45e1cb45852b2c48bb533212d35b6cd08acd2094aab7418e97b58619d215effff7f2003000000020000000231f4144cace7184cecd1d6542ccacef88d8d504e507b0693c9fc14079a956dff5713a8c4a1089de09bad2d39e7f316a376d482b53391641019f1f56946ed22f90105"
 	fromBtcMerkleRoot = "587be91874ab4a09d2ac08cdb6352d2133b58bc4b25258b41c5ee47b93d2c2eb"
-	toOntAddr = "AdzZ2VKufdJWeB8t9a8biXoHbbMe2kZeyH"
-	obtcxAddr = "3e6d9288d04d49585699659aadf3b0a508c47608"
-	utxoKey = "87a9652e9b396545598c0fc72cb5a98848bf93d3"
+	toOntAddr         = "AdzZ2VKufdJWeB8t9a8biXoHbbMe2kZeyH"
+	obtcxAddr         = "3e6d9288d04d49585699659aadf3b0a508c47608"
+	utxoKey           = "87a9652e9b396545598c0fc72cb5a98848bf93d3"
 
 	sigs = []string{
 		"3045022100c6f0620de7b8e71801408cc690b21ffa9ad344311b5e7373dcd4090316cc02d3022078bfb2bd6d3fcdbd75e1ce2dbefdecc28a4955d9d4dfed1b98aa59b6e83c0bf401",
@@ -59,10 +59,10 @@ var (
 
 	setSideChain = func(ns *native.NativeService) {
 		side := &side_chain_manager.SideChain{
-			Name: "btc",
-			ChainId: 0,
+			Name:         "btc",
+			ChainId:      0,
 			BlocksToWait: 1,
-			Router: 0,
+			Router:       0,
 		}
 		sink := common.NewZeroCopySink(nil)
 		_ = side.Serialization(sink)
@@ -138,7 +138,7 @@ func TestBTCHandler_MakeDepositProposal(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(utxos.Utxos))
 	assert.Equal(t, uint64(29345), utxos.Utxos[0].Value)
-	assert.Equal(t, fromBtcTxid + ":0", utxos.Utxos[0].Op.String())
+	assert.Equal(t, fromBtcTxid+":0", utxos.Utxos[0].Op.String())
 
 	// repeated commit
 	sink.Reset()
@@ -167,7 +167,7 @@ func TestBTCHandler_MultiSign(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(stxos.Utxos))
 	assert.Equal(t, uint64(29345), stxos.Utxos[0].Value)
-	assert.Equal(t, fromBtcTxid + ":0", stxos.Utxos[0].Op.String())
+	assert.Equal(t, fromBtcTxid+":0", stxos.Utxos[0].Op.String())
 
 	rawTx, _ = hex.DecodeString(stateArr[2].(string))
 	_ = mtx.BtcDecode(bytes.NewBuffer(rawTx), wire.ProtocolVersion, wire.LatestEncoding)
@@ -179,11 +179,11 @@ func TestBTCHandler_MultiSign(t *testing.T) {
 	// commit no.1 to 4 sig
 	for i, sig := range sigArr[:4] {
 		msp := ccmcom.MultiSignParam{
-			ChainID: 0,
-			TxHash: txid.CloneBytes(),
-			Address: signers[i],
+			ChainID:   0,
+			TxHash:    txid.CloneBytes(),
+			Address:   signers[i],
 			RedeemKey: utxoKey,
-			Signs: [][]byte{sig},
+			Signs:     [][]byte{sig},
 		}
 		sink := common.NewZeroCopySink(nil)
 		msp.Serialization(sink)
@@ -195,11 +195,11 @@ func TestBTCHandler_MultiSign(t *testing.T) {
 
 	// repeated submit sig4
 	msp := ccmcom.MultiSignParam{
-		ChainID: 0,
-		TxHash: txid.CloneBytes(),
-		Address: signers[3],
+		ChainID:   0,
+		TxHash:    txid.CloneBytes(),
+		Address:   signers[3],
 		RedeemKey: utxoKey,
-		Signs: [][]byte{sigArr[3]},
+		Signs:     [][]byte{sigArr[3]},
 	}
 	sink := common.NewZeroCopySink(nil)
 	msp.Serialization(sink)
@@ -209,11 +209,11 @@ func TestBTCHandler_MultiSign(t *testing.T) {
 
 	// right sig but wrong address
 	msp = ccmcom.MultiSignParam{
-		ChainID: 0,
-		TxHash: txid.CloneBytes(),
-		Address: signers[3],
+		ChainID:   0,
+		TxHash:    txid.CloneBytes(),
+		Address:   signers[3],
 		RedeemKey: utxoKey,
-		Signs: [][]byte{sigArr[4]},
+		Signs:     [][]byte{sigArr[4]},
 	}
 	sink.Reset()
 	msp.Serialization(sink)
@@ -223,11 +223,11 @@ func TestBTCHandler_MultiSign(t *testing.T) {
 
 	// commit the last right sig
 	msp = ccmcom.MultiSignParam{
-		ChainID: 0,
-		TxHash: txid.CloneBytes(),
-		Address: signers[4],
+		ChainID:   0,
+		TxHash:    txid.CloneBytes(),
+		Address:   signers[4],
 		RedeemKey: utxoKey,
-		Signs: [][]byte{sigArr[4]},
+		Signs:     [][]byte{sigArr[4]},
 	}
 	sink.Reset()
 	msp.Serialization(sink)
@@ -248,8 +248,7 @@ func TestBTCHandler_MultiSign(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(utxos.Utxos))
 	assert.Equal(t, uint64(19345), utxos.Utxos[0].Value)
-	assert.Equal(t, txid.String() + ":1", utxos.Utxos[0].Op.String())
-
+	assert.Equal(t, txid.String()+":1", utxos.Utxos[0].Op.String())
 }
 
 func syncGenesisHeader(genesisHeader *wire.BlockHeader) (*storage.CacheDB, error) {

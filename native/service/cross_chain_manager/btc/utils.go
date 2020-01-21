@@ -300,6 +300,7 @@ func chooseUtxos(native *native.NativeService, chainID uint64, amount int64, out
 		Mc:          MIN_CHANGE,
 		K:           SELECTING_K,
 		TxOuts:      outs,
+		feeWeight:   WEIGHT,
 	}
 	result, sum, fee := cs.Select()
 	if result == nil || len(result) == 0 {

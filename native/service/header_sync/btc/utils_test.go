@@ -48,7 +48,7 @@ var (
 func TestGetEpoch(t *testing.T) {
 	cacheDB, err := syncGenesisHeader(&chaincfg.RegressionNetParams.GenesisBlock.Header)
 	assert.Nil(t, err)
- 	syncAssumedBtcBlockChain(cacheDB)
+	syncAssumedBtcBlockChain(cacheDB)
 
 	nativeService := getNativeFunc(nil, cacheDB)
 	epoch, err := GetEpoch(nativeService, 0)
@@ -225,8 +225,8 @@ func TestGetCommonAncestor(t *testing.T) {
 		b, _ := hex.DecodeString(c)
 		hdr.Deserialize(bytes.NewReader(b))
 		sh := StoredHeader{
-			Header: hdr,
-			Height: uint32(i+1),
+			Header:    hdr,
+			Height:    uint32(i + 1),
 			totalWork: big.NewInt(0),
 		}
 		putBlockHeader(ns, 0, sh)
@@ -240,8 +240,8 @@ func TestGetCommonAncestor(t *testing.T) {
 		hdr.Deserialize(bytes.NewReader(b))
 		prevs[i] = hdr.BlockHash().String()
 		sh := StoredHeader{
-			Header: hdr,
-			Height: uint32(i+1),
+			Header:    hdr,
+			Height:    uint32(i + 1),
 			totalWork: big.NewInt(0),
 		}
 		putBlockHeader(ns, 0, sh)
@@ -254,7 +254,7 @@ func TestGetCommonAncestor(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, len(prevs), len(hashes))
 	for i, v := range prevs {
-		assert.Equal(t, v, hashes[len(hashes)-i-1].String(), fmt.Sprintf("prevs not equal: no.%d shoud be %s, " +
+		assert.Equal(t, v, hashes[len(hashes)-i-1].String(), fmt.Sprintf("prevs not equal: no.%d shoud be %s, "+
 			"not %s", i, v, hashes[len(hashes)-i-1].String()))
 	}
 	assert.Equal(t, last.Height, uint32(5))
