@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"sort"
 
+	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/core/genesis"
+	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/service/utils"
 )
@@ -41,21 +44,44 @@ func executeCommitDpos(native *native.NativeService) error {
 	var peers []*PeerStakeInfo
 	for _, peerPoolItem := range peerPoolMap.PeerPoolMap {
 		if peerPoolItem.Status == QuitingStatus {
-			//err = normalQuit(native, peerPoolItem)
-			//if err != nil {
-			//	return fmt.Errorf("executeCommitDpos, normalQuit error: %v", err)
-			//}
+			pos := peerPoolItem.Pos + peerPoolItem.LockPos
+			address, err := common.AddressParseFromBytes(peerPoolItem.Address)
+			if err != nil {
+				return fmt.Errorf("executeCommitDpos, common.AddressParseFromBytes error: %v", err)
+			}
+			//ont transfer
+			err = appCallTransferOnt(native, utils.NodeManagerContractAddress, address, pos)
+			if err != nil {
+				return fmt.Errorf("executeCommitDpos normal, ont transfer error: %v", err)
+			}
 			delete(peerPoolMap.PeerPoolMap, peerPoolItem.PeerPubkey)
 		}
 		if peerPoolItem.Status == BlackStatus {
-			//err = blackQuit(native, peerPoolItem)
-			//if err != nil {
-			//	return fmt.Errorf("executeCommitDpos, blackQuit error: %v", err)
-			//}
+			pos := peerPoolItem.Pos + peerPoolItem.LockPos
+			// get operator from database
+			operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
+			if err != nil {
+				return fmt.Errorf("executeCommitDpos black, types.AddressFromBookkeepers error: %v", err)
+			}
+			//ont transfer
+			err = appCallTransferOnt(native, utils.NodeManagerContractAddress, operatorAddress, pos)
+			if err != nil {
+				return fmt.Errorf("executeCommitDpos black, ont transfer error: %v", err)
+			}
 			delete(peerPoolMap.PeerPoolMap, peerPoolItem.PeerPubkey)
 		}
 
 		if peerPoolItem.Status == CandidateStatus || peerPoolItem.Status == ConsensusStatus {
+			address, err := common.AddressParseFromBytes(peerPoolItem.Address)
+			if err != nil {
+				return fmt.Errorf("executeCommitDpos, common.AddressParseFromBytes error: %v", err)
+			}
+			//ont transfer
+			err = appCallTransferOnt(native, utils.NodeManagerContractAddress, address, peerPoolItem.LockPos)
+			if err != nil {
+				return fmt.Errorf("executeCommitDpos normal, ont transfer error: %v", err)
+			}
+			peerPoolItem.LockPos = 0
 			peers = append(peers, &PeerStakeInfo{
 				Index:      peerPoolItem.Index,
 				PeerPubkey: peerPoolItem.PeerPubkey,

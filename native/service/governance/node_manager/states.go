@@ -114,7 +114,6 @@ type PeerPoolItem struct {
 	Status     Status
 	Pos        uint64
 	LockPos    uint64
-	FreePos    uint64
 }
 
 func (this *PeerPoolItem) Serialization(sink *common.ZeroCopySink) {
@@ -124,7 +123,6 @@ func (this *PeerPoolItem) Serialization(sink *common.ZeroCopySink) {
 	this.Status.Serialization(sink)
 	sink.WriteVarUint(this.Pos)
 	sink.WriteVarUint(this.LockPos)
-	sink.WriteVarUint(this.FreePos)
 }
 
 func (this *PeerPoolItem) Deserialization(source *common.ZeroCopySource) error {
@@ -153,10 +151,6 @@ func (this *PeerPoolItem) Deserialization(source *common.ZeroCopySource) error {
 	if eof {
 		return fmt.Errorf("source.NextVarUint, deserialize lockPos error")
 	}
-	freePos, eof := source.NextVarUint()
-	if eof {
-		return fmt.Errorf("source.NextVarUint, deserialize freePos error")
-	}
 
 	this.Index = index
 	this.PeerPubkey = peerPubkey
@@ -164,7 +158,6 @@ func (this *PeerPoolItem) Deserialization(source *common.ZeroCopySource) error {
 	this.Status = *status
 	this.Pos = pos
 	this.LockPos = lockPos
-	this.FreePos = freePos
 	return nil
 }
 

@@ -27,10 +27,28 @@ import (
 	"github.com/ontio/multi-chain/common/config"
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/native"
+	"github.com/ontio/multi-chain/native/service/ont"
 	"github.com/ontio/multi-chain/native/service/utils"
 )
 
-func GetPeeApply(native *native.NativeService, peerPubkey string) (*PeerPoolItem, error) {
+func appCallTransferOnt(native *native.NativeService, from common.Address, to common.Address, amount uint64) error {
+	var sts []ont.State
+	sts = append(sts, ont.State{
+		From:  from,
+		To:    to,
+		Value: amount,
+	})
+	transfers := ont.Transfers{
+		States: sts,
+	}
+
+	if _, err := native.NativeCall(utils.OntContractAddress, "transfer", common.SerializeToBytes(&transfers)); err != nil {
+		return fmt.Errorf("appCallTransfer, appCall error: %v", err)
+	}
+	return nil
+}
+
+func GetPeeApply(native *native.NativeService, peerPubkey string) (*RegisterPeerParam, error) {
 	contract := utils.NodeManagerContractAddress
 	peerPubkeyPrefix, err := hex.DecodeString(peerPubkey)
 	if err != nil {
@@ -47,14 +65,14 @@ func GetPeeApply(native *native.NativeService, peerPubkey string) (*PeerPoolItem
 	if err != nil {
 		return nil, fmt.Errorf("GetPeeApply, deserialize from raw storage item err:%v", err)
 	}
-	peer := new(PeerPoolItem)
+	peer := new(RegisterPeerParam)
 	if err := peer.Deserialization(common.NewZeroCopySource(peerStore)); err != nil {
 		return nil, fmt.Errorf("GetPeeApply, deserialize peer error: %v", err)
 	}
 	return peer, nil
 }
 
-func putPeerApply(native *native.NativeService, peer *PeerPoolItem) error {
+func putPeerApply(native *native.NativeService, peer *RegisterPeerParam) error {
 	contract := utils.NodeManagerContractAddress
 	peerPubkeyPrefix, err := hex.DecodeString(peer.PeerPubkey)
 	if err != nil {

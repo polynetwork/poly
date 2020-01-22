@@ -49,6 +49,8 @@ const (
 	QUIT_NODE            = "quitNode"
 	UPDATE_CONFIG        = "updateConfig"
 	UPDATE_GLOBAL_PARAM  = "updateGlobalParam"
+	ADD_POS              = "addPos"
+	REDUCE_POS           = "reducePos"
 	COMMIT_DPOS          = "commitDpos"
 
 	//key prefix
@@ -75,6 +77,8 @@ func RegisterNodeManagerContract(native *native.NativeService) {
 	native.Register(WHITE_NODE, WhiteNode)
 	native.Register(UPDATE_CONFIG, UpdateConfig)
 	native.Register(UPDATE_GLOBAL_PARAM, UpdateGlobalParam)
+	native.Register(ADD_POS, AddPos)
+	native.Register(REDUCE_POS, ReducePos)
 	native.Register(COMMIT_DPOS, CommitDpos)
 }
 
@@ -246,14 +250,15 @@ func RegisterCandidate(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("registerCandidate, peerPubkey is already in peerPoolMap")
 	}
 
-	peerPoolItem := &PeerPoolItem{
-		PeerPubkey: params.PeerPubkey,
-		Address:    params.Address,
-		Pos:        params.Pos,
-	}
-	err = putPeerApply(native, peerPoolItem)
+	err = putPeerApply(native, params)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("registerCandidate, put putPeerApply error: %v", err)
+	}
+
+	//ont transfer
+	err = appCallTransferOnt(native, address, utils.NodeManagerContractAddress, params.Pos)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("registerCandidate, ont transfer error: %v", err)
 	}
 
 	return utils.BYTE_TRUE, nil
@@ -261,7 +266,7 @@ func RegisterCandidate(native *native.NativeService) ([]byte, error) {
 
 //Unregister a registered candidate node, will remove node from pool
 func UnRegisterCandidate(native *native.NativeService) ([]byte, error) {
-	params := new(RegisterPeerParam)
+	params := new(PeerParam2)
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("unRegisterCandidate, contract params deserialize error: %v", err)
 	}
@@ -296,6 +301,12 @@ func UnRegisterCandidate(native *native.NativeService) ([]byte, error) {
 	}
 	native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(PEER_APPLY), peerPubkeyPrefix))
 
+	//ont transfer
+	err = appCallTransferOnt(native, utils.NodeManagerContractAddress, address, peer.Pos)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("appCallTransferOnt, ont transfer error: %v", err)
+	}
+
 	return utils.BYTE_TRUE, nil
 }
 
@@ -320,16 +331,32 @@ func ApproveCandidate(native *native.NativeService) ([]byte, error) {
 	contract := utils.NodeManagerContractAddress
 
 	//check if applied
-	peerPoolItem, err := GetPeeApply(native, params.PeerPubkey)
+	peer, err := GetPeeApply(native, params.PeerPubkey)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("approveCandidate, GetPeeApply error: %v", err)
 	}
-	if peerPoolItem == nil {
+	if peer == nil {
 		return utils.BYTE_FALSE, fmt.Errorf("approveCandidate, peer is not applied")
 	}
 
+	peerPoolItem := &PeerPoolItem{
+		PeerPubkey: peer.PeerPubkey,
+		Address:    peer.Address,
+		Pos:        peer.Pos,
+	}
+
+	//get globalParam
+	globalParam, err := getGlobalParam(native)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("approveCandidate, getGlobalParam error: %v", err)
+	}
+	//check initPos
+	if peerPoolItem.Pos < uint64(globalParam.MinInitStake) {
+		return utils.BYTE_FALSE, fmt.Errorf("approveCandidate, init Pos must >= %v", globalParam.MinInitStake)
+	}
+
 	//check if has index
-	peerPubkeyPrefix, err := hex.DecodeString(peerPoolItem.PeerPubkey)
+	peerPubkeyPrefix, err := hex.DecodeString(peer.PeerPubkey)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("approveCandidate, peerPubkey format error: %v", err)
 	}
@@ -368,11 +395,6 @@ func ApproveCandidate(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("approveCandidate, get view error: %v", err)
 	}
-	//get globalParam
-	globalParam, err := getGlobalParam(native)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("approveCandidate, getGlobalParam error: %v", err)
-	}
 	//get peerPoolMap
 	peerPoolMap, err := GetPeerPoolMap(native, view)
 	if err != nil {
@@ -387,11 +409,6 @@ func ApproveCandidate(native *native.NativeService) ([]byte, error) {
 	}
 	if num >= int(globalParam.CandidateNum) {
 		return utils.BYTE_FALSE, fmt.Errorf("approveCandidate, num of candidate node is full")
-	}
-
-	//check initPos
-	if peerPoolItem.Pos < uint64(globalParam.MinInitStake) {
-		return utils.BYTE_FALSE, fmt.Errorf("approveCandidate, init Pos must >= %v", globalParam.MinInitStake)
 	}
 
 	peerPoolItem.Status = CandidateStatus
@@ -425,19 +442,29 @@ func RejectCandidate(native *native.NativeService) ([]byte, error) {
 	}
 
 	//check if applied
-	peerPoolItem, err := GetPeeApply(native, params.PeerPubkey)
+	peer, err := GetPeeApply(native, params.PeerPubkey)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("rejectCandidate, GetPeeApply error: %v", err)
 	}
-	if peerPoolItem == nil {
+	if peer == nil {
 		return utils.BYTE_FALSE, fmt.Errorf("rejectCandidate, peer is not applied")
 	}
 
 	peerPubkeyPrefix, err := hex.DecodeString(params.PeerPubkey)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("unRegisterCandidate, peerPubkey format error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("rejectCandidate, peerPubkey format error: %v", err)
 	}
 	native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(PEER_APPLY), peerPubkeyPrefix))
+
+	address, err := common.AddressParseFromBytes(peer.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("rejectCandidate, common.AddressParseFromBytes error: %v", err)
+	}
+	//ont transfer
+	err = appCallTransferOnt(native, utils.NodeManagerContractAddress, address, peer.Pos)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("appCallTransferOnt, ont transfer error: %v", err)
+	}
 
 	return utils.BYTE_TRUE, nil
 }
@@ -560,7 +587,7 @@ func WhiteNode(native *native.NativeService) ([]byte, error) {
 //Quit a registered node, used by node owner.
 //Remove node from pool
 func QuitNode(native *native.NativeService) ([]byte, error) {
-	params := new(RegisterPeerParam)
+	params := new(PeerParam2)
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("quitNode, contract params deserialize error: %v", err)
 	}
@@ -578,7 +605,7 @@ func QuitNode(native *native.NativeService) ([]byte, error) {
 	//get current view
 	view, err := GetView(native)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("getView, get view error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("quitNode, get view error: %v", err)
 	}
 	//get peerPoolMap
 	peerPoolMap, err := GetPeerPoolMap(native, view)
@@ -782,6 +809,108 @@ func UpdateGlobalParam(native *native.NativeService) ([]byte, error) {
 	err = putGlobalParam(native, globalParam)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("updateGlobalParam, put globalParam error: %v", err)
+	}
+
+	return utils.BYTE_TRUE, nil
+}
+
+func AddPos(native *native.NativeService) ([]byte, error) {
+	params := new(RegisterPeerParam)
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("addPos, contract params deserialize error: %v", err)
+	}
+	address, err := common.AddressParseFromBytes(params.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("addPos, common.AddressParseFromBytes error: %v", err)
+	}
+
+	//check witness
+	err = utils.ValidateOwner(native, address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("addPos, checkWitness error: %v", err)
+	}
+
+	//get current view
+	view, err := GetView(native)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("addPos, get view error: %v", err)
+	}
+	//get peerPoolMap
+	peerPoolMap, err := GetPeerPoolMap(native, view)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("addPos, get peerPoolMap error: %v", err)
+	}
+
+	peerPoolItem, ok := peerPoolMap.PeerPoolMap[params.PeerPubkey]
+	if !ok {
+		return utils.BYTE_FALSE, fmt.Errorf("addPos, peerPubkey is not in peerPoolMap")
+	}
+	if peerPoolItem.Status != ConsensusStatus && peerPoolItem.Status != CandidateStatus {
+		return utils.BYTE_FALSE, fmt.Errorf("addPos, peerPubkey is not CandidateStatus or ConsensusStatus")
+	}
+	if !bytes.Equal(params.Address, peerPoolItem.Address) {
+		return utils.BYTE_FALSE, fmt.Errorf("addPos, peerPubkey is not registered by this address")
+	}
+
+	peerPoolItem.Pos = peerPoolItem.Pos + params.Pos
+	peerPoolMap.PeerPoolMap[params.PeerPubkey] = peerPoolItem
+	err = putPeerPoolMap(native, peerPoolMap, view)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("addPos, put peerPoolMap error: %v", err)
+	}
+
+	//ont transfer
+	err = appCallTransferOnt(native, address, utils.NodeManagerContractAddress, params.Pos)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("addPos, ont transfer error: %v", err)
+	}
+	return utils.BYTE_TRUE, nil
+}
+
+func ReducePos(native *native.NativeService) ([]byte, error) {
+	params := new(RegisterPeerParam)
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("reducePos, contract params deserialize error: %v", err)
+	}
+	address, err := common.AddressParseFromBytes(params.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("reducePos, common.AddressParseFromBytes error: %v", err)
+	}
+
+	//check witness
+	err = utils.ValidateOwner(native, address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("reducePos, checkWitness error: %v", err)
+	}
+
+	//get current view
+	view, err := GetView(native)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("reducePos, get view error: %v", err)
+	}
+	//get peerPoolMap
+	peerPoolMap, err := GetPeerPoolMap(native, view)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("reducePos, get peerPoolMap error: %v", err)
+	}
+
+	peerPoolItem, ok := peerPoolMap.PeerPoolMap[params.PeerPubkey]
+	if !ok {
+		return utils.BYTE_FALSE, fmt.Errorf("reducePos, peerPubkey is not in peerPoolMap")
+	}
+	if peerPoolItem.Status != ConsensusStatus && peerPoolItem.Status != CandidateStatus {
+		return utils.BYTE_FALSE, fmt.Errorf("reducePos, peerPubkey is not CandidateStatus or ConsensusStatus")
+	}
+	if !bytes.Equal(params.Address, peerPoolItem.Address) {
+		return utils.BYTE_FALSE, fmt.Errorf("reducePos, peerPubkey is not registered by this address")
+	}
+
+	peerPoolItem.Pos = peerPoolItem.Pos - params.Pos
+	peerPoolItem.LockPos = peerPoolItem.LockPos + params.Pos
+	peerPoolMap.PeerPoolMap[params.PeerPubkey] = peerPoolItem
+	err = putPeerPoolMap(native, peerPoolMap, view)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("reducePos, put peerPoolMap error: %v", err)
 	}
 
 	return utils.BYTE_TRUE, nil
