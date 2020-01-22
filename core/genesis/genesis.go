@@ -26,7 +26,7 @@ import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/common/constants"
-	vconfig "github.com/ontio/multi-chain/consensus/vbft/config"
+	"github.com/ontio/multi-chain/consensus/vbft/config"
 	"github.com/ontio/multi-chain/core/payload"
 	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/native/states"
@@ -38,6 +38,7 @@ const (
 	GenesisNonce uint64 = 2083236893
 
 	INIT_CONFIG = "initConfig"
+	INIT_ONT = "init"		// should be the same name as Ont contract INIT_NAME
 )
 
 var GenBlockTime = (config.DEFAULT_GEN_BLOCK_TIME * time.Second)
@@ -61,6 +62,7 @@ func BuildGenesisBlock(defaultBookkeeper []keypair.PublicKey, genesisConfig *con
 		genesisConfig.VBFT.Serialization(conf)
 	}
 	nodeManagerConfig := newNodeManagerInit(conf.Bytes())
+	ontInitTx := newOntInit()
 	consensusPayload, err := vconfig.GenesisConsensusPayload(0)
 	if err != nil {
 		return nil, fmt.Errorf("consensus genesis init failed: %s", err)
@@ -92,6 +94,7 @@ func BuildGenesisBlock(defaultBookkeeper []keypair.PublicKey, genesisConfig *con
 		Header: genesisHeader,
 		Transactions: []*types.Transaction{
 			nodeManagerConfig,
+			ontInitTx,
 		},
 	}
 	genesisBlock.RebuildMerkleRoot()
@@ -104,6 +107,15 @@ func newNodeManagerInit(config []byte) *types.Transaction {
 		panic("construct genesis node manager transaction error ")
 	}
 	return tx
+}
+
+func newOntInit() *types.Transaction {
+	contractInvokeParam := &states.ContractInvokeParam{Address: utils.OntContractAddress,
+		Method: INIT_ONT, Args: []byte{}}
+	invokeCode := new(common.ZeroCopySink)
+	contractInvokeParam.Serialization(invokeCode)
+
+	return NewInvokeTransaction(invokeCode.Bytes(), 0)
 }
 
 //NewInvokeTransaction return smart contract invoke transaction
