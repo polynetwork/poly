@@ -311,6 +311,25 @@ func TestGetBlockHashByHeight(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestGetPreviousHeader(t *testing.T) {
+	db, _ := syncGenesisHeader(&netParam.GenesisBlock.Header)
+	ns := getNativeFunc(nil, db)
+
+	_, err := GetPreviousHeader(ns, 0, netParam.GenesisBlock.Header)
+	assert.Error(t, err)
+
+	var hdr wire.BlockHeader
+	b, _ := hex.DecodeString(chain[0])
+	hdr.Deserialize(bytes.NewReader(b))
+
+	_, _, _, err = commitHeader(ns, 0, hdr)
+	assert.NoError(t, err)
+	gsh, err := GetPreviousHeader(ns, 0, hdr)
+
+	assert.NoError(t, err)
+	assert.Equal(t, netParam.GenesisHash.String(), gsh.Header.BlockHash().String())
+}
+
 func syncGenesisHeader(genesisHeader *wire.BlockHeader) (*storage.CacheDB, error) {
 	var buf bytes.Buffer
 	_ = genesisHeader.BtcEncode(&buf, wire.ProtocolVersion, wire.LatestEncoding)
@@ -356,5 +375,51 @@ func syncAssumedBtcBlockChain(cacheDB *storage.CacheDB) {
 		putBlockHash(nativeService, 0, sh.Height, sh.Header.BlockHash())
 
 		last = &sh
+	}
+}
+
+func TestReIndexHeaderHeight(t *testing.T) {
+	db, _ := syncGenesisHeader(&chaincfg.RegressionNetParams.GenesisBlock.Header)
+	ns := getNativeFunc(nil, db)
+
+	var hdr wire.BlockHeader
+	for i, c := range chain {
+		b, _ := hex.DecodeString(c)
+		hdr.Deserialize(bytes.NewReader(b))
+		sh := StoredHeader{
+			Header:    hdr,
+			Height:    uint32(i + 1),
+			totalWork: big.NewInt(0),
+		}
+		putBlockHeader(ns, 0, sh)
+		putBestBlockHeader(ns, 0, sh)
+		putBlockHash(ns, 0, sh.Height, sh.Header.BlockHash())
+	}
+
+	var nb StoredHeader
+	prevs := make([]chainhash.Hash, len(fork)-1)
+	for i := 0; i < len(fork)-1; i++ {
+		b, _ := hex.DecodeString(fork[i])
+		hdr.Deserialize(bytes.NewReader(b))
+		prevs[len(prevs)-i-1] = hdr.BlockHash()
+		psh, _ := GetPreviousHeader(ns, 0, hdr)
+		sh := StoredHeader{
+			Header:    hdr,
+			Height:    uint32(psh.Height + 1),
+			totalWork: big.NewInt(0),
+		}
+		if i == len(fork)-2 {
+			nb = sh
+		}
+		putBlockHeader(ns, 0, sh)
+		putBestBlockHeader(ns, 0, sh)
+		putBlockHash(ns, 0, sh.Height, sh.Header.BlockHash())
+	}
+
+	err := ReIndexHeaderHeight(ns, 0, 10, prevs, &nb)
+	assert.NoError(t, err)
+	for i := uint32(6); i <= 11; i++ {
+		hash, _ := GetBlockHashByHeight(ns, 0, i)
+		assert.Equal(t, true, hash.IsEqual(&prevs[11-i]))
 	}
 }

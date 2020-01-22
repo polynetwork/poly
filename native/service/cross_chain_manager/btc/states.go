@@ -1,6 +1,7 @@
 package btc
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/txscript"
@@ -84,7 +85,8 @@ func (this *Utxos) Len() int {
 }
 
 func (this *Utxos) Less(i, j int) bool {
-	return this.Utxos[i].Value < this.Utxos[j].Value
+	return this.Utxos[i].Value < this.Utxos[j].Value &&
+		bytes.Compare(this.Utxos[i].Op.Hash, this.Utxos[j].Op.Hash) == -1
 }
 
 func (this *Utxos) Swap(i, j int) {

@@ -392,7 +392,7 @@ func getStxoAmts(service *native.NativeService, chainID uint64, txIns []*wire.Tx
 			}
 		}
 		if toDel < 0 {
-			return nil, nil, fmt.Errorf("getStxoAmts, %d txIn not found in stxos: %v", i, err)
+			return nil, nil, fmt.Errorf("getStxoAmts, %d txIn not found in stxos")
 		}
 		stxos.Utxos = append(stxos.Utxos[:toDel], stxos.Utxos[toDel+1:]...)
 	}
