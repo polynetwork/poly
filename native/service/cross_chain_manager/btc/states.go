@@ -85,8 +85,10 @@ func (this *Utxos) Len() int {
 }
 
 func (this *Utxos) Less(i, j int) bool {
-	return this.Utxos[i].Value < this.Utxos[j].Value &&
-		bytes.Compare(this.Utxos[i].Op.Hash, this.Utxos[j].Op.Hash) == -1
+	if this.Utxos[i].Value == this.Utxos[j].Value {
+		return bytes.Compare(this.Utxos[i].Op.Hash, this.Utxos[j].Op.Hash) == -1
+	}
+	return this.Utxos[i].Value < this.Utxos[j].Value
 }
 
 func (this *Utxos) Swap(i, j int) {
