@@ -175,6 +175,10 @@ var MainNetConfig = &GenesisConfig{
 		"seed5.ont.io:20338"},
 	ConsensusType: CONSENSUS_TYPE_VBFT,
 	VBFT: &VBFTConfig{
+		N:                    7,
+		C:                    2,
+		K:                    7,
+		L:                    112,
 		BlockMsgDelay:        10000,
 		HashMsgDelay:         10000,
 		PeerHandshakeTimeout: 10,
