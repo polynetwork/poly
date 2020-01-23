@@ -1,6 +1,7 @@
 package ont
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
@@ -9,7 +10,6 @@ import (
 	"github.com/ontio/multi-chain/native/service/utils"
 	ontcommon "github.com/ontio/ontology/common"
 	ontccm "github.com/ontio/ontology/smartcontract/service/native/cross_chain/cross_chain_manager"
-	"encoding/hex"
 )
 
 const (

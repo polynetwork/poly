@@ -637,8 +637,11 @@ func (this *LedgerStoreImp) executeBlock(block *types.Block) (result store.Execu
 		result.Notify = append(result.Notify, notify)
 		result.CrossHashes = append(result.CrossHashes, crossHashes...)
 	}
-
-	result.CrossStatesRoot = merkle.TreeHasher{}.HashFullTreeWithLeafHash(result.CrossHashes)
+	if len(result.CrossHashes) != 0 {
+		result.CrossStatesRoot = merkle.TreeHasher{}.HashFullTreeWithLeafHash(result.CrossHashes)
+	} else {
+		result.CrossStatesRoot = common.UINT256_EMPTY
+	}
 	result.Hash = overlay.ChangeHash()
 	result.WriteSet = overlay.GetWriteSet()
 	result.MerkleRoot = this.stateStore.GetStateMerkleRootWithNewHash(result.Hash)

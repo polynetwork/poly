@@ -229,7 +229,11 @@ func (self *StateStore) GetCrossStatesRoot(height uint32) (hash common.Uint256, 
 	key := genCrossStatesRootKey(height)
 	var value []byte
 	value, err = self.store.Get(key)
-	if err != nil {
+	if err != nil && err != scom.ErrNotFound {
+		return
+	}
+	if err == scom.ErrNotFound {
+		hash = common.UINT256_EMPTY
 		return
 	}
 	buf := bytes.NewBuffer(value)
