@@ -34,19 +34,19 @@ import (
 
 //HandleInvokeTransaction deal with smart contract invoke transaction
 func (self *StateStore) HandleInvokeTransaction(store store.LedgerStore, overlay *overlaydb.OverlayDB, cache *storage.CacheDB,
-	tx *types.Transaction, block *types.Block, notify *event.ExecuteNotify, crossHashes *common.ZeroCopySink) error {
+	tx *types.Transaction, block *types.Block, notify *event.ExecuteNotify) ([]common.Uint256, error) {
 	invoke := tx.Payload.(*payload.InvokeCode)
 
 	service := native.NewNativeService(cache, tx, block.Header.Timestamp, block.Header.Height,
-		block.Hash(), block.Header.ChainID, invoke.Code, false, crossHashes)
+		block.Hash(), block.Header.ChainID, invoke.Code, false)
 
 	if _, err := service.Invoke(); err != nil {
-		return err
+		return nil, err
 	}
 	notify.Notify = append(notify.Notify, service.GetNotify()...)
 	notify.State = event.CONTRACT_STATE_SUCCESS
 	service.GetCacheDB().Commit()
-	return nil
+	return service.GetCrossHashes(), nil
 }
 
 func SaveNotify(eventStore scommon.EventStore, txHash common.Uint256, notify *event.ExecuteNotify) error {

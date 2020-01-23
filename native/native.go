@@ -37,6 +37,10 @@ var (
 	Contracts = make(map[common.Address]RegisterService)
 )
 
+const (
+	MAX_CONTEXT_LEN = 1024
+)
+
 // Native service struct
 // Invoke a native smart contract, new a native service
 type NativeService struct {
@@ -49,23 +53,23 @@ type NativeService struct {
 	height        uint32
 	time          uint32
 	blockHash     common.Uint256
-	crossHashes   *common.ZeroCopySink
+	crossHashes   []common.Uint256
+	contexts      []common.Address
 	preExec       bool
 }
 
 func NewNativeService(cacheDB *storage.CacheDB, tx *types.Transaction,
-	time, height uint32, blockHash common.Uint256, chainID uint64, input []byte, preExec bool, crossHashes *common.ZeroCopySink) *NativeService {
+	time, height uint32, blockHash common.Uint256, chainID uint64, input []byte, preExec bool) *NativeService {
 	service := &NativeService{
-		cacheDB:     cacheDB,
-		tx:          tx,
-		time:        time,
-		height:      height,
-		blockHash:   blockHash,
-		serviceMap:  make(map[string]Handler),
-		input:       input,
-		chainID:     chainID,
-		preExec:     preExec,
-		crossHashes: crossHashes,
+		cacheDB:    cacheDB,
+		tx:         tx,
+		time:       time,
+		height:     height,
+		blockHash:  blockHash,
+		serviceMap: make(map[string]Handler),
+		input:      input,
+		chainID:    chainID,
+		preExec:    preExec,
 	}
 	return service
 }
@@ -75,35 +79,37 @@ func (this *NativeService) Register(methodName string, handler Handler) {
 }
 
 func (this *NativeService) Invoke() (interface{}, error) {
-	invokParam := new(states.ContractInvokeParam)
-	if err := invokParam.Deserialization(common.NewZeroCopySource(this.input)); err != nil {
+	invokeParam := new(states.ContractInvokeParam)
+	if err := invokeParam.Deserialization(common.NewZeroCopySource(this.input)); err != nil {
 		return nil, err
 	}
-	services, ok := Contracts[invokParam.Address]
+	services, ok := Contracts[invokeParam.Address]
 	if !ok {
-		return false, fmt.Errorf("[Invoke] Native contract address %x haven't been registered.", invokParam.Address)
+		return false, fmt.Errorf("[Invoke] Native contract address %x haven't been registered.", invokeParam.Address)
 	}
 	services(this)
-	service, ok := this.serviceMap[invokParam.Method]
+	service, ok := this.serviceMap[invokeParam.Method]
 	if !ok {
 		return false, fmt.Errorf("[Invoke] Native contract %x doesn't support this function %s.",
-			invokParam.Address, invokParam.Method)
+			invokeParam.Address, invokeParam.Method)
 	}
 	args := this.input
-
-	this.input = invokParam.Args
-
+	this.input = invokeParam.Args
 	notifications := this.notifications
 	this.notifications = []*event.NotifyEventInfo{}
-
+	hashes := this.crossHashes
+	this.crossHashes = []common.Uint256{}
+	if err := this.PushContext(invokeParam.Address); err != nil {
+		return err, nil
+	}
 	result, err := service(this)
 	if err != nil {
 		return result, fmt.Errorf("[Invoke] Native serivce function execute error:%s", err)
 	}
-
+	this.PopContext()
 	this.notifications = append(notifications, this.notifications...)
+	this.crossHashes = append(this.crossHashes, hashes...)
 	this.input = args
-
 	return result, nil
 }
 
@@ -119,12 +125,39 @@ func (this *NativeService) NativeCall(address common.Address, method string, arg
 	return this.Invoke()
 }
 
-func (this *NativeService) PutMerkleVal(data []byte) {
-	this.crossHashes.WriteHash(merkle.HashLeaf(data))
+func (this *NativeService) PushContext(address common.Address) error {
+	if len(this.contexts) > MAX_CONTEXT_LEN {
+		return fmt.Errorf("context over max context lenght:%d max contexts lenght:%d", len(this.contexts), MAX_CONTEXT_LEN)
+	}
+	this.contexts = append(this.contexts, address)
+	return nil
 }
 
-// CheckWitness check whether authorization correct
-func (this *NativeService) CheckWitness(address common.Address) bool {
+func (this *NativeService) CallingContext() common.Address {
+	if len(this.contexts) < 2 {
+		return common.ADDRESS_EMPTY
+	}
+	return this.contexts[len(this.contexts)-2]
+}
+
+func (this *NativeService) PopContext() {
+	if len(this.contexts) > 1 {
+		this.contexts = this.contexts[:len(this.contexts)-1]
+	}
+}
+
+func (this *NativeService) CurrentContext() common.Address {
+	if len(this.contexts) == 0 {
+		return common.ADDRESS_EMPTY
+	}
+	return this.contexts[len(this.contexts)-1]
+}
+
+func (this *NativeService) PutMerkleVal(data []byte) {
+	this.crossHashes = append(this.crossHashes, merkle.HashLeaf(data))
+}
+
+func (this *NativeService) checkAccountAddress(address common.Address) bool {
 	addresses, err := this.tx.GetSignatureAddresses()
 	if err != nil {
 		log.Errorf("get signature address error:%v", err)
@@ -134,6 +167,21 @@ func (this *NativeService) CheckWitness(address common.Address) bool {
 		if v == address {
 			return true
 		}
+	}
+	return false
+}
+
+func (this *NativeService) checkContractAddress(address common.Address) bool {
+	if this.CallingContext() != common.ADDRESS_EMPTY && this.CallingContext() == address {
+		return true
+	}
+	return false
+}
+
+// CheckWitness check whether authorization correct
+func (this *NativeService) CheckWitness(address common.Address) bool {
+	if this.checkAccountAddress(address) || this.checkContractAddress(address) {
+		return true
 	}
 	return false
 }
@@ -164,4 +212,8 @@ func (this *NativeService) GetChainID() uint64 {
 
 func (this *NativeService) GetNotify() []*event.NotifyEventInfo {
 	return this.notifications
+}
+
+func (this *NativeService) GetCrossHashes() []common.Uint256 {
+	return this.crossHashes
 }

@@ -38,7 +38,7 @@ const (
 	GenesisNonce uint64 = 2083236893
 
 	INIT_CONFIG = "initConfig"
-	INIT_ONT = "init"		// should be the same name as Ont contract INIT_NAME
+	INIT_ONT    = "init" // should be the same name as Ont contract INIT_NAME
 )
 
 var GenBlockTime = (config.DEFAULT_GEN_BLOCK_TIME * time.Second)

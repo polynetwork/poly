@@ -205,8 +205,16 @@ func (self *StateStore) AddStateMerkleTreeRoot(blockHeight uint32, writeSetHash 
 	return nil
 }
 
-func (self *StateStore) AddCrossStates(height uint32, crossStates []byte, crossStatesHash common.Uint256) error {
-	self.store.BatchPut(genCrossStatesKey(height), crossStates)
+func (self *StateStore) AddCrossStates(height uint32, crossStates []common.Uint256, crossStatesHash common.Uint256) error {
+	if len(crossStates) == 0 {
+		return nil
+	}
+	key := genCrossStatesKey(height)
+	sink := common.NewZeroCopySink(make([]byte, 0, len(crossStates)*common.UINT256_SIZE))
+	for _, v := range crossStates {
+		sink.WriteHash(v)
+	}
+	self.store.BatchPut(key, sink.Bytes())
 
 	buf := bytes.NewBuffer(nil)
 	err := crossStatesHash.Serialize(buf)

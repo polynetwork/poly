@@ -30,7 +30,7 @@ import (
 
 type ExecuteResult struct {
 	WriteSet        *overlaydb.MemDB
-	CrossStates     []byte
+	CrossHashes     []common.Uint256
 	CrossStatesRoot common.Uint256
 	Hash            common.Uint256
 	MerkleRoot      common.Uint256

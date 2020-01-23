@@ -19,12 +19,10 @@
 package ledgerstore
 
 import (
-	"crypto/sha256"
 	"fmt"
 	"github.com/ontio/multi-chain/core/payload"
 	"github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/native"
-	"hash"
 	"os"
 	"sort"
 	"strings"
@@ -629,70 +627,22 @@ func (this *LedgerStoreImp) executeBlock(block *types.Block) (result store.Execu
 	overlay := this.stateStore.NewOverlayDB()
 
 	cache := storage.NewCacheDB(overlay)
-	crossHashes := common.NewZeroCopySink(nil)
 	for _, tx := range block.Transactions {
 		cache.Reset()
-		notify, e := this.handleTransaction(overlay, cache, block, tx, crossHashes)
+		notify, crossHashes, e := this.handleTransaction(overlay, cache, block, tx)
 		if e != nil {
 			err = e
 			return
 		}
 		result.Notify = append(result.Notify, notify)
+		result.CrossHashes = append(result.CrossHashes, crossHashes...)
 	}
 
-	result.CrossStatesRoot, result.CrossStates, err = calculateCrossStatesHash(crossHashes)
-	if err != nil {
-		return
-	}
+	result.CrossStatesRoot = merkle.TreeHasher{}.HashFullTreeWithLeafHash(result.CrossHashes)
 	result.Hash = overlay.ChangeHash()
 	result.WriteSet = overlay.GetWriteSet()
 	result.MerkleRoot = this.stateStore.GetStateMerkleRootWithNewHash(result.Hash)
 	return
-}
-
-func calculateCrossStatesHash(sink *common.ZeroCopySink) (common.Uint256, []byte, error) {
-	bs := sink.Bytes()
-	source := common.NewZeroCopySource(bs)
-	l := len(bs) / common.UINT256_SIZE
-	hashes := make([]common.Uint256, 0, l)
-	for i := 0; i < l; i++ {
-		u256, eof := source.NextHash()
-		if eof {
-			return common.UINT256_EMPTY, nil, fmt.Errorf("%s", "Get states hash error!")
-		}
-		hashes = append(hashes, u256)
-	}
-	return merkle.TreeHasher{}.HashFullTreeWithLeafHash(hashes), bs, nil
-}
-
-func calculateTotalStateHash(overlay *overlaydb.OverlayDB) (result common.Uint256, err error) {
-	stateDiff := sha256.New()
-	iter := overlay.NewIterator([]byte{byte(scom.ST_CONTRACT)})
-	err = accumulateHash(stateDiff, iter)
-	iter.Release()
-	if err != nil {
-		return
-	}
-
-	iter = overlay.NewIterator([]byte{byte(scom.ST_STORAGE)})
-	err = accumulateHash(stateDiff, iter)
-	iter.Release()
-	if err != nil {
-		return
-	}
-
-	stateDiff.Sum(result[:0])
-	return
-}
-
-func accumulateHash(hasher hash.Hash, iter scom.StoreIterator) error {
-	for has := iter.First(); has; has = iter.Next() {
-		key := iter.Key()
-		val := iter.Value()
-		hasher.Write(key)
-		hasher.Write(val)
-	}
-	return iter.Error()
 }
 
 func (this *LedgerStoreImp) saveBlockToStateStore(block *types.Block, result store.ExecuteResult) error {
@@ -718,7 +668,7 @@ func (this *LedgerStoreImp) saveBlockToStateStore(block *types.Block, result sto
 		return fmt.Errorf("SaveCurrentBlock error %s", err)
 	}
 
-	err = this.stateStore.AddCrossStates(blockHeight, result.CrossStates, result.CrossStatesRoot)
+	err = this.stateStore.AddCrossStates(blockHeight, result.CrossHashes, result.CrossStatesRoot)
 	if err != nil {
 		return err
 	}
@@ -853,21 +803,21 @@ func (this *LedgerStoreImp) saveBlock(block *types.Block, stateMerkleRoot common
 	return this.submitBlock(block, result)
 }
 
-func (this *LedgerStoreImp) handleTransaction(overlay *overlaydb.OverlayDB, cache *storage.CacheDB, block *types.Block, tx *types.Transaction, crossHashes *common.ZeroCopySink) (*event.ExecuteNotify, error) {
+func (this *LedgerStoreImp) handleTransaction(overlay *overlaydb.OverlayDB, cache *storage.CacheDB, block *types.Block, tx *types.Transaction) (*event.ExecuteNotify, []common.Uint256, error) {
 	txHash := tx.Hash()
 	notify := &event.ExecuteNotify{TxHash: txHash, State: event.CONTRACT_STATE_FAIL}
-	switch tx.TxType {
-	case types.Invoke:
-		err := this.stateStore.HandleInvokeTransaction(this, overlay, cache, tx, block, notify, crossHashes)
+	if tx.TxType == types.Invoke {
+		crossHashes, err := this.stateStore.HandleInvokeTransaction(this, overlay, cache, tx, block, notify)
 		if overlay.Error() != nil {
-			return nil, fmt.Errorf("HandleInvokeTransaction tx %s error %s", txHash.ToHexString(), overlay.Error())
+			return nil, nil, fmt.Errorf("HandleInvokeTransaction tx %s error %s", txHash.ToHexString(), overlay.Error())
 		}
 		if err != nil {
 			log.Debugf("HandleInvokeTransaction tx %s error %s", txHash.ToHexString(), err)
 		}
+		return notify, crossHashes, nil
+	} else {
+		return nil, nil, fmt.Errorf("Unsupported transaction type!")
 	}
-
-	return notify, nil
 }
 
 func (this *LedgerStoreImp) saveHeaderIndexList() error {
@@ -911,7 +861,7 @@ func (this *LedgerStoreImp) PreExecuteContract(tx *types.Transaction) (*cstates.
 	cache := storage.NewCacheDB(overlay)
 
 	service := native.NewNativeService(cache, tx, uint32(time.Now().Unix()), block.Header.Height,
-		hash, block.Header.ChainID, tx.Payload.(*payload.InvokeCode).Code, true, common.NewZeroCopySink(nil))
+		hash, block.Header.ChainID, tx.Payload.(*payload.InvokeCode).Code, true)
 
 	if _, err := service.Invoke(); err != nil {
 		return result, err
