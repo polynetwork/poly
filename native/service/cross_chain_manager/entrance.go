@@ -61,7 +61,7 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side_chain_manager.GetSideChain error: %v", err)
 	}
 	if sideChain == nil {
-		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side chain is not registered")
+		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side chain %d is not registered", chainID)
 	}
 
 	handler, err := GetChainHandler(sideChain.Router)
@@ -83,7 +83,7 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side_chain_manager.GetSideChain error: %v", err)
 	}
 	if sideChain == nil {
-		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side chain is not registered")
+		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, side chain %d is not registered", targetid)
 	}
 	if sideChain.Router == utils.BTC_ROUTER {
 		err := btc.NewBTCHandler().MakeTransaction(native, txParam, chainID)
