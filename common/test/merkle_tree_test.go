@@ -1,4 +1,4 @@
-package common
+package test
 
 /*
  * Copyright (C) 2018 The ontology Authors
@@ -22,45 +22,46 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"github.com/ontio/multi-chain/common"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
 func TestHash(t *testing.T) {
 
-	var data []Uint256
-	a1 := Uint256(sha256.Sum256([]byte("a")))
-	a2 := Uint256(sha256.Sum256([]byte("b")))
-	a3 := Uint256(sha256.Sum256([]byte("c")))
-	a4 := Uint256(sha256.Sum256([]byte("d")))
-	a5 := Uint256(sha256.Sum256([]byte("e")))
+	var data []common.Uint256
+	a1 := common.Uint256(sha256.Sum256([]byte("a")))
+	a2 := common.Uint256(sha256.Sum256([]byte("b")))
+	a3 := common.Uint256(sha256.Sum256([]byte("c")))
+	a4 := common.Uint256(sha256.Sum256([]byte("d")))
+	a5 := common.Uint256(sha256.Sum256([]byte("e")))
 	data = append(data, a1)
 	data = append(data, a2)
 	data = append(data, a3)
 	data = append(data, a4)
 	data = append(data, a5)
-	hash := ComputeMerkleRoot(data)
-	assert.NotEqual(t, hash, UINT256_EMPTY)
+	hash := common.ComputeMerkleRoot(data)
+	assert.NotEqual(t, hash, common.UINT256_EMPTY)
 
 }
 
 const N = 120000
 
 func BenchmarkComputeMerkleRoot(b *testing.B) {
-	data := make([]Uint256, N)
+	data := make([]common.Uint256, N)
 	for i := range data {
-		data[i] = Uint256(sha256.Sum256([]byte(fmt.Sprint(i))))
+		data[i] = common.Uint256(sha256.Sum256([]byte(fmt.Sprint(i))))
 	}
 
 	for i := 0; i < b.N; i++ {
-		ComputeMerkleRoot(data)
+		common.ComputeMerkleRoot(data)
 	}
 }
 
 func BenchmarkComputeMerkleRootOld(b *testing.B) {
-	data := make([]Uint256, N)
+	data := make([]common.Uint256, N)
 	for i := range data {
-		data[i] = Uint256(sha256.Sum256([]byte(fmt.Sprint(i))))
+		data[i] = common.Uint256(sha256.Sum256([]byte(fmt.Sprint(i))))
 	}
 
 	for i := 0; i < b.N; i++ {
@@ -70,19 +71,19 @@ func BenchmarkComputeMerkleRootOld(b *testing.B) {
 
 func TestComputeMerkleRoot(t *testing.T) {
 	for n := 0; n < 100; n++ {
-		data := make([]Uint256, n)
+		data := make([]common.Uint256, n)
 		for i := range data {
-			data[i] = Uint256(sha256.Sum256([]byte(fmt.Sprint(i))))
+			data[i] = common.Uint256(sha256.Sum256([]byte(fmt.Sprint(i))))
 		}
 
 		h1 := computeMerkleRootOld(data)
 
-		h2 := ComputeMerkleRoot(data)
+		h2 := common.ComputeMerkleRoot(data)
 		assert.Equal(t, h1, h2)
 	}
 }
 
-func doubleSha256(s []Uint256) Uint256 {
+func doubleSha256(s []common.Uint256) common.Uint256 {
 	b := new(bytes.Buffer)
 	for _, d := range s {
 		d.Serialize(b)
@@ -90,7 +91,7 @@ func doubleSha256(s []Uint256) Uint256 {
 	temp := sha256.Sum256(b.Bytes())
 	f := sha256.Sum256(temp[:])
 
-	return Uint256(f)
+	return common.Uint256(f)
 }
 
 type merkleTree struct {
@@ -99,7 +100,7 @@ type merkleTree struct {
 }
 
 type merkleTreeNode struct {
-	Hash  Uint256
+	Hash  common.Uint256
 	Left  *merkleTreeNode
 	Right *merkleTreeNode
 }
@@ -109,7 +110,7 @@ func (t *merkleTreeNode) IsLeaf() bool {
 }
 
 //use []Uint256 to create a new merkleTree
-func newMerkleTree(hashes []Uint256) (*merkleTree, error) {
+func newMerkleTree(hashes []common.Uint256) (*merkleTree, error) {
 	if len(hashes) == 0 {
 		return nil, errors.New("NewMerkleTree input no item error.")
 	}
@@ -130,7 +131,7 @@ func newMerkleTree(hashes []Uint256) (*merkleTree, error) {
 }
 
 //Generate the leaves nodes
-func generateLeaves(hashes []Uint256) []*merkleTreeNode {
+func generateLeaves(hashes []common.Uint256) []*merkleTreeNode {
 	var leaves []*merkleTreeNode
 	for _, d := range hashes {
 		node := &merkleTreeNode{
@@ -145,7 +146,7 @@ func generateLeaves(hashes []Uint256) []*merkleTreeNode {
 func levelUp(nodes []*merkleTreeNode) []*merkleTreeNode {
 	var nextLevel []*merkleTreeNode
 	for i := 0; i < len(nodes)/2; i++ {
-		var data []Uint256
+		var data []common.Uint256
 		data = append(data, nodes[i*2].Hash)
 		data = append(data, nodes[i*2+1].Hash)
 		hash := doubleSha256(data)
@@ -157,7 +158,7 @@ func levelUp(nodes []*merkleTreeNode) []*merkleTreeNode {
 		nextLevel = append(nextLevel, node)
 	}
 	if len(nodes)%2 == 1 {
-		var data []Uint256
+		var data []common.Uint256
 		data = append(data, nodes[len(nodes)-1].Hash)
 		data = append(data, nodes[len(nodes)-1].Hash)
 		hash := doubleSha256(data)
@@ -172,9 +173,9 @@ func levelUp(nodes []*merkleTreeNode) []*merkleTreeNode {
 }
 
 //input a []uint256, create a merkleTree & calc the root hash
-func computeMerkleRootOld(hashes []Uint256) Uint256 {
+func computeMerkleRootOld(hashes []common.Uint256) common.Uint256 {
 	if len(hashes) == 0 {
-		return Uint256{}
+		return common.Uint256{}
 	}
 	if len(hashes) == 1 {
 		return hashes[0]

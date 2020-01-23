@@ -15,37 +15,25 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with The ontology.  If not, see <http://www.gnu.org/licenses/>.
  */
-package common
+
+package test
 
 import (
-	"fmt"
+	"bytes"
+	"github.com/ontio/multi-chain/common"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func TestHexAndBytesTransfer(t *testing.T) {
-	testBytes := []byte("10, 11, 12, 13, 14, 15, 16, 17, 18, 19")
-	stringAfterTrans := ToHexString(testBytes)
-	bytesAfterTrans, err := HexToBytes(stringAfterTrans)
+func TestLimitedWriter_Write(t *testing.T) {
+	bf := bytes.NewBuffer(nil)
+	writer := common.NewLimitedWriter(bf, 5)
+	_, err := writer.Write([]byte{1, 2, 3})
 	assert.Nil(t, err)
-	assert.Equal(t, testBytes, bytesAfterTrans)
-}
+	assert.Equal(t, bf.Bytes(), []byte{1, 2, 3})
+	_, err = writer.Write([]byte{4, 5})
+	assert.Nil(t, err)
 
-func TestGetNonce(t *testing.T) {
-	nonce1 := GetNonce()
-	nonce2 := GetNonce()
-	assert.NotEqual(t, nonce1, nonce2)
-}
-
-func TestFileExisted(t *testing.T) {
-	assert.True(t, FileExisted("common_test.go"))
-	assert.True(t, FileExisted("common.go"))
-	assert.False(t, FileExisted("../log/log.og"))
-	assert.False(t, FileExisted("../log/log.go"))
-	assert.True(t, FileExisted("./log/log.go"))
-}
-
-func TestBase58(t *testing.T) {
-	addr := ADDRESS_EMPTY
-	fmt.Println("emtpy addr:", addr.ToBase58())
+	_, err = writer.Write([]byte{6})
+	assert.Equal(t, err, common.ErrWriteExceedLimitedCount)
 }

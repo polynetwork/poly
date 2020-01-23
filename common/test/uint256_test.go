@@ -15,27 +15,44 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with The ontology.  If not, see <http://www.gnu.org/licenses/>.
  */
-package common
+package test
 
 import (
+	"bytes"
+	"github.com/ontio/multi-chain/common"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
 
-func TestFixed64_Serialize(t *testing.T) {
-	val := Fixed64(10)
-	buf := NewZeroCopySink(nil)
-	val.Serialization(buf)
-	val2 := Fixed64(0)
-	val2.Deserialization(NewZeroCopySource(buf.Bytes()))
-
-	assert.Equal(t, val, val2)
+func TestUint256_Serialize(t *testing.T) {
+	var val common.Uint256
+	val[1] = 245
+	buf := bytes.NewBuffer(nil)
+	err := val.Serialize(buf)
+	assert.Nil(t, err)
 }
 
-func TestFixed64_Deserialize(t *testing.T) {
-	val := Fixed64(0)
-	err := val.Deserialization(NewZeroCopySource([]byte{1, 2, 3}))
+func TestUint256_Deserialize(t *testing.T) {
+	var val common.Uint256
+	val[1] = 245
+	buf := bytes.NewBuffer(nil)
+	val.Serialize(buf)
+
+	var val2 common.Uint256
+	val2.Deserialize(buf)
+
+	assert.Equal(t, val, val2)
+
+	buf = bytes.NewBuffer([]byte{1, 2, 3})
+	err := val2.Deserialize(buf)
 
 	assert.NotNil(t, err)
+}
 
+func TestUint256ParseFromBytes(t *testing.T) {
+	buf := []byte{1, 2, 3}
+
+	_, err := common.Uint256ParseFromBytes(buf)
+
+	assert.NotNil(t, err)
 }

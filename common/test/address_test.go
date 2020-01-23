@@ -15,43 +15,51 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with The ontology.  If not, see <http://www.gnu.org/licenses/>.
  */
-package common
+
+package test
 
 import (
 	"bytes"
-	"github.com/stretchr/testify/assert"
+	"crypto/rand"
+	"github.com/ontio/multi-chain/common"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
-func TestUint256_Serialize(t *testing.T) {
-	var val Uint256
-	val[1] = 245
-	buf := bytes.NewBuffer(nil)
-	err := val.Serialize(buf)
-	assert.Nil(t, err)
-}
+func TestAddressFromBase58(t *testing.T) {
+	var addr common.Address
+	rand.Read(addr[:])
 
-func TestUint256_Deserialize(t *testing.T) {
-	var val Uint256
-	val[1] = 245
-	buf := bytes.NewBuffer(nil)
-	val.Serialize(buf)
+	base58 := addr.ToBase58()
+	b1 := string(append([]byte{'X'}, []byte(base58)...))
+	_, err := common.AddressFromBase58(b1)
 
-	var val2 Uint256
-	val2.Deserialize(buf)
+	assert.NotNil(t, err)
 
-	assert.Equal(t, val, val2)
-
-	buf = bytes.NewBuffer([]byte{1, 2, 3})
-	err := val2.Deserialize(buf)
+	b2 := string([]byte(base58)[1:10])
+	_, err = common.AddressFromBase58(b2)
 
 	assert.NotNil(t, err)
 }
 
-func TestUint256ParseFromBytes(t *testing.T) {
-	buf := []byte{1, 2, 3}
+func TestAddressParseFromBytes(t *testing.T) {
+	var addr common.Address
+	rand.Read(addr[:])
 
-	_, err := Uint256ParseFromBytes(buf)
+	addr2, _ := common.AddressParseFromBytes(addr[:])
 
-	assert.NotNil(t, err)
+	assert.Equal(t, addr, addr2)
+}
+
+func TestAddress_Serialize(t *testing.T) {
+	var addr common.Address
+	rand.Read(addr[:])
+
+	buf := bytes.NewBuffer(nil)
+	addr.Serialize(buf)
+
+	var addr2 common.Address
+	addr2.Deserialize(buf)
+	assert.Equal(t, addr, addr2)
 }

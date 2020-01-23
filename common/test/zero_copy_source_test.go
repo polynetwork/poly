@@ -15,11 +15,12 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with The ontology.  If not, see <http://www.gnu.org/licenses/>.
  */
-package common
+package test
 
 import (
 	"bytes"
 	"crypto/rand"
+	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/serialization"
 	"testing"
 )
@@ -30,7 +31,7 @@ func BenchmarkZeroCopySource(b *testing.B) {
 	rand.Read(buf)
 
 	for i := 0; i < b.N; i++ {
-		source := NewZeroCopySource(buf)
+		source := common.NewZeroCopySource(buf)
 		for j := 0; j < N/100; j++ {
 			source.NextUint16()
 			source.NextByte()
