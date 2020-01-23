@@ -225,22 +225,22 @@ func (self *StateStore) AddCrossStates(height uint32, crossStates []common.Uint2
 	return nil
 }
 
-func (self *StateStore) GetCrossStatesRoot(height uint32) (hash common.Uint256, err error) {
+func (self *StateStore) GetCrossStatesRoot(height uint32) (common.Uint256, error) {
+	var hash common.Uint256
 	key := genCrossStatesRootKey(height)
-	var value []byte
-	value, err = self.store.Get(key)
+	value, err := self.store.Get(key)
 	if err != nil && err != scom.ErrNotFound {
-		return
+		return common.UINT256_EMPTY, err
 	}
 	if err == scom.ErrNotFound {
-		return
+		return common.UINT256_EMPTY, nil
 	}
 	buf := bytes.NewBuffer(value)
 	err = hash.Deserialize(buf)
 	if err != nil {
-		return
+		return common.UINT256_EMPTY, err
 	}
-	return
+	return hash, nil
 }
 
 func (self *StateStore) GetCrossStates(height uint32) (hashes []common.Uint256, err error) {
