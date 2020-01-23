@@ -139,15 +139,15 @@ type LockParam struct {
 }
 
 func (this *LockParam) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteUint64(this.ToChainID)
+	sink.WriteVarUint(this.ToChainID)
 	sink.WriteAddress(this.FromAddress)
-	sink.WriteUint64(this.Fee)
+	sink.WriteVarUint(this.Fee)
 	this.Args.Serialization(sink)
 }
 
 func (this *LockParam) Deserialization(source *common.ZeroCopySource) error {
 	var eof bool
-	this.ToChainID, eof = source.NextUint64()
+	this.ToChainID, eof = source.NextVarUint()
 	if eof {
 		return fmt.Errorf("LockParam.Deserialization error: %s", "decode ToChainID error")
 	}
@@ -155,7 +155,7 @@ func (this *LockParam) Deserialization(source *common.ZeroCopySource) error {
 	if eof {
 		return fmt.Errorf("LockParam.Deserialization error: %s", "decode FromAddress error")
 	}
-	this.Fee, eof = source.NextUint64()
+	this.Fee, eof = source.NextVarUint()
 	if eof {
 		return fmt.Errorf("LockParam.Deserialization error: %s", "decode Fee error")
 	}

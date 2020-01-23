@@ -9,6 +9,7 @@ import (
 	"github.com/ontio/multi-chain/native/service/utils"
 	ontcommon "github.com/ontio/ontology/common"
 	ontccm "github.com/ontio/ontology/smartcontract/service/native/cross_chain/cross_chain_manager"
+	"encoding/hex"
 )
 
 const (
@@ -70,7 +71,7 @@ func AddLockNotifications(native *native.NativeService, contract common.Address,
 	native.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: contract,
-			States:          []interface{}{LOCK_NAME, param.FromAddress.ToBase58(), param.ToChainID, toContract, param.Args},
+			States:          []interface{}{LOCK_NAME, param.FromAddress.ToBase58(), param.ToChainID, hex.EncodeToString(toContract), hex.EncodeToString(param.Args.ToAddress), param.Args.Value},
 		})
 }
 
@@ -81,7 +82,7 @@ func AddUnLockNotifications(native *native.NativeService, contract common.Addres
 	native.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: contract,
-			States:          []interface{}{UNLOCK_NAME, fromChainId, fromContract, toAddress.ToBase58(), amount},
+			States:          []interface{}{UNLOCK_NAME, fromChainId, hex.EncodeToString(fromContract), toAddress.ToBase58(), amount},
 		})
 }
 

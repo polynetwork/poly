@@ -177,7 +177,7 @@ func OntTransferFrom(native *native.NativeService) ([]byte, error) {
 
 func OntBind(native *native.NativeService) ([]byte, error) {
 	source := common.NewZeroCopySource(native.GetInput())
-	targetChainId, eof := source.NextUint64()
+	targetChainId, eof := source.NextVarUint()
 	if eof {
 		return utils.BYTE_FALSE, fmt.Errorf("[OntBind] decode targetChainId error")
 	}
@@ -256,7 +256,7 @@ func OntUnlock(native *native.NativeService) ([]byte, error) {
 
 	//  this method cannot be invoked by anybody except verifyTxManagerContract
 	if !native.CheckWitness(utils.CrossChainManagerContractAddress) {
-		return utils.BYTE_FALSE, fmt.Errorf("[OntUnlock] should be invoked by VerirfyTxManager Contract, checkwitness failed!")
+		return utils.BYTE_FALSE, fmt.Errorf("[OntUnlock] should be invoked by CrossChainManager Contract, checkwitness failed!")
 	}
 	contract := utils.OntContractAddress
 	source := common.NewZeroCopySource(native.GetInput())
