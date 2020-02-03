@@ -23,7 +23,7 @@ var (
 	getNativeFunc = func() *native.NativeService {
 		store, _ := leveldbstore.NewMemLevelDBStore()
 		cacheDB := storage.NewCacheDB(overlaydb.NewOverlayDB(store))
-		service := native.NewNativeService(cacheDB, nil, 0, 200, common.Uint256{}, 0, nil, false, nil)
+		service := native.NewNativeService(cacheDB, nil, 0, 200, common.Uint256{}, 0, nil, false)
 		return service
 	}
 	getBtcHanderFunc = func() *ETHHandler {
@@ -37,7 +37,7 @@ func NewNative(args []byte, db *storage.CacheDB) *native.NativeService {
 		store, _ := leveldbstore.NewMemLevelDBStore()
 		db = storage.NewCacheDB(overlaydb.NewOverlayDB(store))
 	}
-	return native.NewNativeService(db, nil, 0, 0, common.Uint256{0}, 0, args, false, nil)
+	return native.NewNativeService(db, nil, 0, 0, common.Uint256{0}, 0, args, false)
 }
 
 func getLatestHeight(native *native.NativeService) uint64 {
