@@ -98,7 +98,7 @@ func (this *ONTHandler) MakeDepositProposal(service *native.NativeService) (*sco
 func (this *ONTHandler) ProcessMultiChainTx(service *native.NativeService, txParam *scom.MakeTxParam) ([]byte, error) {
 	//target chain is multi-chain
 	if txParam.ToChainID == service.GetChainID() {
-		if !bytes.Equal(txParam.ToContractAddress, utils.OntContractAddress[:]) {
+		if !bytes.Equal(txParam.ToContractAddress, utils2.OntLockContractAddress[:]) {
 			return utils.BYTE_FALSE, fmt.Errorf("[Ont ProcessTx], to contract address id is not multi-chain Ont contract address, expect:%s, get:%s",
 				utils.OntContractAddress.ToHexString(), hex.EncodeToString(common.ToArrayReverse(txParam.ToContractAddress)))
 		}
@@ -118,12 +118,12 @@ func (this *ONTHandler) CreateTx(service *native.NativeService) (*scom.MakeTxPar
 		return nil, fmt.Errorf("[CreateTx], contract params deserialize error: %v", err)
 	}
 
-	if !bytes.Equal(utils2.OntContractAddress[:], params.ToContractAddress) {
-		return nil, fmt.Errorf("[CreateTx], ToContractAddress is not ontology ONT contract address!")
+	if !bytes.Equal(utils2.OntLockContractAddress[:], params.ToContractAddress) {
+		return nil, fmt.Errorf("[CreateTx], ToContractAddress is ont lock proxy contract address in ontology network!")
 	}
 
-	if !service.CheckWitness(utils.OntContractAddress) {
-		return nil, fmt.Errorf("[CreateTx] should be invoked by OntContract, checkwitness failed!")
+	if !service.CheckWitness(utils.OntLockProxyContractAddress) {
+		return nil, fmt.Errorf("[CreateTx] should be invoked by ont lock proxy contract, checkwitness failed!")
 	}
 	txHash := service.GetTx().Hash()
 

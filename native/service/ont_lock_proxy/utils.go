@@ -6,23 +6,16 @@ import (
 	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/event"
-	"github.com/ontio/multi-chain/native/service/utils"
 	ontcommon "github.com/ontio/ontology/common"
 	ontccm "github.com/ontio/ontology/smartcontract/service/native/cross_chain/cross_chain_manager"
 )
 
 const (
-	BALANCEOF_NAME = "balanceOf"
-	BIND_NAME      = "bind"
-	LOCK_NAME      = "lock"
-	UNLOCK_NAME    = "unlock"
+	LOCK_NAME       = "lock"
+	UNLOCK_NAME     = "unlock"
+	BIND_PROXY_NAME = "bindProxy"
+	BIND_ASSET_NAME = "bindAsset"
 )
-
-func GenBindKey(contract common.Address, chainId uint64) []byte {
-	chainIdBytes := utils.GetUint64Bytes(chainId)
-	temp := append(contract[:], []byte(BIND_NAME)...)
-	return append(temp, chainIdBytes...)
-}
 
 func AddLockNotifications(native *native.NativeService, contract common.Address, toContract []byte, param *LockParam) {
 	if !config.DefConfig.Common.EnableEventLog {
@@ -57,4 +50,21 @@ func getCreateTxArgs(toChainID uint64, contractHashBytes []byte, fee uint64, met
 	sink := ontcommon.NewZeroCopySink(nil)
 	createCrossChainTxParam.Serialization(sink)
 	return sink.Bytes()
+}
+
+func GenBindProxyKey(contract common.Address, chainId uint64) []byte {
+	sink := common.NewZeroCopySink(nil)
+	sink.WriteUint64(chainId)
+	chainIdBytes := sink.Bytes()
+	temp := append(contract[:], []byte(BIND_PROXY_NAME)...)
+	return append(temp, chainIdBytes...)
+}
+
+func GenBindAssetKey(contract common.Address, assetContract []byte, chainId uint64) []byte {
+	sink := common.NewZeroCopySink(nil)
+	sink.WriteUint64(chainId)
+	chainIdBytes := sink.Bytes()
+	temp := append(contract[:], assetContract...)
+	temp = append(temp, []byte(BIND_ASSET_NAME)...)
+	return append(temp, chainIdBytes...)
 }

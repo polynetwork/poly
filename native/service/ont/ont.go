@@ -17,7 +17,6 @@ func RegisterOntContract(native *native.NativeService) {
 	native.Register(TOTALSUPPLY_NAME, OntTotalSupply)
 	native.Register(BALANCEOF_NAME, OntBalanceOf)
 	native.Register(ALLOWANCE_NAME, OntAllowance)
-
 	native.Register(INIT_NAME, OntInit)
 	native.Register(TRANSFER_NAME, OntTransfer)
 	native.Register(APPROVE_NAME, OntApprove)
