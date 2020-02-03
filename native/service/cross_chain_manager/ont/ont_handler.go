@@ -104,7 +104,7 @@ func (this *ONTHandler) ProcessMultiChainTx(service *native.NativeService, txPar
 		}
 
 		input := getUnlockArgs(txParam.Args, txParam.FromContractAddress, ontccm.ONT_CHAIN_ID)
-		res, err := service.NativeCall(utils.OntContractAddress, txParam.Method, input)
+		res, err := service.NativeCall(utils.OntLockProxyContractAddress, txParam.Method, input)
 		if !bytes.Equal(res.([]byte), utils.BYTE_TRUE) || err != nil {
 			return utils.BYTE_FALSE, fmt.Errorf("[ProcessMultiChainTx] OntUnlock, error:%s", err)
 		}

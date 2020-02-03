@@ -1,33 +1,26 @@
 package ont
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/event"
 	"github.com/ontio/multi-chain/native/service/utils"
-	ontcommon "github.com/ontio/ontology/common"
-	ontccm "github.com/ontio/ontology/smartcontract/service/native/cross_chain/cross_chain_manager"
 )
 
 const (
-	UNBOUND_TIME_OFFSET = "unboundTimeOffset"
-	TOTAL_SUPPLY_NAME   = "totalSupply"
-	INIT_NAME           = "init"
-	TRANSFER_NAME       = "transfer"
-	APPROVE_NAME        = "approve"
-	TRANSFERFROM_NAME   = "transferFrom"
-	NAME_NAME           = "name"
-	SYMBOL_NAME         = "symbol"
-	DECIMALS_NAME       = "decimals"
-	TOTALSUPPLY_NAME    = "totalSupply"
-	BALANCEOF_NAME      = "balanceOf"
-	ALLOWANCE_NAME      = "allowance"
-	BIND_NAME           = "bind"
-	LOCK_NAME           = "lock"
-	UNLOCK_NAME         = "unlock"
+	TOTAL_SUPPLY_NAME = "totalSupply"
+	INIT_NAME         = "init"
+	TRANSFER_NAME     = "transfer"
+	APPROVE_NAME      = "approve"
+	TRANSFERFROM_NAME = "transferFrom"
+	NAME_NAME         = "name"
+	SYMBOL_NAME       = "symbol"
+	DECIMALS_NAME     = "decimals"
+	TOTALSUPPLY_NAME  = "totalSupply"
+	BALANCEOF_NAME    = "balanceOf"
+	ALLOWANCE_NAME    = "allowance"
 )
 
 const (
@@ -43,12 +36,6 @@ func GenBalanceKey(contract, addr common.Address) []byte {
 	return append(contract[:], addr[:]...)
 }
 
-func GenBindKey(contract common.Address, chainId uint64) []byte {
-	chainIdBytes := utils.GetUint64Bytes(chainId)
-	temp := append(contract[:], []byte(BIND_NAME)...)
-	return append(temp, chainIdBytes...)
-}
-
 func GenApproveKey(contract, from, to common.Address) []byte {
 	temp := append(contract[:], from[:]...)
 	return append(temp, to[:]...)
@@ -61,28 +48,6 @@ func AddTransferNotifications(native *native.NativeService, contract common.Addr
 		&event.NotifyEventInfo{
 			ContractAddress: contract,
 			States:          []interface{}{TRANSFER_NAME, state.From.ToBase58(), state.To.ToBase58(), state.Value},
-		})
-}
-
-func AddLockNotifications(native *native.NativeService, contract common.Address, toContract []byte, param *LockParam) {
-	if !config.DefConfig.Common.EnableEventLog {
-		return
-	}
-	native.AddNotify(
-		&event.NotifyEventInfo{
-			ContractAddress: contract,
-			States:          []interface{}{LOCK_NAME, param.FromAddress.ToBase58(), param.ToChainID, hex.EncodeToString(toContract), hex.EncodeToString(param.Args.ToAddress), param.Args.Value},
-		})
-}
-
-func AddUnLockNotifications(native *native.NativeService, contract common.Address, fromChainId uint64, fromContract []byte, toAddress common.Address, amount uint64) {
-	if !config.DefConfig.Common.EnableEventLog {
-		return
-	}
-	native.AddNotify(
-		&event.NotifyEventInfo{
-			ContractAddress: contract,
-			States:          []interface{}{UNLOCK_NAME, fromChainId, hex.EncodeToString(fromContract), toAddress.ToBase58(), amount},
 		})
 }
 
@@ -170,17 +135,4 @@ func fromApprove(native *native.NativeService, fromApproveKey []byte, value uint
 func genTransferFromKey(contract common.Address, state *TransferFrom) []byte {
 	temp := append(contract[:], state.From[:]...)
 	return append(temp, state.Sender[:]...)
-}
-
-func getCreateTxArgs(toChainID uint64, contractHashBytes []byte, fee uint64, method string, argsBytes []byte) []byte {
-	createCrossChainTxParam := &ontccm.CreateCrossChainTxParam{
-		ToChainID:         toChainID,
-		ToContractAddress: contractHashBytes,
-		Fee:               fee,
-		Method:            method,
-		Args:              argsBytes,
-	}
-	sink := ontcommon.NewZeroCopySink(nil)
-	createCrossChainTxParam.Serialization(sink)
-	return sink.Bytes()
 }
