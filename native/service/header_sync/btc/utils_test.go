@@ -63,7 +63,7 @@ func TestCalcRequiredWork(t *testing.T) {
 	assert.Nil(t, err)
 	syncAssumedBtcBlockChain(cacheDB)
 
-	nativeService := native.NewNativeService(cacheDB, nil, 0, 0, common.Uint256{}, 0, nil, false, nil)
+	nativeService := native.NewNativeService(cacheDB, nil, 0, 0, common.Uint256{}, 0, nil, false)
 	bestHeader, err := GetBestBlockHeader(nativeService, 0)
 	if err != nil {
 		t.Error(err)
