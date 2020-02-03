@@ -236,8 +236,8 @@ var storeTest HashStore
 var N = 100 //00
 
 func init() {
-	storeTest, _ := NewFileHashStore("merkletree.db", 0)
-	treeTest := NewTree(0, nil, storeTest)
+	storeTest, _ = NewFileHashStore("merkletree.db", 0)
+	treeTest = NewTree(0, nil, storeTest)
 	for i := 0; i < N; i++ {
 		treeTest.Append([]byte(fmt.Sprintf("setup %d", i)))
 	}
