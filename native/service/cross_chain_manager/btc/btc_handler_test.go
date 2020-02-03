@@ -54,7 +54,7 @@ var (
 			db = storage.NewCacheDB(overlaydb.NewOverlayDB(store))
 		}
 
-		return native.NewNativeService(db, nil, 0, 0, common.Uint256{0}, 0, args, false, nil)
+		return native.NewNativeService(db, nil, 0, 0, common.Uint256{0}, 0, args, false)
 	}
 
 	setSideChain = func(ns *native.NativeService) {
