@@ -18,19 +18,21 @@
 package stateless
 
 import (
+	"fmt"
+	"github.com/ontio/multi-chain/core/payload"
+	"github.com/ontio/multi-chain/core/types"
+	"github.com/ontio/multi-chain/errors"
+	"github.com/ontio/ontology-eventbus/actor"
+	"github.com/stretchr/testify/assert"
 	"testing"
+	"time"
 
 	"github.com/ontio/multi-chain/account"
 	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/core/signature"
 	ctypes "github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/multi-chain/core/utils"
-	"github.com/ontio/multi-chain/errors"
 	types2 "github.com/ontio/multi-chain/validator/types"
 	"github.com/ontio/ontology-crypto/keypair"
-	"github.com/ontio/ontology-eventbus/actor"
-	"github.com/stretchr/testify/assert"
-	"time"
 )
 
 func signTransaction(signer *account.Account, tx *ctypes.MutableTransaction) error {
@@ -47,14 +49,15 @@ func signTransaction(signer *account.Account, tx *ctypes.MutableTransaction) err
 func TestStatelessValidator(t *testing.T) {
 	log.Init(log.PATH, log.Stdout)
 	acc := account.NewAccount("")
+	invoke := &payload.InvokeCode{}
+	mutable := &types.MutableTransaction{
+		TxType:  types.Invoke,
+		Payload: invoke,
+	}
+	fmt.Print(mutable.Hash())
 
-	code := []byte{1, 2, 3}
-
-	mutable := utils.NewDeployTransaction(code, "test", "1", "author", "author@123.com", "test desp", false)
-
-	mutable.Payer = acc.Address
-
-	signTransaction(acc, mutable)
+	err := signTransaction(acc, mutable)
+	assert.Nil(t, err)
 
 	tx, err := mutable.IntoImmutable()
 	assert.Nil(t, err)
