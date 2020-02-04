@@ -99,7 +99,7 @@ func (this *ONTHandler) ProcessMultiChainTx(service *native.NativeService, txPar
 	//target chain is multi-chain
 	if txParam.ToChainID == service.GetChainID() {
 		if !bytes.Equal(txParam.ToContractAddress, utils.OntLockProxyContractAddress[:]) {
-			return utils.BYTE_FALSE, fmt.Errorf("[Ont ProcessTx], to contract address id is not multi-chain Ont contract address, expect:%s, get:%s",
+			return utils.BYTE_FALSE, fmt.Errorf("[Ont ProcessTx], to contract address is not multi-chain Ont contract address, expect:%s, get:%s",
 				utils.OntLockProxyContractAddress.ToHexString(), hex.EncodeToString(common.ToArrayReverse(txParam.ToContractAddress)))
 		}
 
@@ -130,7 +130,7 @@ func (this *ONTHandler) CreateTx(service *native.NativeService) (*scom.MakeTxPar
 	txParam := &scom.MakeTxParam{
 		TxHash:              txHash.ToArray(),
 		CrossChainID:        txHash.ToArray(),
-		FromContractAddress: utils.CrossChainManagerContractAddress[:],
+		FromContractAddress: utils.OntLockProxyContractAddress[:],
 		ToChainID:           params.ToChainID,
 		ToContractAddress:   params.ToContractAddress,
 		Method:              params.Method,

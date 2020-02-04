@@ -142,6 +142,9 @@ func OntUnlock(native *native.NativeService) ([]byte, error) {
 	source := common.NewZeroCopySource(native.GetInput())
 
 	paramsBytes, eof := source.NextVarBytes()
+	if eof {
+		return utils.BYTE_FALSE, fmt.Errorf("[OntUnlock] input deseriaize args error!")
+	}
 	var args Args
 	err := args.Deserialization(common.NewZeroCopySource(paramsBytes))
 	if err != nil {
@@ -160,7 +163,7 @@ func OntUnlock(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("[OntUnlock] get bind contract hash with chainID:%d error:%s", fromChainId, err)
 	}
 	if !bytes.Equal(contractHashBytes, fromContractHashBytes) {
-		return utils.BYTE_FALSE, fmt.Errorf("[OntUnlock] passed in proxy contractHash NOT equal stored contractHash with chainID:%d, expect:%s, got:%s", fromChainId, contractHashBytes, fromContractHashBytes)
+		return utils.BYTE_FALSE, fmt.Errorf("[OntUnlock] passed in proxy contractHash NOT equal stored contractHash with chainID:%d, expect:%s, got:%s", fromChainId, hex.EncodeToString(contractHashBytes), hex.EncodeToString(fromContractHashBytes))
 	}
 	// currently, only support ont
 	if !bytes.Equal(args.AssetHash, ontContract[:]) {
