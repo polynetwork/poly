@@ -98,9 +98,9 @@ func (this *ONTHandler) MakeDepositProposal(service *native.NativeService) (*sco
 func (this *ONTHandler) ProcessMultiChainTx(service *native.NativeService, txParam *scom.MakeTxParam) ([]byte, error) {
 	//target chain is multi-chain
 	if txParam.ToChainID == service.GetChainID() {
-		if !bytes.Equal(txParam.ToContractAddress, utils2.OntLockContractAddress[:]) {
+		if !bytes.Equal(txParam.ToContractAddress, utils.OntLockProxyContractAddress[:]) {
 			return utils.BYTE_FALSE, fmt.Errorf("[Ont ProcessTx], to contract address id is not multi-chain Ont contract address, expect:%s, get:%s",
-				utils.OntContractAddress.ToHexString(), hex.EncodeToString(common.ToArrayReverse(txParam.ToContractAddress)))
+				utils.OntLockProxyContractAddress.ToHexString(), hex.EncodeToString(common.ToArrayReverse(txParam.ToContractAddress)))
 		}
 
 		input := getUnlockArgs(txParam.Args, txParam.FromContractAddress, ontccm.ONT_CHAIN_ID)
