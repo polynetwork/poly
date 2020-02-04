@@ -37,7 +37,7 @@ func TestMain(m *testing.M) {
 	log.InitLog(0)
 
 	var err error
-	testLedgerStore, err = NewLedgerStore("test/ledger", 0)
+	testLedgerStore, err = NewLedgerStore("test/ledger")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "NewLedgerStore error %s\n", err)
 		return
@@ -51,7 +51,7 @@ func TestMain(m *testing.M) {
 	}
 	testStateDir := "test/state"
 	merklePath := "test/" + MerkleTreeStorePath
-	testStateStore, err = NewStateStore(testStateDir, merklePath, 1000)
+	testStateStore, err = NewStateStore(testStateDir, merklePath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "NewStateStore error %s\n", err)
 		return

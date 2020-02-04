@@ -19,16 +19,12 @@
 package ledgerstore
 
 import (
-	"bytes"
 	"crypto/sha256"
 	"fmt"
 	"github.com/ontio/multi-chain/account"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/core/payload"
 	"github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/multi-chain/core/utils"
-	"github.com/ontio/multi-chain/native/service/native/ont"
-	nutils "github.com/ontio/multi-chain/native/service/native/utils"
 	"github.com/ontio/ontology-crypto/keypair"
 	"testing"
 	"time"
@@ -240,11 +236,10 @@ func TestSaveHeader(t *testing.T) {
 		Transactions: []*types.Transaction{},
 	}
 	blockHash := block.Hash()
-	sysFee := common.Fixed64(1)
 
 	testBlockStore.NewBatch()
 
-	err = testBlockStore.SaveHeader(block, sysFee)
+	err = testBlockStore.SaveHeader(block)
 	if err != nil {
 		t.Errorf("SaveHeader error %s", err)
 		return
@@ -271,12 +266,6 @@ func TestSaveHeader(t *testing.T) {
 		t.Errorf("TestSaveHeader failed Height %d != %d", h.Height, header.Height)
 		return
 	}
-
-	fee, err := testBlockStore.GetSysFeeAmount(blockHash)
-	if err != nil {
-		t.Errorf("TestSaveHeader SysFee %d != %d", fee, sysFee)
-		return
-	}
 }
 
 func TestBlock(t *testing.T) {
@@ -297,7 +286,14 @@ func TestBlock(t *testing.T) {
 		NextBookkeeper:   bookkeeper,
 	}
 
-	tx1, err := transferTx(acc1.Address, acc2.Address, 10)
+	invoke := &payload.InvokeCode{}
+	txTemp := &types.MutableTransaction{
+		TxType:  types.Invoke,
+		Payload: invoke,
+	}
+	fmt.Print(txTemp.Hash())
+	tx1, err := txTemp.IntoImmutable()
+
 	if err != nil {
 		t.Errorf("TestBlock transferTx error:%s", err)
 		return
@@ -352,57 +348,4 @@ func TestBlock(t *testing.T) {
 		t.Errorf("TestBlock failed transaction1 hash %x != %x", b.Transactions[0].Hash(), tx1Hash)
 		return
 	}
-}
-
-func transferTx(from, to common.Address, amount uint64) (*types.Transaction, error) {
-	buf := bytes.NewBuffer(nil)
-	var sts []ont.State
-	sts = append(sts, ont.State{
-		From:  from,
-		To:    to,
-		Value: amount,
-	})
-	transfers := &ont.Transfers{
-		States: sts,
-	}
-	err := transfers.Serialize(buf)
-	if err != nil {
-		return nil, fmt.Errorf("transfers.Serialize error %s", err)
-	}
-	var cversion byte
-	return invokeSmartContractTx(0, 30000, cversion, nutils.OntContractAddress, "transfer", []interface{}{sts})
-}
-
-func invokeSmartContractTx(gasPrice,
-	gasLimit uint64,
-	cversion byte,
-	contractAddress common.Address,
-	method string,
-	args []interface{}) (*types.Transaction, error) {
-
-	invokCode, err := utils.BuildNativeInvokeCode(contractAddress, cversion, method, args)
-	if err != nil {
-		return nil, err
-	}
-	return newInvokeTransaction(gasPrice, gasLimit, invokCode), nil
-}
-
-func newInvokeTransaction(gasPirce, gasLimit uint64, code []byte) *types.Transaction {
-	invokePayload := &payload.InvokeCode{
-		Code: code,
-	}
-	tx := &types.MutableTransaction{
-		Version:  0,
-		GasPrice: gasPirce,
-		GasLimit: gasLimit,
-		TxType:   types.Invoke,
-		Nonce:    uint32(time.Now().Unix()),
-		Payload:  invokePayload,
-		Sigs:     make([]types.Sig, 0, 0),
-	}
-	res, err := tx.IntoImmutable()
-	if err != nil {
-		return nil
-	}
-	return res
 }
