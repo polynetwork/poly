@@ -22,7 +22,7 @@ func RegisterOntLockContract(native *native.NativeService) {
 	native.Register(LOCK_NAME, OntLock)
 	native.Register(UNLOCK_NAME, OntUnlock)
 	native.Register(BIND_PROXY_NAME, OntBindProxyHash)
-	native.Register(BIND_PROXY_NAME, OntBindAssetHash)
+	native.Register(BIND_ASSET_NAME, OntBindAssetHash)
 }
 
 func OntBindProxyHash(native *native.NativeService) ([]byte, error) {
@@ -70,7 +70,7 @@ func OntBindAssetHash(native *native.NativeService) ([]byte, error) {
 		native.AddNotify(
 			&event.NotifyEventInfo{
 				ContractAddress: utils.OntLockProxyContractAddress,
-				States:          []interface{}{BIND_PROXY_NAME, bindParam.TargetChainId, hex.EncodeToString(bindParam.TargetAssetHash)},
+				States:          []interface{}{BIND_PROXY_NAME, hex.EncodeToString(bindParam.SourceAssetHash[:]), bindParam.TargetChainId, hex.EncodeToString(bindParam.TargetAssetHash)},
 			})
 	}
 
@@ -98,14 +98,16 @@ func OntLock(native *native.NativeService) ([]byte, error) {
 	if !bytes.Equal(lockParam.Args.AssetHash, ontContract[:]) {
 		return utils.BYTE_FALSE, fmt.Errorf("[OntLock] only support ont lock, expect:%s, but got:%s", hex.EncodeToString(ontContract[:]), hex.EncodeToString(lockParam.Args.AssetHash))
 	}
-	state := &ont.State{
+
+	state := ont.State{
 		From:  lockParam.FromAddress,
 		To:    lockContract,
 		Value: lockParam.Args.Value,
 	}
-	_, _, err = ont.Transfer(native, utils.OntContractAddress, state)
-	if err != nil {
-		return utils.BYTE_FALSE, err
+	transferInput := getTransferInput(state)
+	res, err := native.NativeCall(utils.OntContractAddress, ont.TRANSFER_NAME, transferInput)
+	if !bytes.Equal(res.([]byte), utils.BYTE_TRUE) || err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("[OntLock] Transfer Ont, error:%s", err)
 	}
 
 	contractHashBytes, err := utils.GetStorageVarBytes(native, GenBindProxyKey(lockContract, lockParam.ToChainID))
@@ -171,10 +173,11 @@ func OntUnlock(native *native.NativeService) ([]byte, error) {
 	if args.Value == 0 {
 		return utils.BYTE_TRUE, nil
 	}
-	_, _, err = ont.Transfer(native, ontContract, &ont.State{lockContract, toAddress, args.Value})
 
-	if err != nil {
-		return utils.BYTE_FALSE, err
+	transferInput := getTransferInput(ont.State{lockContract, toAddress, args.Value})
+	res, err := native.NativeCall(utils.OntContractAddress, ont.TRANSFER_NAME, transferInput)
+	if !bytes.Equal(res.([]byte), utils.BYTE_TRUE) || err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("[OntUnLock] Transfer Ont, error:%s", err)
 	}
 
 	AddUnLockNotifications(native, lockContract, fromChainId, fromContractHashBytes, toAddress, args.Value)
