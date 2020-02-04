@@ -866,10 +866,11 @@ func (this *LedgerStoreImp) PreExecuteContract(tx *types.Transaction) (*cstates.
 	service := native.NewNativeService(cache, tx, uint32(time.Now().Unix()), block.Header.Height,
 		hash, block.Header.ChainID, tx.Payload.(*payload.InvokeCode).Code, true)
 
-	if _, err := service.Invoke(); err != nil {
+	res, err := service.Invoke()
+	if err != nil {
 		return result, err
 	}
-	return &sstate.PreExecResult{State: event.CONTRACT_STATE_SUCCESS, Result: nil, Notify: service.GetNotify()}, nil
+	return &sstate.PreExecResult{State: event.CONTRACT_STATE_SUCCESS, Result: common.ToHexString(res.([]byte)), Notify: service.GetNotify()}, nil
 }
 
 //IsContainBlock return whether the block is in store
