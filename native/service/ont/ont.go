@@ -88,7 +88,7 @@ func OntInit(native *native.NativeService) ([]byte, error) {
 	if amount > 0 {
 		return utils.BYTE_FALSE, fmt.Errorf("Init ont has been completed!")
 	}
-	toAddress := contract
+	toAddress := utils.OntLockProxyContractAddress
 	toAmount := constants.ONT_TOTAL_SUPPLY
 
 	item := utils.GenUInt64StorageItem(toAmount)
