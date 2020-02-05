@@ -2,6 +2,7 @@ package btc
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"github.com/btcsuite/btcd/wire"
@@ -104,9 +105,13 @@ var (
 func TestBTCHandler_SyncGenesisHeader(t *testing.T) {
 	var buf bytes.Buffer
 	_ = netParam.GenesisBlock.Header.BtcEncode(&buf, wire.ProtocolVersion, wire.LatestEncoding)
+
+	hb := make([]byte, 4)
+	binary.BigEndian.PutUint32(hb, 0)
+
 	params := new(scom.SyncGenesisHeaderParam)
 	params.ChainID = 0
-	params.GenesisHeader = buf.Bytes()
+	params.GenesisHeader = append(buf.Bytes(), hb...)
 
 	sink := common.NewZeroCopySink(nil)
 	params.Serialization(sink)

@@ -1,6 +1,7 @@
 package btc
 
 import (
+	"encoding/binary"
 	"github.com/btcsuite/btcd/blockchain"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"math/big"
@@ -28,7 +29,7 @@ func (this *BTCHandler) SyncGenesisHeader(native *native.NativeService) error {
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return fmt.Errorf("SyncGenesisHeader, contract params deserialize error: %v", err)
 	}
-	header, err := getGenesisHeader(native.GetInput())
+	header, height, err := getGenesisHeader(native.GetInput())
 	if err != nil {
 		return fmt.Errorf("BTCHandler SyncGenesisHeader: %s", err)
 	}
@@ -44,7 +45,7 @@ func (this *BTCHandler) SyncGenesisHeader(native *native.NativeService) error {
 	//block header storage
 	storedHeader := StoredHeader{
 		Header:    *header,
-		Height:    0,
+		Height:    height,
 		totalWork: big.NewInt(0),
 	}
 	putGenesisBlockHeader(native, params.ChainID, storedHeader)
@@ -83,20 +84,22 @@ func (this *BTCHandler) SyncCrossChainMsg(native *native.NativeService) error {
 	return nil
 }
 
-func getGenesisHeader(input []byte) (*wire.BlockHeader, error) {
-
+func getGenesisHeader(input []byte) (*wire.BlockHeader, uint32, error) {
 	params := new(scom.SyncGenesisHeaderParam)
 	if err := params.Deserialization(common.NewZeroCopySource(input)); err != nil {
-		return nil, fmt.Errorf("getGenesisHeader, contract params deserialize error: %v", err)
+		return nil, 0, fmt.Errorf("getGenesisHeader, contract params deserialize error: %v", err)
 	}
-
+	l := len(params.GenesisHeader)
+	if l != 84 {
+		return nil, 0, fmt.Errorf("getGenesisHeader, wrong genesis header length %d", l)
+	}
 	header := new(wire.BlockHeader)
-	err := header.Deserialize(bytes.NewBuffer(params.GenesisHeader))
-	if err != nil {
-		return nil, fmt.Errorf("getGenesisHeader, deserialize wire.BlockHeader err: %v", err)
+	if err := header.BtcDecode(bytes.NewBuffer(params.GenesisHeader[:l-4]),
+		wire.ProtocolVersion, wire.LatestEncoding); err != nil {
+		return nil, 0, fmt.Errorf("getGenesisHeader, deserialize wire.BlockHeader err: %v", err)
 	}
 
-	return header, nil
+	return header, binary.BigEndian.Uint32(params.GenesisHeader[l-4:]), nil
 }
 
 // the bool value indicates whether header is the newest
