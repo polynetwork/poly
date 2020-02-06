@@ -153,7 +153,7 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 		service.AddNotify(
 			&event.NotifyEventInfo{
 				ContractAddress: utils.CrossChainManagerContractAddress,
-				States: []interface{}{"btcTxToRelay", btcFromTxInfo.FromChainID, 0, hex.EncodeToString(buf.Bytes()),
+				States: []interface{}{"btcTxToRelay", btcFromTxInfo.FromChainID, BTC_CHAIN_ID, hex.EncodeToString(buf.Bytes()),
 					hex.EncodeToString(btcFromTxInfo.FromTxHash)},
 			})
 	}

@@ -42,6 +42,7 @@ const (
 	MAX_FEE_COST_PERCENTS                   = 0.4
 	MAX_SELECTING_TRY_LIMIT                 = 1000000
 	SELECTING_K                             = 2.0
+	BTC_CHAIN_ID                            = 1
 )
 
 var netParam = &chaincfg.RegressionNetParams
