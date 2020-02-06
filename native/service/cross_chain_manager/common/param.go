@@ -100,9 +100,8 @@ type MakeTxParam struct {
 	FromContractAddress []byte
 	ToChainID           uint64
 	ToContractAddress   []byte
-	//Fee                 uint64
-	Method string
-	Args   []byte
+	Method              string
+	Args                []byte
 }
 
 func (this *MakeTxParam) Serialization(sink *common.ZeroCopySink) {
@@ -111,7 +110,6 @@ func (this *MakeTxParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteVarBytes(this.FromContractAddress)
 	sink.WriteUint64(this.ToChainID)
 	sink.WriteVarBytes(this.ToContractAddress)
-	//sink.WriteUint64(this.Fee)
 	sink.WriteVarBytes([]byte(this.Method))
 	sink.WriteVarBytes(this.Args)
 }
@@ -137,10 +135,6 @@ func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 	if eof {
 		return fmt.Errorf("MakeTxParam deserialize toContractAddress error")
 	}
-	//fee, eof := source.NextUint64()
-	//if eof {
-	//	return fmt.Errorf("MakeTxParam deserialize fee error")
-	//}
 	method, eof := source.NextString()
 	if eof {
 		return fmt.Errorf("MakeTxParam deserialize method error")
@@ -155,7 +149,6 @@ func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 	this.FromContractAddress = fromContractAddress
 	this.ToChainID = toChainID
 	this.ToContractAddress = toContractAddress
-	//this.Fee = fee
 	this.Method = method
 	this.Args = args
 	return nil

@@ -165,7 +165,6 @@ func VerifyCrossChainMsg(native *native.NativeService, chainID uint64, crossChai
 	if err != nil {
 		return fmt.Errorf("verifyCrossChainMsg, get ConsensusPeer error:%v", err)
 	}
-	//TODO
 	if len(bookkeepers)*3 < len(consensusPeer.PeerMap) {
 		return fmt.Errorf("verifyCrossChainMsg, header Bookkeepers num %d must more than 2/3 consensus node num %d",
 			len(bookkeepers), len(consensusPeer.PeerMap))
@@ -201,7 +200,6 @@ func verifyHeader(native *native.NativeService, chainID uint64, header *otypes.H
 	if err != nil {
 		return fmt.Errorf("verifyHeader, get ConsensusPeer error:%v", err)
 	}
-	//TODO
 	if len(header.Bookkeepers)*3 < len(consensusPeer.PeerMap) {
 		return fmt.Errorf("verifyHeader, header Bookkeepers num %d must more than 2/3 consensus node num %d", len(header.Bookkeepers), len(consensusPeer.PeerMap))
 	}
