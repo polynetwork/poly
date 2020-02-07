@@ -8,20 +8,20 @@ import (
 
 // Args for lock and unlock
 type Args struct {
-	AssetHash []byte
-	ToAddress []byte
-	Value     uint64
+	TargetAssetHash []byte
+	ToAddress       []byte
+	Value           uint64
 }
 
 func (this *Args) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteVarBytes(this.AssetHash)
+	sink.WriteVarBytes(this.TargetAssetHash)
 	sink.WriteVarBytes(this.ToAddress)
 	sink.WriteVarUint(this.Value)
 }
 
 func (this *Args) Deserialization(source *common.ZeroCopySource) error {
 	var eof bool
-	this.AssetHash, eof = source.NextVarBytes()
+	this.TargetAssetHash, eof = source.NextVarBytes()
 	if eof {
 		return fmt.Errorf("Args.Deserialization error: decode AssetHash var bytes error:%s", io.ErrUnexpectedEOF)
 	}
@@ -40,37 +40,44 @@ func (this *Args) Deserialization(source *common.ZeroCopySource) error {
 }
 
 type LockParam struct {
-	ToChainID   uint64
-	FromAddress common.Address
-	Fee         uint64
-	Args        Args
+	SourceAssetHash common.Address
+	FromAddress     common.Address
+	ToChainID       uint64
+	ToAddress       []byte
+	Value           uint64
 }
 
 func (this *LockParam) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteVarUint(this.ToChainID)
+	sink.WriteAddress(this.SourceAssetHash)
 	sink.WriteAddress(this.FromAddress)
-	sink.WriteVarUint(this.Fee)
-	this.Args.Serialization(sink)
+	sink.WriteVarUint(this.ToChainID)
+	sink.WriteVarBytes(this.ToAddress)
+	sink.WriteVarUint(this.Value)
 }
 
 func (this *LockParam) Deserialization(source *common.ZeroCopySource) error {
 	var eof bool
-	this.ToChainID, eof = source.NextVarUint()
+	this.SourceAssetHash, eof = source.NextAddress()
 	if eof {
-		return fmt.Errorf("LockParam.Deserialization ToChainID NextVarUint error:%s", io.ErrUnexpectedEOF)
+		return fmt.Errorf("LockParam.Deserialization AssetHash NextAddress error:%s", io.ErrUnexpectedEOF)
 	}
 	this.FromAddress, eof = source.NextAddress()
 	if eof {
 		return fmt.Errorf("LockParam.Deserialization FromAddress NextAddress error:%s", io.ErrUnexpectedEOF)
 	}
-	this.Fee, eof = source.NextVarUint()
+	this.ToChainID, eof = source.NextVarUint()
 	if eof {
-		return fmt.Errorf("LockParam.Deserialization Fee NextVarUint error:%s", io.ErrUnexpectedEOF)
+		return fmt.Errorf("LockParam.Deserialization ToChainID NextVarUint error:%s", io.ErrUnexpectedEOF)
 	}
-	err := this.Args.Deserialization(source)
-	if err != nil {
-		return fmt.Errorf("LockParam.Deserialization Args Deserialization error:%s", err)
+	this.ToAddress, eof = source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("LockParam.Deserialization ToAddress NextVarBytes error:%s", io.ErrUnexpectedEOF)
 	}
+	this.Value, eof = source.NextVarUint()
+	if eof {
+		return fmt.Errorf("LockParam.Deserialization Value NextVarUint error:%s", io.ErrUnexpectedEOF)
+	}
+
 	return nil
 }
 

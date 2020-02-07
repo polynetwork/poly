@@ -18,33 +18,32 @@ const (
 	BIND_ASSET_NAME = "bindAsset"
 )
 
-func AddLockNotifications(native *native.NativeService, contract common.Address, toContract []byte, param *LockParam) {
+func AddLockNotifications(native *native.NativeService, contract common.Address, toContract []byte, targetAssetContract []byte, param *LockParam) {
 	if !config.DefConfig.Common.EnableEventLog {
 		return
 	}
 	native.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: contract,
-			States:          []interface{}{LOCK_NAME, param.FromAddress.ToBase58(), param.ToChainID, hex.EncodeToString(toContract), hex.EncodeToString(param.Args.ToAddress), param.Args.Value},
+			States:          []interface{}{LOCK_NAME, param.FromAddress.ToBase58(), param.ToChainID, hex.EncodeToString(toContract), hex.EncodeToString(targetAssetContract), hex.EncodeToString(param.ToAddress), param.Value},
 		})
 }
 
-func AddUnLockNotifications(native *native.NativeService, contract common.Address, fromChainId uint64, fromContract []byte, toAddress common.Address, amount uint64) {
+func AddUnLockNotifications(native *native.NativeService, contract common.Address, fromChainId uint64, fromContract []byte, targetAssetHash []byte, toAddress common.Address, amount uint64) {
 	if !config.DefConfig.Common.EnableEventLog {
 		return
 	}
 	native.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: contract,
-			States:          []interface{}{UNLOCK_NAME, fromChainId, hex.EncodeToString(fromContract), toAddress.ToBase58(), amount},
+			States:          []interface{}{UNLOCK_NAME, fromChainId, hex.EncodeToString(fromContract), hex.EncodeToString(targetAssetHash), toAddress.ToBase58(), amount},
 		})
 }
 
-func getCreateTxArgs(toChainID uint64, contractHashBytes []byte, fee uint64, method string, argsBytes []byte) []byte {
+func getCreateTxArgs(toChainID uint64, contractHashBytes []byte, method string, argsBytes []byte) []byte {
 	createCrossChainTxParam := &ontccm.CreateCrossChainTxParam{
 		ToChainID:         toChainID,
 		ToContractAddress: contractHashBytes,
-		Fee:               fee,
 		Method:            method,
 		Args:              argsBytes,
 	}

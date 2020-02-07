@@ -44,7 +44,7 @@ func OntBindProxyHash(native *native.NativeService) ([]byte, error) {
 		native.AddNotify(
 			&event.NotifyEventInfo{
 				ContractAddress: utils.OntLockProxyContractAddress,
-				States:          []interface{}{BIND_PROXY_NAME, bindParam.TargetChainId, bindParam.TargetHash},
+				States:          []interface{}{BIND_PROXY_NAME, bindParam.TargetChainId, hex.EncodeToString(bindParam.TargetHash)},
 			})
 	}
 
@@ -88,46 +88,56 @@ func OntLock(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("[OntLock] contract params deserialization error:%v", err)
 	}
 
-	if lockParam.Args.Value == 0 {
+	if lockParam.Value == 0 {
 		return utils.BYTE_FALSE, nil
 	}
-	if lockParam.Args.Value > constants.ONT_TOTAL_SUPPLY {
-		return utils.BYTE_FALSE, fmt.Errorf("[OntLock] ont amount:%d over totalSupply:%d", lockParam.Args.Value, constants.ONT_TOTAL_SUPPLY)
+	if lockParam.Value > constants.ONT_TOTAL_SUPPLY {
+		return utils.BYTE_FALSE, fmt.Errorf("[OntLock] ont amount:%d over totalSupply:%d", lockParam.Value, constants.ONT_TOTAL_SUPPLY)
 	}
 	// currently, only support ont
-	if !bytes.Equal(lockParam.Args.AssetHash, ontContract[:]) {
-		return utils.BYTE_FALSE, fmt.Errorf("[OntLock] only support ont lock, expect:%s, but got:%s", hex.EncodeToString(ontContract[:]), hex.EncodeToString(lockParam.Args.AssetHash))
+	if lockParam.SourceAssetHash != ontContract {
+		return utils.BYTE_FALSE, fmt.Errorf("[OntLock] only support ont lock, expect:%s, but got:%s", hex.EncodeToString(ontContract[:]), hex.EncodeToString(lockParam.SourceAssetHash[:]))
 	}
 
 	state := ont.State{
 		From:  lockParam.FromAddress,
 		To:    lockContract,
-		Value: lockParam.Args.Value,
+		Value: lockParam.Value,
 	}
 	transferInput := getTransferInput(state)
-	res, err := native.NativeCall(utils.OntContractAddress, ont.TRANSFER_NAME, transferInput)
+	res, err := native.NativeCall(lockParam.SourceAssetHash, ont.TRANSFER_NAME, transferInput)
 	if !bytes.Equal(res.([]byte), utils.BYTE_TRUE) || err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("[OntLock] Transfer Ont, error:%s", err)
 	}
 
-	contractHashBytes, err := utils.GetStorageVarBytes(native, GenBindProxyKey(lockContract, lockParam.ToChainID))
+	targetProxyHashBs, err := utils.GetStorageVarBytes(native, GenBindProxyKey(lockContract, lockParam.ToChainID))
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("[OntLock] get bind contract hash with chainID:%d error:%s", lockParam.ToChainID, err)
+		return utils.BYTE_FALSE, fmt.Errorf("[OntLock] get bind proxy contract hash with chainID:%d error:%s", lockParam.ToChainID, err)
 	}
-	if len(contractHashBytes) == 0 {
-		return utils.BYTE_FALSE, fmt.Errorf("[OntLock] get bind contract hash with chainID:%d contractHash empty", lockParam.ToChainID)
+	if len(targetProxyHashBs) == 0 {
+		return utils.BYTE_FALSE, fmt.Errorf("[OntLock] get bind proxy contract hash with chainID:%d contractHash empty", lockParam.ToChainID)
 	}
 
-	AddLockNotifications(native, lockContract, contractHashBytes, &lockParam)
+	targetAssetHash, err := utils.GetStorageVarBytes(native, GenBindAssetKey(lockContract, lockParam.SourceAssetHash[:], lockParam.ToChainID))
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("[Ontlock] get bind asset contract hash with chainID:%d error:%s", lockParam.ToChainID, err)
+	}
 
+	args := Args{
+		TargetAssetHash: targetAssetHash,
+		ToAddress:       lockParam.ToAddress,
+		Value:           lockParam.Value,
+	}
 	sink := common.NewZeroCopySink(nil)
-	lockParam.Args.Serialization(sink)
-	input := getCreateTxArgs(lockParam.ToChainID, contractHashBytes, lockParam.Fee, UNLOCK_NAME, sink.Bytes())
+	args.Serialization(sink)
+
+	input := getCreateTxArgs(lockParam.ToChainID, targetProxyHashBs, UNLOCK_NAME, sink.Bytes())
 	_, err = native.NativeCall(utils.CrossChainManagerContractAddress, cross_chain_manager.CREATE_TX, input)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("[OntLock] createTx, error:%s", err)
 	}
 
+	AddLockNotifications(native, lockContract, targetProxyHashBs, targetAssetHash, &lockParam)
 	return utils.BYTE_TRUE, nil
 }
 
@@ -141,12 +151,12 @@ func OntUnlock(native *native.NativeService) ([]byte, error) {
 	lockContract := utils.OntLockProxyContractAddress
 	source := common.NewZeroCopySource(native.GetInput())
 
-	paramsBytes, eof := source.NextVarBytes()
+	argsBytes, eof := source.NextVarBytes()
 	if eof {
 		return utils.BYTE_FALSE, fmt.Errorf("[OntUnlock] input deseriaize args error!")
 	}
 	var args Args
-	err := args.Deserialization(common.NewZeroCopySource(paramsBytes))
+	err := args.Deserialization(common.NewZeroCopySource(argsBytes))
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("[OntUnlock] deserialize args error:%s", err)
 	}
@@ -158,32 +168,36 @@ func OntUnlock(native *native.NativeService) ([]byte, error) {
 	if eof {
 		return utils.BYTE_FALSE, fmt.Errorf("[OntUnlock] input deseriaize from chainID error!")
 	}
-	contractHashBytes, err := utils.GetStorageVarBytes(native, GenBindProxyKey(lockContract, fromChainId))
+	proxyContractHash, err := utils.GetStorageVarBytes(native, GenBindProxyKey(lockContract, fromChainId))
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("[OntUnlock] get bind contract hash with chainID:%d error:%s", fromChainId, err)
 	}
-	if !bytes.Equal(contractHashBytes, fromContractHashBytes) {
-		return utils.BYTE_FALSE, fmt.Errorf("[OntUnlock] passed in proxy contractHash NOT equal stored contractHash with chainID:%d, expect:%s, got:%s", fromChainId, hex.EncodeToString(contractHashBytes), hex.EncodeToString(fromContractHashBytes))
+	if !bytes.Equal(proxyContractHash, fromContractHashBytes) {
+		return utils.BYTE_FALSE, fmt.Errorf("[OntUnlock] passed in proxy contractHash NOT equal stored contractHash with chainID:%d, expect:%s, got:%s", fromChainId, hex.EncodeToString(proxyContractHash), hex.EncodeToString(fromContractHashBytes))
 	}
 	// currently, only support ont
-	if !bytes.Equal(args.AssetHash, ontContract[:]) {
-		return utils.BYTE_FALSE, fmt.Errorf("[OntUnlock] target asset hash, expect:%s, got:%s", hex.EncodeToString(ontContract[:]), hex.EncodeToString(args.AssetHash))
+	if !bytes.Equal(args.TargetAssetHash, ontContract[:]) {
+		return utils.BYTE_FALSE, fmt.Errorf("[OntUnlock] target asset hash, expect:%s, got:%s", hex.EncodeToString(ontContract[:]), hex.EncodeToString(args.TargetAssetHash))
+	}
+	assetAddress, err := common.AddressParseFromBytes(args.TargetAssetHash)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("[OntUnlock] parse from bytes to target asset contract address error:%s", err)
 	}
 	toAddress, err := common.AddressParseFromBytes(args.ToAddress)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("[OntUnlock] parse from bytes to address error:%s", err)
+		return utils.BYTE_FALSE, fmt.Errorf("[OntUnlock] parse from bytes to toaddress error:%s", err)
 	}
 	if args.Value == 0 {
 		return utils.BYTE_TRUE, nil
 	}
 
 	transferInput := getTransferInput(ont.State{lockContract, toAddress, args.Value})
-	res, err := native.NativeCall(utils.OntContractAddress, ont.TRANSFER_NAME, transferInput)
+	res, err := native.NativeCall(assetAddress, ont.TRANSFER_NAME, transferInput)
 	if !bytes.Equal(res.([]byte), utils.BYTE_TRUE) || err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("[OntUnLock] Transfer Ont, error:%s", err)
 	}
 
-	AddUnLockNotifications(native, lockContract, fromChainId, fromContractHashBytes, toAddress, args.Value)
+	AddUnLockNotifications(native, lockContract, fromChainId, fromContractHashBytes, assetAddress[:], toAddress, args.Value)
 
 	return utils.BYTE_TRUE, nil
 }
