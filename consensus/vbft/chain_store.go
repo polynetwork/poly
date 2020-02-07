@@ -57,7 +57,7 @@ func OpenBlockStore(db *ledger.Ledger, serverPid *actor.PID) (*ChainStore, error
 	}
 	crossStatesRoot, err := db.GetCrossStatesRoot(chainstore.chainedBlockNum)
 	if err != nil {
-		return nil, fmt.Errorf("GetCrossStatesRoot blockNum:%s, error :%s", chainstore.chainedBlockNum, err)
+		return nil, fmt.Errorf("GetCrossStatesRoot blockNum:%d, error :%s", chainstore.chainedBlockNum, err)
 	}
 	writeSet := overlaydb.NewMemDB(1, 1)
 	block, err := chainstore.GetBlock(chainstore.chainedBlockNum)
