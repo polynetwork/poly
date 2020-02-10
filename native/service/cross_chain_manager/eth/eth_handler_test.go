@@ -27,7 +27,7 @@ var (
 )
 
 const (
-	SUCCESS                 = iota
+	SUCCESS = iota
 	HEADER_NOT_EXIST
 	PROOF_FORMAT_ERROR
 	VERIFY_PROOT_ERROR
@@ -214,7 +214,6 @@ func TestProofHandle1(t *testing.T) {
 		assert.Equal(t, SUCCESS, typeOfError(err))
 	}
 }
-
 
 func TestProofHandle_HeaderNotExist(t *testing.T) {
 	ethSyncHandler := synceth.NewETHHandler()
@@ -464,4 +463,3 @@ func TestProofHandle_CommitTwice(t *testing.T) {
 		assert.Equal(t, TX_HAS_COMMIT, typeOfError(err))
 	}
 }
-

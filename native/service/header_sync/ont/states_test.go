@@ -32,16 +32,20 @@ func TestKeyHeights_Serialization(t *testing.T) {
 	assert.Equal(t, paramDeserialize, paramSerialize)
 }
 
-//func TestConsensusPeers_Serialization(t *testing.T) {
-//	paramSerialize := new(ConsensusPeers)
-//	paramSerialize.Height = 1
-//	paramSerialize.ChainID = 0
-//	paramSerialize.PeerMap =
-//	sink := common.NewZeroCopySink(nil)
-//	paramSerialize.Serialization(sink)
-//
-//	paramDeserialize := new(ConsensusPeers)
-//	err := paramDeserialize.Deserialization(common.NewZeroCopySource(sink.Bytes()))
-//	assert.Nil(t, err)
-//	assert.Equal(t, paramDeserialize, paramSerialize)
-//}
+func TestConsensusPeers_Serialization(t *testing.T) {
+	paramSerialize := new(ConsensusPeers)
+	paramSerialize.Height = 1
+	paramSerialize.ChainID = 0
+	peer1 := &Peer{Index: 1, PeerPubkey: "abcd"}
+	peer2 := &Peer{Index: 2, PeerPubkey: "efgh"}
+	paramSerialize.PeerMap = make(map[string]*Peer)
+	paramSerialize.PeerMap[peer1.PeerPubkey] = peer1
+	paramSerialize.PeerMap[peer2.PeerPubkey] = peer2
+	sink := common.NewZeroCopySink(nil)
+	paramSerialize.Serialization(sink)
+
+	paramDeserialize := new(ConsensusPeers)
+	err := paramDeserialize.Deserialization(common.NewZeroCopySource(sink.Bytes()))
+	assert.Nil(t, err)
+	assert.Equal(t, paramDeserialize, paramSerialize)
+}

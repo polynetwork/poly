@@ -22,12 +22,11 @@ import (
 )
 
 var (
-
 	acct *account.Account = account.NewAccount("")
 )
 
 const (
-	SUCCESS                 = iota
+	SUCCESS = iota
 	GENESIS_PARAM_ERROR
 	GENESIS_INITIALIZED
 	SYNCBLOCK_PARAM_ERROR
@@ -409,6 +408,7 @@ func TestSyncBlockHeader_OrphanBlock(t *testing.T) {
 	height := getLatestHeight(native)
 	assert.Equal(t, uint64(7152787), height)
 }
+
 /*
 the difficulty of header 7152788 is wrong
 */
