@@ -129,12 +129,18 @@ func verifyMerkleProof(ethProof *ETHProof, blockData *types.Header) ([]byte, err
 }
 
 func checkProofResult(result, value []byte) bool {
-	var s []byte
-	err := rlp.DecodeBytes(result, &s)
+	var s_temp []byte
+	err := rlp.DecodeBytes(result, &s_temp)
 	if err != nil {
 		log.Errorf("checkProofResult, rlp.DecodeBytes error:%s\n", err)
 		return false
 	}
+	//
+	var s []byte
+	for i := len(s_temp);i < 32;i ++ {
+		s = append(s, 0)
+	}
+	s = append(s, s_temp...)
 	hash := crypto.Keccak256(value)
 	return bytes.Equal(s, hash)
 }
