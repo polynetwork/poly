@@ -45,7 +45,7 @@ const (
 	BTC_CHAIN_ID                            = 1
 )
 
-var netParam = &chaincfg.RegressionNetParams
+var netParam = &chaincfg.TestNet3Params
 
 func GetNetParam() *chaincfg.Params {
 	return netParam
