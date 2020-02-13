@@ -28,7 +28,7 @@ const (
 	maxRetargetTimespan = int64(targetTimespan * maxDiffAdjust)
 )
 
-var netParam = &chaincfg.RegressionNetParams
+var netParam = &chaincfg.TestNet3Params
 
 func putGenesisBlockHeader(native *native.NativeService, chainID uint64, blockHeader StoredHeader) {
 	contract := utils.HeaderSyncContractAddress
