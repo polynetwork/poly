@@ -271,7 +271,6 @@ func TestProofHandle2(t *testing.T) {
 	}
 }
 
-
 func TestProofHandle_HeaderNotExist(t *testing.T) {
 	ethSyncHandler := synceth.NewETHHandler()
 	ethTxHandler := NewETHHandler()

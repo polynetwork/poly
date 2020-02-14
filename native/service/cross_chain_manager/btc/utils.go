@@ -6,6 +6,8 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"sort"
+
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
@@ -21,7 +23,6 @@ import (
 	"github.com/ontio/multi-chain/native/service/header_sync/btc"
 	"github.com/ontio/multi-chain/native/service/utils"
 	"golang.org/x/crypto/ripemd160"
-	"sort"
 )
 
 const (
@@ -79,7 +80,7 @@ func verifyFromBtcTx(native *native.NativeService, proof, tx []byte, fromChainID
 	}
 	bestHeight := bestHeader.Height
 	if bestHeight < height || bestHeight-height < uint32(sideChain.BlocksToWait-1) {
-		return nil, fmt.Errorf("verify, transaction is not confirmed, current height: %d, input height: %d", bestHeight, height)
+		return nil, fmt.Errorf("verifyFromBtcTx, transaction is not confirmed, current height: %d, input height: %d", bestHeight, height)
 	}
 
 	// verify btc merkle proof
@@ -95,13 +96,17 @@ func verifyFromBtcTx(native *native.NativeService, proof, tx []byte, fromChainID
 	var p targetChainParam
 	err = p.resolve(mtx.TxOut[0].Value, mtx.TxOut[1])
 	if err != nil {
-		return nil, fmt.Errorf("btc Vote, failed to resolve parameter: %v", err)
+		return nil, fmt.Errorf("verifyFromBtcTx, failed to resolve parameter: %v", err)
+	}
+	fromContractAddress, err := hex.DecodeString(GetUtxoKey(mtx.TxOut[0].PkScript))
+	if err != nil {
+		return nil, fmt.Errorf("verifyFromBtcTx, hex.DecodeString error: %v", err)
 	}
 	txHash := mtx.TxHash()
 	return &crosscommon.MakeTxParam{
 		TxHash:              txHash[:],
 		CrossChainID:        txHash[:],
-		FromContractAddress: []byte(BTC_ADDRESS),
+		FromContractAddress: fromContractAddress,
 		ToChainID:           p.args.ToChainID,
 		ToContractAddress:   p.args.ToContractAddress,
 		Method:              "unlock",

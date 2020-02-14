@@ -137,7 +137,7 @@ func checkProofResult(result, value []byte) bool {
 	}
 	//
 	var s []byte
-	for i := len(s_temp);i < 32;i ++ {
+	for i := len(s_temp); i < 32; i++ {
 		s = append(s, 0)
 	}
 	s = append(s, s_temp...)
