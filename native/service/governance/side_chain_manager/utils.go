@@ -224,8 +224,7 @@ func verifyBtcSigs(sigs [][]byte, addrs []btcutil.Address, contract, redeem []by
 		if len(sig) < 1 {
 			return nil, fmt.Errorf("length of no.%d sig is less than 1", i)
 		}
-		tSig := sig[:len(sig)-1]
-		pSig, err := btcec.ParseDERSignature(tSig, btcec.S256())
+		pSig, err := btcec.ParseDERSignature(sig, btcec.S256())
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse no.%d sig: %v", i, err)
 		}
