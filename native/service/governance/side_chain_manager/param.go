@@ -85,3 +85,67 @@ func (this *ChainidParam) Deserialization(source *common.ZeroCopySource) error {
 	this.Chainid = chainid
 	return nil
 }
+
+type RegisterRedeemParam struct {
+	RedeemChainID   uint64
+	ContractChainID uint64
+	RedeemKey       string
+	ContractAddress []byte
+	Address         string
+	Signs           [][]byte
+}
+
+func (this *RegisterRedeemParam) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteUint64(this.RedeemChainID)
+	sink.WriteUint64(this.ContractChainID)
+	sink.WriteString(this.RedeemKey)
+	sink.WriteVarBytes([]byte(this.ContractAddress))
+	sink.WriteString(this.Address)
+	sink.WriteUint64(uint64(len(this.Signs)))
+	for _, v := range this.Signs {
+		sink.WriteVarBytes(v)
+	}
+}
+
+func (this *RegisterRedeemParam) Deserialization(source *common.ZeroCopySource) error {
+	redeemChainID, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("RegisterRedeemParam deserialize redeemChainID error")
+	}
+	contractChainID, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("RegisterRedeemParam deserialize contractChainID error")
+	}
+	redeemKey, eof := source.NextString()
+	if eof {
+		return fmt.Errorf("RegisterRedeemParam deserialize redeemKey error")
+	}
+	contractAddress, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("RegisterRedeemParam deserialize contractAddress error")
+	}
+	address, eof := source.NextString()
+	if eof {
+		return fmt.Errorf("RegisterRedeemParam deserialize address error")
+	}
+	n, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("RegisterRedeemParam deserialize signs length error")
+	}
+	signs := make([][]byte, 0)
+	for i := 0; uint64(i) < n; i++ {
+		v, eof := source.NextVarBytes()
+		if eof {
+			return fmt.Errorf("deserialize Signs error")
+		}
+		signs = append(signs, v)
+	}
+
+	this.RedeemChainID = redeemChainID
+	this.ContractChainID = contractChainID
+	this.RedeemKey = redeemKey
+	this.ContractAddress = contractAddress
+	this.Address = address
+	this.Signs = signs
+	return nil
+}

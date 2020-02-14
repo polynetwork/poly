@@ -36,11 +36,14 @@ const (
 	UPDATE_SIDE_CHAIN           = "updateSideChain"
 	APPROVE_UPDATE_SIDE_CHAIN   = "approveUpdateSideChain"
 	REMOVE_SIDE_CHAIN           = "removeSideChain"
+	REGISTER_REDEEM             = "registerRedeem"
 
 	//key prefix
 	SIDE_CHAIN_APPLY          = "sideChainApply"
 	UPDATE_SIDE_CHAIN_REQUEST = "updateSideChainRequest"
 	SIDE_CHAIN                = "sideChain"
+	REDEEM_BIND               = "redeemBind"
+	BIND_SIGN_INFO            = "bindSignInfo"
 )
 
 //Register methods of node_manager contract
@@ -50,6 +53,8 @@ func RegisterSideChainManagerContract(native *native.NativeService) {
 	native.Register(UPDATE_SIDE_CHAIN, UpdateSideChain)
 	native.Register(APPROVE_UPDATE_SIDE_CHAIN, ApproveUpdateSideChain)
 	native.Register(REMOVE_SIDE_CHAIN, RemoveSideChain)
+
+	native.Register(REGISTER_REDEEM, RegisterRedeem)
 }
 
 func RegisterSideChain(native *native.NativeService) ([]byte, error) {
@@ -208,5 +213,28 @@ func RemoveSideChain(native *native.NativeService) ([]byte, error) {
 	chainidByte := utils.GetUint64Bytes(params.Chainid)
 	native.GetCacheDB().Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(SIDE_CHAIN), chainidByte))
 
+	return utils.BYTE_TRUE, nil
+}
+
+func RegisterRedeem(native *native.NativeService) ([]byte, error) {
+	params := new(RegisterRedeemParam)
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, contract params deserialize error: %v", err)
+	}
+	//TODO: check sign, message is message to sign, sign num refer to MultiSign
+	bindSignInfo, err := getBindSignInfo(native, message)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("MultiSign, getBtcMultiSignInfo error: %v", err)
+	}
+	_, ok := bindSignInfo.BindSignInfo[params.Address]
+	if ok {
+		return utils.BYTE_FALSE, fmt.Errorf("MultiSign, address %s already sign", params.Address)
+	}
+
+	//put bind into db
+	err = putContractBind(native, params.RedeemChainID, params.ContractChainID, params.RedeemKey, params.ContractAddress)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, putContractBind error: %v", err)
+	}
 	return utils.BYTE_TRUE, nil
 }

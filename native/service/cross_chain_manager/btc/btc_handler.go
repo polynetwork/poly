@@ -22,6 +22,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"github.com/ontio/multi-chain/native/service/governance/side_chain_manager"
 
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/txscript"
@@ -200,9 +201,6 @@ func (this *BTCHandler) MakeDepositProposal(service *native.NativeService) (*cro
 
 func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *crosscommon.MakeTxParam,
 	fromChainID uint64) error {
-	if !bytes.Equal(param.ToContractAddress, []byte(BTC_ADDRESS)) {
-		return fmt.Errorf("btc MakeTransaction, destContractAddr is %s not btc", string(param.ToContractAddress))
-	}
 	amounts := make(map[string]int64)
 	source := common.NewZeroCopySource(param.Args)
 	toAddrBytes, eof := source.NextVarBytes()
@@ -218,7 +216,18 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *cr
 	if eof {
 		return fmt.Errorf("btc MakeTransaction, deserialize redeem script error")
 	}
-	err := makeBtcTx(service, param.ToChainID, amounts, param.TxHash, fromChainID, redeemScriptBytes)
+
+	//TODO: get redeem key from redeem script
+	redeemKey := ""
+
+	contractBind, err := side_chain_manager.GetContractBind(service, BTC_CHAIN_ID, fromChainID, redeemKey)
+	if err != nil {
+		return fmt.Errorf("btc MakeTransaction, side_chain_manager.GetContractBind error: %v", err)
+	}
+	if bytes.Equal(contractBind, param.FromContractAddress) {
+		return fmt.Errorf("btc MakeTransaction, redeem script and from contract address is not match")
+	}
+	err = makeBtcTx(service, param.ToChainID, amounts, param.TxHash, fromChainID, redeemScriptBytes)
 	if err != nil {
 		return fmt.Errorf("btc MakeTransaction, failed to make transaction: %v", err)
 	}

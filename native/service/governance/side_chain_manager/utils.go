@@ -19,6 +19,7 @@
 package side_chain_manager
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/ontio/multi-chain/common"
 	cstates "github.com/ontio/multi-chain/core/states"
@@ -140,4 +141,77 @@ func putUpdateSideChain(native *native.NativeService, sideChain *SideChain) erro
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(UPDATE_SIDE_CHAIN_REQUEST), chainidByte),
 		cstates.GenRawStorageItem(sink.Bytes()))
 	return nil
+}
+
+func GetContractBind(native *native.NativeService, redeemChainID, contractChainID uint64,
+	redeemKey string) ([]byte, error) {
+	contract := utils.SideChainManagerContractAddress
+	redeemChainIDByte := utils.GetUint64Bytes(redeemChainID)
+	contractChainIDByte := utils.GetUint64Bytes(contractChainID)
+	redeemKeyByte, err := hex.DecodeString(redeemKey)
+	if err != nil {
+		return nil, fmt.Errorf("GetContractBind, hex.DecodeString error: %v", err)
+	}
+
+	contractBindStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(REDEEM_BIND),
+		redeemChainIDByte, contractChainIDByte, redeemKeyByte))
+	if err != nil {
+		return nil, fmt.Errorf("GetContractBind, get contractBindStore error: %v", err)
+	}
+	if contractBindStore != nil {
+		contractBind, err := cstates.GetValueFromRawStorageItem(contractBindStore)
+		if err != nil {
+			return nil, fmt.Errorf("GetContractBind, deserialize from raw storage item err:%v", err)
+		}
+		return contractBind, nil
+	} else {
+		return nil, nil
+	}
+
+}
+
+func putContractBind(native *native.NativeService, redeemChainID, contractChainID uint64,
+	redeemKey string, contractAddress []byte) error {
+	contract := utils.SideChainManagerContractAddress
+	redeemChainIDByte := utils.GetUint64Bytes(redeemChainID)
+	contractChainIDByte := utils.GetUint64Bytes(contractChainID)
+	redeemKeyByte, err := hex.DecodeString(redeemKey)
+	if err != nil {
+		return fmt.Errorf("putContractBind, hex.DecodeString error: %v", err)
+	}
+
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(REDEEM_BIND),
+		redeemChainIDByte, contractChainIDByte, redeemKeyByte), cstates.GenRawStorageItem(contractAddress))
+	return nil
+}
+
+func putBindSignInfo(native *native.NativeService, message []byte, multiSignInfo *BindSignInfo) error {
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(BIND_SIGN_INFO), message)
+	sink := common.NewZeroCopySink(nil)
+	multiSignInfo.Serialization(sink)
+	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(sink.Bytes()))
+	return nil
+}
+
+func getBindSignInfo(native *native.NativeService, message []byte) (*BindSignInfo, error) {
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(BIND_SIGN_INFO), message)
+	bindSignInfoStore, err := native.GetCacheDB().Get(key)
+	if err != nil {
+		return nil, fmt.Errorf("getBtcMultiSignInfo, get multiSignInfoStore error: %v", err)
+	}
+
+	bindSignInfo := &BindSignInfo{
+		BindSignInfo: make(map[string][]byte),
+	}
+	if bindSignInfoStore != nil {
+		bindSignInfoBytes, err := cstates.GetValueFromRawStorageItem(bindSignInfoStore)
+		if err != nil {
+			return nil, fmt.Errorf("getBtcMultiSignInfo, deserialize from raw storage item err:%v", err)
+		}
+		err = bindSignInfo.Deserialization(common.NewZeroCopySource(bindSignInfoBytes))
+		if err != nil {
+			return nil, fmt.Errorf("getBtcMultiSignInfo, deserialize multiSignInfo err:%v", err)
+		}
+	}
+	return bindSignInfo, nil
 }

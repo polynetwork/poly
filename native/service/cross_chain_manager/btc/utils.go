@@ -34,8 +34,6 @@ const (
 	MIN_SATOSHI_TO_RELAY_PER_BYTE           = 1
 	WEIGHT                                  = 1.2
 	MIN_CHANGE                              = 2000
-	BTC_ADDRESS                             = "btc"
-	NOTIFY_BTC_PROOF                        = "notifyBtcProof"
 	UTXOS                                   = "utxos"
 	STXOS                                   = "stxos"
 	REDEEM_SCRIPT                           = "redeemScript"
@@ -98,15 +96,23 @@ func verifyFromBtcTx(native *native.NativeService, proof, tx []byte, fromChainID
 	if err != nil {
 		return nil, fmt.Errorf("verifyFromBtcTx, failed to resolve parameter: %v", err)
 	}
-	fromContractAddress, err := hex.DecodeString(GetUtxoKey(mtx.TxOut[0].PkScript))
+	redeemKey, err := hex.DecodeString(GetUtxoKey(mtx.TxOut[0].PkScript))
 	if err != nil {
 		return nil, fmt.Errorf("verifyFromBtcTx, hex.DecodeString error: %v", err)
+	}
+	toContractAddress, err := side_chain_manager.GetContractBind(native, BTC_CHAIN_ID, p.args.ToChainID,
+		GetUtxoKey(mtx.TxOut[0].PkScript))
+	if err != nil {
+		return nil, fmt.Errorf("verifyFromBtcTx, side_chain_manager.GetContractBind error: %v", err)
+	}
+	if !bytes.Equal(toContractAddress, p.args.ToContractAddress) {
+		return nil, fmt.Errorf("verifyFromBtcTx, redeem key and to contract address is not match")
 	}
 	txHash := mtx.TxHash()
 	return &crosscommon.MakeTxParam{
 		TxHash:              txHash[:],
 		CrossChainID:        txHash[:],
-		FromContractAddress: fromContractAddress,
+		FromContractAddress: redeemKey,
 		ToChainID:           p.args.ToChainID,
 		ToContractAddress:   p.args.ToContractAddress,
 		Method:              "unlock",

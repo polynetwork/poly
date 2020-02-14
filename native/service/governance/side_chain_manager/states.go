@@ -21,6 +21,7 @@ package side_chain_manager
 import (
 	"fmt"
 	"github.com/ontio/multi-chain/common"
+	"sort"
 )
 
 type SideChain struct {
@@ -60,5 +61,45 @@ func (this *SideChain) Deserialization(source *common.ZeroCopySource) error {
 	this.Router = router
 	this.Name = name
 	this.BlocksToWait = blocksToWait
+	return nil
+}
+
+type BindSignInfo struct {
+	BindSignInfo map[string][]byte
+}
+
+func (this *BindSignInfo) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteUint64(uint64(len(this.BindSignInfo)))
+	var BindSignInfoList []string
+	for k := range this.BindSignInfo {
+		BindSignInfoList = append(BindSignInfoList, k)
+	}
+	sort.SliceStable(BindSignInfoList, func(i, j int) bool {
+		return BindSignInfoList[i] > BindSignInfoList[j]
+	})
+	for _, k := range BindSignInfoList {
+		sink.WriteString(k)
+		sink.WriteVarBytes(this.BindSignInfo[k])
+	}
+}
+
+func (this *BindSignInfo) Deserialization(source *common.ZeroCopySource) error {
+	n, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("BindSignInfo deserialize MultiSignInfo length error")
+	}
+	bindSignInfo := make(map[string][]byte)
+	for i := 0; uint64(i) < n; i++ {
+		k, eof := source.NextString()
+		if eof {
+			return fmt.Errorf("BindSignInfo deserialize public key error")
+		}
+		v, eof := source.NextVarBytes()
+		if eof {
+			return fmt.Errorf("BindSignInfo deserialize byte error")
+		}
+		bindSignInfo[k] = v
+	}
+	this.BindSignInfo = bindSignInfo
 	return nil
 }
