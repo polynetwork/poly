@@ -3,6 +3,7 @@ package btc
 import (
 	"bytes"
 	"crypto/rand"
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"github.com/btcsuite/btcd/blockchain"
@@ -49,9 +50,9 @@ func TestGetEpoch(t *testing.T) {
 	cacheDB, err := syncGenesisHeader(&chaincfg.RegressionNetParams.GenesisBlock.Header)
 	assert.Nil(t, err)
 	syncAssumedBtcBlockChain(cacheDB)
-
 	nativeService := getNativeFunc(nil, cacheDB)
-	epoch, err := GetEpoch(nativeService, 0)
+	sh, _ := GetBestBlockHeader(nativeService, 0)
+	epoch, err := GetEpoch(nativeService, 0, sh)
 	assert.NoError(t, err)
 	assert.Equal(t, "0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206", epoch.BlockHash().String(),
 		"Returned incorrect epoch")
@@ -335,10 +336,12 @@ func syncGenesisHeader(genesisHeader *wire.BlockHeader) (*storage.CacheDB, error
 	_ = genesisHeader.BtcEncode(&buf, wire.ProtocolVersion, wire.LatestEncoding)
 	btcHander := NewBTCHandler()
 
+	hb := make([]byte, 4)
+	binary.BigEndian.PutUint32(hb, 0)
 	sink := new(common.ZeroCopySink)
 	params := &scom.SyncGenesisHeaderParam{
 		ChainID:       0,
-		GenesisHeader: buf.Bytes(),
+		GenesisHeader: append(buf.Bytes(), hb...),
 	}
 	sink = new(common.ZeroCopySink)
 	params.Serialization(sink)

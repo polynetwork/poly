@@ -228,18 +228,15 @@ func calcRequiredWork(native *native.NativeService, chainID uint64, header wire.
 		return prevHeader.Header.Bits, nil
 	}
 	// We are on a difficulty adjustment period so we need to correctly calculate the new difficulty.
-	epoch, err := GetEpoch(native, chainID)
+	epoch, err := GetEpoch(native, chainID, prevHeader)
 	if err != nil {
 		return 0, err
 	}
 	return calcDiffAdjust(*epoch, prevHeader.Header, netParam), nil
 }
 
-func GetEpoch(native *native.NativeService, chainID uint64) (*wire.BlockHeader, error) {
-	sh, err := GetBestBlockHeader(native, chainID)
-	if err != nil {
-		return &sh.Header, err
-	}
+func GetEpoch(native *native.NativeService, chainID uint64, sh *StoredHeader) (*wire.BlockHeader, error) {
+	var err error
 	for i := 0; i < 2015; i++ {
 		sh, err = GetPreviousHeader(native, chainID, sh.Header)
 		if err != nil {

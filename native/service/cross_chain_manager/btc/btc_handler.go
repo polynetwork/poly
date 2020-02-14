@@ -217,9 +217,7 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *cr
 		return fmt.Errorf("btc MakeTransaction, deserialize redeem script error")
 	}
 
-	//TODO: get redeem key from redeem script
-	redeemKey := ""
-
+	redeemKey := hex.EncodeToString(btcutil.Hash160(redeemScriptBytes))
 	contractBind, err := side_chain_manager.GetContractBind(service, BTC_CHAIN_ID, fromChainID, redeemKey)
 	if err != nil {
 		return fmt.Errorf("btc MakeTransaction, side_chain_manager.GetContractBind error: %v", err)

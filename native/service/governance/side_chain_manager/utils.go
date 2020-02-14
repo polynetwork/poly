@@ -21,11 +21,16 @@ package side_chain_manager
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/btcsuite/btcd/btcec"
+	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcutil"
 	"github.com/ontio/multi-chain/common"
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/service/utils"
 )
+
+var netParam = &chaincfg.TestNet3Params
 
 func getSideChainApply(native *native.NativeService, chanid uint64) (*SideChain, error) {
 	contract := utils.SideChainManagerContractAddress
@@ -171,17 +176,13 @@ func GetContractBind(native *native.NativeService, redeemChainID, contractChainI
 }
 
 func putContractBind(native *native.NativeService, redeemChainID, contractChainID uint64,
-	redeemKey string, contractAddress []byte) error {
+	redeemKey, contractAddress []byte) error {
 	contract := utils.SideChainManagerContractAddress
 	redeemChainIDByte := utils.GetUint64Bytes(redeemChainID)
 	contractChainIDByte := utils.GetUint64Bytes(contractChainID)
-	redeemKeyByte, err := hex.DecodeString(redeemKey)
-	if err != nil {
-		return fmt.Errorf("putContractBind, hex.DecodeString error: %v", err)
-	}
 
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(REDEEM_BIND),
-		redeemChainIDByte, contractChainIDByte, redeemKeyByte), cstates.GenRawStorageItem(contractAddress))
+		redeemChainIDByte, contractChainIDByte, redeemKey), cstates.GenRawStorageItem(contractAddress))
 	return nil
 }
 
@@ -214,4 +215,28 @@ func getBindSignInfo(native *native.NativeService, message []byte) (*BindSignInf
 		}
 	}
 	return bindSignInfo, nil
+}
+
+func verifyBtcSigs(sigs [][]byte, addrs []btcutil.Address, contract, redeem []byte) (map[string][]byte, error) {
+	res := make(map[string][]byte)
+	hash := btcutil.Hash160(append(redeem, contract...))
+	for i, sig := range sigs {
+		if len(sig) < 1 {
+			return nil, fmt.Errorf("length of no.%d sig is less than 1", i)
+		}
+		tSig := sig[:len(sig)-1]
+		pSig, err := btcec.ParseDERSignature(tSig, btcec.S256())
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse no.%d sig: %v", i, err)
+		}
+		for _, addr := range addrs {
+			if pSig.Verify(hash, addr.(*btcutil.AddressPubKey).PubKey()) {
+				res[addr.EncodeAddress()] = sig
+			}
+		}
+	}
+	if len(res) == 0 {
+		return nil, fmt.Errorf("no sigs is verified")
+	}
+	return res, nil
 }

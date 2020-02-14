@@ -20,6 +20,8 @@ package side_chain_manager
 
 import (
 	"fmt"
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcutil"
 	"math"
 
 	"github.com/ontio/multi-chain/common"
@@ -221,20 +223,38 @@ func RegisterRedeem(native *native.NativeService) ([]byte, error) {
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, contract params deserialize error: %v", err)
 	}
-	//TODO: check sign, message is message to sign, sign num refer to MultiSign
-	bindSignInfo, err := getBindSignInfo(native, message)
+	ty, addrs, m, err := txscript.ExtractPkScriptAddrs(params.Redeem, netParam)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("MultiSign, getBtcMultiSignInfo error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, failed to extract addrs: %v", err)
 	}
-	_, ok := bindSignInfo.BindSignInfo[params.Address]
-	if ok {
-		return utils.BYTE_FALSE, fmt.Errorf("MultiSign, address %s already sign", params.Address)
+	if ty != txscript.MultiSigTy {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, wrong type of redeem: %s", ty.String())
+	}
+	verified, err := verifyBtcSigs(params.Signs, addrs, params.ContractAddress, params.Redeem)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, failed to verify: %v", err)
 	}
 
-	//put bind into db
-	err = putContractBind(native, params.RedeemChainID, params.ContractChainID, params.RedeemKey, params.ContractAddress)
+	rk := btcutil.Hash160(params.Redeem)
+	key := append(append(append(rk, utils.GetUint64Bytes(params.RedeemChainID)...),
+		params.ContractAddress...), utils.GetUint64Bytes(params.ContractChainID)...)
+	bindSignInfo, err := getBindSignInfo(native, key)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, putContractBind error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, getBindSignInfo error: %v", err)
 	}
+	for k, v := range verified {
+		bindSignInfo.BindSignInfo[k] = v
+	}
+	err = putBindSignInfo(native, key, bindSignInfo)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, failed to putBindSignInfo: %v", err)
+	}
+	if len(bindSignInfo.BindSignInfo) >= m {
+		err = putContractBind(native, params.RedeemChainID, params.ContractChainID, params.Redeem, params.ContractAddress)
+		if err != nil {
+			return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, putContractBind error: %v", err)
+		}
+	}
+
 	return utils.BYTE_TRUE, nil
 }
