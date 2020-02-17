@@ -225,7 +225,7 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *cr
 	if bytes.Equal(contractBind, param.FromContractAddress) {
 		return fmt.Errorf("btc MakeTransaction, redeem script and from contract address is not match")
 	}
-	err = makeBtcTx(service, param.ToChainID, amounts, param.TxHash, fromChainID, redeemScriptBytes)
+	err = makeBtcTx(service, param.ToChainID, amounts, param.TxHash, fromChainID, redeemScriptBytes, redeemKey)
 	if err != nil {
 		return fmt.Errorf("btc MakeTransaction, failed to make transaction: %v", err)
 	}
@@ -233,7 +233,7 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *cr
 }
 
 func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string]int64, fromTxHash []byte,
-	fromChainID uint64, redeemScript []byte) error {
+	fromChainID uint64, redeemScript []byte, rk string) error {
 	if len(amounts) == 0 {
 		return fmt.Errorf("makeBtcTx, GetInput() no amount")
 	}
@@ -255,7 +255,6 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 	}
 
 	out, err := getChangeTxOut(0, redeemScript)
-	outRedeemScriptKey := GetUtxoKey(out.PkScript)
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, %v", err)
 	}
@@ -301,14 +300,14 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 		return fmt.Errorf("makeBtcTx, putBtcFromInfo failed: %v", err)
 	}
 
-	err = putBtcRedeemScript(service, outRedeemScriptKey, redeemScript)
+	err = putBtcRedeemScript(service, rk, redeemScript)
 	if err != nil {
-		return fmt.Errorf("makeBtcTx, failed to save redeemscript %v with key %v, error: %v", hex.EncodeToString(redeemScript), outRedeemScriptKey, err)
+		return fmt.Errorf("makeBtcTx, failed to save redeemscript %v with key %v, error: %v", hex.EncodeToString(redeemScript), rk, err)
 	}
 	service.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
-			States:          []interface{}{"makeBtcTx", outRedeemScriptKey, hex.EncodeToString(buf.Bytes()), amts},
+			States:          []interface{}{"makeBtcTx", rk, hex.EncodeToString(buf.Bytes()), amts},
 		})
 
 	return nil

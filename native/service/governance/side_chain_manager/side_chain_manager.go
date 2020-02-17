@@ -19,9 +19,11 @@
 package side_chain_manager
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
+	"github.com/ontio/multi-chain/native/event"
 	"math"
 
 	"github.com/ontio/multi-chain/common"
@@ -250,10 +252,15 @@ func RegisterRedeem(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, failed to putBindSignInfo: %v", err)
 	}
 	if len(bindSignInfo.BindSignInfo) >= m {
-		err = putContractBind(native, params.RedeemChainID, params.ContractChainID, params.Redeem, params.ContractAddress)
+		err = putContractBind(native, params.RedeemChainID, params.ContractChainID, rk, params.ContractAddress)
 		if err != nil {
 			return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, putContractBind error: %v", err)
 		}
+		native.AddNotify(
+			&event.NotifyEventInfo{
+				ContractAddress: utils.SideChainManagerContractAddress,
+				States:          []interface{}{"RegisterRedeem", rk, hex.EncodeToString(params.ContractAddress)},
+			})
 	}
 
 	return utils.BYTE_TRUE, nil

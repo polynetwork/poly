@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
+	"github.com/btcsuite/btcutil"
 	"github.com/ontio/multi-chain/account"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/core/states"
@@ -157,7 +158,8 @@ func TestBTCHandler_MultiSign(t *testing.T) {
 	_ = addUtxos(ns, 0, 0, mtx)
 
 	rb, _ := hex.DecodeString(redeem)
-	err := makeBtcTx(ns, 0, map[string]int64{"mjEoyyCPsLzJ23xMX6Mti13zMyN36kzn57": 10000}, []byte{123}, 2, rb)
+	err := makeBtcTx(ns, 0, map[string]int64{"mjEoyyCPsLzJ23xMX6Mti13zMyN36kzn57": 10000}, []byte{123},
+	2, rb, hex.EncodeToString(btcutil.Hash160(rb)))
 	assert.NoError(t, err)
 	stateArr := ns.GetNotify()[0].States.([]interface{})
 	assert.Equal(t, "makeBtcTx", stateArr[0].(string))
