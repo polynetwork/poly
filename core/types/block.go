@@ -21,6 +21,7 @@ package types
 import (
 	"errors"
 	"fmt"
+	"github.com/ontio/multi-chain/common/log"
 	"io"
 
 	"github.com/ontio/multi-chain/common"
@@ -89,8 +90,9 @@ func (self *Block) Deserialization(source *common.ZeroCopySource) error {
 		hashes = append(hashes, txhash)
 		self.Transactions = append(self.Transactions, transaction)
 	}
-
+	log.Errorf("Deserialization hashes: %+v\n", hashes)
 	root := common.ComputeMerkleRoot(hashes)
+	log.Errorf("Deserialization ComputeMerkleRoot: %+x\n", root)
 	if self.Header.TransactionsRoot != root {
 		return fmt.Errorf("mismatched transaction root %x and %x", self.Header.TransactionsRoot.ToArray(), root.ToArray())
 	}

@@ -190,8 +190,9 @@ func (self *Server) constructBlock(blkNum uint32, prevBlkHash common.Uint256, tx
 		log.Errorf("constructBlock getlastblock err:%s,blknum:%d", err, blkNum-1)
 		return nil, err
 	}
-
+	log.Errorf("constructBlock txHash:%+v", txHash)
 	txRoot := common.ComputeMerkleRoot(txHash)
+	log.Errorf("constructBlock txRoot:%+x", txRoot)
 	blockRoot := ledger.DefLedger.GetBlockRootWithNewTxRoots(lastBlock.Block.Header.Height, []common.Uint256{lastBlock.Block.Header.TransactionsRoot, txRoot})
 	crossStatesRoot, err := self.chainStore.GetCrossStatesRoot(blkNum - 1)
 	if err != nil {
@@ -206,7 +207,7 @@ func (self *Server) constructBlock(blkNum uint32, prevBlkHash common.Uint256, tx
 		CrossStatesRoot:  crossStatesRoot,
 		BlockRoot:        blockRoot,
 		Timestamp:        blocktimestamp,
-		Height:           uint32(blkNum),
+		Height:           blkNum,
 		NextBookkeeper:   nextBookkeeper,
 		ConsensusData:    common.GetNonce(),
 		ConsensusPayload: consensusPayload,
