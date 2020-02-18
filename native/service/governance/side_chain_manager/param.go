@@ -89,7 +89,7 @@ func (this *ChainidParam) Deserialization(source *common.ZeroCopySource) error {
 type RegisterRedeemParam struct {
 	RedeemChainID   uint64
 	ContractChainID uint64
-	Redeem       []byte
+	Redeem          []byte
 	ContractAddress []byte
 	Address         string
 	Signs           [][]byte

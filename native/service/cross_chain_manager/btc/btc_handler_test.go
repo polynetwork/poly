@@ -159,7 +159,7 @@ func TestBTCHandler_MultiSign(t *testing.T) {
 
 	rb, _ := hex.DecodeString(redeem)
 	err := makeBtcTx(ns, 0, map[string]int64{"mjEoyyCPsLzJ23xMX6Mti13zMyN36kzn57": 10000}, []byte{123},
-	2, rb, hex.EncodeToString(btcutil.Hash160(rb)))
+		2, rb, hex.EncodeToString(btcutil.Hash160(rb)))
 	assert.NoError(t, err)
 	stateArr := ns.GetNotify()[0].States.([]interface{})
 	assert.Equal(t, "makeBtcTx", stateArr[0].(string))
