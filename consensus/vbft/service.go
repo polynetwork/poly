@@ -2084,7 +2084,7 @@ func (self *Server) msgSendLoop() {
 }
 
 //creategovernaceTransaction invoke governance native contract commit_pos
-func (self *Server) creategovernaceTransaction(blkNum uint32) *types.Transaction {
+func (self *Server) createGovernaceTransaction(blkNum uint32) *types.Transaction {
 	contractInvokeParam := &states.ContractInvokeParam{Address: utils.NodeManagerContractAddress,
 		Method: node_manager.COMMIT_DPOS, Args: []byte{}}
 	invokeCode := new(common.ZeroCopySink)
