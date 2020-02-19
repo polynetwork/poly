@@ -190,9 +190,9 @@ func (self *Server) constructBlock(blkNum uint32, prevBlkHash common.Uint256, tx
 		log.Errorf("constructBlock getlastblock err:%s,blknum:%d", err, blkNum-1)
 		return nil, err
 	}
-	log.Errorf("constructBlock txHash:%+v", txHash)
+	log.Errorf("blkNum:%d, constructBlock txHash:%+v", blkNum, txHash)
 	txRoot := common.ComputeMerkleRoot(txHash)
-	log.Errorf("constructBlock txRoot:%+x", txRoot)
+	log.Errorf("blkNum:%d, constructBlock txRoot:%+x", blkNum, txRoot)
 	blockRoot := ledger.DefLedger.GetBlockRootWithNewTxRoots(lastBlock.Block.Header.Height, []common.Uint256{lastBlock.Block.Header.TransactionsRoot, txRoot})
 	crossStatesRoot, err := self.chainStore.GetCrossStatesRoot(blkNum - 1)
 	if err != nil {
