@@ -761,3 +761,9 @@ func (pool *BlockPool) getExecWriteSet(blkNum uint32) *overlaydb.MemDB {
 	defer pool.lock.RUnlock()
 	return pool.chainStore.GetExecWriteSet(blkNum)
 }
+
+func (pool *BlockPool) getCrossStatesRoot(blkNum uint32) (common.Uint256, error) {
+	pool.lock.RLock()
+	defer pool.lock.RUnlock()
+	return pool.chainStore.GetCrossStatesRoot(blkNum)
+}
