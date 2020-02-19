@@ -155,7 +155,7 @@ func (pool *BlockPool) newBlockProposal(msg *blockProposalMsg) error {
 		Signature:        msg.Block.Block.Header.SigData[0],
 		ForEmpty:         false,
 	}
-	return pool.addBlockEndorsementLocked(msg.GetBlockNum(), proposer, eSig)
+	return pool.addBlockEndorsementLocked(msg.GetBlockNum(), proposer, eSig, false)
 }
 
 func (pool *BlockPool) getBlockProposals(blkNum uint32) []*blockProposalMsg {
@@ -258,10 +258,10 @@ func (pool *BlockPool) setProposalEndorsed(proposal *blockProposalMsg, forEmpty 
 	return nil
 }
 
-func (pool *BlockPool) addBlockEndorsementLocked(blkNum uint32, endorser uint32, eSig *CandidateEndorseSigInfo) error {
+func (pool *BlockPool) addBlockEndorsementLocked(blkNum uint32, endorser uint32, eSig *CandidateEndorseSigInfo, commitment bool) error {
 	candidate := pool.getCandidateInfoLocked(blkNum)
 
-	if eSigs, present := candidate.EndorseSigs[endorser]; present {
+	if eSigs, present := candidate.EndorseSigs[endorser]; present && !commitment {
 		for _, eSig := range eSigs {
 			if eSig.ForEmpty {
 				// has endorsed for empty, ignore new endorsement
@@ -300,7 +300,7 @@ func (pool *BlockPool) newBlockEndorsement(msg *blockEndorseMsg) error {
 		Signature:        msg.EndorserSig,
 		ForEmpty:         msg.EndorseForEmpty,
 	}
-	return pool.addBlockEndorsementLocked(msg.GetBlockNum(), msg.Endorser, eSig)
+	return pool.addBlockEndorsementLocked(msg.GetBlockNum(), msg.Endorser, eSig, false)
 }
 
 //
@@ -471,7 +471,7 @@ func (pool *BlockPool) newBlockCommitment(msg *blockCommitMsg) error {
 			Signature:        sig,
 			ForEmpty:         msg.CommitForEmpty,
 		}
-		if err := pool.addBlockEndorsementLocked(blkNum, endorser, eSig); err != nil {
+		if err := pool.addBlockEndorsementLocked(blkNum, endorser, eSig, false); err != nil {
 			return fmt.Errorf("failed to verify endorse sig from %d: %s", endorser, err)
 		}
 	}
@@ -481,7 +481,7 @@ func (pool *BlockPool) newBlockCommitment(msg *blockCommitMsg) error {
 		EndorsedProposer: msg.BlockProposer,
 		Signature:        msg.CommitterSig,
 		ForEmpty:         msg.CommitForEmpty,
-	})
+	}, true)
 
 	// add msg to commit-msgs
 	candidate.CommitMsgs = append(candidate.CommitMsgs, msg)
