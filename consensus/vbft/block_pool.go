@@ -89,7 +89,7 @@ func newBlockPool(server *Server, historyLen uint32, store *ChainStore) (*BlockP
 
 	// load history blocks from chainstore
 	for ; blkNum <= store.GetChainedBlockNum(); blkNum++ {
-		blk, err := store.GetBlock(blkNum)
+		blk, err := store.getBlock(blkNum)
 		if err != nil {
 			return nil, fmt.Errorf("failed to load block height %d: error:%s", blkNum, err)
 		}
@@ -691,7 +691,7 @@ func (pool *BlockPool) getSealedBlock(blockNum uint32) (*Block, common.Uint256) 
 	}
 
 	// get from chainstore
-	blk, err := pool.chainStore.GetBlock(blockNum)
+	blk, err := pool.chainStore.getBlock(blockNum)
 	if err != nil {
 		log.Errorf("getSealedBlock %d err:%v", blockNum, err)
 		return nil, common.Uint256{}
@@ -756,14 +756,26 @@ func (pool *BlockPool) onBlockSealed(blockNum uint32) {
 	}
 }
 
+func (pool *BlockPool) getExecMerkleRoot(blkNum uint32) (common.Uint256, error) {
+	pool.lock.RLock()
+	defer pool.lock.RUnlock()
+	return pool.chainStore.getExecMerkleRoot(blkNum)
+}
+
 func (pool *BlockPool) getExecWriteSet(blkNum uint32) *overlaydb.MemDB {
 	pool.lock.RLock()
 	defer pool.lock.RUnlock()
-	return pool.chainStore.GetExecWriteSet(blkNum)
+	return pool.chainStore.getExecWriteSet(blkNum)
+}
+
+func (pool *BlockPool) submitBlock(blkNum uint32) error {
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
+	return pool.chainStore.submitBlock(blkNum)
 }
 
 func (pool *BlockPool) getCrossStatesRoot(blkNum uint32) (common.Uint256, error) {
 	pool.lock.RLock()
 	defer pool.lock.RUnlock()
-	return pool.chainStore.GetCrossStatesRoot(blkNum)
+	return pool.chainStore.getCrossStatesRoot(blkNum)
 }

@@ -185,10 +185,10 @@ func (self *Server) constructBlock(blkNum uint32, prevBlkHash common.Uint256, tx
 	for _, t := range txs {
 		txHash = append(txHash, t.Hash())
 	}
-	lastBlock, err := self.chainStore.GetBlock(blkNum - 1)
-	if err != nil {
-		log.Errorf("constructBlock getlastblock err:%s,blknum:%d", err, blkNum-1)
-		return nil, err
+	lastBlock, _ := self.blockPool.getSealedBlock(blkNum - 1)
+	if lastBlock == nil {
+		log.Errorf("constructBlock getlastblock failed blknum:%d", blkNum-1)
+		return nil, fmt.Errorf("constructBlock getlastblock failed blknum:%d", blkNum-1)
 	}
 	txRoot := common.ComputeMerkleRoot(txHash)
 	blockRoot := ledger.DefLedger.GetBlockRootWithNewTxRoots(lastBlock.Block.Header.Height, []common.Uint256{lastBlock.Block.Header.TransactionsRoot, txRoot})
@@ -292,7 +292,7 @@ func (self *Server) constructProposalMsg(blkNum uint32, sysTxs, userTxs []*types
 	if err != nil {
 		return nil, fmt.Errorf("failed to constuct blk: %s", err)
 	}
-	merkleRoot, err := self.chainStore.GetExecMerkleRoot(blkNum - 1)
+	merkleRoot, err := self.blockPool.getExecMerkleRoot(blkNum - 1)
 	if err != nil {
 		return nil, fmt.Errorf("failed to GetExecMerkleRoot: %s,blkNum:%d", err, (blkNum - 1))
 	}

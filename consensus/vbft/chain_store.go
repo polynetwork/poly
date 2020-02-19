@@ -31,8 +31,9 @@ import (
 )
 
 type PendingBlock struct {
-	block      *Block
-	execResult *store.ExecuteResult
+	block        *Block
+	execResult   *store.ExecuteResult
+	hasSubmitted bool
 }
 type ChainStore struct {
 	db              *ledger.Ledger
@@ -60,7 +61,7 @@ func OpenBlockStore(db *ledger.Ledger, serverPid *actor.PID) (*ChainStore, error
 		return nil, fmt.Errorf("GetCrossStatesRoot blockNum:%d, error :%s", chainstore.chainedBlockNum, err)
 	}
 	writeSet := overlaydb.NewMemDB(1, 1)
-	block, err := chainstore.GetBlock(chainstore.chainedBlockNum)
+	block, err := chainstore.getBlock(chainstore.chainedBlockNum)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +77,7 @@ func (self *ChainStore) GetChainedBlockNum() uint32 {
 	return self.chainedBlockNum
 }
 
-func (self *ChainStore) GetExecMerkleRoot(blkNum uint32) (common.Uint256, error) {
+func (self *ChainStore) getExecMerkleRoot(blkNum uint32) (common.Uint256, error) {
 	if blk, present := self.pendingBlocks[blkNum]; blk != nil && present {
 		return blk.execResult.MerkleRoot, nil
 	}
@@ -90,7 +91,7 @@ func (self *ChainStore) GetExecMerkleRoot(blkNum uint32) (common.Uint256, error)
 
 }
 
-func (self *ChainStore) GetCrossStatesRoot(blkNum uint32) (common.Uint256, error) {
+func (self *ChainStore) getCrossStatesRoot(blkNum uint32) (common.Uint256, error) {
 	if blk, present := self.pendingBlocks[blkNum]; blk != nil && present {
 		return blk.execResult.CrossStatesRoot, nil
 	}
@@ -102,7 +103,7 @@ func (self *ChainStore) GetCrossStatesRoot(blkNum uint32) (common.Uint256, error
 	}
 }
 
-func (self *ChainStore) GetExecWriteSet(blkNum uint32) *overlaydb.MemDB {
+func (self *ChainStore) getExecWriteSet(blkNum uint32) *overlaydb.MemDB {
 	if blk, present := self.pendingBlocks[blkNum]; blk != nil && present {
 		return blk.execResult.WriteSet
 	}
@@ -140,37 +141,44 @@ func (self *ChainStore) AddBlock(block *Block) error {
 		panic("nil block header")
 	}
 	blkNum := self.GetChainedBlockNum() + 1
-	var err error
-	if self.needSubmitBlock {
-		if submitBlk, present := self.pendingBlocks[blkNum-1]; submitBlk != nil && present {
-			err := self.db.SubmitBlock(submitBlk.block.Block, *submitBlk.execResult)
-			if err != nil && blkNum > self.GetChainedBlockNum() {
-				return fmt.Errorf("ledger add submitBlk (%d, %d) failed: %s", blkNum, self.GetChainedBlockNum(), err)
-			}
-			if _, present := self.pendingBlocks[blkNum-2]; present {
-				delete(self.pendingBlocks, blkNum-2)
-			}
-		} else {
-			return nil
-		}
+	err := self.submitBlock(blkNum - 1)
+	if err != nil {
+		log.Errorf("chainstore blkNum:%d, SubmitBlock: %s", blkNum-1, err)
 	}
 	execResult, err := self.db.ExecuteBlock(block.Block)
 	if err != nil {
 		log.Errorf("chainstore AddBlock GetBlockExecResult: %s", err)
 		return fmt.Errorf("chainstore AddBlock GetBlockExecResult: %s", err)
 	}
-	self.pendingBlocks[blkNum] = &PendingBlock{block: block, execResult: &execResult}
-	self.needSubmitBlock = true
-	self.pid.Tell(
-		&message.BlockConsensusComplete{
-			Block: block.Block,
-		})
+	self.pendingBlocks[blkNum] = &PendingBlock{block: block, execResult: &execResult, hasSubmitted: false}
+	if self.pid != nil {
+		self.pid.Tell(
+			&message.BlockConsensusComplete{
+				Block: block.Block,
+			})
+	}
 	self.chainedBlockNum = blkNum
-	blkNum++
 	return nil
 }
 
-func (self *ChainStore) GetBlock(blockNum uint32) (*Block, error) {
+func (self *ChainStore) submitBlock(blkNum uint32) error {
+	if blkNum == 0 {
+		return nil
+	}
+	if submitBlk, present := self.pendingBlocks[blkNum]; submitBlk != nil && submitBlk.hasSubmitted == false && present {
+		err := self.db.SubmitBlock(submitBlk.block.Block, *submitBlk.execResult)
+		if err != nil && blkNum > self.GetChainedBlockNum() {
+			return fmt.Errorf("ledger add submitBlk (%d, %d) failed: %s", blkNum, self.GetChainedBlockNum(), err)
+		}
+		if _, present := self.pendingBlocks[blkNum-1]; present {
+			delete(self.pendingBlocks, blkNum-1)
+		}
+		submitBlk.hasSubmitted = true
+	}
+	return nil
+}
+
+func (self *ChainStore) getBlock(blockNum uint32) (*Block, error) {
 	if blk, present := self.pendingBlocks[blockNum]; present {
 		return blk.block, nil
 	}
