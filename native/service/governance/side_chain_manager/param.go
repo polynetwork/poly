@@ -99,7 +99,7 @@ func (this *RegisterRedeemParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteUint64(this.RedeemChainID)
 	sink.WriteUint64(this.ContractChainID)
 	sink.WriteVarBytes(this.Redeem)
-	sink.WriteVarBytes([]byte(this.ContractAddress))
+	sink.WriteVarBytes(this.ContractAddress)
 	sink.WriteString(this.Address)
 	sink.WriteUint64(uint64(len(this.Signs)))
 	for _, v := range this.Signs {

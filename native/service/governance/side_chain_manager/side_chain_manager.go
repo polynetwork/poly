@@ -236,7 +236,6 @@ func RegisterRedeem(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, failed to verify: %v", err)
 	}
-
 	rk := btcutil.Hash160(params.Redeem)
 	key := append(append(append(rk, utils.GetUint64Bytes(params.RedeemChainID)...),
 		params.ContractAddress...), utils.GetUint64Bytes(params.ContractChainID)...)

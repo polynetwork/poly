@@ -219,7 +219,12 @@ func getBindSignInfo(native *native.NativeService, message []byte) (*BindSignInf
 
 func verifyBtcSigs(sigs [][]byte, addrs []btcutil.Address, contract, redeem []byte) (map[string][]byte, error) {
 	res := make(map[string][]byte)
-	hash := btcutil.Hash160(append(redeem, contract...))
+
+	c := make([]byte, len(contract))
+	copy(c, contract)
+	r := make([]byte, len(redeem))
+	copy(r, redeem)
+	hash := btcutil.Hash160(append(r, c...))
 	for i, sig := range sigs {
 		if len(sig) < 1 {
 			return nil, fmt.Errorf("length of no.%d sig is less than 1", i)
