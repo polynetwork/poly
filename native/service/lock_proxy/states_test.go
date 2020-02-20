@@ -16,7 +16,7 @@
  * along with The ontology.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package ont_lock_proxy
+package lock_proxy
 
 import (
 	"testing"
@@ -49,7 +49,7 @@ func TestLockParam_Serialize(t *testing.T) {
 	assert.Equal(t, param, param2)
 }
 
-func TestArghs_Serialize(t *testing.T) {
+func TestArgs_Serialize(t *testing.T) {
 
 	toAddrBs, _ := hex.DecodeString("709c937270e1d5a490718a2b4a230186bdd06a02")
 	args := Args{
@@ -65,6 +65,5 @@ func TestArghs_Serialize(t *testing.T) {
 	if err := args1.Deserialization(source); err != nil {
 		t.Fatal("state deserialize fail!")
 	}
-
 	assert.Equal(t, args, args1)
 }

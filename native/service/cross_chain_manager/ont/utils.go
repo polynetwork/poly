@@ -44,6 +44,6 @@ func getUnlockArgs(args []byte, fromContractAddress []byte, fromChainID uint64) 
 	sink := common.NewZeroCopySink(nil)
 	sink.WriteVarBytes(args)
 	sink.WriteVarBytes(fromContractAddress)
-	sink.WriteUint64(fromChainID)
+	sink.WriteVarUint(fromChainID)
 	return sink.Bytes()
 }

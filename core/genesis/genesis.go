@@ -63,6 +63,7 @@ func BuildGenesisBlock(defaultBookkeeper []keypair.PublicKey, genesisConfig *con
 	}
 	nodeManagerConfig := newNodeManagerInit(conf.Bytes())
 	ontInitTx := newOntInit()
+	ongInitTx := newOngInit()
 	consensusPayload, err := vconfig.GenesisConsensusPayload(0)
 	if err != nil {
 		return nil, fmt.Errorf("consensus genesis init failed: %s", err)
@@ -95,6 +96,7 @@ func BuildGenesisBlock(defaultBookkeeper []keypair.PublicKey, genesisConfig *con
 		Transactions: []*types.Transaction{
 			nodeManagerConfig,
 			ontInitTx,
+			ongInitTx,
 		},
 	}
 	genesisBlock.RebuildMerkleRoot()
@@ -114,7 +116,14 @@ func newOntInit() *types.Transaction {
 		Method: INIT_ONT, Args: []byte{}}
 	invokeCode := new(common.ZeroCopySink)
 	contractInvokeParam.Serialization(invokeCode)
+	return NewInvokeTransaction(invokeCode.Bytes(), 0)
+}
 
+func newOngInit() *types.Transaction {
+	contractInvokeParam := &states.ContractInvokeParam{Address: utils.OngContractAddress,
+		Method: INIT_ONT, Args: []byte{}}
+	invokeCode := new(common.ZeroCopySink)
+	contractInvokeParam.Serialization(invokeCode)
 	return NewInvokeTransaction(invokeCode.Bytes(), 0)
 }
 

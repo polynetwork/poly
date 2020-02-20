@@ -88,14 +88,13 @@ func OntInit(native *native.NativeService) ([]byte, error) {
 	if amount > 0 {
 		return utils.BYTE_FALSE, fmt.Errorf("Init ont has been completed!")
 	}
-	toAddress := utils.OntLockProxyContractAddress
+	toAddress := utils.LockProxyContractAddress
 	toAmount := constants.ONT_TOTAL_SUPPLY
 
 	item := utils.GenUInt64StorageItem(toAmount)
 	native.GetCacheDB().Put(GenBalanceKey(contract, toAddress), item.ToArray())
-	AddTransferNotifications(native, utils.OntContractAddress, &State{To: toAddress, Value: toAmount})
 	native.GetCacheDB().Put(GenTotalSupplyKey(contract), item.ToArray())
-
+	AddTransferNotifications(native, contract, &State{To: toAddress, Value: toAmount})
 	return utils.BYTE_TRUE, nil
 }
 
