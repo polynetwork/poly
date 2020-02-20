@@ -2137,7 +2137,7 @@ func (self *Server) nonSystxs(sysTxs []*types.Transaction, blkNum uint32) bool {
 			log.Errorf("nonSystxs invoke is nil,blocknum:%d", blkNum)
 			return true
 		}
-		tx := self.creategovernaceTransaction(blkNum)
+		tx := self.createGovernaceTransaction(blkNum)
 		if bytes.Compare(invoke.Code, tx.Payload.(*payload.InvokeCode).Code) == 0 {
 			return false
 		}
@@ -2165,7 +2165,7 @@ func (self *Server) makeProposal(blkNum uint32, forEmpty bool) error {
 		}
 		//add transaction invoke governance native commit_pos contract
 		if self.checkNeedUpdateChainConfig(blkNum) {
-			tx := self.creategovernaceTransaction(blkNum)
+			tx := self.createGovernaceTransaction(blkNum)
 			sysTxs = append(sysTxs, tx)
 			chainconfig.View++
 		}
