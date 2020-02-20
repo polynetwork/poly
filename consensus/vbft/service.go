@@ -1079,8 +1079,9 @@ func (self *Server) processProposalMsg(msg *blockProposalMsg) {
 		log.Errorf("failed to getCrossStatesRoot: %s,blkNum:%d", err, (msgBlkNum - 1))
 		return
 	}
-	if crossStateRoot != msg.Block.getCrossStateRoot() {
-		log.Errorf("BlockPrposalMessage check crossStateRoot blocknum:%d,msg crossStateRoot:%s,self crossStateRoot:%s", msg.GetBlockNum(), msg.Block.getCrossStateRoot().ToHexString(), crossStateRoot.ToHexString())
+	msgCrossStateRoot := msg.Block.getPrevBlockCrossStateRoot()
+	if crossStateRoot != msgCrossStateRoot {
+		log.Errorf("BlockPrposalMessage check crossStateRoot blocknum:%d,msg crossStateRoot:%s,self crossStateRoot:%s", msg.GetBlockNum(), msgCrossStateRoot.ToHexString(), crossStateRoot.ToHexString())
 		return
 	}
 

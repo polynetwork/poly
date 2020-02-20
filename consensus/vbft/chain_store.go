@@ -56,7 +56,7 @@ func OpenBlockStore(db *ledger.Ledger, serverPid *actor.PID) (*ChainStore, error
 		log.Errorf("GetStateMerkleRoot blockNum:%d, error :%s", chainstore.chainedBlockNum, err)
 		return nil, fmt.Errorf("GetStateMerkleRoot blockNum:%d, error :%s", chainstore.chainedBlockNum, err)
 	}
-	crossStatesRoot, err := db.GetCrossStatesRoot(chainstore.chainedBlockNum)
+	crossStatesRoot, err := db.GetCrossStateRoot(chainstore.chainedBlockNum)
 	if err != nil {
 		return nil, fmt.Errorf("GetCrossStatesRoot blockNum:%d, error :%s", chainstore.chainedBlockNum, err)
 	}
@@ -91,15 +91,15 @@ func (self *ChainStore) getExecMerkleRoot(blkNum uint32) (common.Uint256, error)
 
 }
 
-func (self *ChainStore) getCrossStatesRoot(blkNum uint32) (common.Uint256, error) {
+func (self *ChainStore) getCrossStateRoot(blkNum uint32) (common.Uint256, error) {
 	if blk, present := self.pendingBlocks[blkNum]; blk != nil && present {
 		return blk.execResult.CrossStatesRoot, nil
 	}
-	crossStatesRoot, err := self.db.GetCrossStatesRoot(blkNum)
+	crossStateRoot, err := self.db.GetCrossStateRoot(blkNum)
 	if err != nil {
-		return common.Uint256{}, fmt.Errorf("GetCrossStatesRoot blockNum:%d, error :%s", blkNum, err)
+		return common.Uint256{}, fmt.Errorf("GetCrossStateRoot blockNum:%d, error :%s", blkNum, err)
 	} else {
-		return crossStatesRoot, nil
+		return crossStateRoot, nil
 	}
 }
 

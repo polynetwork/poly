@@ -60,8 +60,8 @@ func (blk *Block) getPrevBlockMerkleRoot() common.Uint256 {
 	return blk.PrevBlockMerkleRoot
 }
 
-func (blk *Block) getCrossStateRoot() common.Uint256 {
-	return blk.getCrossStateRoot()
+func (blk *Block) getPrevBlockCrossStateRoot() common.Uint256 {
+	return blk.Block.Header.CrossStateRoot
 }
 
 //

@@ -512,8 +512,8 @@ func (this *LedgerStoreImp) GetStateMerkleRoot(height uint32) (common.Uint256, e
 	return this.stateStore.GetStateMerkleRoot(height)
 }
 
-func (this *LedgerStoreImp) GetCrossStatesRoot(height uint32) (common.Uint256, error) {
-	return this.stateStore.GetCrossStatesRoot(height)
+func (this *LedgerStoreImp) GetCrossStateRoot(height uint32) (common.Uint256, error) {
+	return this.stateStore.GetCrossStateRoot(height)
 }
 
 func (this *LedgerStoreImp) ExecuteBlock(block *types.Block) (result store.ExecuteResult, err error) {

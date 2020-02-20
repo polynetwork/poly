@@ -225,7 +225,7 @@ func (self *StateStore) AddCrossStates(height uint32, crossStates []common.Uint2
 	return nil
 }
 
-func (self *StateStore) GetCrossStatesRoot(height uint32) (common.Uint256, error) {
+func (self *StateStore) GetCrossStateRoot(height uint32) (common.Uint256, error) {
 	var hash common.Uint256
 	key := genCrossStatesRootKey(height)
 	value, err := self.store.Get(key)

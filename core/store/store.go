@@ -46,7 +46,7 @@ type LedgerStore interface {
 	ExecuteBlock(b *types.Block) (ExecuteResult, error)   // called by consensus
 	SubmitBlock(b *types.Block, exec ExecuteResult) error // called by consensus
 	GetStateMerkleRoot(height uint32) (result common.Uint256, err error)
-	GetCrossStatesRoot(height uint32) (result common.Uint256, err error)
+	GetCrossStateRoot(height uint32) (result common.Uint256, err error)
 	GetCurrentBlockHash() common.Uint256
 	GetCurrentBlockHeight() uint32
 	GetCurrentHeaderHeight() uint32

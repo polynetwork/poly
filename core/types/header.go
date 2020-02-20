@@ -34,7 +34,7 @@ type Header struct {
 	ChainID          uint64
 	PrevBlockHash    common.Uint256
 	TransactionsRoot common.Uint256
-	CrossStatesRoot  common.Uint256
+	CrossStateRoot   common.Uint256
 	BlockRoot        common.Uint256
 	Timestamp        uint32
 	Height           uint32
@@ -74,7 +74,7 @@ func (bd *Header) serializationUnsigned(sink *common.ZeroCopySink) {
 	sink.WriteUint64(bd.ChainID)
 	sink.WriteBytes(bd.PrevBlockHash[:])
 	sink.WriteBytes(bd.TransactionsRoot[:])
-	sink.WriteBytes(bd.CrossStatesRoot[:])
+	sink.WriteBytes(bd.CrossStateRoot[:])
 	sink.WriteBytes(bd.BlockRoot[:])
 	sink.WriteUint32(bd.Timestamp)
 	sink.WriteUint32(bd.Height)
@@ -124,7 +124,7 @@ func (bd *Header) serializeUnsigned(w io.Writer) error {
 	if err := serialization.WriteBytes(w, bd.TransactionsRoot[:]); err != nil {
 		return err
 	}
-	if err := serialization.WriteBytes(w, bd.CrossStatesRoot[:]); err != nil {
+	if err := serialization.WriteBytes(w, bd.CrossStateRoot[:]); err != nil {
 		return err
 	}
 	if err := serialization.WriteBytes(w, bd.BlockRoot[:]); err != nil {
@@ -219,7 +219,7 @@ func (bd *Header) deserializationUnsigned(source *common.ZeroCopySource) error {
 	if eof {
 		return errors.New("[Header] read transactionsRoot error")
 	}
-	bd.CrossStatesRoot, eof = source.NextHash()
+	bd.CrossStateRoot, eof = source.NextHash()
 	if eof {
 		return errors.New("[Header] read crossStatesRoot error")
 	}
@@ -309,7 +309,7 @@ func (bd *Header) deserializeUnsigned(w io.Reader) error {
 	if err != nil {
 		return errors.New("[Header] read transactionsRoot error")
 	}
-	bd.CrossStatesRoot, err = serialization.ReadHash(w)
+	bd.CrossStateRoot, err = serialization.ReadHash(w)
 	if err != nil {
 		return errors.New("[Header] read crossStatesRoot error")
 	}
