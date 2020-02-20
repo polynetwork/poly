@@ -60,6 +60,10 @@ func (blk *Block) getPrevBlockMerkleRoot() common.Uint256 {
 	return blk.PrevBlockMerkleRoot
 }
 
+func (blk *Block) getCrossStateRoot() common.Uint256 {
+	return blk.getCrossStateRoot()
+}
+
 //
 // getVrfValue() is a helper function for participant selection.
 //

@@ -1074,6 +1074,16 @@ func (self *Server) processProposalMsg(msg *blockProposalMsg) {
 		log.Errorf("BlockPrposalMessage check MerkleRoot blocknum:%d,msg MerkleRoot:%s,self MerkleRoot:%s", msg.GetBlockNum(), msgMerkleRoot.ToHexString(), merkleRoot.ToHexString())
 		return
 	}
+	crossStateRoot, err := self.blockPool.getCrossStatesRoot(msgBlkNum - 1)
+	if err != nil {
+		log.Errorf("failed to getCrossStatesRoot: %s,blkNum:%d", err, (msgBlkNum - 1))
+		return
+	}
+	if crossStateRoot != msg.Block.getCrossStateRoot() {
+		log.Errorf("BlockPrposalMessage check crossStateRoot blocknum:%d,msg crossStateRoot:%s,self crossStateRoot:%s", msg.GetBlockNum(), msg.Block.getCrossStateRoot().ToHexString(), crossStateRoot.ToHexString())
+		return
+	}
+
 	cfg := vconfig.ChainConfig{}
 	if blk.getNewChainConfig() != nil {
 		cfg = *blk.getNewChainConfig()
