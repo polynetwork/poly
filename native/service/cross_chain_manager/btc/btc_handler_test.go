@@ -2,6 +2,7 @@ package btc
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/hex"
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
@@ -19,19 +20,23 @@ import (
 	"github.com/ontio/multi-chain/native/service/utils"
 	"github.com/ontio/multi-chain/native/storage"
 	"github.com/stretchr/testify/assert"
+	"strings"
 	"testing"
 )
 
 var (
 	acct *account.Account = account.NewAccount("")
 
-	fromBtcTxid       = "f922ed4669f5f11910649133b582d476a316f3e7392dad9be09d08a1c4a81357"
-	fromBtcRawTx      = "0100000001c8b3b4ee22c2bd31ea518bc159a412a7e873b739cc018bd063b9426c7862632a000000006a47304402202b79a1a2c2439dc2fc7dc1eab186566164cf0d317a8e23b340745dd73408ecab0220216b34a2ebfa9e84922f29f17ad54c9510d4b427ef17c960eacc302de10e54f7012103128a2c4525179e47f38cf3fefca37a61548ca4610255b3fb4ee86de2d3e80c0fffffffff03a17200000000000022002044978a77e4e983136bf1cca277c45e5bd4eff6a7848e900416daf86fd32c274300000000000000003d6a3b6602000000000000000000000000000000140876c408a5b0f3ad9a65995658494dd088926d3e14f3b8a17f1f957f60c88f105e32ebff3f022e56a48379052a010000001976a91428d2e8cee08857f569e5a1b147c5d5e87339e08188ac00000000"
-	fromBtcProof      = "0000002008c4148bf546eef416ff870326532741c87fe540cca7dbc913bbf635f6900a61ebc2d2937be45e1cb45852b2c48bb533212d35b6cd08acd2094aab7418e97b58619d215effff7f2003000000020000000231f4144cace7184cecd1d6542ccacef88d8d504e507b0693c9fc14079a956dff5713a8c4a1089de09bad2d39e7f316a376d482b53391641019f1f56946ed22f90105"
-	fromBtcMerkleRoot = "587be91874ab4a09d2ac08cdb6352d2133b58bc4b25258b41c5ee47b93d2c2eb"
+	rdm = "552102dec9a415b6384ec0a9331d0cdf02020f0f1e5731c327b86e2b5a92455a289748210365b1066bcfa21987c3e207b92e309b95ca6bee5f1133cf04d6ed4ed265eafdbc21031104e387cd1a103c27fdc8a52d5c68dec25ddfb2f574fbdca405edfd8c5187de21031fdb4b44a9f20883aff505009ebc18702774c105cb04b1eecebcb294d404b1cb210387cda955196cc2b2fc0adbbbac1776f8de77b563c6d2a06a77d96457dc3d0d1f2102dd7767b6a7cc83693343ba721e0f5f4c7b4b8d85eeb7aec20d227625ec0f59d321034ad129efdab75061e8d4def08f5911495af2dae6d3e9a4b6e7aeb5186fa432fc57ae"
+	fromBtcTxid       = "2587a59e8069c563d32de9d4a2b946760d740b6963566dd7b32d8ec549f2d238"
+	fromBtcRawTx      = "010000000147d9b1bc6a52099f746863722282e3febc9ad3ad6b2eac0f2df6d2badf1df28a020000006b483045022100a1e573ba3589217e1b20d6ed53e2dda705deb3d284122c61987266e66aff074802200165734cf4519b560d806d392f10cec2aeb3071cf72c759a5abc9c33cd2f983f012103128a2c4525179e47f38cf3fefca37a61548ca4610255b3fb4ee86de2d3e80c0fffffffff031027000000000000220020216a09cb8ee51da1a91ea8942552d7936c886a10b507299003661816c0e9f18b00000000000000003d6a3b6602000000000000000000000000000000149702640a6b971ca18efc20ad73ca4e8ba390c910145cd3143f91a13fe971043e1e4605c1c23b46bf44620e0700000000001976a91428d2e8cee08857f569e5a1b147c5d5e87339e08188ac00000000"
+	fromBtcProof      = "00000020775635e1ada1581f0fa6eff86bfc4720253c9c4fcd7165843e902600000000003faec6ef7165e988b344b553b15dff0d66eb62e71b1d93462c64b0eab1086852fef54c5effff001d6c2edd4f4d0200000b3a4a5328d2e6b72f26fb5f3aa6db80e8301c2746c5ce6e21813e884c3a08e96a8ba1ccfe764700b7d956acff0697680b0e9412517972d8e8a10c9ac37c96fd0c81a705037d9f8caaa679075d525cd12bbb698e6f6917e61aecbe3d529f65c7bd38d2f249c58e2db3d76d5663690b740d7646b9a2d4e92dd363c569809ea58725a47e736292f4a96de7c46462c53b823c1732cb2d863c402bc3dd96527e69305e0af15f3487c9093c59d7dc0e7fcde6db50354e73f640987e3305e917aad7531abaa9513d16228fb2b17c3cd04f9ec97e3c38de9dac7ff2af93184c338e86e6c2d8731bc8430a7f31bc050d11776d6e3b665951af070fe889cba7aec895e40b3e67107e62b1ec0ebef9a226abc458b55920060f0a5c06edd26432a987d3f6cfafefee3301b3281270ceb45e5831e435fa70056cd28927251eebe875f2fd810aa501cca43940fe1ba0e8be004e8f05f740b66e2e9a1a24b76bdd4c0c6d53230c1903ef2d00"
+	fromBtcMerkleRoot = "526808b1eab0642c46931d1be762eb660dff5db153b544b388e96571efc6ae3f"
 	toOntAddr         = "AdzZ2VKufdJWeB8t9a8biXoHbbMe2kZeyH"
 	obtcxAddr         = "3e6d9288d04d49585699659aadf3b0a508c47608"
-	utxoKey           = "87a9652e9b396545598c0fc72cb5a98848bf93d3"
+	utxoKey           = "c330431496364497d7257839737b5e4596f5ac06"//"87a9652e9b396545598c0fc72cb5a98848bf93d3"
+	toEthAddr = "0x5cD3143f91a13Fe971043E1e4605C1c23b46bF44"
+	ebtcxAddr = "0x9702640a6b971CA18EFC20AD73CA4e8bA390C910"
 
 	sigs = []string{
 		"3045022100c6f0620de7b8e71801408cc690b21ffa9ad344311b5e7373dcd4090316cc02d3022078bfb2bd6d3fcdbd75e1ce2dbefdecc28a4955d9d4dfed1b98aa59b6e83c0bf401",
@@ -61,7 +66,7 @@ var (
 	setSideChain = func(ns *native.NativeService) {
 		side := &side_chain_manager.SideChain{
 			Name:         "btc",
-			ChainId:      0,
+			ChainId:      1,
 			BlocksToWait: 1,
 			Router:       0,
 		}
@@ -69,7 +74,7 @@ var (
 		_ = side.Serialization(sink)
 
 		ns.GetCacheDB().Put(utils.ConcatKey(utils.SideChainManagerContractAddress,
-			[]byte(side_chain_manager.SIDE_CHAIN), utils.GetUint64Bytes(0)), states.GenRawStorageItem(sink.Bytes()))
+			[]byte(side_chain_manager.SIDE_CHAIN), utils.GetUint64Bytes(1)), states.GenRawStorageItem(sink.Bytes()))
 	}
 
 	getSigs = func() [][]byte {
@@ -80,6 +85,15 @@ var (
 		}
 		return res
 	}
+
+	registerRC = func(db *storage.CacheDB) *storage.CacheDB {
+		ca, _ := hex.DecodeString(strings.Replace(ebtcxAddr, "0x", "", 1))
+		rk, _ := hex.DecodeString(utxoKey)
+		db.Put(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(side_chain_manager.REDEEM_BIND),
+			utils.GetUint64Bytes(1), utils.GetUint64Bytes(2), rk), states.GenRawStorageItem(ca))
+
+		return db
+	}
 )
 
 func TestBTCHandler_MakeDepositProposal(t *testing.T) {
@@ -87,11 +101,15 @@ func TestBTCHandler_MakeDepositProposal(t *testing.T) {
 	mr, _ := chainhash.NewHashFromStr(fromBtcMerkleRoot)
 	gh.MerkleRoot = *mr
 
-	db, _ := syncGenesisHeader(&gh)
+	db, err := syncGenesisHeader(&gh)
+	if err != nil {
+		t.Fatal(err)
+	}
+	db = registerRC(db)
 
 	txid, _ := chainhash.NewHashFromStr(fromBtcTxid)
 	rawTx, _ := hex.DecodeString(fromBtcRawTx)
-	scAddr, _ := common.AddressFromHexString(obtcxAddr)
+	scAddr, _ := hex.DecodeString(strings.Replace(ebtcxAddr, "0x", "", 1))
 	handler := NewBTCHandler()
 
 	// wrong proof
@@ -99,7 +117,7 @@ func TestBTCHandler_MakeDepositProposal(t *testing.T) {
 	proof, _ := hex.DecodeString(wrongProof)
 	params := new(ccmcom.EntranceParam)
 	params.Height = 0
-	params.SourceChainID = 0
+	params.SourceChainID = 1
 	params.Proof = proof
 	params.Extra = rawTx
 	params.RelayerAddress = acct.Address[:]
@@ -122,23 +140,23 @@ func TestBTCHandler_MakeDepositProposal(t *testing.T) {
 	p, err = handler.MakeDepositProposal(ns)
 	assert.NoError(t, err)
 
-	ontAddr, _ := common.AddressFromBase58(toOntAddr)
+	ethAddr, _ := hex.DecodeString(strings.Replace(toEthAddr, "0x", "", 1))
 	sink.Reset()
-	sink.WriteVarBytes(ontAddr[:])
-	sink.WriteUint64(uint64(29345))
+	sink.WriteVarBytes(ethAddr[:])
+	sink.WriteUint64(uint64(10000))
 
 	assert.Equal(t, txid[:], p.CrossChainID)
 	assert.Equal(t, txid[:], p.TxHash)
 	assert.Equal(t, "unlock", p.Method)
-	assert.Equal(t, []byte("btc"), p.FromContractAddress)
+	assert.Equal(t, utxoKey, hex.EncodeToString(p.FromContractAddress))
 	assert.Equal(t, uint64(2), p.ToChainID)
 	assert.Equal(t, sink.Bytes(), p.Args)
 	assert.Equal(t, scAddr[:], p.ToContractAddress)
 
-	utxos, err := getUtxos(ns, 0, utxoKey)
+	utxos, err := getUtxos(ns, 1, utxoKey)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(utxos.Utxos))
-	assert.Equal(t, uint64(29345), utxos.Utxos[0].Value)
+	assert.Equal(t, uint64(10000), utxos.Utxos[0].Value)
 	assert.Equal(t, fromBtcTxid+":0", utxos.Utxos[0].Op.String())
 
 	// repeated commit
@@ -149,6 +167,41 @@ func TestBTCHandler_MakeDepositProposal(t *testing.T) {
 	assert.Error(t, err)
 }
 
+func TestBTCHandler_MakeTransaction(t *testing.T) {
+	rawTx, _ := hex.DecodeString(fromBtcRawTx)
+	mtx := wire.NewMsgTx(wire.TxVersion)
+	_ = mtx.BtcDecode(bytes.NewBuffer(rawTx), wire.ProtocolVersion, wire.LatestEncoding)
+
+	ns := getNativeFunc(nil, nil)
+	_ = addUtxos(ns, 1, 0, mtx)
+	registerRC(ns.GetCacheDB())
+	setSideChain(ns)
+
+	rk, _ := hex.DecodeString(utxoKey)
+	scAddr, _ := hex.DecodeString(strings.Replace(ebtcxAddr, "0x", "", 1))
+	r, _ := hex.DecodeString(rdm)
+
+	sink := common.NewZeroCopySink(nil)
+	sink.WriteVarBytes([]byte("mjEoyyCPsLzJ23xMX6Mti13zMyN36kzn57"))
+	sink.WriteUint64(6000)
+	sink.WriteVarBytes(r)
+	p := &ccmcom.MakeTxParam{
+		ToChainID: 1,
+		TxHash: []byte{1},
+		Method: "unlock",
+		ToContractAddress: rk,
+		CrossChainID: []byte{1},
+		FromContractAddress: scAddr,
+		Args: sink.Bytes(),
+	}
+
+	handler := NewBTCHandler()
+	err := handler.MakeTransaction(ns, p, 2)
+	assert.NoError(t, err)
+	s := ns.GetNotify()[0].States.([]interface{})
+	assert.Equal(t, utxoKey, s[1].(string))
+}
+
 func TestBTCHandler_MultiSign(t *testing.T) {
 	rawTx, _ := hex.DecodeString(fromBtcRawTx)
 	mtx := wire.NewMsgTx(wire.TxVersion)
@@ -157,8 +210,8 @@ func TestBTCHandler_MultiSign(t *testing.T) {
 	ns := getNativeFunc(nil, nil)
 	_ = addUtxos(ns, 0, 0, mtx)
 
-	rb, _ := hex.DecodeString(redeem)
-	err := makeBtcTx(ns, 0, map[string]int64{"mjEoyyCPsLzJ23xMX6Mti13zMyN36kzn57": 10000}, []byte{123},
+	rb, _ := hex.DecodeString(rdm)
+	err := makeBtcTx(ns, 0, map[string]int64{"mjEoyyCPsLzJ23xMX6Mti13zMyN36kzn57": 6000}, []byte{123},
 		2, rb, hex.EncodeToString(btcutil.Hash160(rb)))
 	assert.NoError(t, err)
 	stateArr := ns.GetNotify()[0].States.([]interface{})
@@ -259,14 +312,21 @@ func syncGenesisHeader(genesisHeader *wire.BlockHeader) (*storage.CacheDB, error
 	btcHander := btc.NewBTCHandler()
 
 	sink := new(common.ZeroCopySink)
+
+	h := make([]byte, 4)
+	binary.BigEndian.PutUint32(h, 0)
 	params := &hscom.SyncGenesisHeaderParam{
-		ChainID:       0,
-		GenesisHeader: buf.Bytes(),
+		ChainID:       1,
+		GenesisHeader: append(buf.Bytes(), h...),
 	}
 	sink = new(common.ZeroCopySink)
 	params.Serialization(sink)
+
 	ns := getNativeFunc(sink.Bytes(), nil)
-	_ = btcHander.SyncGenesisHeader(ns)
+	err := btcHander.SyncGenesisHeader(ns)
+	if err != nil {
+		return nil, err
+	}
 
 	return ns.GetCacheDB(), nil
 }
