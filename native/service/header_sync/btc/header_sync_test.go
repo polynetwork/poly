@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/ontio/multi-chain/account"
 	"github.com/ontio/multi-chain/common"
@@ -65,9 +66,12 @@ var (
 		var buf bytes.Buffer
 		_ = netParam.GenesisBlock.Header.BtcEncode(&buf, wire.ProtocolVersion, wire.LatestEncoding)
 
+		h := make([]byte, 4)
+		binary.BigEndian.PutUint32(h, 0)
+
 		params := new(scom.SyncGenesisHeaderParam)
 		params.ChainID = 0
-		params.GenesisHeader = buf.Bytes()
+		params.GenesisHeader = append(buf.Bytes(), h...)
 
 		sink := common.NewZeroCopySink(nil)
 		params.Serialization(sink)
@@ -123,6 +127,7 @@ func TestBTCHandler_SyncGenesisHeader(t *testing.T) {
 }
 
 func TestBTCHandler_SyncBlockHeader(t *testing.T) {
+	netParam = &chaincfg.RegressionNetParams
 	ns, handler := syncGHeader()
 
 	// normal case

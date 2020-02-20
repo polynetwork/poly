@@ -39,19 +39,19 @@ var (
 	ebtcxAddr         = "0x9702640a6b971CA18EFC20AD73CA4e8bA390C910"
 
 	sigs = []string{
-		"3045022100c6f0620de7b8e71801408cc690b21ffa9ad344311b5e7373dcd4090316cc02d3022078bfb2bd6d3fcdbd75e1ce2dbefdecc28a4955d9d4dfed1b98aa59b6e83c0bf401",
-		"304402202a525ae6d1c10ad428aa90559a8e1226915a441d1f5ed06ea577bafd36fce883022072235823b7a9e597d613c463e5d0eefc491092ca39f412db8e55f5a5aff5711301",
-		"3044022026a05a7026dca55cdd6bb15d72c28ad0b08e4c3f810820a4069547a8f82069010220468d49b47f86d899255adf0fbf26e2997c426eb96d22f9634f7dac13d87642eb01",
-		"3044022028bc153b6f149e020a99c12d64f5a7d9b213f358980dfa4fe556ad8c448ebe0502206db9f7b34c1658c75b45da0edf8c618b884ae0b9ca2346714f9bf28a99f7ec5a01",
-		"30440220168ba28cb6e0daea0269ba358c69bb88a8b3209e71db2daccb63cb1d65651d4702201acab7292731940becb7169db0014e59bc9cf0910b121f8baf1976352f27060301",
+		"3044022010efd2114373c5961902333ff29ca79ab033add8bcd1ac90b96260cc37d6556f022041e9f882204259d86d10ff06736dc090ad3d4b1dd555c587c70809ac7e412c0a01",
+		"3045022100a9076013a5f0bac46435b7cc5788d23d3054a8d04998ba20228db40174661e68022061ba9c827c08748b5cbb6f744becfbd6344582fb8e34a15255cfe4e9d5fe70c101",
+		"30440220737beb8f70082739927a7008282160abdcbd15ca2c671975e8e430f6100645bb0220178f44de5190f83a2fac4871b632a39b3c62f471cd328c8897ce76c95aa52b9a01",
+		"3044022007151b9b211ec9ab6ba92bc7f1d92ef8be65024f38c82fe973a2d1d14d8dff8d022006721914f148426ae92baafd5478e3b12cd05a81b99b4f77b9dfd9b4f5d5e5fc01",
+		"30440220162dd3953f1cf211eb15d0ca692b36b116abdd8e3608f7158fec44db96cc4a720220428dd1e1f5c02f3de0243d20d6969aa45abc27f93e29b6b39e25e23d3d65002001",
 	}
 
 	signers = []string{
-		"mj3LUsSvk9ZQH1pSHvC8LBtsYXsZvbky8H",
-		"mtNiC48WWbGRk2zLqiTMwKLhrCk6rBqBen",
-		"mi1bYK8SR3Qsf2cdrxgak3spzFx4EVH1pf",
-		"mz3bTZaQ2tNzsn4szNE8R6gp5zyHuqN29V",
-		"mfzbFf6njbEuyvZGDiAdfKamxWfAMv47NG",
+		"mxtJn3aRsKLrWRLLAhu2nCBuK2brfazedj",
+		"msu1qgtn4FsQh7xDP15ggStwW4yHquUTYE",
+		"mzr5T4PmqzNtusmM2S889LUySC9BBbwRzd",
+		"mmDSSyis1sjysaCKZ9eK1ww92Vr9S1CNEX",
+		"n1WmUbJ4dQfvzvtRaNcjmxH6nADhhv7W8c",
 	}
 
 	getNativeFunc = func(args []byte, db *storage.CacheDB) *native.NativeService {
@@ -208,25 +208,25 @@ func TestBTCHandler_MultiSign(t *testing.T) {
 	_ = mtx.BtcDecode(bytes.NewBuffer(rawTx), wire.ProtocolVersion, wire.LatestEncoding)
 
 	ns := getNativeFunc(nil, nil)
-	_ = addUtxos(ns, 0, 0, mtx)
+	_ = addUtxos(ns, 1, 0, mtx)
 
 	rb, _ := hex.DecodeString(rdm)
-	err := makeBtcTx(ns, 0, map[string]int64{"mjEoyyCPsLzJ23xMX6Mti13zMyN36kzn57": 6000}, []byte{123},
+	err := makeBtcTx(ns, 1, map[string]int64{"mjEoyyCPsLzJ23xMX6Mti13zMyN36kzn57": 6000}, []byte{123},
 		2, rb, hex.EncodeToString(btcutil.Hash160(rb)))
 	assert.NoError(t, err)
 	stateArr := ns.GetNotify()[0].States.([]interface{})
 	assert.Equal(t, "makeBtcTx", stateArr[0].(string))
 	assert.Equal(t, utxoKey, stateArr[1].(string))
 
-	stxos, err := getStxos(ns, 0, utxoKey)
+	stxos, err := getStxos(ns, 1, utxoKey)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(stxos.Utxos))
-	assert.Equal(t, uint64(29345), stxos.Utxos[0].Value)
+	assert.Equal(t, uint64(10000), stxos.Utxos[0].Value)
 	assert.Equal(t, fromBtcTxid+":0", stxos.Utxos[0].Op.String())
 
 	rawTx, _ = hex.DecodeString(stateArr[2].(string))
 	_ = mtx.BtcDecode(bytes.NewBuffer(rawTx), wire.ProtocolVersion, wire.LatestEncoding)
-	assert.Equal(t, int64(19345), mtx.TxOut[1].Value)
+	assert.Equal(t, int64(4000), mtx.TxOut[1].Value)
 
 	handler := NewBTCHandler()
 	sigArr := getSigs()
@@ -234,7 +234,7 @@ func TestBTCHandler_MultiSign(t *testing.T) {
 	// commit no.1 to 4 sig
 	for i, sig := range sigArr[:4] {
 		msp := ccmcom.MultiSignParam{
-			ChainID:   0,
+			ChainID:   1,
 			TxHash:    txid.CloneBytes(),
 			Address:   signers[i],
 			RedeemKey: utxoKey,
@@ -250,7 +250,7 @@ func TestBTCHandler_MultiSign(t *testing.T) {
 
 	// repeated submit sig4
 	msp := ccmcom.MultiSignParam{
-		ChainID:   0,
+		ChainID:   1,
 		TxHash:    txid.CloneBytes(),
 		Address:   signers[3],
 		RedeemKey: utxoKey,
@@ -264,7 +264,7 @@ func TestBTCHandler_MultiSign(t *testing.T) {
 
 	// right sig but wrong address
 	msp = ccmcom.MultiSignParam{
-		ChainID:   0,
+		ChainID:   1,
 		TxHash:    txid.CloneBytes(),
 		Address:   signers[3],
 		RedeemKey: utxoKey,
@@ -278,7 +278,7 @@ func TestBTCHandler_MultiSign(t *testing.T) {
 
 	// commit the last right sig
 	msp = ccmcom.MultiSignParam{
-		ChainID:   0,
+		ChainID:   1,
 		TxHash:    txid.CloneBytes(),
 		Address:   signers[4],
 		RedeemKey: utxoKey,
@@ -299,10 +299,10 @@ func TestBTCHandler_MultiSign(t *testing.T) {
 	assert.NoError(t, err)
 
 	txid = mtx.TxHash()
-	utxos, err = getUtxos(ns, 0, utxoKey)
+	utxos, err = getUtxos(ns, 1, utxoKey)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(utxos.Utxos))
-	assert.Equal(t, uint64(19345), utxos.Utxos[0].Value)
+	assert.Equal(t, uint64(4000), utxos.Utxos[0].Value)
 	assert.Equal(t, txid.String()+":1", utxos.Utxos[0].Op.String())
 }
 
