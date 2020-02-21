@@ -31,6 +31,14 @@ import (
 
 const MAX_TX_SIZE = 1024 * 1024 // The max size of a transaction to prevent DOS attacks
 
+type CoinType byte
+
+const (
+	ONG CoinType = iota
+	ETH
+	BTC
+)
+
 type Transaction struct {
 	Version    byte
 	TxType     TransactionType
@@ -38,6 +46,8 @@ type Transaction struct {
 	ChainID    uint64
 	Payload    Payload
 	Attributes []byte //this must be 0 now, Attribute Array length use VarUint encoding, so byte is enough for extension
+	Payer      common.Address
+	CoinType   CoinType
 	Sigs       []Sig
 
 	Raw []byte // raw transaction data
@@ -69,6 +79,8 @@ func (tx *Transaction) SerializeUnsigned(sink *common.ZeroCopySink) error {
 		return fmt.Errorf("attributes length %d over max length %d", tx.Attributes, MAX_ATTRIBUTES_LEN)
 	}
 	sink.WriteVarBytes(tx.Attributes)
+	sink.WriteAddress(tx.Payer)
+	sink.WriteByte(byte(tx.CoinType))
 	return nil
 }
 
@@ -181,6 +193,15 @@ func (tx *Transaction) DeserializationUnsigned(source *common.ZeroCopySource) er
 	if len(tx.Attributes) > MAX_ATTRIBUTES_LEN {
 		return fmt.Errorf("[deserializationUnsigned] attributes length %d over max limit %d", tx.Attributes, MAX_ATTRIBUTES_LEN)
 	}
+	tx.Payer, eof = source.NextAddress()
+	if eof {
+		return errors.New("[deserializationUnsigned] read payer error")
+	}
+	coinType, eof := source.NextByte()
+	if eof {
+		return errors.New("[deserializationUnsigned] read coinType error")
+	}
+	tx.CoinType = CoinType(coinType)
 	return nil
 }
 
