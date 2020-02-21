@@ -44,6 +44,8 @@ type Transaction struct {
 	TxType     TransactionType
 	Nonce      uint32
 	ChainID    uint64
+	GasLimit   uint64
+	GasPrice   uint64
 	Payload    Payload
 	Attributes []byte //this must be 0 now, Attribute Array length use VarUint encoding, so byte is enough for extension
 	Payer      common.Address
@@ -64,7 +66,8 @@ func (tx *Transaction) SerializeUnsigned(sink *common.ZeroCopySink) error {
 	sink.WriteByte(byte(tx.TxType))
 	sink.WriteUint32(tx.Nonce)
 	sink.WriteUint64(tx.ChainID)
-
+	sink.WriteUint64(tx.GasLimit)
+	sink.WriteUint64(tx.GasPrice)
 	//Payload
 	if tx.Payload == nil {
 		return errors.New("transaction payload is nil")
@@ -173,8 +176,17 @@ func (tx *Transaction) DeserializationUnsigned(source *common.ZeroCopySource) er
 	}
 	tx.ChainID, eof = source.NextUint64()
 	if eof {
-		return errors.New("[deserializationUnsigned] read eof error")
+		return errors.New("[deserializationUnsigned] read chainid error")
 	}
+	tx.GasLimit, eof = source.NextUint64()
+	if eof {
+		return errors.New("[deserializationUnsigned] read gaslimit error")
+	}
+	tx.GasPrice, eof = source.NextUint64()
+	if eof {
+		return errors.New("[deserializationUnsigned] read gasprice error")
+	}
+
 	switch tx.TxType {
 	case Invoke:
 		pl := new(payload.InvokeCode)
@@ -202,6 +214,9 @@ func (tx *Transaction) DeserializationUnsigned(source *common.ZeroCopySource) er
 		return errors.New("[deserializationUnsigned] read coinType error")
 	}
 	tx.CoinType = CoinType(coinType)
+	if tx.CoinType != ONG {
+		return errors.New("[deserializationUnsigned] unsupported coinType")
+	}
 	return nil
 }
 
