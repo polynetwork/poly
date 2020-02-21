@@ -62,15 +62,6 @@ func RegisterRelayer(native *native.NativeService) ([]byte, error) {
 	}
 
 	for _, address := range params.AddressList {
-		//get relayer
-		relayerRaw, err := GetRelayerRaw(native, address)
-		if err != nil {
-			return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, get relayer error: %v", err)
-		}
-		if relayerRaw != nil {
-			return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, relayer is already registered")
-		}
-
 		err = putRelayer(native, address)
 		if err != nil {
 			return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, putRelayer error: %v", err)
