@@ -50,7 +50,7 @@ func TestHeader(t *testing.T) {
 		ChainID:          123,
 		PrevBlockHash:    common.UINT256_EMPTY,
 		TransactionsRoot: common.UINT256_EMPTY,
-		CrossStatesRoot:  common.UINT256_EMPTY,
+		CrossStateRoot:   common.UINT256_EMPTY,
 		BlockRoot:        common.UINT256_EMPTY,
 		Timestamp:        123,
 		Height:           123,
