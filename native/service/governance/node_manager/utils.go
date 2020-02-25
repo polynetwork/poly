@@ -27,26 +27,8 @@ import (
 	"github.com/ontio/multi-chain/common/config"
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/native"
-	"github.com/ontio/multi-chain/native/service/ont"
 	"github.com/ontio/multi-chain/native/service/utils"
 )
-
-func appCallTransferOnt(native *native.NativeService, from common.Address, to common.Address, amount uint64) error {
-	var sts []ont.State
-	sts = append(sts, ont.State{
-		From:  from,
-		To:    to,
-		Value: amount,
-	})
-	transfers := ont.Transfers{
-		States: sts,
-	}
-
-	if _, err := native.NativeCall(utils.OntContractAddress, "transfer", common.SerializeToBytes(&transfers)); err != nil {
-		return fmt.Errorf("appCallTransfer, appCall error: %v", err)
-	}
-	return nil
-}
 
 func GetPeeApply(native *native.NativeService, peerPubkey string) (*RegisterPeerParam, error) {
 	contract := utils.NodeManagerContractAddress
@@ -193,32 +175,6 @@ func putConfig(native *native.NativeService, config *Configuration) error {
 	return nil
 }
 
-func getPreConfig(native *native.NativeService) (*PreConfig, error) {
-	contract := utils.NodeManagerContractAddress
-	preConfig := new(PreConfig)
-	preConfigBytes, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(PRE_CONFIG)))
-	if err != nil {
-		return nil, fmt.Errorf("native.CacheDB.Get, get preConfigBytes error: %v", err)
-	}
-	if preConfigBytes != nil {
-		preConfigStore, err := cstates.GetValueFromRawStorageItem(preConfigBytes)
-		if err != nil {
-			return nil, fmt.Errorf("getConfig, preConfigBytes is not available")
-		}
-		if err := preConfig.Deserialization(common.NewZeroCopySource(preConfigStore)); err != nil {
-			return nil, fmt.Errorf("deserialize, deserialize preConfig error: %v", err)
-		}
-	}
-	return preConfig, nil
-}
-
-func putPreConfig(native *native.NativeService, preConfig *PreConfig) error {
-	contract := utils.NodeManagerContractAddress
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(PRE_CONFIG)),
-		cstates.GenRawStorageItem(common.SerializeToBytes(preConfig)))
-	return nil
-}
-
 func getCandidateIndex(native *native.NativeService) (uint32, error) {
 	contract := utils.NodeManagerContractAddress
 	candidateIndexBytes, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(CANDIDITE_INDEX)))
@@ -279,31 +235,4 @@ func GetView(native *native.NativeService) (uint32, error) {
 		return 0, fmt.Errorf("getView, getGovernanceView error: %v", err)
 	}
 	return governanceView.View, nil
-}
-
-func getGlobalParam(native *native.NativeService) (*GlobalParam, error) {
-	contract := utils.NodeManagerContractAddress
-	globalParamBytes, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(GLOBAL_PARAM)))
-	if err != nil {
-		return nil, fmt.Errorf("getGlobalParam, get globalParamBytes error: %v", err)
-	}
-	globalParam := new(GlobalParam)
-	if globalParamBytes == nil {
-		return nil, fmt.Errorf("getGlobalParam, get nil globalParamBytes")
-	} else {
-		value, err := cstates.GetValueFromRawStorageItem(globalParamBytes)
-		if err != nil {
-			return nil, fmt.Errorf("getGlobalParam, deserialize from raw storage item err:%v", err)
-		}
-		if err := globalParam.Deserialization(common.NewZeroCopySource(value)); err != nil {
-			return nil, fmt.Errorf("deserialize, deserialize globalParam error: %v", err)
-		}
-	}
-	return globalParam, nil
-}
-
-func putGlobalParam(native *native.NativeService, globalParam *GlobalParam) error {
-	contract := utils.NodeManagerContractAddress
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(GLOBAL_PARAM)), cstates.GenRawStorageItem(common.SerializeToBytes(globalParam)))
-	return nil
 }

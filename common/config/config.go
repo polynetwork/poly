@@ -122,9 +122,10 @@ var PolarisConfig = &GenesisConfig{
 		BlockMsgDelay:        10000,
 		HashMsgDelay:         10000,
 		PeerHandshakeTimeout: 10,
+		MaxBlockChangeView:   60000,
 		VrfValue:             "1c9810aa9822e511d5804a9c4db9dd08497c31087b0daafa34d768a3253441fa20515e2f30f81741102af0ca3cefc4818fef16adb825fbaa8cad78647f3afb590e",
 		VrfProof:             "c57741f934042cb8d8b087b44b161db56fc3ffd4ffb675d36cd09f83935be853d8729f3f5298d12d6fd28d45dde515a4b9d7f67682d182ba5118abf451ff1988",
-		Peers: []*VBFTPeerStakeInfo{
+		Peers: []*VBFTPeerInfo{
 			{
 				Index:      1,
 				PeerPubkey: "037c9e6c6a446b6b296f89b722cbf686b81e0a122444ef05f0f87096777663284b",
@@ -175,16 +176,13 @@ var MainNetConfig = &GenesisConfig{
 		"seed5.ont.io:20338"},
 	ConsensusType: CONSENSUS_TYPE_VBFT,
 	VBFT: &VBFTConfig{
-		N:                    7,
-		C:                    2,
-		K:                    7,
-		L:                    112,
 		BlockMsgDelay:        10000,
 		HashMsgDelay:         10000,
 		PeerHandshakeTimeout: 10,
+		MaxBlockChangeView:   60000,
 		VrfValue:             "1c9810aa9822e511d5804a9c4db9dd08497c31087b0daafa34d768a3253441fa20515e2f30f81741102af0ca3cefc4818fef16adb825fbaa8cad78647f3afb590e",
 		VrfProof:             "c57741f934042cb8d8b087b44b161db56fc3ffd4ffb675d36cd09f83935be853d8729f3f5298d12d6fd28d45dde515a4b9d7f67682d182ba5118abf451ff1988",
-		Peers: []*VBFTPeerStakeInfo{
+		Peers: []*VBFTPeerInfo{
 			{
 				Index:      1,
 				PeerPubkey: "03348c8fe64e1defb408676b6e320038bd2e592c802e27c3d7e88e68270076c2f7",
@@ -250,30 +248,20 @@ func NewGenesisConfig() *GenesisConfig {
 // VBFT genesis config, from local config file
 //
 type VBFTConfig struct {
-	N                    uint32               `json:"n"` // network size
-	C                    uint32               `json:"c"` // consensus quorum
-	K                    uint32               `json:"k"`
-	L                    uint32               `json:"l"`
-	BlockMsgDelay        uint32               `json:"block_msg_delay"`
-	HashMsgDelay         uint32               `json:"hash_msg_delay"`
-	PeerHandshakeTimeout uint32               `json:"peer_handshake_timeout"`
-	MaxBlockChangeView   uint32               `json:"max_block_change_view"`
-	MinInitStake         uint32               `json:"min_init_stake"`
-	VrfValue             string               `json:"vrf_value"`
-	VrfProof             string               `json:"vrf_proof"`
-	Peers                []*VBFTPeerStakeInfo `json:"peers"`
+	BlockMsgDelay        uint32          `json:"block_msg_delay"`
+	HashMsgDelay         uint32          `json:"hash_msg_delay"`
+	PeerHandshakeTimeout uint32          `json:"peer_handshake_timeout"`
+	MaxBlockChangeView   uint32          `json:"max_block_change_view"`
+	VrfValue             string          `json:"vrf_value"`
+	VrfProof             string          `json:"vrf_proof"`
+	Peers                []*VBFTPeerInfo `json:"peers"`
 }
 
 func (self *VBFTConfig) Serialization(sink *common.ZeroCopySink) error {
-	sink.WriteUint32(self.N)
-	sink.WriteUint32(self.C)
-	sink.WriteUint32(self.K)
-	sink.WriteUint32(self.L)
 	sink.WriteUint32(self.BlockMsgDelay)
 	sink.WriteUint32(self.HashMsgDelay)
 	sink.WriteUint32(self.PeerHandshakeTimeout)
 	sink.WriteUint32(self.MaxBlockChangeView)
-	sink.WriteUint32(self.MinInitStake)
 	sink.WriteString(self.VrfValue)
 	sink.WriteString(self.VrfProof)
 	sink.WriteVarUint(uint64(len(self.Peers)))
@@ -286,22 +274,6 @@ func (self *VBFTConfig) Serialization(sink *common.ZeroCopySink) error {
 }
 
 func (this *VBFTConfig) Deserialization(source *common.ZeroCopySource) error {
-	n, eof := source.NextUint32()
-	if eof {
-		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadUint32, deserialize n error!")
-	}
-	c, eof := source.NextUint32()
-	if eof {
-		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadUint32, deserialize c error!")
-	}
-	k, eof := source.NextUint32()
-	if eof {
-		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadUint32, deserialize k error!")
-	}
-	l, eof := source.NextUint32()
-	if eof {
-		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadUint32, deserialize l error!")
-	}
 	blockMsgDelay, eof := source.NextUint32()
 	if eof {
 		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadUint32, deserialize blockMsgDelay error!")
@@ -318,10 +290,6 @@ func (this *VBFTConfig) Deserialization(source *common.ZeroCopySource) error {
 	if eof {
 		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadUint32, deserialize maxBlockChangeView error!")
 	}
-	minInitStake, eof := source.NextUint32()
-	if eof {
-		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadUint32, deserialize minInitStake error!")
-	}
 	vrfValue, eof := source.NextString()
 	if eof {
 		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadString, deserialize vrfValue error!")
@@ -334,38 +302,32 @@ func (this *VBFTConfig) Deserialization(source *common.ZeroCopySource) error {
 	if eof {
 		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadVarUint, deserialize peer length error!")
 	}
-	peers := make([]*VBFTPeerStakeInfo, 0)
+	peers := make([]*VBFTPeerInfo, 0)
 	for i := 0; uint64(i) < length; i++ {
-		peer := new(VBFTPeerStakeInfo)
+		peer := new(VBFTPeerInfo)
 		err := peer.Deserialization(source)
 		if err != nil {
 			return errors.NewDetailErr(err, errors.ErrNoCode, "deserialize peer error!")
 		}
 		peers = append(peers, peer)
 	}
-	this.N = n
-	this.C = c
-	this.K = k
-	this.L = l
 	this.BlockMsgDelay = blockMsgDelay
 	this.HashMsgDelay = hashMsgDelay
 	this.PeerHandshakeTimeout = peerHandshakeTimeout
 	this.MaxBlockChangeView = maxBlockChangeView
-	this.MinInitStake = minInitStake
 	this.VrfValue = vrfValue
 	this.VrfProof = vrfProof
 	this.Peers = peers
 	return nil
 }
 
-type VBFTPeerStakeInfo struct {
+type VBFTPeerInfo struct {
 	Index      uint32 `json:"index"`
 	PeerPubkey string `json:"peerPubkey"`
 	Address    string `json:"address"`
-	Pos        uint64 `json:"pos"`
 }
 
-func (this *VBFTPeerStakeInfo) Serialization(sink *common.ZeroCopySink) error {
+func (this *VBFTPeerInfo) Serialization(sink *common.ZeroCopySink) error {
 	sink.WriteUint32(this.Index)
 	sink.WriteString(this.PeerPubkey)
 
@@ -374,11 +336,10 @@ func (this *VBFTPeerStakeInfo) Serialization(sink *common.ZeroCopySink) error {
 		return fmt.Errorf("serialize VBFTPeerStackInfo error: %v", err)
 	}
 	address.Serialization(sink)
-	sink.WriteUint64(this.Pos)
 	return nil
 }
 
-func (this *VBFTPeerStakeInfo) Deserialization(source *common.ZeroCopySource) error {
+func (this *VBFTPeerInfo) Deserialization(source *common.ZeroCopySource) error {
 	index, eof := source.NextUint32()
 	if eof {
 		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadUint32, deserialize index error!")
@@ -392,14 +353,9 @@ func (this *VBFTPeerStakeInfo) Deserialization(source *common.ZeroCopySource) er
 	if err != nil {
 		return errors.NewDetailErr(err, errors.ErrNoCode, "address.Deserialize, deserialize address error!")
 	}
-	pos, eof := source.NextUint64()
-	if eof {
-		return errors.NewDetailErr(io.ErrUnexpectedEOF, errors.ErrNoCode, "serialization.ReadUint32, deserialize pos error!")
-	}
 	this.Index = index
 	this.PeerPubkey = peerPubkey
 	this.Address = address.ToBase58()
-	this.Pos = pos
 	return nil
 }
 

@@ -26,13 +26,11 @@ import (
 type RegisterPeerParam struct {
 	PeerPubkey string
 	Address    []byte
-	Pos        uint64
 }
 
 func (this *RegisterPeerParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteString(this.PeerPubkey)
 	sink.WriteVarBytes(this.Address)
-	sink.WriteVarUint(this.Pos)
 }
 
 func (this *RegisterPeerParam) Deserialization(source *common.ZeroCopySource) error {
@@ -44,14 +42,9 @@ func (this *RegisterPeerParam) Deserialization(source *common.ZeroCopySource) er
 	if eof {
 		return fmt.Errorf("source.NextVarBytes, deserialize address error")
 	}
-	pos, eof := source.NextVarUint()
-	if eof {
-		return fmt.Errorf("source.NextVarUint, deserialize pos error")
-	}
 
 	this.PeerPubkey = peerPubkey
 	this.Address = address
-	this.Pos = pos
 	return nil
 }
 
@@ -126,10 +119,6 @@ func (this *PeerListParam) Deserialization(source *common.ZeroCopySource) error 
 }
 
 type Configuration struct {
-	N                    uint32
-	C                    uint32
-	K                    uint32
-	L                    uint32
 	BlockMsgDelay        uint32
 	HashMsgDelay         uint32
 	PeerHandshakeTimeout uint32
@@ -137,10 +126,6 @@ type Configuration struct {
 }
 
 func (this *Configuration) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteUint32(this.N)
-	sink.WriteUint32(this.C)
-	sink.WriteUint32(this.K)
-	sink.WriteUint32(this.L)
 	sink.WriteUint32(this.BlockMsgDelay)
 	sink.WriteUint32(this.HashMsgDelay)
 	sink.WriteUint32(this.PeerHandshakeTimeout)
@@ -148,22 +133,6 @@ func (this *Configuration) Serialization(sink *common.ZeroCopySink) {
 }
 
 func (this *Configuration) Deserialization(source *common.ZeroCopySource) error {
-	n, eof := source.NextUint32()
-	if eof {
-		return fmt.Errorf("source.NextUint32, deserialize n error")
-	}
-	c, eof := source.NextUint32()
-	if eof {
-		return fmt.Errorf("source.NextUint32, deserialize c error")
-	}
-	k, eof := source.NextUint32()
-	if eof {
-		return fmt.Errorf("source.NextUint32, deserialize k error")
-	}
-	l, eof := source.NextUint32()
-	if eof {
-		return fmt.Errorf("source.NextUint32, deserialize l error")
-	}
 	blockMsgDelay, eof := source.NextUint32()
 	if eof {
 		return fmt.Errorf("source.NextUint32, deserialize blockMsgDelay error")
@@ -181,62 +150,9 @@ func (this *Configuration) Deserialization(source *common.ZeroCopySource) error 
 		return fmt.Errorf("source.NextUint32, deserialize maxBlockChangeView error")
 	}
 
-	this.N = n
-	this.C = c
-	this.K = k
-	this.L = l
 	this.BlockMsgDelay = blockMsgDelay
 	this.HashMsgDelay = hashMsgDelay
 	this.PeerHandshakeTimeout = peerHandshakeTimeout
 	this.MaxBlockChangeView = maxBlockChangeView
-	return nil
-}
-
-type PreConfig struct {
-	Configuration *Configuration
-	SetView       uint32
-}
-
-func (this *PreConfig) Serialization(sink *common.ZeroCopySink) {
-	this.Configuration.Serialization(sink)
-	sink.WriteUint32(this.SetView)
-}
-
-func (this *PreConfig) Deserialization(source *common.ZeroCopySource) error {
-	config := new(Configuration)
-	err := config.Deserialization(source)
-	if err != nil {
-		return fmt.Errorf("config.Deserialization, deserialize configuration error: %v", err)
-	}
-	setView, eof := source.NextUint32()
-	if eof {
-		return fmt.Errorf("source.NextUint32, deserialize setView error: %v", err)
-	}
-	this.Configuration = config
-	this.SetView = setView
-	return nil
-}
-
-type GlobalParam struct {
-	MinInitStake uint32 //min init pos
-	CandidateNum uint32 //num of candidate and consensus node
-}
-
-func (this *GlobalParam) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteUint32(this.MinInitStake)
-	sink.WriteUint32(this.CandidateNum)
-}
-
-func (this *GlobalParam) Deserialization(source *common.ZeroCopySource) error {
-	minInitStake, eof := source.NextUint32()
-	if eof {
-		return fmt.Errorf("utils.ReadVarUint, deserialize minInitStake error")
-	}
-	candidateNum, eof := source.NextUint32()
-	if eof {
-		return fmt.Errorf("utils.ReadVarUint, deserialize candidateNum error")
-	}
-	this.MinInitStake = minInitStake
-	this.CandidateNum = candidateNum
 	return nil
 }

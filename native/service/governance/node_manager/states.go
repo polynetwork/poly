@@ -44,13 +44,11 @@ func (this *Status) Deserialization(source *common.ZeroCopySource) error {
 type BlackListItem struct {
 	PeerPubkey string //peerPubkey in black list
 	Address    []byte //the owner of this peer
-	Pos        uint64 //initPos of this peer
 }
 
 func (this *BlackListItem) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteString(this.PeerPubkey)
 	sink.WriteVarBytes(this.Address)
-	sink.WriteUint64(this.Pos)
 }
 
 func (this *BlackListItem) Deserialization(source *common.ZeroCopySource) error {
@@ -62,13 +60,8 @@ func (this *BlackListItem) Deserialization(source *common.ZeroCopySource) error 
 	if eof {
 		return fmt.Errorf("source.NextVarBytes, deserialize address error")
 	}
-	pos, eof := source.NextUint64()
-	if eof {
-		return fmt.Errorf("serialization.ReadUint64, deserialize pos error: %v", io.ErrUnexpectedEOF)
-	}
 	this.PeerPubkey = peerPubkey
 	this.Address = address
-	this.Pos = pos
 	return nil
 }
 
@@ -112,8 +105,6 @@ type PeerPoolItem struct {
 	PeerPubkey string //peer pubkey
 	Address    []byte //peer owner
 	Status     Status
-	Pos        uint64
-	LockPos    uint64
 }
 
 func (this *PeerPoolItem) Serialization(sink *common.ZeroCopySink) {
@@ -121,8 +112,6 @@ func (this *PeerPoolItem) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteString(this.PeerPubkey)
 	sink.WriteVarBytes(this.Address)
 	this.Status.Serialization(sink)
-	sink.WriteVarUint(this.Pos)
-	sink.WriteVarUint(this.LockPos)
 }
 
 func (this *PeerPoolItem) Deserialization(source *common.ZeroCopySource) error {
@@ -143,21 +132,11 @@ func (this *PeerPoolItem) Deserialization(source *common.ZeroCopySource) error {
 	if err != nil {
 		return fmt.Errorf("status.Deserialize. deserialize status error: %v", err)
 	}
-	pos, eof := source.NextVarUint()
-	if eof {
-		return fmt.Errorf("source.NextVarUint, deserialize pos error")
-	}
-	lockPos, eof := source.NextVarUint()
-	if eof {
-		return fmt.Errorf("source.NextVarUint, deserialize lockPos error")
-	}
 
 	this.Index = index
 	this.PeerPubkey = peerPubkey
 	this.Address = address
 	this.Status = *status
-	this.Pos = pos
-	this.LockPos = lockPos
 	return nil
 }
 
@@ -190,10 +169,4 @@ func (this *GovernanceView) Deserialization(source *common.ZeroCopySource) error
 	this.Height = height
 	this.TxHash = txHash
 	return nil
-}
-
-type PeerStakeInfo struct {
-	Index      uint32
-	PeerPubkey string
-	Stake      uint64
 }

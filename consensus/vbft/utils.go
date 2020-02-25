@@ -126,62 +126,26 @@ func verifyVrf(pk keypair.PublicKey, blkNum uint32, prevVrf, newVrf, proof []byt
 	return nil
 }
 func GetVbftConfigInfo(memdb *overlaydb.MemDB) (*config.VBFTConfig, error) {
-	//get governance view
-	goveranceview, err := GetGovernanceView(memdb)
+	data, err := GetStorageValue(memdb, ledger.DefLedger, nutils.NodeManagerContractAddress, []byte(node_manager.VBFT_CONFIG))
 	if err != nil {
 		return nil, err
 	}
-
-	//get preConfig
-	preCfg := new(node_manager.PreConfig)
-	data, err := GetStorageValue(memdb, ledger.DefLedger, nutils.NodeManagerContractAddress, []byte(node_manager.PRE_CONFIG))
-	if err != nil && err != scommon.ErrNotFound {
+	cfg := new(node_manager.Configuration)
+	err = cfg.Deserialization(common.NewZeroCopySource(data))
+	if err != nil {
 		return nil, err
 	}
-	if data != nil {
-		err = preCfg.Deserialization(common.NewZeroCopySource(data))
-		if err != nil {
-			return nil, err
-		}
+	chainconfig := &config.VBFTConfig{
+		BlockMsgDelay:        uint32(cfg.BlockMsgDelay),
+		HashMsgDelay:         uint32(cfg.HashMsgDelay),
+		PeerHandshakeTimeout: uint32(cfg.PeerHandshakeTimeout),
+		MaxBlockChangeView:   uint32(cfg.MaxBlockChangeView),
 	}
 
-	chainconfig := new(config.VBFTConfig)
-	if preCfg.SetView == goveranceview.View {
-		chainconfig = &config.VBFTConfig{
-			N:                    uint32(preCfg.Configuration.N),
-			C:                    uint32(preCfg.Configuration.C),
-			K:                    uint32(preCfg.Configuration.K),
-			L:                    uint32(preCfg.Configuration.L),
-			BlockMsgDelay:        uint32(preCfg.Configuration.BlockMsgDelay),
-			HashMsgDelay:         uint32(preCfg.Configuration.HashMsgDelay),
-			PeerHandshakeTimeout: uint32(preCfg.Configuration.PeerHandshakeTimeout),
-			MaxBlockChangeView:   uint32(preCfg.Configuration.MaxBlockChangeView),
-		}
-	} else {
-		data, err := GetStorageValue(memdb, ledger.DefLedger, nutils.NodeManagerContractAddress, []byte(node_manager.VBFT_CONFIG))
-		if err != nil {
-			return nil, err
-		}
-		cfg := new(node_manager.Configuration)
-		err = cfg.Deserialization(common.NewZeroCopySource(data))
-		if err != nil {
-			return nil, err
-		}
-		chainconfig = &config.VBFTConfig{
-			N:                    uint32(cfg.N),
-			C:                    uint32(cfg.C),
-			K:                    uint32(cfg.K),
-			L:                    uint32(cfg.L),
-			BlockMsgDelay:        uint32(cfg.BlockMsgDelay),
-			HashMsgDelay:         uint32(cfg.HashMsgDelay),
-			PeerHandshakeTimeout: uint32(cfg.PeerHandshakeTimeout),
-			MaxBlockChangeView:   uint32(cfg.MaxBlockChangeView),
-		}
-	}
 	return chainconfig, nil
 }
 
-func GetPeersConfig(memdb *overlaydb.MemDB) ([]*config.VBFTPeerStakeInfo, error) {
+func GetPeersConfig(memdb *overlaydb.MemDB) ([]*config.VBFTPeerInfo, error) {
 	goveranceview, err := GetGovernanceView(memdb)
 	if err != nil {
 		return nil, err
@@ -199,13 +163,12 @@ func GetPeersConfig(memdb *overlaydb.MemDB) ([]*config.VBFTPeerStakeInfo, error)
 	if err != nil {
 		return nil, err
 	}
-	var peerstakes []*config.VBFTPeerStakeInfo
+	var peerstakes []*config.VBFTPeerInfo
 	for _, id := range peerMap.PeerPoolMap {
 		if id.Status == node_manager.CandidateStatus || id.Status == node_manager.ConsensusStatus {
-			config := &config.VBFTPeerStakeInfo{
+			config := &config.VBFTPeerInfo{
 				Index:      uint32(id.Index),
 				PeerPubkey: id.PeerPubkey,
-				Pos:        id.Pos,
 			}
 			peerstakes = append(peerstakes, config)
 		}
