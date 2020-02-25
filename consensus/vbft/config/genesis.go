@@ -153,6 +153,7 @@ func GenesisChainConfig(conf *config.VBFTConfig, peers []*config.VBFTPeerInfo, h
 		PeerHandshakeTimeout: time.Duration(conf.PeerHandshakeTimeout) * time.Second,
 		Peers:                peerCfgs,
 		PosTable:             posTable,
+		MaxBlockChangeView:   conf.MaxBlockChangeView,
 	}
 	return chainConfig, nil
 }
