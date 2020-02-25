@@ -21,15 +21,14 @@ package side_chain_manager
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/btcsuite/btcd/txscript"
-	"github.com/btcsuite/btcutil"
-	"github.com/ontio/multi-chain/native/event"
 	"math"
 
+	"github.com/btcsuite/btcd/txscript"
+	"github.com/btcsuite/btcutil"
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/core/genesis"
-	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/native"
+	"github.com/ontio/multi-chain/native/event"
+	"github.com/ontio/multi-chain/native/service/governance/node_manager"
 	"github.com/ontio/multi-chain/native/service/utils"
 )
 
@@ -100,16 +99,18 @@ func ApproveRegisterSideChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, contract params deserialize error: %v", err)
 	}
 
-	// get operator from database
-	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
-	if err != nil {
-		return utils.BYTE_FALSE, err
-	}
-
 	//check witness
-	err = utils.ValidateOwner(native, operatorAddress)
+	err := utils.ValidateOwner(native, params.Address)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, checkWitness error: %v", err)
+	}
+	//check consensus signs
+	ok, err := node_manager.CheckConsensusSigns(native, APPROVE_REGISTER_SIDE_CHAIN, params.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, CheckConsensusSigns error: %v", err)
+	}
+	if !ok {
+		return utils.BYTE_TRUE, nil
 	}
 
 	registerSideChain, err := getSideChainApply(native, params.Chainid)
@@ -160,16 +161,18 @@ func ApproveUpdateSideChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, contract params deserialize error: %v", err)
 	}
 
-	// get operator from database
-	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
-	if err != nil {
-		return utils.BYTE_FALSE, err
-	}
-
 	//check witness
-	err = utils.ValidateOwner(native, operatorAddress)
+	err := utils.ValidateOwner(native, params.Address)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, checkWitness error: %v", err)
+	}
+	//check consensus signs
+	ok, err := node_manager.CheckConsensusSigns(native, APPROVE_UPDATE_SIDE_CHAIN, params.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, CheckConsensusSigns error: %v", err)
+	}
+	if !ok {
+		return utils.BYTE_TRUE, nil
 	}
 
 	sideChain, err := getUpdateSideChain(native, params.Chainid)
@@ -195,16 +198,18 @@ func RemoveSideChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, contract params deserialize error: %v", err)
 	}
 
-	// get operator from database
-	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
-	if err != nil {
-		return utils.BYTE_FALSE, err
-	}
-
 	//check witness
-	err = utils.ValidateOwner(native, operatorAddress)
+	err := utils.ValidateOwner(native, params.Address)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, checkWitness error: %v", err)
+	}
+	//check consensus signs
+	ok, err := node_manager.CheckConsensusSigns(native, REMOVE_SIDE_CHAIN, params.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, CheckConsensusSigns error: %v", err)
+	}
+	if !ok {
+		return utils.BYTE_TRUE, nil
 	}
 
 	sideChain, err := GetSideChain(native, params.Chainid)

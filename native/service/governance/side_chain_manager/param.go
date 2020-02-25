@@ -71,10 +71,12 @@ func (this *RegisterSideChainParam) Deserialization(source *common.ZeroCopySourc
 
 type ChainidParam struct {
 	Chainid uint64
+	Address common.Address
 }
 
 func (this *ChainidParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteUint64(this.Chainid)
+	sink.WriteVarBytes(this.Address[:])
 }
 
 func (this *ChainidParam) Deserialization(source *common.ZeroCopySource) error {
@@ -82,7 +84,17 @@ func (this *ChainidParam) Deserialization(source *common.ZeroCopySource) error {
 	if eof {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize chainid error")
 	}
+
+	address, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("source.NextVarBytes, deserialize address error")
+	}
+	addr, err := common.AddressParseFromBytes(address)
+	if err != nil {
+		return fmt.Errorf("common.AddressParseFromBytes, deserialize address error: %s", err)
+	}
 	this.Chainid = chainid
+	this.Address = addr
 	return nil
 }
 

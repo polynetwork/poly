@@ -24,29 +24,45 @@ import (
 )
 
 type RelayerListParam struct {
-	AddressList [][]byte
+	AddressList []common.Address
+	Address     common.Address
 }
 
 func (this *RelayerListParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteVarUint(uint64(len(this.AddressList)))
 	for _, v := range this.AddressList {
-		sink.WriteVarBytes(v)
+		sink.WriteVarBytes(v[:])
 	}
+	sink.WriteVarBytes(this.Address[:])
 }
 
 func (this *RelayerListParam) Deserialization(source *common.ZeroCopySource) error {
 	n, eof := source.NextVarUint()
 	if eof {
-		return fmt.Errorf("source.NextVarUint, deserialize PeerPubkeyList length error")
+		return fmt.Errorf("source.NextVarUint, deserialize AddressList length error")
 	}
-	addressList := make([][]byte, 0)
+	addressList := make([]common.Address, 0)
 	for i := 0; uint64(i) < n; i++ {
-		k, eof := source.NextVarBytes()
+		address, eof := source.NextVarBytes()
 		if eof {
-			return fmt.Errorf("source.NextVarBytes, deserialize pubkeyList error")
+			return fmt.Errorf("source.NextVarBytes, deserialize address error")
 		}
-		addressList = append(addressList, k)
+		addr, err := common.AddressParseFromBytes(address)
+		if err != nil {
+			return fmt.Errorf("common.AddressParseFromBytes, deserialize address error: %s", err)
+		}
+		addressList = append(addressList, addr)
+	}
+
+	address, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("source.NextVarBytes, deserialize address error")
+	}
+	addr, err := common.AddressParseFromBytes(address)
+	if err != nil {
+		return fmt.Errorf("common.AddressParseFromBytes, deserialize address error: %s", err)
 	}
 	this.AddressList = addressList
+	this.Address = addr
 	return nil
 }

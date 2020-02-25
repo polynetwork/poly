@@ -87,7 +87,7 @@ func (this *ONTHandler) SyncBlockHeader(native *native.NativeService) error {
 		}
 		_, err = GetHeaderByHeight(native, params.ChainID, header.Height)
 		if err == nil {
-			return fmt.Errorf("SyncBlockHeader, header already synced, %d, %d", params.ChainID, header.Height)
+			continue
 		}
 		err = verifyHeader(native, params.ChainID, header)
 		if err != nil {
@@ -135,8 +135,7 @@ func (this *ONTHandler) SyncCrossChainMsg(native *native.NativeService) error {
 		}
 		_, err = GetCrossChainMsg(native, params.ChainID, crossChainMsg.Height)
 		if err == nil {
-			return fmt.Errorf("SyncCrossChainMsg, crossChainMsg already synced, %d, %d", params.ChainID,
-				crossChainMsg.Height)
+			continue
 		}
 		err = VerifyCrossChainMsg(native, params.ChainID, crossChainMsg, bookkeepers)
 		if err != nil {

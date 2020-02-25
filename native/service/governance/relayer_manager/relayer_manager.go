@@ -22,9 +22,8 @@ import (
 	"fmt"
 
 	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/core/genesis"
-	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/native"
+	"github.com/ontio/multi-chain/native/service/governance/node_manager"
 	"github.com/ontio/multi-chain/native/service/utils"
 )
 
@@ -49,16 +48,18 @@ func RegisterRelayer(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, contract params deserialize error: %v", err)
 	}
 
-	// get operator from database
-	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
-	if err != nil {
-		return utils.BYTE_FALSE, err
-	}
-
 	//check witness
-	err = utils.ValidateOwner(native, operatorAddress)
+	err := utils.ValidateOwner(native, params.Address)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, checkWitness error: %v", err)
+	}
+	//check consensus signs
+	ok, err := node_manager.CheckConsensusSigns(native, REGISTER_RELAYER, params.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, CheckConsensusSigns error: %v", err)
+	}
+	if !ok {
+		return utils.BYTE_TRUE, nil
 	}
 
 	for _, address := range params.AddressList {
@@ -78,16 +79,18 @@ func RemoveRelayer(native *native.NativeService) ([]byte, error) {
 	}
 	contract := utils.RelayerManagerContractAddress
 
-	// get operator from database
-	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
-	if err != nil {
-		return utils.BYTE_FALSE, err
-	}
-
 	//check witness
-	err = utils.ValidateOwner(native, operatorAddress)
+	err := utils.ValidateOwner(native, params.Address)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RemoveRelayer, checkWitness error: %v", err)
+	}
+	//check consensus signs
+	ok, err := node_manager.CheckConsensusSigns(native, REMOVE_RELAYER, params.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RemoveRelayer, CheckConsensusSigns error: %v", err)
+	}
+	if !ok {
+		return utils.BYTE_TRUE, nil
 	}
 
 	for _, address := range params.AddressList {
@@ -100,7 +103,7 @@ func RemoveRelayer(native *native.NativeService) ([]byte, error) {
 			return utils.BYTE_FALSE, fmt.Errorf("RemoveRelayer, relayer is not registered")
 		}
 
-		native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(RELAYER), address))
+		native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(RELAYER), address[:]))
 	}
 
 	return utils.BYTE_TRUE, nil

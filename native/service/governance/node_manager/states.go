@@ -42,13 +42,13 @@ func (this *Status) Deserialization(source *common.ZeroCopySource) error {
 }
 
 type BlackListItem struct {
-	PeerPubkey string //peerPubkey in black list
-	Address    []byte //the owner of this peer
+	PeerPubkey string         //peerPubkey in black list
+	Address    common.Address //the owner of this peer
 }
 
 func (this *BlackListItem) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteString(this.PeerPubkey)
-	sink.WriteVarBytes(this.Address)
+	sink.WriteVarBytes(this.Address[:])
 }
 
 func (this *BlackListItem) Deserialization(source *common.ZeroCopySource) error {
@@ -60,8 +60,13 @@ func (this *BlackListItem) Deserialization(source *common.ZeroCopySource) error 
 	if eof {
 		return fmt.Errorf("source.NextVarBytes, deserialize address error")
 	}
+	addr, err := common.AddressParseFromBytes(address)
+	if err != nil {
+		return fmt.Errorf("common.AddressParseFromBytes, deserialize address error: %s", err)
+	}
+
 	this.PeerPubkey = peerPubkey
-	this.Address = address
+	this.Address = addr
 	return nil
 }
 
@@ -101,16 +106,16 @@ func (this *PeerPoolMap) Deserialization(source *common.ZeroCopySource) error {
 }
 
 type PeerPoolItem struct {
-	Index      uint32 //peer index
-	PeerPubkey string //peer pubkey
-	Address    []byte //peer owner
+	Index      uint32         //peer index
+	PeerPubkey string         //peer pubkey
+	Address    common.Address //peer owner
 	Status     Status
 }
 
 func (this *PeerPoolItem) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteUint32(this.Index)
 	sink.WriteString(this.PeerPubkey)
-	sink.WriteVarBytes(this.Address)
+	sink.WriteVarBytes(this.Address[:])
 	this.Status.Serialization(sink)
 }
 
@@ -132,10 +137,14 @@ func (this *PeerPoolItem) Deserialization(source *common.ZeroCopySource) error {
 	if err != nil {
 		return fmt.Errorf("status.Deserialize. deserialize status error: %v", err)
 	}
+	addr, err := common.AddressParseFromBytes(address)
+	if err != nil {
+		return fmt.Errorf("common.AddressParseFromBytes, deserialize address error: %s", err)
+	}
 
 	this.Index = index
 	this.PeerPubkey = peerPubkey
-	this.Address = address
+	this.Address = addr
 	this.Status = *status
 	return nil
 }
@@ -168,5 +177,88 @@ func (this *GovernanceView) Deserialization(source *common.ZeroCopySource) error
 	this.View = view
 	this.Height = height
 	this.TxHash = txHash
+	return nil
+}
+
+type ConsensusSigns struct {
+	SignsMap map[common.Address]bool
+}
+
+func (this *ConsensusSigns) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteVarUint(uint64(len(this.SignsMap)))
+	var signsList []common.Address
+	for k := range this.SignsMap {
+		signsList = append(signsList, k)
+	}
+	sort.SliceStable(signsList, func(i, j int) bool {
+		return signsList[i].ToHexString() > signsList[j].ToHexString()
+	})
+	for _, v := range signsList {
+		sink.WriteVarBytes(v[:])
+		sink.WriteBool(this.SignsMap[v])
+	}
+}
+
+func (this *ConsensusSigns) Deserialization(source *common.ZeroCopySource) error {
+	n, eof := source.NextVarUint()
+	if eof {
+		return fmt.Errorf("source.NextVarUint, deserialize length of signsMap error")
+	}
+	signsMap := make(map[common.Address]bool)
+	for i := 0; uint64(i) < n; i++ {
+		address, eof := source.NextVarBytes()
+		if eof {
+			return fmt.Errorf("source.NextVarBytes, deserialize address error")
+		}
+		v, eof := source.NextBool()
+		if eof {
+			return fmt.Errorf("source.NextBool, deserialize v error")
+		}
+		addr, err := common.AddressParseFromBytes(address)
+		if err != nil {
+			return fmt.Errorf("common.AddressParseFromBytes, deserialize address error")
+		}
+		signsMap[addr] = v
+	}
+	this.SignsMap = signsMap
+	return nil
+}
+
+type Configuration struct {
+	BlockMsgDelay        uint32
+	HashMsgDelay         uint32
+	PeerHandshakeTimeout uint32
+	MaxBlockChangeView   uint32
+}
+
+func (this *Configuration) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteUint32(this.BlockMsgDelay)
+	sink.WriteUint32(this.HashMsgDelay)
+	sink.WriteUint32(this.PeerHandshakeTimeout)
+	sink.WriteUint32(this.MaxBlockChangeView)
+}
+
+func (this *Configuration) Deserialization(source *common.ZeroCopySource) error {
+	blockMsgDelay, eof := source.NextUint32()
+	if eof {
+		return fmt.Errorf("source.NextUint32, deserialize blockMsgDelay error")
+	}
+	hashMsgDelay, eof := source.NextUint32()
+	if eof {
+		return fmt.Errorf("source.NextUint32, deserialize hashMsgDelay error")
+	}
+	peerHandshakeTimeout, eof := source.NextUint32()
+	if eof {
+		return fmt.Errorf("source.NextUint32, deserialize peerHandshakeTimeout error")
+	}
+	maxBlockChangeView, eof := source.NextUint32()
+	if eof {
+		return fmt.Errorf("source.NextUint32, deserialize maxBlockChangeView error")
+	}
+
+	this.BlockMsgDelay = blockMsgDelay
+	this.HashMsgDelay = hashMsgDelay
+	this.PeerHandshakeTimeout = peerHandshakeTimeout
+	this.MaxBlockChangeView = maxBlockChangeView
 	return nil
 }

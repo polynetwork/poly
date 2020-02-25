@@ -20,14 +20,17 @@ package node_manager
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
 	cstates "github.com/ontio/multi-chain/core/states"
+	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/service/utils"
+	"github.com/ontio/ontology-crypto/keypair"
 )
 
 func GetPeeApply(native *native.NativeService, peerPubkey string) (*RegisterPeerParam, error) {
@@ -91,13 +94,12 @@ func GetPeerPoolMap(native *native.NativeService, view uint32) (*PeerPoolMap, er
 	return peerPoolMap, nil
 }
 
-func putPeerPoolMap(native *native.NativeService, peerPoolMap *PeerPoolMap, view uint32) error {
+func putPeerPoolMap(native *native.NativeService, peerPoolMap *PeerPoolMap, view uint32) {
 	contract := utils.NodeManagerContractAddress
 	viewBytes := utils.GetUint32Bytes(view)
 	sink := common.NewZeroCopySink(nil)
 	peerPoolMap.Serialization(sink)
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(PEER_POOL), viewBytes), cstates.GenRawStorageItem(sink.Bytes()))
-	return nil
 }
 
 func CheckVBFTConfig(configuration *config.VBFTConfig) error {
@@ -167,12 +169,11 @@ func GetConfig(native *native.NativeService) (*Configuration, error) {
 	return config, nil
 }
 
-func putConfig(native *native.NativeService, config *Configuration) error {
+func putConfig(native *native.NativeService, config *Configuration) {
 	contract := utils.NodeManagerContractAddress
 	sink := common.NewZeroCopySink(nil)
 	config.Serialization(sink)
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(VBFT_CONFIG)), cstates.GenRawStorageItem(sink.Bytes()))
-	return nil
 }
 
 func getCandidateIndex(native *native.NativeService) (uint32, error) {
@@ -193,11 +194,10 @@ func getCandidateIndex(native *native.NativeService) (uint32, error) {
 	}
 }
 
-func putCandidateIndex(native *native.NativeService, candidateIndex uint32) error {
+func putCandidateIndex(native *native.NativeService, candidateIndex uint32) {
 	contract := utils.NodeManagerContractAddress
 	candidateIndexBytes := utils.GetUint32Bytes(candidateIndex)
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(CANDIDITE_INDEX)), cstates.GenRawStorageItem(candidateIndexBytes))
-	return nil
 }
 
 func GetGovernanceView(native *native.NativeService) (*GovernanceView, error) {
@@ -221,12 +221,11 @@ func GetGovernanceView(native *native.NativeService) (*GovernanceView, error) {
 	return governanceView, nil
 }
 
-func putGovernanceView(native *native.NativeService, governanceView *GovernanceView) error {
+func putGovernanceView(native *native.NativeService, governanceView *GovernanceView) {
 	contract := utils.NodeManagerContractAddress
 	sink := common.NewZeroCopySink(nil)
 	governanceView.Serialization(sink)
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(GOVERNANCE_VIEW)), cstates.GenRawStorageItem(sink.Bytes()))
-	return nil
 }
 
 func GetView(native *native.NativeService) (uint32, error) {
@@ -235,4 +234,73 @@ func GetView(native *native.NativeService) (uint32, error) {
 		return 0, fmt.Errorf("getView, getGovernanceView error: %v", err)
 	}
 	return governanceView.View, nil
+}
+
+func getConsensusSigns(native *native.NativeService, key common.Uint256) (*ConsensusSigns, error) {
+	contract := utils.NodeManagerContractAddress
+	consensusSignsStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(CONSENSUS_SIGNS), key.ToArray()))
+	if err != nil {
+		return nil, fmt.Errorf("GetConsensusSigns, get consensusSignsStore error: %v", err)
+	}
+	consensusSigns := &ConsensusSigns{
+		SignsMap: make(map[common.Address]bool),
+	}
+	if consensusSignsStore != nil {
+		consensusSignsBytes, err := cstates.GetValueFromRawStorageItem(consensusSignsStore)
+		if err != nil {
+			return nil, fmt.Errorf("getGovernanceView, deserialize from raw storage item err:%v", err)
+		}
+		if err := consensusSigns.Deserialization(common.NewZeroCopySource(consensusSignsBytes)); err != nil {
+			return nil, fmt.Errorf("getGovernanceView, deserialize governanceView error: %v", err)
+		}
+	}
+	return consensusSigns, nil
+}
+
+func putConsensusSigns(native *native.NativeService, key common.Uint256, consensusSigns *ConsensusSigns) {
+	contract := utils.NodeManagerContractAddress
+	sink := common.NewZeroCopySink(nil)
+	consensusSigns.Serialization(sink)
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(CONSENSUS_SIGNS), key.ToArray()), cstates.GenRawStorageItem(sink.Bytes()))
+}
+
+func CheckConsensusSigns(native *native.NativeService, method string, address common.Address) (bool, error) {
+	message := append([]byte(method), native.GetInput()...)
+	key := sha256.Sum256(message)
+	consensusSigns, err := getConsensusSigns(native, key)
+	if err != nil {
+		return false, fmt.Errorf("approveCandidate, GetConsensusSigns error: %v", err)
+	}
+	consensusSigns.SignsMap[address] = true
+	//check signs num
+	//get view
+	view, err := GetView(native)
+	if err != nil {
+		return false, fmt.Errorf("approveCandidate, GetView error: %v", err)
+	}
+	//get consensus peer
+	peerPoolMap, err := GetPeerPoolMap(native, view-1)
+	if err != nil {
+		return false, fmt.Errorf("approveCandidate, GetPeerPoolMap error: %v", err)
+	}
+	sum := 0
+	for key := range peerPoolMap.PeerPoolMap {
+		k, err := hex.DecodeString(key)
+		if err != nil {
+			return false, fmt.Errorf("approveCandidate, hex.DecodeString public key error: %v", err)
+		}
+		publicKey, err := keypair.DeserializePublicKey(k)
+		if err != nil {
+			return false, fmt.Errorf("approveCandidate, keypair.DeserializePublicKey error: %v", err)
+		}
+		_, ok := consensusSigns.SignsMap[types.AddressFromPubKey(publicKey)]
+		if ok {
+			sum = sum + 1
+		}
+	}
+	if sum >= (2*len(peerPoolMap.PeerPoolMap)+2)/3 {
+		return true, nil
+	}
+	putConsensusSigns(native, key, consensusSigns)
+	return false, nil
 }

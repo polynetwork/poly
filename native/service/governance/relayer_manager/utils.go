@@ -20,23 +20,24 @@ package relayer_manager
 
 import (
 	"fmt"
+	"github.com/ontio/multi-chain/common"
 
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/service/utils"
 )
 
-func putRelayer(native *native.NativeService, relayer []byte) error {
+func putRelayer(native *native.NativeService, relayer common.Address) error {
 	contract := utils.RelayerManagerContractAddress
 
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(RELAYER), relayer), cstates.GenRawStorageItem(relayer))
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(RELAYER), relayer[:]), cstates.GenRawStorageItem(relayer[:]))
 	return nil
 }
 
-func GetRelayerRaw(native *native.NativeService, address []byte) ([]byte, error) {
+func GetRelayerRaw(native *native.NativeService, address common.Address) ([]byte, error) {
 	contract := utils.RelayerManagerContractAddress
 
-	relayerBytes, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(RELAYER), address))
+	relayerBytes, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(RELAYER), address[:]))
 	if err != nil {
 		return nil, fmt.Errorf("GetRelayerRaw, get relayerBytes error: %v", err)
 	}

@@ -37,10 +37,7 @@ func executeCommitDpos(native *native.NativeService) error {
 		}
 	}
 
-	err = putPeerPoolMap(native, peerPoolMap, newView)
-	if err != nil {
-		return fmt.Errorf("putPeerPoolMap, put peerPoolMap error: %v", err)
-	}
+	putPeerPoolMap(native, peerPoolMap, newView)
 	oldView := view - 1
 	oldViewBytes := utils.GetUint32Bytes(oldView)
 	native.GetCacheDB().Delete(utils.ConcatKey(utils.NodeManagerContractAddress, []byte(PEER_POOL), oldViewBytes))
@@ -51,9 +48,6 @@ func executeCommitDpos(native *native.NativeService) error {
 		Height: native.GetHeight(),
 		TxHash: native.GetTx().Hash(),
 	}
-	err = putGovernanceView(native, governanceView)
-	if err != nil {
-		return fmt.Errorf("putGovernanceView, put governanceView error: %v", err)
-	}
+	putGovernanceView(native, governanceView)
 	return nil
 }
