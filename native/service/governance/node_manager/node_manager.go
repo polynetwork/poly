@@ -53,7 +53,6 @@ const (
 	//key prefix
 	GOVERNANCE_VIEW = "governanceView"
 	VBFT_CONFIG     = "vbftConfig"
-	PRE_CONFIG      = "preConfig"
 	CANDIDITE_INDEX = "candidateIndex"
 	PEER_APPLY      = "peerApply"
 	PEER_POOL       = "peerPool"
