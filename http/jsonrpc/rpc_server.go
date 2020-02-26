@@ -53,6 +53,7 @@ func StartRPCServer() error {
 
 	rpc.HandleFunc("getmerkleproof", rpc.GetMerkleProof)
 	rpc.HandleFunc("getcrossstatesproof", rpc.GetCrossStatesProof)
+	rpc.HandleFunc("getheaderbyheight", rpc.GetHeaderByHeight)
 	rpc.HandleFunc("getblocktxsbyheight", rpc.GetBlockTxsByHeight)
 
 	err := http.ListenAndServe(":"+strconv.Itoa(int(cfg.DefConfig.Rpc.HttpJsonPort)), nil)

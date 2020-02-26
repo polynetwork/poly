@@ -423,7 +423,7 @@ func GetMerkleProof(params []interface{}) map[string]interface{} {
 
 //get cross chain state proof
 func GetCrossStatesProof(params []interface{}) map[string]interface{} {
-	if len(params) < 1 {
+	if len(params) < 2 {
 		return responsePack(berr.INVALID_PARAMS, nil)
 	}
 	height, ok := params[0].(float64)
@@ -443,6 +443,22 @@ func GetCrossStatesProof(params []interface{}) map[string]interface{} {
 		return responsePack(berr.INTERNAL_ERROR, err.Error())
 	}
 	return responseSuccess(bcomn.CrossStatesProof{"CrossStatesProof", hex.EncodeToString(proof)})
+}
+
+func GetHeaderByHeight(params []interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return responsePack(berr.INVALID_PARAMS, nil)
+	}
+	height, ok := params[0].(float64)
+	if !ok {
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+	header, err := bactor.GetHeaderByHeight(uint32(height))
+	if err != nil {
+		return responsePack(berr.INTERNAL_ERROR, err.Error())
+	}
+
+	return responseSuccess(hex.EncodeToString(header.ToArray()))
 }
 
 //get block transactions by height
