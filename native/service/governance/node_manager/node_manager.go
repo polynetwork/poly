@@ -57,6 +57,9 @@ const (
 	PEER_INDEX      = "peerIndex"
 	BLACK_LIST      = "blackList"
 	CONSENSUS_SIGNS = "consensusSigns"
+
+	//const
+	MIN_PEER_NUM = 4
 )
 
 //Register methods of node_manager contract
@@ -414,6 +417,17 @@ func BlackNode(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("blackNode, get peerPoolMap error: %v", err)
 	}
 
+	//check peers num
+	num := 0
+	for _, peerPoolItem := range peerPoolMap.PeerPoolMap {
+		if peerPoolItem.Status == CandidateStatus || peerPoolItem.Status == ConsensusStatus {
+			num = num + 1
+		}
+	}
+	if num <= MIN_PEER_NUM+len(params.PeerPubkeyList)-1 {
+		return utils.BYTE_FALSE, fmt.Errorf("blackNode, num of peers is less than 4")
+	}
+
 	commit := false
 	for _, peerPubkey := range params.PeerPubkeyList {
 		peerPubkeyPrefix, err := hex.DecodeString(peerPubkey)
@@ -538,7 +552,7 @@ func QuitNode(native *native.NativeService) ([]byte, error) {
 			num = num + 1
 		}
 	}
-	if num <= 4 {
+	if num <= MIN_PEER_NUM {
 		return utils.BYTE_FALSE, fmt.Errorf("quitNode, num of peers is less than 4")
 	}
 

@@ -31,6 +31,11 @@ import (
 	"github.com/ontio/multi-chain/common/log"
 )
 
+const (
+	SCALE       = 15
+	DEFAULT_POS = 100000
+)
+
 func shuffle_hash(height uint32, id string, idx int) (uint64, error) {
 	data, err := json.Marshal(struct {
 		Height uint32 `json:"height"`
@@ -101,13 +106,13 @@ func genConsensusPayload(cfg *config.VBFTConfig, height uint32) ([]byte, error) 
 func GenesisChainConfig(conf *config.VBFTConfig, peers []*config.VBFTPeerInfo, height uint32) (*ChainConfig, error) {
 	log.Debugf("sorted peers: %v", peers)
 	k := uint32(len(peers))
-	sum := uint64(len(peers))
+	sum := uint64(len(peers)) * DEFAULT_POS
 
 	// calculate peer ranks
-	scale := 15
+	scale := SCALE
 	peerRanks := make([]uint64, 0)
 	for i := 0; i < int(k); i++ {
-		s := uint64(math.Ceil(float64(1) * float64(scale) * float64(k) / float64(sum)))
+		s := uint64(math.Ceil(float64(DEFAULT_POS) * float64(scale) * float64(k) / float64(sum)))
 		peerRanks = append(peerRanks, s)
 	}
 

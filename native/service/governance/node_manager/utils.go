@@ -264,6 +264,11 @@ func putConsensusSigns(native *native.NativeService, key common.Uint256, consens
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(CONSENSUS_SIGNS), key.ToArray()), cstates.GenRawStorageItem(sink.Bytes()))
 }
 
+func deleteConsensusSigns(native *native.NativeService, key common.Uint256) {
+	contract := utils.NodeManagerContractAddress
+	native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(CONSENSUS_SIGNS), key.ToArray()))
+}
+
 func CheckConsensusSigns(native *native.NativeService, method string, address common.Address) (bool, error) {
 	message := append([]byte(method), native.GetInput()...)
 	key := sha256.Sum256(message)
@@ -299,8 +304,10 @@ func CheckConsensusSigns(native *native.NativeService, method string, address co
 		}
 	}
 	if sum >= (2*len(peerPoolMap.PeerPoolMap)+2)/3 {
+		deleteConsensusSigns(native, key)
 		return true, nil
+	} else {
+		putConsensusSigns(native, key, consensusSigns)
+		return false, nil
 	}
-	putConsensusSigns(native, key, consensusSigns)
-	return false, nil
 }
