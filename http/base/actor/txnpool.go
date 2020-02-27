@@ -20,9 +20,12 @@
 package actor
 
 import (
+	"encoding/hex"
 	"errors"
-	"github.com/ontio/multi-chain/core/genesis"
 	"time"
+
+	"github.com/ontio/multi-chain/native/service/governance/node_manager"
+	"github.com/ontio/ontology-crypto/keypair"
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/log"
@@ -31,6 +34,7 @@ import (
 	ontErrors "github.com/ontio/multi-chain/errors"
 	"github.com/ontio/multi-chain/native/service/governance/relayer_manager"
 	"github.com/ontio/multi-chain/native/service/utils"
+	nutils "github.com/ontio/multi-chain/native/service/utils"
 	tcomn "github.com/ontio/multi-chain/txnpool/common"
 	"github.com/ontio/ontology-eventbus/actor"
 )
@@ -54,20 +58,59 @@ func AppendTxToPool(txn *types.Transaction) (ontErrors.ErrCode, string) {
 	if err != nil {
 		return ontErrors.ErrUnknown, err.Error()
 	}
-	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
+
+	//get consensus node address
+	governanceViewBytes, err := GetStorageItem(utils.NodeManagerContractAddress, []byte(node_manager.GOVERNANCE_VIEW))
 	if err != nil {
 		return ontErrors.ErrUnknown, err.Error()
 	}
+	governanceView := new(node_manager.GovernanceView)
+	err = governanceView.Deserialization(common.NewZeroCopySource(governanceViewBytes))
+	if err != nil {
+		return ontErrors.ErrUnknown, err.Error()
+	}
+	viewBytes := nutils.GetUint32Bytes(governanceView.View)
+	peerPoolMapBytes, err := GetStorageItem(utils.NodeManagerContractAddress, append([]byte(node_manager.PEER_POOL), viewBytes...))
+	if err != nil {
+		return ontErrors.ErrUnknown, err.Error()
+	}
+	peerMap := &node_manager.PeerPoolMap{
+		PeerPoolMap: make(map[string]*node_manager.PeerPoolItem),
+	}
+	err = peerMap.Deserialization(common.NewZeroCopySource(peerPoolMapBytes))
+	if err != nil {
+		return ontErrors.ErrUnknown, err.Error()
+	}
+
 	for _, address := range addresses {
 		key := append([]byte(relayer_manager.RELAYER), address[:]...)
-		value1, err := GetStorageItem(utils.RelayerManagerContractAddress, key)
+		value, err := GetStorageItem(utils.RelayerManagerContractAddress, key)
 		if err != nil {
 			if err != scommon.ErrNotFound {
 				return ontErrors.ErrUnknown, err.Error()
 			}
 		}
-		if value1 != nil || address == operatorAddress {
+		if value != nil {
 			flag = false
+			break
+		}
+
+		for k := range peerMap.PeerPoolMap {
+			kb, err := hex.DecodeString(k)
+			if err != nil {
+				return ontErrors.ErrUnknown, err.Error()
+			}
+			pk, err := keypair.DeserializePublicKey(kb)
+			if err != nil {
+				return ontErrors.ErrUnknown, err.Error()
+			}
+			addr := types.AddressFromPubKey(pk)
+			if address == addr {
+				flag = false
+				break
+			}
+		}
+		if !flag {
 			break
 		}
 	}

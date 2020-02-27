@@ -22,8 +22,6 @@ const (
 	IMPORT_OUTER_TRANSFER_NAME = "ImportOuterTransfer"
 	MULTI_SIGN                 = "MultiSign"
 	CREATE_TX                  = "createTx"
-
-	RATIO = 1
 )
 
 func RegisterCrossChainManagerContract(native *native.NativeService) {
