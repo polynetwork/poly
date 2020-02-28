@@ -653,7 +653,10 @@ func (this *LedgerStoreImp) saveBlockToStateStore(block *types.Block, result sto
 	blockHeight := block.Header.Height
 
 	for _, notify := range result.Notify {
-		SaveNotify(this.eventStore, notify.TxHash, notify)
+		err := SaveNotify(this.eventStore, notify.TxHash, notify)
+		if err != nil {
+			return fmt.Errorf("SaveNotify error %s", err)
+		}
 	}
 
 	err := this.stateStore.AddStateMerkleTreeRoot(blockHeight, result.Hash)

@@ -89,7 +89,11 @@ func RegisterSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, putRegisterSideChain error: %v", err)
 	}
-
+	native.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.NodeManagerContractAddress,
+			States:          []interface{}{"RegisterSideChain", params.ChainId, params.Router, params.Name, params.BlocksToWait},
+		})
 	return utils.BYTE_TRUE, nil
 }
 
@@ -125,7 +129,11 @@ func ApproveRegisterSideChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, putSideChain error: %v", err)
 	}
 	native.GetCacheDB().Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(SIDE_CHAIN_APPLY), utils.GetUint64Bytes(params.Chainid)))
-
+	native.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.NodeManagerContractAddress,
+			States:          []interface{}{"ApproveRegisterSideChain", params.Chainid},
+		})
 	return utils.BYTE_TRUE, nil
 }
 
@@ -151,7 +159,11 @@ func UpdateSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, putUpdateSideChain error: %v", err)
 	}
-
+	native.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.NodeManagerContractAddress,
+			States:          []interface{}{"UpdateSideChain", params.ChainId, params.Router, params.Name, params.BlocksToWait},
+		})
 	return utils.BYTE_TRUE, nil
 }
 
@@ -188,7 +200,11 @@ func ApproveUpdateSideChain(native *native.NativeService) ([]byte, error) {
 	}
 	chainidByte := utils.GetUint64Bytes(params.Chainid)
 	native.GetCacheDB().Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(UPDATE_SIDE_CHAIN_REQUEST), chainidByte))
-
+	native.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.NodeManagerContractAddress,
+			States:          []interface{}{"ApproveUpdateSideChain", params.Chainid},
+		})
 	return utils.BYTE_TRUE, nil
 }
 
@@ -221,7 +237,11 @@ func RemoveSideChain(native *native.NativeService) ([]byte, error) {
 	}
 	chainidByte := utils.GetUint64Bytes(params.Chainid)
 	native.GetCacheDB().Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(SIDE_CHAIN), chainidByte))
-
+	native.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.NodeManagerContractAddress,
+			States:          []interface{}{"RemoveSideChain", params.Chainid},
+		})
 	return utils.BYTE_TRUE, nil
 }
 

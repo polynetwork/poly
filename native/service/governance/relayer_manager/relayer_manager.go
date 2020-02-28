@@ -20,6 +20,7 @@ package relayer_manager
 
 import (
 	"fmt"
+	"github.com/ontio/multi-chain/native/event"
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native"
@@ -68,7 +69,11 @@ func RegisterRelayer(native *native.NativeService) ([]byte, error) {
 			return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, putRelayer error: %v", err)
 		}
 	}
-
+	native.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.NodeManagerContractAddress,
+			States:          []interface{}{"RegisterRelayer", params.AddressList},
+		})
 	return utils.BYTE_TRUE, nil
 }
 
@@ -105,6 +110,10 @@ func RemoveRelayer(native *native.NativeService) ([]byte, error) {
 
 		native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(RELAYER), address[:]))
 	}
-
+	native.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.NodeManagerContractAddress,
+			States:          []interface{}{"RemoveRelayer", params.AddressList},
+		})
 	return utils.BYTE_TRUE, nil
 }

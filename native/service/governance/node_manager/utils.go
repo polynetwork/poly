@@ -281,7 +281,7 @@ func CheckConsensusSigns(native *native.NativeService, method string, address co
 	native.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.NodeManagerContractAddress,
-			States:          []interface{}{"CheckConsensusSigns", consensusSigns.SignsMap},
+			States:          []interface{}{"CheckConsensusSigns", len(consensusSigns.SignsMap)},
 		})
 	//check signs num
 	//get view
