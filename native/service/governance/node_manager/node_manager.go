@@ -279,14 +279,6 @@ func ApproveCandidate(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("approveCandidate, checkWitness error: %v", err)
 	}
-	//check consensus signs
-	ok, err := CheckConsensusSigns(native, APPROVE_CANDIDATE, params.Address)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("approveCandidate, CheckConsensusSigns error: %v", err)
-	}
-	if !ok {
-		return utils.BYTE_TRUE, nil
-	}
 
 	//check if applied
 	peer, err := GetPeeApply(native, params.PeerPubkey)
@@ -295,6 +287,15 @@ func ApproveCandidate(native *native.NativeService) ([]byte, error) {
 	}
 	if peer == nil {
 		return utils.BYTE_FALSE, fmt.Errorf("approveCandidate, peer is not applied")
+	}
+
+	//check consensus signs
+	ok, err := CheckConsensusSigns(native, APPROVE_CANDIDATE, []byte(params.PeerPubkey), params.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("approveCandidate, CheckConsensusSigns error: %v", err)
+	}
+	if !ok {
+		return utils.BYTE_TRUE, nil
 	}
 
 	peerPoolItem := &PeerPoolItem{
@@ -348,6 +349,9 @@ func ApproveCandidate(native *native.NativeService) ([]byte, error) {
 	peerPoolItem.Status = CandidateStatus
 	peerPoolMap.PeerPoolMap[params.PeerPubkey] = peerPoolItem
 	putPeerPoolMap(native, peerPoolMap, view)
+
+	native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(PEER_APPLY), peerPubkeyPrefix))
+
 	native.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.NodeManagerContractAddress,
@@ -369,14 +373,6 @@ func RejectCandidate(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("rejectCandidate, checkWitness error: %v", err)
 	}
-	//check consensus signs
-	ok, err := CheckConsensusSigns(native, REJECT_CANDIDATE, params.Address)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("rejectCandidate, CheckConsensusSigns error: %v", err)
-	}
-	if !ok {
-		return utils.BYTE_TRUE, nil
-	}
 
 	//check if applied
 	peer, err := GetPeeApply(native, params.PeerPubkey)
@@ -385,6 +381,15 @@ func RejectCandidate(native *native.NativeService) ([]byte, error) {
 	}
 	if peer == nil {
 		return utils.BYTE_FALSE, fmt.Errorf("rejectCandidate, peer is not applied")
+	}
+
+	//check consensus signs
+	ok, err := CheckConsensusSigns(native, REJECT_CANDIDATE, []byte(params.PeerPubkey), params.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("rejectCandidate, CheckConsensusSigns error: %v", err)
+	}
+	if !ok {
+		return utils.BYTE_TRUE, nil
 	}
 
 	peerPubkeyPrefix, err := hex.DecodeString(params.PeerPubkey)
@@ -414,14 +419,6 @@ func BlackNode(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("blackNode, checkWitness error: %v", err)
 	}
-	//check consensus signs
-	ok, err := CheckConsensusSigns(native, BLACK_NODE, params.Address)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("blackNode, CheckConsensusSigns error: %v", err)
-	}
-	if !ok {
-		return utils.BYTE_TRUE, nil
-	}
 
 	//get current view
 	view, err := GetView(native)
@@ -443,6 +440,24 @@ func BlackNode(native *native.NativeService) ([]byte, error) {
 	}
 	if num <= MIN_PEER_NUM+len(params.PeerPubkeyList)-1 {
 		return utils.BYTE_FALSE, fmt.Errorf("blackNode, num of peers is less than 4")
+	}
+	for _, peerPubkey := range params.PeerPubkeyList {
+		if peerPoolMap.PeerPoolMap[peerPubkey].Status == BlackStatus {
+			return utils.BYTE_FALSE, fmt.Errorf("blackNode, peerPubkey is already blacked")
+		}
+	}
+
+	input := []byte{}
+	for _, v := range params.PeerPubkeyList {
+		input = append(input, []byte(v)...)
+	}
+	//check consensus signs
+	ok, err := CheckConsensusSigns(native, BLACK_NODE, input, params.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("blackNode, CheckConsensusSigns error: %v", err)
+	}
+	if !ok {
+		return utils.BYTE_TRUE, nil
 	}
 
 	commit := false
@@ -502,20 +517,11 @@ func WhiteNode(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("whiteNode, checkWitness error: %v", err)
 	}
-	//check consensus signs
-	ok, err := CheckConsensusSigns(native, WHITE_NODE, params.Address)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("whiteNode, CheckConsensusSigns error: %v", err)
-	}
-	if !ok {
-		return utils.BYTE_TRUE, nil
-	}
 
 	peerPubkeyPrefix, err := hex.DecodeString(params.PeerPubkey)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("whiteNode, peerPubkey format error: %v", err)
 	}
-
 	//check black list
 	blackListBytes, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(BLACK_LIST), peerPubkeyPrefix))
 	if err != nil {
@@ -523,6 +529,15 @@ func WhiteNode(native *native.NativeService) ([]byte, error) {
 	}
 	if blackListBytes == nil {
 		return utils.BYTE_FALSE, fmt.Errorf("whiteNode, this Peer is not in BlackList: %v", err)
+	}
+
+	//check consensus signs
+	ok, err := CheckConsensusSigns(native, WHITE_NODE, []byte(params.PeerPubkey), params.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("whiteNode, CheckConsensusSigns error: %v", err)
+	}
+	if !ok {
+		return utils.BYTE_TRUE, nil
 	}
 
 	//remove peer from black list
@@ -642,6 +657,8 @@ func UpdateConfig(native *native.NativeService) ([]byte, error) {
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("updateConfig, deserialize configuration error: %v", err)
 	}
+	sink := common.NewZeroCopySink(nil)
+	params.Configuration.Serialization(sink)
 
 	//check witness
 	err := utils.ValidateOwner(native, params.Address)
@@ -649,7 +666,7 @@ func UpdateConfig(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("updateConfig, checkWitness error: %v", err)
 	}
 	//check consensus signs
-	ok, err := CheckConsensusSigns(native, UPDATE_CONFIG, params.Address)
+	ok, err := CheckConsensusSigns(native, UPDATE_CONFIG, sink.Bytes(), params.Address)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("updateConfig, CheckConsensusSigns error: %v", err)
 	}

@@ -270,8 +270,8 @@ func deleteConsensusSigns(native *native.NativeService, key common.Uint256) {
 	native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(CONSENSUS_SIGNS), key.ToArray()))
 }
 
-func CheckConsensusSigns(native *native.NativeService, method string, address common.Address) (bool, error) {
-	message := append([]byte(method), native.GetInput()...)
+func CheckConsensusSigns(native *native.NativeService, method string, input []byte, address common.Address) (bool, error) {
+	message := append([]byte(method), input...)
 	key := sha256.Sum256(message)
 	consensusSigns, err := getConsensusSigns(native, key)
 	if err != nil {
@@ -290,26 +290,30 @@ func CheckConsensusSigns(native *native.NativeService, method string, address co
 		return false, fmt.Errorf("CheckConsensusSigns, GetView error: %v", err)
 	}
 	//get consensus peer
-	peerPoolMap, err := GetPeerPoolMap(native, view-1)
+	peerPoolMap, err := GetPeerPoolMap(native, view)
 	if err != nil {
 		return false, fmt.Errorf("CheckConsensusSigns, GetPeerPoolMap error: %v", err)
 	}
+	num := 0
 	sum := 0
-	for key := range peerPoolMap.PeerPoolMap {
-		k, err := hex.DecodeString(key)
-		if err != nil {
-			return false, fmt.Errorf("CheckConsensusSigns, hex.DecodeString public key error: %v", err)
-		}
-		publicKey, err := keypair.DeserializePublicKey(k)
-		if err != nil {
-			return false, fmt.Errorf("CheckConsensusSigns, keypair.DeserializePublicKey error: %v", err)
-		}
-		_, ok := consensusSigns.SignsMap[types.AddressFromPubKey(publicKey)]
-		if ok {
+	for key, v := range peerPoolMap.PeerPoolMap {
+		if v.Status == ConsensusStatus {
+			k, err := hex.DecodeString(key)
+			if err != nil {
+				return false, fmt.Errorf("CheckConsensusSigns, hex.DecodeString public key error: %v", err)
+			}
+			publicKey, err := keypair.DeserializePublicKey(k)
+			if err != nil {
+				return false, fmt.Errorf("CheckConsensusSigns, keypair.DeserializePublicKey error: %v", err)
+			}
+			_, ok := consensusSigns.SignsMap[types.AddressFromPubKey(publicKey)]
+			if ok {
+				num = num + 1
+			}
 			sum = sum + 1
 		}
 	}
-	if sum >= (2*len(peerPoolMap.PeerPoolMap)+2)/3 {
+	if num >= (2*sum+2)/3 {
 		deleteConsensusSigns(native, key)
 		return true, nil
 	} else {

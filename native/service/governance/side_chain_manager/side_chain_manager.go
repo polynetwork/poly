@@ -109,7 +109,8 @@ func ApproveRegisterSideChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, checkWitness error: %v", err)
 	}
 	//check consensus signs
-	ok, err := node_manager.CheckConsensusSigns(native, APPROVE_REGISTER_SIDE_CHAIN, params.Address)
+	ok, err := node_manager.CheckConsensusSigns(native, APPROVE_REGISTER_SIDE_CHAIN, utils.GetUint64Bytes(params.Chainid),
+		params.Address)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, CheckConsensusSigns error: %v", err)
 	}
@@ -179,7 +180,8 @@ func ApproveUpdateSideChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, checkWitness error: %v", err)
 	}
 	//check consensus signs
-	ok, err := node_manager.CheckConsensusSigns(native, APPROVE_UPDATE_SIDE_CHAIN, params.Address)
+	ok, err := node_manager.CheckConsensusSigns(native, APPROVE_UPDATE_SIDE_CHAIN, utils.GetUint64Bytes(params.Chainid),
+		params.Address)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, CheckConsensusSigns error: %v", err)
 	}
@@ -220,7 +222,8 @@ func RemoveSideChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, checkWitness error: %v", err)
 	}
 	//check consensus signs
-	ok, err := node_manager.CheckConsensusSigns(native, REMOVE_SIDE_CHAIN, params.Address)
+	ok, err := node_manager.CheckConsensusSigns(native, REMOVE_SIDE_CHAIN, utils.GetUint64Bytes(params.Chainid),
+		params.Address)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, CheckConsensusSigns error: %v", err)
 	}

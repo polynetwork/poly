@@ -24,18 +24,18 @@ import (
 	"errors"
 	"time"
 
-	"github.com/ontio/multi-chain/native/service/governance/node_manager"
-	"github.com/ontio/ontology-crypto/keypair"
-
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/log"
+	"github.com/ontio/multi-chain/core/genesis"
 	scommon "github.com/ontio/multi-chain/core/store/common"
 	"github.com/ontio/multi-chain/core/types"
 	ontErrors "github.com/ontio/multi-chain/errors"
+	"github.com/ontio/multi-chain/native/service/governance/node_manager"
 	"github.com/ontio/multi-chain/native/service/governance/relayer_manager"
 	"github.com/ontio/multi-chain/native/service/utils"
 	nutils "github.com/ontio/multi-chain/native/service/utils"
 	tcomn "github.com/ontio/multi-chain/txnpool/common"
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/ontology-eventbus/actor"
 )
 
@@ -82,6 +82,10 @@ func AppendTxToPool(txn *types.Transaction) (ontErrors.ErrCode, string) {
 		return ontErrors.ErrUnknown, err.Error()
 	}
 
+	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
+	if err != nil {
+		return ontErrors.ErrUnknown, err.Error()
+	}
 	for _, address := range addresses {
 		key := append([]byte(relayer_manager.RELAYER), address[:]...)
 		value, err := GetStorageItem(utils.RelayerManagerContractAddress, key)
@@ -90,7 +94,7 @@ func AppendTxToPool(txn *types.Transaction) (ontErrors.ErrCode, string) {
 				return ontErrors.ErrUnknown, err.Error()
 			}
 		}
-		if value != nil {
+		if value != nil || address == operatorAddress {
 			flag = false
 			break
 		}
