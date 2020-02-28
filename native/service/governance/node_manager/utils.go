@@ -23,6 +23,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"github.com/ontio/multi-chain/native/event"
 
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/common/config"
@@ -274,29 +275,34 @@ func CheckConsensusSigns(native *native.NativeService, method string, address co
 	key := sha256.Sum256(message)
 	consensusSigns, err := getConsensusSigns(native, key)
 	if err != nil {
-		return false, fmt.Errorf("approveCandidate, GetConsensusSigns error: %v", err)
+		return false, fmt.Errorf("CheckConsensusSigns, GetConsensusSigns error: %v", err)
 	}
 	consensusSigns.SignsMap[address] = true
+	native.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.NodeManagerContractAddress,
+			States:          []interface{}{"CheckConsensusSigns", consensusSigns.SignsMap},
+		})
 	//check signs num
 	//get view
 	view, err := GetView(native)
 	if err != nil {
-		return false, fmt.Errorf("approveCandidate, GetView error: %v", err)
+		return false, fmt.Errorf("CheckConsensusSigns, GetView error: %v", err)
 	}
 	//get consensus peer
 	peerPoolMap, err := GetPeerPoolMap(native, view-1)
 	if err != nil {
-		return false, fmt.Errorf("approveCandidate, GetPeerPoolMap error: %v", err)
+		return false, fmt.Errorf("CheckConsensusSigns, GetPeerPoolMap error: %v", err)
 	}
 	sum := 0
 	for key := range peerPoolMap.PeerPoolMap {
 		k, err := hex.DecodeString(key)
 		if err != nil {
-			return false, fmt.Errorf("approveCandidate, hex.DecodeString public key error: %v", err)
+			return false, fmt.Errorf("CheckConsensusSigns, hex.DecodeString public key error: %v", err)
 		}
 		publicKey, err := keypair.DeserializePublicKey(k)
 		if err != nil {
-			return false, fmt.Errorf("approveCandidate, keypair.DeserializePublicKey error: %v", err)
+			return false, fmt.Errorf("CheckConsensusSigns, keypair.DeserializePublicKey error: %v", err)
 		}
 		_, ok := consensusSigns.SignsMap[types.AddressFromPubKey(publicKey)]
 		if ok {

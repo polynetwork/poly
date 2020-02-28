@@ -27,6 +27,7 @@ import (
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/native"
+	"github.com/ontio/multi-chain/native/event"
 	"github.com/ontio/multi-chain/native/service/utils"
 )
 
@@ -200,7 +201,7 @@ func RegisterCandidate(native *native.NativeService) ([]byte, error) {
 	//get current view
 	view, err := GetView(native)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("blackNode, get view error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("registerCandidate, get view error: %v", err)
 	}
 	//get peerPoolMap
 	peerPoolMap, err := GetPeerPoolMap(native, view)
@@ -217,7 +218,11 @@ func RegisterCandidate(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("registerCandidate, put putPeerApply error: %v", err)
 	}
-
+	native.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.NodeManagerContractAddress,
+			States:          []interface{}{"registerCandidate", params.PeerPubkey},
+		})
 	return utils.BYTE_TRUE, nil
 }
 
@@ -253,7 +258,11 @@ func UnRegisterCandidate(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("unRegisterCandidate, peerPubkey format error: %v", err)
 	}
 	native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(PEER_APPLY), peerPubkeyPrefix))
-
+	native.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.NodeManagerContractAddress,
+			States:          []interface{}{"unRegisterCandidate", params.PeerPubkey},
+		})
 	return utils.BYTE_TRUE, nil
 }
 
@@ -339,7 +348,11 @@ func ApproveCandidate(native *native.NativeService) ([]byte, error) {
 	peerPoolItem.Status = CandidateStatus
 	peerPoolMap.PeerPoolMap[params.PeerPubkey] = peerPoolItem
 	putPeerPoolMap(native, peerPoolMap, view)
-
+	native.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.NodeManagerContractAddress,
+			States:          []interface{}{"approveCandidate", params.PeerPubkey},
+		})
 	return utils.BYTE_TRUE, nil
 }
 
@@ -379,7 +392,11 @@ func RejectCandidate(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("rejectCandidate, peerPubkey format error: %v", err)
 	}
 	native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(PEER_APPLY), peerPubkeyPrefix))
-
+	native.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.NodeManagerContractAddress,
+			States:          []interface{}{"rejectCandidate", params.PeerPubkey},
+		})
 	return utils.BYTE_TRUE, nil
 }
 
@@ -464,6 +481,11 @@ func BlackNode(native *native.NativeService) ([]byte, error) {
 			return utils.BYTE_FALSE, fmt.Errorf("blackNode, executeCommitDpos error: %v", err)
 		}
 	}
+	native.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.NodeManagerContractAddress,
+			States:          []interface{}{"blackNode", params.PeerPubkeyList},
+		})
 	return utils.BYTE_TRUE, nil
 }
 
@@ -505,7 +527,11 @@ func WhiteNode(native *native.NativeService) ([]byte, error) {
 
 	//remove peer from black list
 	native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(BLACK_LIST), peerPubkeyPrefix))
-
+	native.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.NodeManagerContractAddress,
+			States:          []interface{}{"whiteNode", params.PeerPubkey},
+		})
 	return utils.BYTE_TRUE, nil
 }
 
@@ -561,7 +587,11 @@ func QuitNode(native *native.NativeService) ([]byte, error) {
 
 	peerPoolMap.PeerPoolMap[params.PeerPubkey] = peerPoolItem
 	putPeerPoolMap(native, peerPoolMap, view)
-
+	native.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.NodeManagerContractAddress,
+			States:          []interface{}{"quitNode", params.PeerPubkey},
+		})
 	return utils.BYTE_TRUE, nil
 }
 
@@ -598,7 +628,11 @@ func CommitDpos(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("executeCommitDpos, executeCommitDpos error: %v", err)
 	}
-
+	native.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.NodeManagerContractAddress,
+			States:          []interface{}{"commitDpos"},
+		})
 	return utils.BYTE_TRUE, nil
 }
 
@@ -637,5 +671,10 @@ func UpdateConfig(native *native.NativeService) ([]byte, error) {
 	}
 
 	putConfig(native, params.Configuration)
+	native.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.NodeManagerContractAddress,
+			States:          []interface{}{"updateConfig", params.Configuration},
+		})
 	return utils.BYTE_TRUE, nil
 }
