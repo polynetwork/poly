@@ -613,18 +613,15 @@ func UpdateConfig(native *native.NativeService) ([]byte, error) {
 	sink := common.NewZeroCopySink(nil)
 	params.Configuration.Serialization(sink)
 
+	// get operator from database
+	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
 	//check witness
-	err := utils.ValidateOwner(native, params.Address)
+	err = utils.ValidateOwner(native, operatorAddress)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("updateConfig, checkWitness error: %v", err)
-	}
-	//check consensus signs
-	ok, err := CheckConsensusSigns(native, UPDATE_CONFIG, sink.Bytes(), params.Address)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("updateConfig, CheckConsensusSigns error: %v", err)
-	}
-	if !ok {
-		return utils.BYTE_TRUE, nil
 	}
 
 	if params.Configuration.BlockMsgDelay < 5000 {
