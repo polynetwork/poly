@@ -25,6 +25,7 @@ import (
 )
 
 type SideChain struct {
+	Address      common.Address
 	ChainId      uint64
 	Router       uint64
 	Name         string
@@ -32,14 +33,23 @@ type SideChain struct {
 }
 
 func (this *SideChain) Serialization(sink *common.ZeroCopySink) error {
+	sink.WriteVarBytes(this.Address[:])
 	sink.WriteUint64(this.ChainId)
 	sink.WriteUint64(this.Router)
-	sink.WriteString(this.Name)
+	sink.WriteVarBytes([]byte(this.Name))
 	sink.WriteUint64(this.BlocksToWait)
 	return nil
 }
 
 func (this *SideChain) Deserialization(source *common.ZeroCopySource) error {
+	address, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("utils.NextVarBytes, deserialize address error")
+	}
+	addr, err := common.AddressParseFromBytes(address)
+	if err != nil {
+		return fmt.Errorf("common.AddressParseFromBytes, deserialize address error: %s", err)
+	}
 	chainId, eof := source.NextUint64()
 	if eof {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize chainid error")
@@ -56,7 +66,7 @@ func (this *SideChain) Deserialization(source *common.ZeroCopySource) error {
 	if eof {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize blocksToWait error")
 	}
-
+	this.Address = addr
 	this.ChainId = chainId
 	this.Router = router
 	this.Name = name
@@ -69,7 +79,7 @@ type BindSignInfo struct {
 }
 
 func (this *BindSignInfo) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteUint64(uint64(len(this.BindSignInfo)))
+	sink.WriteVarUint(uint64(len(this.BindSignInfo)))
 	var BindSignInfoList []string
 	for k := range this.BindSignInfo {
 		BindSignInfoList = append(BindSignInfoList, k)
@@ -84,7 +94,7 @@ func (this *BindSignInfo) Serialization(sink *common.ZeroCopySink) {
 }
 
 func (this *BindSignInfo) Deserialization(source *common.ZeroCopySource) error {
-	n, eof := source.NextUint64()
+	n, eof := source.NextVarUint()
 	if eof {
 		return fmt.Errorf("BindSignInfo deserialize MultiSignInfo length error")
 	}

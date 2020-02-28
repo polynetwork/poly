@@ -149,6 +149,30 @@ func putUpdateSideChain(native *native.NativeService, sideChain *SideChain) erro
 	return nil
 }
 
+func getQuitSideChain(native *native.NativeService, chainid uint64) error {
+	contract := utils.SideChainManagerContractAddress
+	chainidByte := utils.GetUint64Bytes(chainid)
+
+	chainIDStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(QUIT_SIDE_CHAIN_REQUEST),
+		chainidByte))
+	if err != nil {
+		return fmt.Errorf("getQuitSideChain, get registerSideChainRequestStore error: %v", err)
+	}
+	if chainIDStore != nil {
+		return nil
+	}
+	return fmt.Errorf("getQuitSideChain, no record")
+}
+
+func putQuitSideChain(native *native.NativeService, chainid uint64) error {
+	contract := utils.SideChainManagerContractAddress
+	chainidByte := utils.GetUint64Bytes(chainid)
+
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(QUIT_SIDE_CHAIN_REQUEST), chainidByte),
+		cstates.GenRawStorageItem(chainidByte))
+	return nil
+}
+
 func GetContractBind(native *native.NativeService, redeemChainID, contractChainID uint64,
 	redeemKey string) (*ContractBinded, error) {
 	contract := utils.SideChainManagerContractAddress

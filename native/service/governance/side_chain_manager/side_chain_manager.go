@@ -38,12 +38,14 @@ const (
 	APPROVE_REGISTER_SIDE_CHAIN = "approveRegisterSideChain"
 	UPDATE_SIDE_CHAIN           = "updateSideChain"
 	APPROVE_UPDATE_SIDE_CHAIN   = "approveUpdateSideChain"
-	REMOVE_SIDE_CHAIN           = "removeSideChain"
+	QUIT_SIDE_CHAIN             = "quitSideChain"
+	APPROVE_QUIT_SIDE_CHAIN     = "approveQuitSideChain"
 	REGISTER_REDEEM             = "registerRedeem"
 
 	//key prefix
 	SIDE_CHAIN_APPLY          = "sideChainApply"
 	UPDATE_SIDE_CHAIN_REQUEST = "updateSideChainRequest"
+	QUIT_SIDE_CHAIN_REQUEST   = "quitSideChainRequest"
 	SIDE_CHAIN                = "sideChain"
 	REDEEM_BIND               = "redeemBind"
 	BIND_SIGN_INFO            = "bindSignInfo"
@@ -55,7 +57,8 @@ func RegisterSideChainManagerContract(native *native.NativeService) {
 	native.Register(APPROVE_REGISTER_SIDE_CHAIN, ApproveRegisterSideChain)
 	native.Register(UPDATE_SIDE_CHAIN, UpdateSideChain)
 	native.Register(APPROVE_UPDATE_SIDE_CHAIN, ApproveUpdateSideChain)
-	native.Register(REMOVE_SIDE_CHAIN, RemoveSideChain)
+	native.Register(QUIT_SIDE_CHAIN, QuitSideChain)
+	native.Register(APPROVE_QUIT_SIDE_CHAIN, ApproveQuitSideChain)
 
 	native.Register(REGISTER_REDEEM, RegisterRedeem)
 }
@@ -65,6 +68,13 @@ func RegisterSideChain(native *native.NativeService) ([]byte, error) {
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, contract params deserialize error: %v", err)
 	}
+
+	//check witness
+	err := utils.ValidateOwner(native, params.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, checkWitness error: %v", err)
+	}
+
 	registerSideChain, err := getSideChainApply(native, params.ChainId)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, getRegisterSideChain error: %v", err)
@@ -80,6 +90,7 @@ func RegisterSideChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterSideChain, chainid already registered")
 	}
 	sideChain = &SideChain{
+		Address:      params.Address,
 		ChainId:      params.ChainId,
 		Router:       params.Router,
 		Name:         params.Name,
@@ -108,6 +119,15 @@ func ApproveRegisterSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, checkWitness error: %v", err)
 	}
+
+	registerSideChain, err := getSideChainApply(native, params.Chainid)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, getRegisterSideChain error: %v", err)
+	}
+	if registerSideChain == nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, chainid is not requested")
+	}
+
 	//check consensus signs
 	ok, err := node_manager.CheckConsensusSigns(native, APPROVE_REGISTER_SIDE_CHAIN, utils.GetUint64Bytes(params.Chainid),
 		params.Address)
@@ -118,13 +138,6 @@ func ApproveRegisterSideChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_TRUE, nil
 	}
 
-	registerSideChain, err := getSideChainApply(native, params.Chainid)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, getRegisterSideChain error: %v", err)
-	}
-	if registerSideChain == nil {
-		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, chainid is not requested")
-	}
 	err = putSideChain(native, registerSideChain)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, putSideChain error: %v", err)
@@ -143,6 +156,13 @@ func UpdateSideChain(native *native.NativeService) ([]byte, error) {
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, contract params deserialize error: %v", err)
 	}
+
+	//check witness
+	err := utils.ValidateOwner(native, params.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, checkWitness error: %v", err)
+	}
+
 	sideChain, err := GetSideChain(native, params.ChainId)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, getSideChain error: %v", err)
@@ -150,7 +170,11 @@ func UpdateSideChain(native *native.NativeService) ([]byte, error) {
 	if sideChain == nil {
 		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, side chain is not registered")
 	}
+	if sideChain.Address != params.Address {
+		return utils.BYTE_FALSE, fmt.Errorf("UpdateSideChain, side chain owner is wrong")
+	}
 	updateSideChain := &SideChain{
+		Address:      params.Address,
 		ChainId:      params.ChainId,
 		Router:       params.Router,
 		Name:         params.Name,
@@ -179,6 +203,15 @@ func ApproveUpdateSideChain(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, checkWitness error: %v", err)
 	}
+
+	sideChain, err := getUpdateSideChain(native, params.Chainid)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, getUpdateSideChain error: %v", err)
+	}
+	if sideChain.ChainId == math.MaxUint64 {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, chainid is not requested update")
+	}
+
 	//check consensus signs
 	ok, err := node_manager.CheckConsensusSigns(native, APPROVE_UPDATE_SIDE_CHAIN, utils.GetUint64Bytes(params.Chainid),
 		params.Address)
@@ -189,13 +222,6 @@ func ApproveUpdateSideChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_TRUE, nil
 	}
 
-	sideChain, err := getUpdateSideChain(native, params.Chainid)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, getUpdateSideChain error: %v", err)
-	}
-	if sideChain.ChainId == math.MaxUint64 {
-		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, chainid is not requested update")
-	}
 	err = putSideChain(native, sideChain)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, putSideChain error: %v", err)
@@ -210,40 +236,75 @@ func ApproveUpdateSideChain(native *native.NativeService) ([]byte, error) {
 	return utils.BYTE_TRUE, nil
 }
 
-func RemoveSideChain(native *native.NativeService) ([]byte, error) {
+func QuitSideChain(native *native.NativeService) ([]byte, error) {
 	params := new(ChainidParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, contract params deserialize error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("QuitSideChain, contract params deserialize error: %v", err)
 	}
 
 	//check witness
 	err := utils.ValidateOwner(native, params.Address)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, checkWitness error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("QuitSideChain, checkWitness error: %v", err)
 	}
+
+	sideChain, err := GetSideChain(native, params.Chainid)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("QuitSideChain, getSideChain error: %v", err)
+	}
+	if sideChain == nil {
+		return utils.BYTE_FALSE, fmt.Errorf("QuitSideChain, side chain is not registered")
+	}
+	if sideChain.Address != params.Address {
+		return utils.BYTE_FALSE, fmt.Errorf("QuitSideChain, side chain owner is wrong")
+	}
+
+	err = putQuitSideChain(native, params.Chainid)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("QuitSideChain, putUpdateSideChain error: %v", err)
+	}
+	native.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.NodeManagerContractAddress,
+			States:          []interface{}{"QuitSideChain", params.Chainid},
+		})
+	return utils.BYTE_TRUE, nil
+}
+
+func ApproveQuitSideChain(native *native.NativeService) ([]byte, error) {
+	params := new(ChainidParam)
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveQuitSideChain, contract params deserialize error: %v", err)
+	}
+
+	//check witness
+	err := utils.ValidateOwner(native, params.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveQuitSideChain, checkWitness error: %v", err)
+	}
+
+	err = getQuitSideChain(native, params.Chainid)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveQuitSideChain, getQuitSideChain error: %v", err)
+	}
+
 	//check consensus signs
-	ok, err := node_manager.CheckConsensusSigns(native, REMOVE_SIDE_CHAIN, utils.GetUint64Bytes(params.Chainid),
+	ok, err := node_manager.CheckConsensusSigns(native, QUIT_SIDE_CHAIN, utils.GetUint64Bytes(params.Chainid),
 		params.Address)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, CheckConsensusSigns error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveQuitSideChain, CheckConsensusSigns error: %v", err)
 	}
 	if !ok {
 		return utils.BYTE_TRUE, nil
 	}
 
-	sideChain, err := GetSideChain(native, params.Chainid)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, getUpdateSideChain error: %v", err)
-	}
-	if sideChain == nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RemoveSideChain, side chain is not registered")
-	}
 	chainidByte := utils.GetUint64Bytes(params.Chainid)
+	native.GetCacheDB().Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(QUIT_SIDE_CHAIN), chainidByte))
 	native.GetCacheDB().Delete(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(SIDE_CHAIN), chainidByte))
 	native.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.NodeManagerContractAddress,
-			States:          []interface{}{"RemoveSideChain", params.Chainid},
+			States:          []interface{}{"ApproveQuitSideChain", params.Chainid},
 		})
 	return utils.BYTE_TRUE, nil
 }

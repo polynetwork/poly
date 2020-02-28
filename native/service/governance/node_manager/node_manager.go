@@ -42,7 +42,6 @@ const (
 	REGISTER_CANDIDATE   = "registerCandidate"
 	UNREGISTER_CANDIDATE = "unRegisterCandidate"
 	APPROVE_CANDIDATE    = "approveCandidate"
-	REJECT_CANDIDATE     = "rejectCandidate"
 	BLACK_NODE           = "blackNode"
 	WHITE_NODE           = "whiteNode"
 	QUIT_NODE            = "quitNode"
@@ -70,7 +69,6 @@ func RegisterNodeManagerContract(native *native.NativeService) {
 	native.Register(UNREGISTER_CANDIDATE, UnRegisterCandidate)
 	native.Register(QUIT_NODE, QuitNode)
 	native.Register(APPROVE_CANDIDATE, ApproveCandidate)
-	native.Register(REJECT_CANDIDATE, RejectCandidate)
 	native.Register(BLACK_NODE, BlackNode)
 	native.Register(WHITE_NODE, WhiteNode)
 	native.Register(UPDATE_CONFIG, UpdateConfig)
@@ -356,51 +354,6 @@ func ApproveCandidate(native *native.NativeService) ([]byte, error) {
 		&event.NotifyEventInfo{
 			ContractAddress: utils.NodeManagerContractAddress,
 			States:          []interface{}{"approveCandidate", params.PeerPubkey},
-		})
-	return utils.BYTE_TRUE, nil
-}
-
-//Reject a registered candidate node, remove node from pool
-func RejectCandidate(native *native.NativeService) ([]byte, error) {
-	params := new(PeerParam)
-	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("rejectCandidate, contract params deserialize error: %v", err)
-	}
-	contract := utils.NodeManagerContractAddress
-
-	//check witness
-	err := utils.ValidateOwner(native, params.Address)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("rejectCandidate, checkWitness error: %v", err)
-	}
-
-	//check if applied
-	peer, err := GetPeeApply(native, params.PeerPubkey)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("rejectCandidate, GetPeeApply error: %v", err)
-	}
-	if peer == nil {
-		return utils.BYTE_FALSE, fmt.Errorf("rejectCandidate, peer is not applied")
-	}
-
-	//check consensus signs
-	ok, err := CheckConsensusSigns(native, REJECT_CANDIDATE, []byte(params.PeerPubkey), params.Address)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("rejectCandidate, CheckConsensusSigns error: %v", err)
-	}
-	if !ok {
-		return utils.BYTE_TRUE, nil
-	}
-
-	peerPubkeyPrefix, err := hex.DecodeString(params.PeerPubkey)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("rejectCandidate, peerPubkey format error: %v", err)
-	}
-	native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(PEER_APPLY), peerPubkeyPrefix))
-	native.AddNotify(
-		&event.NotifyEventInfo{
-			ContractAddress: utils.NodeManagerContractAddress,
-			States:          []interface{}{"rejectCandidate", params.PeerPubkey},
 		})
 	return utils.BYTE_TRUE, nil
 }

@@ -24,7 +24,7 @@ import (
 )
 
 type RegisterSideChainParam struct {
-	Address      string
+	Address      common.Address
 	ChainId      uint64
 	Router       uint64
 	Name         string
@@ -32,7 +32,7 @@ type RegisterSideChainParam struct {
 }
 
 func (this *RegisterSideChainParam) Serialization(sink *common.ZeroCopySink) error {
-	sink.WriteVarBytes([]byte(this.Address))
+	sink.WriteVarBytes(this.Address[:])
 	sink.WriteUint64(this.ChainId)
 	sink.WriteUint64(this.Router)
 	sink.WriteVarBytes([]byte(this.Name))
@@ -41,9 +41,13 @@ func (this *RegisterSideChainParam) Serialization(sink *common.ZeroCopySink) err
 }
 
 func (this *RegisterSideChainParam) Deserialization(source *common.ZeroCopySource) error {
-	address, eof := source.NextString()
+	address, eof := source.NextVarBytes()
 	if eof {
-		return fmt.Errorf("utils.DecodeString, deserialize address error")
+		return fmt.Errorf("utils.NextVarBytes, deserialize address error")
+	}
+	addr, err := common.AddressParseFromBytes(address)
+	if err != nil {
+		return fmt.Errorf("common.AddressParseFromBytes, deserialize address error: %s", err)
 	}
 	chainId, eof := source.NextUint64()
 	if eof {
@@ -61,7 +65,7 @@ func (this *RegisterSideChainParam) Deserialization(source *common.ZeroCopySourc
 	if eof {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize blocksToWait error")
 	}
-	this.Address = address
+	this.Address = addr
 	this.ChainId = chainId
 	this.Router = router
 	this.Name = name
