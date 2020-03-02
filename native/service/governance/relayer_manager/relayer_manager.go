@@ -30,17 +30,25 @@ import (
 
 const (
 	//function name
-	REGISTER_RELAYER = "registerRelayer"
-	REMOVE_RELAYER   = "RemoveRelayer"
+	REGISTER_RELAYER         = "registerRelayer"
+	APPROVE_REGISTER_RELAYER = "approveRegisterRelayer"
+	REMOVE_RELAYER           = "RemoveRelayer"
+	APPROVE_REMOVE_RELAYER   = "approveRemoveRelayer"
 
 	//key prefix
-	RELAYER = "relayer"
+	RELAYER        = "relayer"
+	RELAYER_APPLY  = "relayerApply"
+	RELAYER_REMOVE = "relayerRemove"
+	APPLY_ID       = "applyID"
+	REMOVE_ID      = "removeID"
 )
 
 //Register methods of node_manager contract
 func RegisterRelayerManagerContract(native *native.NativeService) {
 	native.Register(REGISTER_RELAYER, RegisterRelayer)
+	native.Register(APPROVE_REGISTER_RELAYER, ApproveRegisterRelayer)
 	native.Register(REMOVE_RELAYER, RemoveRelayer)
+	native.Register(APPROVE_REMOVE_RELAYER, ApproveRemoveRelayer)
 }
 
 func RegisterRelayer(native *native.NativeService) ([]byte, error) {
@@ -48,35 +56,51 @@ func RegisterRelayer(native *native.NativeService) ([]byte, error) {
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, contract params deserialize error: %v", err)
 	}
-	input := []byte{}
-	for _, v := range params.AddressList {
-		input = append(input, v[:]...)
+
+	err := putRelayerApply(native, params)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, putRelayer error: %v", err)
+	}
+	return utils.BYTE_TRUE, nil
+}
+
+func ApproveRegisterRelayer(native *native.NativeService) ([]byte, error) {
+	params := new(ApproveRelayerParam)
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterRelayer, contract params deserialize error: %v", err)
 	}
 
 	//check witness
 	err := utils.ValidateOwner(native, params.Address)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, checkWitness error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterRelayer, checkWitness error: %v", err)
 	}
-	//check consensus signs
-	ok, err := node_manager.CheckConsensusSigns(native, REGISTER_RELAYER, input, params.Address)
+
+	relayerListParam, err := getRelayerApply(native, params.ID)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, CheckConsensusSigns error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterRelayer, getRelayerApply error: %v", err)
+	}
+
+	//check consensus signs
+	ok, err := node_manager.CheckConsensusSigns(native, APPROVE_REGISTER_RELAYER, utils.GetUint64Bytes(params.ID), params.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterRelayer, CheckConsensusSigns error: %v", err)
 	}
 	if !ok {
 		return utils.BYTE_TRUE, nil
 	}
 
-	for _, address := range params.AddressList {
+	for _, address := range relayerListParam.AddressList {
 		err = putRelayer(native, address)
 		if err != nil {
-			return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, putRelayer error: %v", err)
+			return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterRelayer, putRelayer error: %v", err)
 		}
 	}
+	native.GetCacheDB().Delete(utils.ConcatKey(utils.RelayerManagerContractAddress, []byte(RELAYER_APPLY), utils.GetUint64Bytes(params.ID)))
 	native.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.RelayerManagerContractAddress,
-			States:          []interface{}{"RegisterRelayer"},
+			States:          []interface{}{"ApproveRegisterRelayer", params.ID},
 		})
 	return utils.BYTE_TRUE, nil
 }
@@ -86,42 +110,47 @@ func RemoveRelayer(native *native.NativeService) ([]byte, error) {
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RemoveRelayer, contract params deserialize error: %v", err)
 	}
-	contract := utils.RelayerManagerContractAddress
-	input := []byte{}
-	for _, v := range params.AddressList {
-		input = append(input, v[:]...)
+
+	err := putRelayerRemove(native, params)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RemoveRelayer, putRelayer error: %v", err)
+	}
+	return utils.BYTE_TRUE, nil
+}
+
+func ApproveRemoveRelayer(native *native.NativeService) ([]byte, error) {
+	params := new(ApproveRelayerParam)
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveRemoveRelayer, contract params deserialize error: %v", err)
 	}
 
 	//check witness
 	err := utils.ValidateOwner(native, params.Address)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RemoveRelayer, checkWitness error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveRemoveRelayer, checkWitness error: %v", err)
 	}
-	//check consensus signs
-	ok, err := node_manager.CheckConsensusSigns(native, REMOVE_RELAYER, input, params.Address)
+
+	relayerListParam, err := getRelayerRemove(native, params.ID)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RemoveRelayer, CheckConsensusSigns error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveRemoveRelayer, getRelayerRemove error: %v", err)
+	}
+
+	//check consensus signs
+	ok, err := node_manager.CheckConsensusSigns(native, APPROVE_REMOVE_RELAYER, utils.GetUint64Bytes(params.ID), params.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ApproveRemoveRelayer, CheckConsensusSigns error: %v", err)
 	}
 	if !ok {
 		return utils.BYTE_TRUE, nil
 	}
 
-	for _, address := range params.AddressList {
-		//get relayer
-		relayerRaw, err := GetRelayerRaw(native, address)
-		if err != nil {
-			return utils.BYTE_FALSE, fmt.Errorf("RemoveRelayer, get relayer error: %v", err)
-		}
-		if relayerRaw == nil {
-			return utils.BYTE_FALSE, fmt.Errorf("RemoveRelayer, relayer is not registered")
-		}
-
-		native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(RELAYER), address[:]))
+	for _, address := range relayerListParam.AddressList {
+		native.GetCacheDB().Delete(utils.ConcatKey(utils.RelayerManagerContractAddress, []byte(RELAYER), address[:]))
 	}
 	native.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.RelayerManagerContractAddress,
-			States:          []interface{}{"RemoveRelayer"},
+			States:          []interface{}{"ApproveRemoveRelayer", params.ID},
 		})
 	return utils.BYTE_TRUE, nil
 }

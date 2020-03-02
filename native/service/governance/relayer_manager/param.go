@@ -66,3 +66,32 @@ func (this *RelayerListParam) Deserialization(source *common.ZeroCopySource) err
 	this.Address = addr
 	return nil
 }
+
+type ApproveRelayerParam struct {
+	ID      uint64
+	Address common.Address
+}
+
+func (this *ApproveRelayerParam) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteVarUint(uint64(this.ID))
+	sink.WriteVarBytes(this.Address[:])
+}
+
+func (this *ApproveRelayerParam) Deserialization(source *common.ZeroCopySource) error {
+	ID, eof := source.NextVarUint()
+	if eof {
+		return fmt.Errorf("source.NextVarUint, deserialize ID error")
+	}
+
+	address, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("source.NextVarBytes, deserialize address error")
+	}
+	addr, err := common.AddressParseFromBytes(address)
+	if err != nil {
+		return fmt.Errorf("common.AddressParseFromBytes, deserialize address error: %s", err)
+	}
+	this.ID = ID
+	this.Address = addr
+	return nil
+}
