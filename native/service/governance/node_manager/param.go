@@ -152,12 +152,10 @@ func (this *PeerListParam) Deserialization(source *common.ZeroCopySource) error 
 
 type UpdateConfigParam struct {
 	Configuration *Configuration
-	Address       common.Address
 }
 
 func (this *UpdateConfigParam) Serialization(sink *common.ZeroCopySink) {
 	this.Configuration.Serialization(sink)
-	sink.WriteVarBytes(this.Address[:])
 }
 
 func (this *UpdateConfigParam) Deserialization(source *common.ZeroCopySource) error {
@@ -166,16 +164,6 @@ func (this *UpdateConfigParam) Deserialization(source *common.ZeroCopySource) er
 	if err != nil {
 		return fmt.Errorf("configuration.Deserialization, deserialize configuration error: %s", err)
 	}
-
-	address, eof := source.NextVarBytes()
-	if eof {
-		return fmt.Errorf("source.NextVarBytes, deserialize address error")
-	}
-	addr, err := common.AddressParseFromBytes(address)
-	if err != nil {
-		return fmt.Errorf("common.AddressParseFromBytes, deserialize address error: %s", err)
-	}
 	this.Configuration = configuration
-	this.Address = addr
 	return nil
 }
