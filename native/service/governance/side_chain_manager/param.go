@@ -90,8 +90,8 @@ type RegisterRedeemParam struct {
 	RedeemChainID   uint64
 	ContractChainID uint64
 	Redeem          []byte
+	CVersion        uint64
 	ContractAddress []byte
-	Address         string
 	Signs           [][]byte
 }
 
@@ -99,8 +99,8 @@ func (this *RegisterRedeemParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteUint64(this.RedeemChainID)
 	sink.WriteUint64(this.ContractChainID)
 	sink.WriteVarBytes(this.Redeem)
+	sink.WriteUint64(this.CVersion)
 	sink.WriteVarBytes(this.ContractAddress)
-	sink.WriteString(this.Address)
 	sink.WriteUint64(uint64(len(this.Signs)))
 	for _, v := range this.Signs {
 		sink.WriteVarBytes(v)
@@ -120,13 +120,13 @@ func (this *RegisterRedeemParam) Deserialization(source *common.ZeroCopySource) 
 	if eof {
 		return fmt.Errorf("RegisterRedeemParam deserialize redeemKey error")
 	}
+	cver, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("RegisterRedeemParam deserialize contract version error")
+	}
 	contractAddress, eof := source.NextVarBytes()
 	if eof {
 		return fmt.Errorf("RegisterRedeemParam deserialize contractAddress error")
-	}
-	address, eof := source.NextString()
-	if eof {
-		return fmt.Errorf("RegisterRedeemParam deserialize address error")
 	}
 	n, eof := source.NextUint64()
 	if eof {
@@ -144,8 +144,8 @@ func (this *RegisterRedeemParam) Deserialization(source *common.ZeroCopySource) 
 	this.RedeemChainID = redeemChainID
 	this.ContractChainID = contractChainID
 	this.Redeem = redeem
+	this.CVersion = cver
 	this.ContractAddress = contractAddress
-	this.Address = address
 	this.Signs = signs
 	return nil
 }

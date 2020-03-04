@@ -19,6 +19,7 @@
 package side_chain_manager
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"github.com/btcsuite/btcd/btcec"
@@ -149,7 +150,7 @@ func putUpdateSideChain(native *native.NativeService, sideChain *SideChain) erro
 }
 
 func GetContractBind(native *native.NativeService, redeemChainID, contractChainID uint64,
-	redeemKey string) ([]byte, error) {
+	redeemKey string) (*ContractBinded, error) {
 	contract := utils.SideChainManagerContractAddress
 	redeemChainIDByte := utils.GetUint64Bytes(redeemChainID)
 	contractChainIDByte := utils.GetUint64Bytes(contractChainID)
@@ -164,11 +165,16 @@ func GetContractBind(native *native.NativeService, redeemChainID, contractChainI
 		return nil, fmt.Errorf("GetContractBind, get contractBindStore error: %v", err)
 	}
 	if contractBindStore != nil {
-		contractBind, err := cstates.GetValueFromRawStorageItem(contractBindStore)
+		val, err := cstates.GetValueFromRawStorageItem(contractBindStore)
 		if err != nil {
 			return nil, fmt.Errorf("GetContractBind, deserialize from raw storage item err:%v", err)
 		}
-		return contractBind, nil
+		cb := &ContractBinded{}
+		err = cb.Deserialization(common.NewZeroCopySource(val))
+		if err != nil {
+			return nil, fmt.Errorf("GetContractBind, deserialize BindContract err:%v", err)
+		}
+		return cb, nil
 	} else {
 		return nil, nil
 	}
@@ -176,13 +182,19 @@ func GetContractBind(native *native.NativeService, redeemChainID, contractChainI
 }
 
 func putContractBind(native *native.NativeService, redeemChainID, contractChainID uint64,
-	redeemKey, contractAddress []byte) error {
+	redeemKey, contractAddress []byte, cver uint64) error {
 	contract := utils.SideChainManagerContractAddress
 	redeemChainIDByte := utils.GetUint64Bytes(redeemChainID)
 	contractChainIDByte := utils.GetUint64Bytes(contractChainID)
+	bc := &ContractBinded{
+		Contract: contractAddress,
+		Ver:      cver,
+	}
+	sink := common.NewZeroCopySink(nil)
+	bc.Serialization(sink)
 
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(REDEEM_BIND),
-		redeemChainIDByte, contractChainIDByte, redeemKey), cstates.GenRawStorageItem(contractAddress))
+		redeemChainIDByte, contractChainIDByte, redeemKey), cstates.GenRawStorageItem(sink.Bytes()))
 	return nil
 }
 
@@ -217,12 +229,14 @@ func getBindSignInfo(native *native.NativeService, message []byte) (*BindSignInf
 	return bindSignInfo, nil
 }
 
-func verifyBtcSigs(sigs [][]byte, addrs []btcutil.Address, contract, redeem []byte) (map[string][]byte, error) {
+func verifyBtcSigs(sigs [][]byte, addrs []btcutil.Address, contract, redeem []byte, cver uint64) (map[string][]byte, error) {
 	res := make(map[string][]byte)
 
 	r := make([]byte, len(redeem))
 	copy(r, redeem)
-	hash := btcutil.Hash160(append(r, contract...))
+	cverBytes := make([]byte, 8)
+	binary.BigEndian.PutUint64(cverBytes, cver)
+	hash := btcutil.Hash160(append(append(r, contract...), cverBytes...))
 	for i, sig := range sigs {
 		if len(sig) < 1 {
 			return nil, fmt.Errorf("length of no.%d sig is less than 1", i)

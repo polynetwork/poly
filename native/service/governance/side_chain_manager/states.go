@@ -103,3 +103,26 @@ func (this *BindSignInfo) Deserialization(source *common.ZeroCopySource) error {
 	this.BindSignInfo = bindSignInfo
 	return nil
 }
+
+type ContractBinded struct {
+	Contract []byte
+	Ver      uint64
+}
+
+func (this *ContractBinded) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteVarBytes(this.Contract)
+	sink.WriteUint64(this.Ver)
+}
+
+func (this *ContractBinded) Deserialization(source *common.ZeroCopySource) error {
+	var eof bool
+	this.Contract, eof = source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("BindContract deserialize contract error")
+	}
+	this.Ver, eof = source.NextUint64()
+	if eof {
+		return fmt.Errorf("BindContract deserialize version error")
+	}
+	return nil
+}

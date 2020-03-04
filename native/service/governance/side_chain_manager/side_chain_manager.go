@@ -232,11 +232,19 @@ func RegisterRedeem(native *native.NativeService) ([]byte, error) {
 	if ty != txscript.MultiSigTy {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, wrong type of redeem: %s", ty.String())
 	}
-	verified, err := verifyBtcSigs(params.Signs, addrs, params.ContractAddress, params.Redeem)
+	rk := btcutil.Hash160(params.Redeem)
+	contract, err := GetContractBind(native, params.RedeemChainID, params.ContractChainID, hex.EncodeToString(rk))
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, failed to get contract and version: %v", err)
+	}
+	if contract != nil && contract.Ver >= params.CVersion {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, contract version %d is less than last version %d",
+			params.CVersion, contract.Ver)
+	}
+	verified, err := verifyBtcSigs(params.Signs, addrs, params.ContractAddress, params.Redeem, params.CVersion)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, failed to verify: %v", err)
 	}
-	rk := btcutil.Hash160(params.Redeem)
 	key := append(append(append(rk, utils.GetUint64Bytes(params.RedeemChainID)...),
 		params.ContractAddress...), utils.GetUint64Bytes(params.ContractChainID)...)
 	bindSignInfo, err := getBindSignInfo(native, key)
@@ -251,14 +259,14 @@ func RegisterRedeem(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, failed to putBindSignInfo: %v", err)
 	}
 	if len(bindSignInfo.BindSignInfo) >= m {
-		err = putContractBind(native, params.RedeemChainID, params.ContractChainID, rk, params.ContractAddress)
+		err = putContractBind(native, params.RedeemChainID, params.ContractChainID, rk, params.ContractAddress, params.CVersion)
 		if err != nil {
 			return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, putContractBind error: %v", err)
 		}
 		native.AddNotify(
 			&event.NotifyEventInfo{
 				ContractAddress: utils.SideChainManagerContractAddress,
-				States:          []interface{}{"RegisterRedeem", rk, hex.EncodeToString(params.ContractAddress)},
+				States:          []interface{}{"RegisterRedeem", hex.EncodeToString(rk), hex.EncodeToString(params.ContractAddress)},
 			})
 	}
 

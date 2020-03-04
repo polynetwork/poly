@@ -96,17 +96,17 @@ func verifyFromBtcTx(native *native.NativeService, proof, tx []byte, fromChainID
 	if err != nil {
 		return nil, fmt.Errorf("verifyFromBtcTx, failed to resolve parameter: %v", err)
 	}
-	redeemKey, err := hex.DecodeString(GetUtxoKey(mtx.TxOut[0].PkScript))
+	rk := GetUtxoKey(mtx.TxOut[0].PkScript)
+	redeemKey, err := hex.DecodeString(rk)
 	if err != nil {
 		return nil, fmt.Errorf("verifyFromBtcTx, hex.DecodeString error: %v", err)
 	}
-	toContractAddress, err := side_chain_manager.GetContractBind(native, BTC_CHAIN_ID, p.args.ToChainID,
-		GetUtxoKey(mtx.TxOut[0].PkScript))
+	toContractAddress, err := side_chain_manager.GetContractBind(native, BTC_CHAIN_ID, p.args.ToChainID, rk)
 	if err != nil {
 		return nil, fmt.Errorf("verifyFromBtcTx, side_chain_manager.GetContractBind error: %v", err)
 	}
-	if !bytes.Equal(toContractAddress, p.args.ToContractAddress) {
-		return nil, fmt.Errorf("verifyFromBtcTx, redeem key and to contract address is not match")
+	if toContractAddress == nil {
+		return nil, fmt.Errorf("verifyFromBtcTx, no contract binding with redeem key %s", rk)
 	}
 	txHash := mtx.TxHash()
 	return &crosscommon.MakeTxParam{
@@ -114,11 +114,10 @@ func verifyFromBtcTx(native *native.NativeService, proof, tx []byte, fromChainID
 		CrossChainID:        txHash[:],
 		FromContractAddress: redeemKey,
 		ToChainID:           p.args.ToChainID,
-		ToContractAddress:   p.args.ToContractAddress,
+		ToContractAddress:   toContractAddress.Contract,
 		Method:              "unlock",
 		Args:                p.AddrAndVal,
 	}, nil
-
 }
 
 func verifyBtcMerkleProof(mtx *wire.MsgTx, blockHeader wire.BlockHeader, proof []byte) (bool, error) {
@@ -262,6 +261,8 @@ func getLockScript(redeem []byte) ([]byte, error) {
 
 func GetUtxoKey(scriptPk []byte) string {
 	switch txscript.GetScriptClass(scriptPk) {
+	case txscript.MultiSigTy:
+		return hex.EncodeToString(btcutil.Hash160(scriptPk))
 	case txscript.ScriptHashTy:
 		return hex.EncodeToString(scriptPk[2:22])
 	case txscript.WitnessV0ScriptHashTy:

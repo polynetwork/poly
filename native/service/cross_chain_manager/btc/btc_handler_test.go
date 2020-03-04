@@ -88,9 +88,15 @@ var (
 
 	registerRC = func(db *storage.CacheDB) *storage.CacheDB {
 		ca, _ := hex.DecodeString(strings.Replace(ebtcxAddr, "0x", "", 1))
+		cb := &side_chain_manager.ContractBinded{
+			Contract: ca,
+			Ver: 0,
+		}
+		sink := common.NewZeroCopySink(nil)
+		cb.Serialization(sink)
 		rk, _ := hex.DecodeString(utxoKey)
 		db.Put(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(side_chain_manager.REDEEM_BIND),
-			utils.GetUint64Bytes(1), utils.GetUint64Bytes(2), rk), states.GenRawStorageItem(ca))
+			utils.GetUint64Bytes(1), utils.GetUint64Bytes(2), rk), states.GenRawStorageItem(sink.Bytes()))
 
 		return db
 	}
@@ -98,7 +104,7 @@ var (
 
 func TestBTCHandler_MakeDepositProposal(t *testing.T) {
 	gh := netParam.GenesisBlock.Header
-	mr, _ := chainhash.NewHashFromStr(fromBtcMerkleRoot)
+	mr, _ := chainhash.NewHashFromStr("f68a7646782d6d52f63f94633f4b4fb6cea67d1f14c80fc1fa8f999014c99359")
 	gh.MerkleRoot = *mr
 
 	db, err := syncGenesisHeader(&gh)
@@ -107,8 +113,8 @@ func TestBTCHandler_MakeDepositProposal(t *testing.T) {
 	}
 	db = registerRC(db)
 
-	txid, _ := chainhash.NewHashFromStr(fromBtcTxid)
-	rawTx, _ := hex.DecodeString(fromBtcRawTx)
+	txid, _ := chainhash.NewHashFromStr("470284c7e435b28b379901668e4129c408bf1253874317842e2986282265b423")
+	rawTx, _ := hex.DecodeString("01000000017811f6394ef9b03e3953ac48de13c69e2d9865fe3f6e17dd42ccfd0c4694b015000000006a47304402206b048cdd7f19be0d3f46a7e785339cf81cf35b33be75297254f41bac7548985202202520d33eaf7a728ed4fab42056e241de5d375378145251e429ade0327c92aa07012102141d092eca49eac51de2760d28cbced212b60efc23fdcbb57304823bb17aa64effffffff0300e1f50500000000220020216a09cb8ee51da1a91ea8942552d7936c886a10b507299003661816c0e9f18b0000000000000000286a266602000000000000000000000000000000145cd3143f91a13fe971043e1e4605c1c23b46bf44180d1024010000001976a9145f35a2cc0318fbc17c4c479964734e7a9f8819d788ac00000000")
 	scAddr, _ := hex.DecodeString(strings.Replace(ebtcxAddr, "0x", "", 1))
 	handler := NewBTCHandler()
 
@@ -130,7 +136,7 @@ func TestBTCHandler_MakeDepositProposal(t *testing.T) {
 	assert.Error(t, err)
 
 	// normal case
-	proof, _ = hex.DecodeString(fromBtcProof)
+	proof, _ = hex.DecodeString("0000002012f9b192ec5ec403d9a438dcfdf00f2025118cffafcdc0b26c88218a0d26b6355993c91490998ffac10fc8141f7da6ceb64f4b3f63943ff6526d2d7846768af6ca1b5f5effff7f20000000000200000002db0fcc77abf1be640e42d997a4eeacc4bf7075e791de8d3be21dcb29c337efe323b465222886292e841743875312bf08c429418e660199378bb235e4c78402470105")
 	params.Proof = proof
 
 	sink.Reset()
@@ -143,7 +149,7 @@ func TestBTCHandler_MakeDepositProposal(t *testing.T) {
 	ethAddr, _ := hex.DecodeString(strings.Replace(toEthAddr, "0x", "", 1))
 	sink.Reset()
 	sink.WriteVarBytes(ethAddr[:])
-	sink.WriteUint64(uint64(10000))
+	sink.WriteUint64(uint64(100000000))
 
 	assert.Equal(t, txid[:], p.CrossChainID)
 	assert.Equal(t, txid[:], p.TxHash)
@@ -156,8 +162,8 @@ func TestBTCHandler_MakeDepositProposal(t *testing.T) {
 	utxos, err := getUtxos(ns, 1, utxoKey)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(utxos.Utxos))
-	assert.Equal(t, uint64(10000), utxos.Utxos[0].Value)
-	assert.Equal(t, fromBtcTxid+":0", utxos.Utxos[0].Op.String())
+	assert.Equal(t, uint64(100000000), utxos.Utxos[0].Value)
+	assert.Equal(t, "470284c7e435b28b379901668e4129c408bf1253874317842e2986282265b423:0", utxos.Utxos[0].Op.String())
 
 	// repeated commit
 	sink.Reset()
