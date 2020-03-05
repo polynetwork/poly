@@ -113,12 +113,12 @@ func TestCoinSelector_getLossRatio(t *testing.T) {
 		Mc:          MIN_CHANGE,
 		K:           SELECTING_K,
 		TxOuts:      outs,
-		feeWeight:   WEIGHT,
+		feeRate:     2,
 	}
 
 	fee, lr := cs.getLossRatio(us.Utxos)
-	assert.Equal(t, uint64(1143), fee)
-	assert.Equal(t, float64(0.11540791599353796), lr)
+	assert.Equal(t, uint64(0x772), fee)
+	assert.Equal(t, float64(0.1924474959612278), lr)
 }
 
 func TestCoinSelector_SimpleBnbSearch(t *testing.T) {
@@ -138,7 +138,7 @@ func TestCoinSelector_SimpleBnbSearch(t *testing.T) {
 		MaxP:        0.2,
 		Target:      35e4,
 		SortedUtxos: utxos,
-		feeWeight:   WEIGHT,
+		feeRate:     2,
 	}
 	// normal case
 	res, sum, _ := s.SimpleBnbSearch(0, make([]*Utxo, 0), 0)
@@ -201,7 +201,7 @@ func TestCoinSelector_SortedSearch(t *testing.T) {
 		MaxP:        0.2,
 		Target:      35e4,
 		SortedUtxos: utxos,
-		feeWeight:   WEIGHT,
+		feeRate:     2,
 	}
 
 	res, sum, _ := s.SortedSearch()

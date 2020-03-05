@@ -155,7 +155,7 @@ func TestRemoveSideChain(t *testing.T) {
 func TestRegisterRedeem(t *testing.T) {
 	ca, _ := hex.DecodeString("9a20bEd97360d28AE93c21750e9492ea8f85989f")
 	redeem, _ := hex.DecodeString("552102dec9a415b6384ec0a9331d0cdf02020f0f1e5731c327b86e2b5a92455a289748210365b1066bcfa21987c3e207b92e309b95ca6bee5f1133cf04d6ed4ed265eafdbc21031104e387cd1a103c27fdc8a52d5c68dec25ddfb2f574fbdca405edfd8c5187de21031fdb4b44a9f20883aff505009ebc18702774c105cb04b1eecebcb294d404b1cb210387cda955196cc2b2fc0adbbbac1776f8de77b563c6d2a06a77d96457dc3d0d1f2102dd7767b6a7cc83693343ba721e0f5f4c7b4b8d85eeb7aec20d227625ec0f59d321034ad129efdab75061e8d4def08f5911495af2dae6d3e9a4b6e7aeb5186fa432fc57ae")
-	sigStr := strings.Split("3045022100c0803a32d2a83d342ebf5902a820ebefac44bf1d205645a322bd1046c2162b62022041bafcc24fbbc2d57f13c2853abadcd84636e7e61f707d8fa73dfb413e54a0ed,3045022100b5697f6d426b5cd60a6b66dc388fbe9caee6fb2d9c40e7a59ba4db98b9283aab022007dc301d0808ecc29a0ed60a688431fa9857bd0954fddafbb6ee3be3e74e331d,30450221009c86460a9448c1e98d8e56885561a3c6b28b0f047d165aaedf00e4115c5563c702202c6d188a1116e359ea8448a0ac052c885037553b2c33dca5e96da412b7c315a7,304402206ebc639a396a25f5e6a153d364f7e1224d2ee0d2e659ea3388619875d1b5b4250220347368d42a819eab23c82d41a4d6010ce7e1b69179e79e73499fe0f698a2e004,3045022100aee0b9ce6d361dccb79065e53de3c38f2f1df675e7f6b5d4edca3ed056abdc960220093dbafc7171441d6d743d4343c70c53ddf96941466c5fb0066aecb711a3454a", ",")
+	sigStr := strings.Split("30450221009539bdeec25d289eaad308b0a79a1920b49784814b737499b9475c07e6ad82ab022051d435074e83b20b3c4d75f883a60ac1e21593763425055034e3f5670d0f5bf4,304402207c33e35b8dbf32d6b9ce52ef8ee9f60918ffb6ce2afe4f49d0e4e4f9cf031dc2022079756e511fe6971e13dabf91b1796dbc6aab1857c1f119fc74b34a1a413ba8c4,30440220794a0643bd5310ffda72aac380c4c7580a472fae7d583a08b041d67d2d0c68b602203ceed8d7e34885168c64acae1e323a96d19f0336f797a8fb88d5d29e414aecb9,304402203556fe453027af7814347cb2c5675685dbe8817224237759fc7a7c43271ef6ac02206f04ed4ab6963ccf57f5578381a38d695eadd58183fed1c357c7c291b75d98b9,3044022061b4a9152f7c128b672feebc04aad6341a286c889b137437d67526349b814b900220219427e0a57e26fb9413cc99813964a5156bf802028523191c919895733bc293", ",")
 	sigs := make([][]byte, len(sigStr))
 	for i, s := range sigStr {
 		t, _ := hex.DecodeString(s)
@@ -180,4 +180,44 @@ func TestRegisterRedeem(t *testing.T) {
 	states := ns.GetNotify()[0].States.([]interface{})
 	assert.Equal(t, "c330431496364497d7257839737b5e4596f5ac06", states[1].(string))
 	assert.Equal(t, strings.ToLower("9a20bEd97360d28AE93c21750e9492ea8f85989f"), states[2].(string))
+
+	ok, err = RegisterRedeem(ns)
+	assert.Error(t, err)
+	assert.Equal(t, utils.BYTE_FALSE, ok)
+}
+
+func TestSetBtcTxParam(t *testing.T) {
+	redeem, _ := hex.DecodeString("552102dec9a415b6384ec0a9331d0cdf02020f0f1e5731c327b86e2b5a92455a289748210365b1066bcfa21987c3e207b92e309b95ca6bee5f1133cf04d6ed4ed265eafdbc21031104e387cd1a103c27fdc8a52d5c68dec25ddfb2f574fbdca405edfd8c5187de21031fdb4b44a9f20883aff505009ebc18702774c105cb04b1eecebcb294d404b1cb210387cda955196cc2b2fc0adbbbac1776f8de77b563c6d2a06a77d96457dc3d0d1f2102dd7767b6a7cc83693343ba721e0f5f4c7b4b8d85eeb7aec20d227625ec0f59d321034ad129efdab75061e8d4def08f5911495af2dae6d3e9a4b6e7aeb5186fa432fc57ae")
+	sigStr := strings.Split("3045022100dbd452e851efbe8ae56c9a7da38d8ba59bf9fa5baefd439383271dba8998d4a00220227313c17e1438c5f679f10d520a5b7a1e56cbf6f0e6a824537a963ffb4d27f8,3045022100f22368985fbb00e3649b6d36e85b849c91dd57d3fc762fd63bbb7cdd478e3aeb022029aee48ed40473dcb9d1c634fe93b182b3ea6df400f09c00040339dabe67fd30,30450221009d3f736b27c991f78b84856c70e30813448d33284d04bb4dd0560b3bd250a15a02201e722d0087d537b2609e9140b398ce992b89ed583f2beb793ac78ded9bd0a207,3044022018f6cc301029843332794745b020dcb3fc768198c04026eb2efcbf0ba7febc0d02203c463b1b96eb6b7dcfff61bb6ccb87bffd6388d43ed464a9537e09b9c58c7e88,30440220301e5e1c37e699d8a0f999796b481a0611c11da7ea16389a760dccf5a8b659e8022072b4e0d48ef80db976bbd8f249a9b2aa0fb7fc995363a3ee9c629401cffe05b7", ",")
+	sigs := make([][]byte, len(sigStr))
+	for i, s := range sigStr {
+		t, _ := hex.DecodeString(s)
+		sigs[i] = t
+	}
+	param := new(BtcTxParam)
+	param.Redeem = redeem
+	param.Sigs = sigs
+	param.RedeemChainId = 1
+	param.Detial = &BtcTxParamDetial{
+		PVersion:  0,
+		MinChange: 2000,
+		FeeRate:   2,
+	}
+
+	sink := common.NewZeroCopySink(nil)
+	param.Serialization(sink)
+
+	ns := getNativeFunc(sink.Bytes())
+	ok, err := SetBtcTxParam(ns)
+	assert.NoError(t, err)
+	assert.Equal(t, utils.BYTE_TRUE, ok)
+	states := ns.GetNotify()[0].States.([]interface{})
+	assert.Equal(t, "c330431496364497d7257839737b5e4596f5ac06", states[1])
+	assert.Equal(t, uint64(1), states[2])
+	assert.Equal(t, param.Detial.FeeRate, states[3])
+	assert.Equal(t, param.Detial.MinChange, states[4])
+
+	ok, err = SetBtcTxParam(ns)
+	assert.Error(t, err)
+	assert.Equal(t, utils.BYTE_FALSE, ok)
 }

@@ -19,8 +19,6 @@
 package side_chain_manager
 
 import (
-	"encoding/binary"
-	"encoding/hex"
 	"fmt"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -174,17 +172,12 @@ func putQuitSideChain(native *native.NativeService, chainid uint64) error {
 }
 
 func GetContractBind(native *native.NativeService, redeemChainID, contractChainID uint64,
-	redeemKey string) (*ContractBinded, error) {
+	redeemKey []byte) (*ContractBinded, error) {
 	contract := utils.SideChainManagerContractAddress
 	redeemChainIDByte := utils.GetUint64Bytes(redeemChainID)
 	contractChainIDByte := utils.GetUint64Bytes(contractChainID)
-	redeemKeyByte, err := hex.DecodeString(redeemKey)
-	if err != nil {
-		return nil, fmt.Errorf("GetContractBind, hex.DecodeString error: %v", err)
-	}
-
 	contractBindStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(REDEEM_BIND),
-		redeemChainIDByte, contractChainIDByte, redeemKeyByte))
+		redeemChainIDByte, contractChainIDByte, redeemKey))
 	if err != nil {
 		return nil, fmt.Errorf("GetContractBind, get contractBindStore error: %v", err)
 	}
@@ -223,7 +216,7 @@ func putContractBind(native *native.NativeService, redeemChainID, contractChainI
 }
 
 func putBindSignInfo(native *native.NativeService, message []byte, multiSignInfo *BindSignInfo) error {
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(BIND_SIGN_INFO), message)
+	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(BIND_SIGN_INFO), message)
 	sink := common.NewZeroCopySink(nil)
 	multiSignInfo.Serialization(sink)
 	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(sink.Bytes()))
@@ -231,7 +224,7 @@ func putBindSignInfo(native *native.NativeService, message []byte, multiSignInfo
 }
 
 func getBindSignInfo(native *native.NativeService, message []byte) (*BindSignInfo, error) {
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(BIND_SIGN_INFO), message)
+	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(BIND_SIGN_INFO), message)
 	bindSignInfoStore, err := native.GetCacheDB().Get(key)
 	if err != nil {
 		return nil, fmt.Errorf("getBtcMultiSignInfo, get multiSignInfoStore error: %v", err)
@@ -253,14 +246,61 @@ func getBindSignInfo(native *native.NativeService, message []byte) (*BindSignInf
 	return bindSignInfo, nil
 }
 
-func verifyBtcSigs(sigs [][]byte, addrs []btcutil.Address, contract, redeem []byte, cver uint64) (map[string][]byte, error) {
-	res := make(map[string][]byte)
+func putBtcTxParam(native *native.NativeService, redeemKey []byte, redeemChainId uint64, detail *BtcTxParamDetial) error {
+	redeemChainIdBytes := utils.GetUint64Bytes(redeemChainId)
+	sink := common.NewZeroCopySink(nil)
+	detail.Serialization(sink)
+	native.GetCacheDB().Put(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(BTC_TX_PARAM), redeemKey,
+		redeemChainIdBytes), cstates.GenRawStorageItem(sink.Bytes()))
+	return nil
+}
 
-	r := make([]byte, len(redeem))
-	copy(r, redeem)
-	cverBytes := make([]byte, 8)
-	binary.BigEndian.PutUint64(cverBytes, cver)
-	hash := btcutil.Hash160(append(append(r, contract...), cverBytes...))
+func GetBtcTxParam(native *native.NativeService, redeemKey []byte, redeemChainId uint64) (*BtcTxParamDetial, error) {
+	redeemChainIdBytes := utils.GetUint64Bytes(redeemChainId)
+	store, err := native.GetCacheDB().Get(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(BTC_TX_PARAM), redeemKey,
+		redeemChainIdBytes))
+	if err != nil {
+		return nil, fmt.Errorf("GetBtcTxParam, get btcTxParam error: %v", err)
+	}
+	if store != nil {
+		detialBytes, err := cstates.GetValueFromRawStorageItem(store)
+		if err != nil {
+			return nil, fmt.Errorf("GetBtcTxParam, deserialize from raw storage item error: %v", err)
+		}
+		detial := &BtcTxParamDetial{}
+		err = detial.Deserialization(common.NewZeroCopySource(detialBytes))
+		if err != nil {
+			return nil, fmt.Errorf("GetBtcTxParam, deserialize BtcTxParam error: %v", err)
+		}
+		return detial, nil
+	}
+	return nil, nil
+}
+
+func verifyRedeemRegister(param *RegisterRedeemParam, addrs []btcutil.Address) (map[string][]byte, error) {
+	r := make([]byte, len(param.Redeem))
+	copy(r, param.Redeem)
+	cverBytes := utils.GetUint64Bytes(param.CVersion)
+	fromChainId := utils.GetUint64Bytes(param.RedeemChainID)
+	toChainId := utils.GetUint64Bytes(param.ContractChainID)
+	hash := btcutil.Hash160(append(append(append(append(r, fromChainId...), param.ContractAddress...),
+		toChainId...), cverBytes...))
+	return verify(param.Signs, addrs, hash)
+}
+
+func verifyBtcTxParam(param *BtcTxParam, addrs []btcutil.Address) (map[string][]byte, error) {
+	r := make([]byte, len(param.Redeem))
+	copy(r, param.Redeem)
+	fromChainId := utils.GetUint64Bytes(param.RedeemChainId)
+	frBytes := utils.GetUint64Bytes(param.Detial.FeeRate)
+	mcBytes := utils.GetUint64Bytes(param.Detial.MinChange)
+	verBytes := utils.GetUint64Bytes(param.Detial.PVersion)
+	hash := btcutil.Hash160(append(append(append(append(r, fromChainId...), frBytes...), mcBytes...), verBytes...))
+	return verify(param.Sigs, addrs, hash)
+}
+
+func verify(sigs [][]byte, addrs []btcutil.Address, hash []byte) (map[string][]byte, error) {
+	res := make(map[string][]byte)
 	for i, sig := range sigs {
 		if len(sig) < 1 {
 			return nil, fmt.Errorf("length of no.%d sig is less than 1", i)

@@ -26,21 +26,18 @@ import (
 )
 
 const (
-	// TODO: Temporary setting
 	OP_RETURN_SCRIPT_FLAG                   = byte(0x66)
 	BTC_TX_PREFIX                           = "btctx"
 	BTC_FROM_TX_PREFIX                      = "btcfromtx"
 	REDEEM_P2SH_5_OF_7_MULTISIG_SCRIPT_SIZE = 1 + 5*(1+75) + 1 + 1 + 7*(1+33) + 1 + 1
-	MIN_SATOSHI_TO_RELAY_PER_BYTE           = 1
-	WEIGHT                                  = 1.2
 	MIN_CHANGE                              = 2000
 	UTXOS                                   = "utxos"
 	STXOS                                   = "stxos"
 	REDEEM_SCRIPT                           = "redeemScript"
 	MULTI_SIGN_INFO                         = "multiSignInfo"
-	MAX_FEE_COST_PERCENTS                   = 0.4
+	MAX_FEE_COST_PERCENTS                   = 1.0
 	MAX_SELECTING_TRY_LIMIT                 = 1000000
-	SELECTING_K                             = 2.0
+	SELECTING_K                             = 4.0
 	BTC_CHAIN_ID                            = 1
 )
 
@@ -101,7 +98,7 @@ func verifyFromBtcTx(native *native.NativeService, proof, tx []byte, fromChainID
 	if err != nil {
 		return nil, fmt.Errorf("verifyFromBtcTx, hex.DecodeString error: %v", err)
 	}
-	toContractAddress, err := side_chain_manager.GetContractBind(native, BTC_CHAIN_ID, p.args.ToChainID, rk)
+	toContractAddress, err := side_chain_manager.GetContractBind(native, BTC_CHAIN_ID, p.args.ToChainID, redeemKey)
 	if err != nil {
 		return nil, fmt.Errorf("verifyFromBtcTx, side_chain_manager.GetContractBind error: %v", err)
 	}
@@ -298,22 +295,29 @@ func addUtxos(native *native.NativeService, chainID uint64, height uint32, mtx *
 	return nil
 }
 
-func chooseUtxos(native *native.NativeService, chainID uint64, amount int64, outs []*wire.TxOut) ([]*Utxo, int64, int64, error) {
-	utxoKey := GetUtxoKey(outs[len(outs)-1].PkScript)
+func chooseUtxos(native *native.NativeService, chainID uint64, amount int64, outs []*wire.TxOut, rk []byte) ([]*Utxo, int64, int64, error) {
+	utxoKey := hex.EncodeToString(rk)
 	utxos, err := getUtxos(native, chainID, utxoKey)
 	if err != nil {
 		return nil, 0, 0, fmt.Errorf("chooseUtxos, getUtxos error: %v", err)
 	}
 	sort.Sort(sort.Reverse(utxos))
+	detail, err := side_chain_manager.GetBtcTxParam(native, rk, BTC_CHAIN_ID)
+	if err != nil {
+		return nil, 0, 0, fmt.Errorf("chooseUtxos, failed to get btcTxParam: %v", err)
+	}
+	if detail == nil {
+		return nil, 0, 0, fmt.Errorf("chooseUtxos, no btcTxParam is set for redeem key %s", hex.EncodeToString(rk))
+	}
 	cs := &CoinSelector{
 		SortedUtxos: utxos,
 		Target:      uint64(amount),
 		MaxP:        MAX_FEE_COST_PERCENTS,
 		Tries:       MAX_SELECTING_TRY_LIMIT,
-		Mc:          MIN_CHANGE,
+		Mc:          detail.MinChange,
 		K:           SELECTING_K,
 		TxOuts:      outs,
-		feeWeight:   WEIGHT,
+		feeRate:     detail.FeeRate,
 	}
 	result, sum, fee := cs.Select()
 	if result == nil || len(result) == 0 {

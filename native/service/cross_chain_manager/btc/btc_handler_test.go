@@ -90,7 +90,7 @@ var (
 		ca, _ := hex.DecodeString(strings.Replace(ebtcxAddr, "0x", "", 1))
 		cb := &side_chain_manager.ContractBinded{
 			Contract: ca,
-			Ver: 0,
+			Ver:      0,
 		}
 		sink := common.NewZeroCopySink(nil)
 		cb.Serialization(sink)
@@ -98,6 +98,19 @@ var (
 		db.Put(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(side_chain_manager.REDEEM_BIND),
 			utils.GetUint64Bytes(1), utils.GetUint64Bytes(2), rk), states.GenRawStorageItem(sink.Bytes()))
 
+		return db
+	}
+
+	setBtcTxParam = func(db *storage.CacheDB, redeemK string) *storage.CacheDB {
+		detail := &side_chain_manager.BtcTxParamDetial{
+			FeeRate:   2,
+			MinChange: 2000,
+		}
+		sink := common.NewZeroCopySink(nil)
+		detail.Serialization(sink)
+		rk, _ := hex.DecodeString(redeemK)
+		db.Put(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(side_chain_manager.BTC_TX_PARAM), rk,
+			utils.GetUint64Bytes(1)), states.GenRawStorageItem(sink.Bytes()))
 		return db
 	}
 )
@@ -180,8 +193,9 @@ func TestBTCHandler_MakeTransaction(t *testing.T) {
 
 	ns := getNativeFunc(nil, nil)
 	_ = addUtxos(ns, 1, 0, mtx)
-	registerRC(ns.GetCacheDB())
 	setSideChain(ns)
+	registerRC(ns.GetCacheDB())
+	setBtcTxParam(ns.GetCacheDB(), utxoKey)
 
 	rk, _ := hex.DecodeString(utxoKey)
 	scAddr, _ := hex.DecodeString(strings.Replace(ebtcxAddr, "0x", "", 1))
@@ -218,7 +232,7 @@ func TestBTCHandler_MultiSign(t *testing.T) {
 
 	rb, _ := hex.DecodeString(rdm)
 	err := makeBtcTx(ns, 1, map[string]int64{"mjEoyyCPsLzJ23xMX6Mti13zMyN36kzn57": 6000}, []byte{123},
-		2, rb, hex.EncodeToString(btcutil.Hash160(rb)))
+		2, rb, btcutil.Hash160(rb))
 	assert.NoError(t, err)
 	stateArr := ns.GetNotify()[0].States.([]interface{})
 	assert.Equal(t, "makeBtcTx", stateArr[0].(string))

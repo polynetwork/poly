@@ -152,7 +152,7 @@ type CoinSelector struct {
 	TxOuts      []*wire.TxOut
 	K           float64
 	Tries       int64
-	feeWeight   float64
+	feeRate     uint64
 }
 
 func (selector *CoinSelector) Select() ([]*Utxo, uint64, uint64) {
@@ -278,8 +278,8 @@ func (selector *CoinSelector) getLossRatio(selection []*Utxo) (uint64, float64) 
 }
 
 func (selector *CoinSelector) estimateTxFee(selection []*Utxo) uint64 {
-	size := selector.estimateTxSize(selection, selector.TxOuts)
-	return uint64(float64(size*MIN_SATOSHI_TO_RELAY_PER_BYTE) * selector.feeWeight)
+	size := uint64(selector.estimateTxSize(selection, selector.TxOuts))
+	return size * selector.feeRate
 }
 
 func (selector *CoinSelector) estimateTxSize(selection []*Utxo, txOuts []*wire.TxOut) int {

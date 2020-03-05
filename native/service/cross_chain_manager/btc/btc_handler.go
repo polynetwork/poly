@@ -217,7 +217,7 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *cr
 		return fmt.Errorf("btc MakeTransaction, deserialize redeem script error")
 	}
 
-	redeemKey := hex.EncodeToString(btcutil.Hash160(redeemScriptBytes))
+	redeemKey := btcutil.Hash160(redeemScriptBytes)
 	contractBind, err := side_chain_manager.GetContractBind(service, BTC_CHAIN_ID, fromChainID, redeemKey)
 	if err != nil {
 		return fmt.Errorf("btc MakeTransaction, side_chain_manager.GetContractBind error: %v", err)
@@ -236,7 +236,7 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *cr
 }
 
 func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string]int64, fromTxHash []byte,
-	fromChainID uint64, redeemScript []byte, rk string) error {
+	fromChainID uint64, redeemScript, rk []byte) error {
 	if len(amounts) == 0 {
 		return fmt.Errorf("makeBtcTx, GetInput() no amount")
 	}
@@ -261,8 +261,7 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, %v", err)
 	}
-
-	choosed, sum, gasFee, err := chooseUtxos(service, chainID, amountSum, append(outs, out))
+	choosed, sum, gasFee, err := chooseUtxos(service, chainID, amountSum, append(outs, out), rk)
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, chooseUtxos error: %v", err)
 	}
@@ -303,14 +302,10 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 		return fmt.Errorf("makeBtcTx, putBtcFromInfo failed: %v", err)
 	}
 
-	err = putBtcRedeemScript(service, rk, redeemScript)
-	if err != nil {
-		return fmt.Errorf("makeBtcTx, failed to save redeemscript %v with key %v, error: %v", hex.EncodeToString(redeemScript), rk, err)
-	}
 	service.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
-			States:          []interface{}{"makeBtcTx", rk, hex.EncodeToString(buf.Bytes()), amts},
+			States:          []interface{}{"makeBtcTx", hex.EncodeToString(rk), hex.EncodeToString(buf.Bytes()), amts},
 		})
 
 	return nil

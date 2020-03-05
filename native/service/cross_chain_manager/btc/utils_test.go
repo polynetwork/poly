@@ -229,13 +229,17 @@ func TestUtxos_Sort(t *testing.T) {
 
 func TestUtxos_Choose(t *testing.T) {
 	ns := getNativeFunc(nil, nil)
-	redeemKey := ""
-	putUtxos(ns, 0, redeemKey, utxos)
+	r, _ := hex.DecodeString(redeem)
+	rk := btcutil.Hash160(r)
+	redeemKey := hex.EncodeToString(rk)
+	setBtcTxParam(ns.GetCacheDB(), redeemKey)
+	putUtxos(ns, 1, redeemKey, utxos)
+
 	txb, _ := hex.DecodeString(wTx)
 	mtx := wire.NewMsgTx(wire.TxVersion)
 	mtx.BtcDecode(bytes.NewBuffer(txb), wire.TxVersion, wire.LatestEncoding)
 
-	set, sum, _, err := chooseUtxos(ns, 0, 35e4, mtx.TxOut)
+	set, sum, _, err := chooseUtxos(ns, 1, 35e4, mtx.TxOut, rk)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -243,7 +247,7 @@ func TestUtxos_Choose(t *testing.T) {
 		bytes.Equal(set[1].ScriptPubkey, p2sh)) {
 		t.Fatal("wrong choose")
 	}
-	_, _, _, err = chooseUtxos(ns, 0, 100e4, mtx.TxOut)
+	_, _, _, err = chooseUtxos(ns, 1, 100e4, mtx.TxOut, rk)
 	if err == nil {
 		t.Fatal("err should not be nil")
 	}

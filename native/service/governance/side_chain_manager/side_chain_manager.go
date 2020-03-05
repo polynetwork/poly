@@ -41,6 +41,7 @@ const (
 	QUIT_SIDE_CHAIN             = "quitSideChain"
 	APPROVE_QUIT_SIDE_CHAIN     = "approveQuitSideChain"
 	REGISTER_REDEEM             = "registerRedeem"
+	SET_BTC_TX_PARAM            = "setBtcTxParam"
 
 	//key prefix
 	SIDE_CHAIN_APPLY          = "sideChainApply"
@@ -49,6 +50,7 @@ const (
 	SIDE_CHAIN                = "sideChain"
 	REDEEM_BIND               = "redeemBind"
 	BIND_SIGN_INFO            = "bindSignInfo"
+	BTC_TX_PARAM              = "btcTxParam"
 )
 
 //Register methods of node_manager contract
@@ -61,6 +63,7 @@ func RegisterSideChainManagerContract(native *native.NativeService) {
 	native.Register(APPROVE_QUIT_SIDE_CHAIN, ApproveQuitSideChain)
 
 	native.Register(REGISTER_REDEEM, RegisterRedeem)
+	native.Register(SET_BTC_TX_PARAM, SetBtcTxParam)
 }
 
 func RegisterSideChain(native *native.NativeService) ([]byte, error) {
@@ -322,15 +325,15 @@ func RegisterRedeem(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, wrong type of redeem: %s", ty.String())
 	}
 	rk := btcutil.Hash160(params.Redeem)
-	contract, err := GetContractBind(native, params.RedeemChainID, params.ContractChainID, hex.EncodeToString(rk))
+	contract, err := GetContractBind(native, params.RedeemChainID, params.ContractChainID, rk)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, failed to get contract and version: %v", err)
 	}
-	if contract != nil && contract.Ver >= params.CVersion {
-		return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, contract version %d is less than last version %d",
-			params.CVersion, contract.Ver)
+	if contract != nil && contract.Ver+1 != params.CVersion {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, previous version is %d and your version should "+
+			"be %d not %d", contract.Ver, contract.Ver+1, params.CVersion)
 	}
-	verified, err := verifyBtcSigs(params.Signs, addrs, params.ContractAddress, params.Redeem, params.CVersion)
+	verified, err := verifyRedeemRegister(params, addrs)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, failed to verify: %v", err)
 	}
@@ -359,5 +362,66 @@ func RegisterRedeem(native *native.NativeService) ([]byte, error) {
 			})
 	}
 
+	return utils.BYTE_TRUE, nil
+}
+
+func SetBtcTxParam(native *native.NativeService) ([]byte, error) {
+	params := new(BtcTxParam)
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("SetBtcTxParam, deserialize BtcTxParam error: %v", err)
+	}
+	if params.Detial.FeeRate == 0 {
+		return utils.BYTE_FALSE, fmt.Errorf("SetBtcTxParam, fee rate can't be zero")
+	}
+	if params.Detial.MinChange < 2000 {
+		return utils.BYTE_FALSE, fmt.Errorf("SetBtcTxParam, min-change can't less than 2000")
+	}
+	cls, addrs, m, err := txscript.ExtractPkScriptAddrs(params.Redeem, netParam)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("SetBtcTxParam, extract addrs from redeem %v", err)
+	}
+	if cls != txscript.MultiSigTy {
+		return utils.BYTE_FALSE, fmt.Errorf("SetBtcTxParam, redeem script is not multisig script: %s", cls.String())
+	}
+	rk := btcutil.Hash160(params.Redeem)
+	prev, err := GetBtcTxParam(native, rk, params.RedeemChainId)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("SetBtcTxParam, get previous param error: %v", err)
+	}
+	if prev != nil && params.Detial.PVersion != prev.PVersion+1 {
+		return utils.BYTE_FALSE, fmt.Errorf("SetBtcTxParam, previous version is %d and your version should "+
+			"be %d not %d", prev.PVersion, prev.PVersion+1, params.Detial.PVersion)
+	}
+	sink := common.NewZeroCopySink(nil)
+	params.Detial.Serialization(sink)
+	key := append(append(rk, utils.GetUint64Bytes(params.RedeemChainId)...), sink.Bytes()...)
+	info, err := getBindSignInfo(native, key)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("SetBtcTxParam, getBindSignInfo error: %v", err)
+	}
+	if len(info.BindSignInfo) >= m {
+		return utils.BYTE_FALSE, fmt.Errorf("SetBtcTxParam, the signatures are already enough")
+	}
+	verified, err := verifyBtcTxParam(params, addrs)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("SetBtcTxParam, failed to verify: %v", err)
+	}
+	for k, v := range verified {
+		info.BindSignInfo[k] = v
+	}
+	if err = putBindSignInfo(native, key, info); err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("SetBtcTxParam, failed to put bindSignInfo: %v", err)
+	}
+	if len(info.BindSignInfo) >= m {
+		if err = putBtcTxParam(native, rk, params.RedeemChainId, params.Detial); err != nil {
+			return utils.BYTE_FALSE, fmt.Errorf("SetBtcTxParam, failed to put btcTxParam: %v", err)
+		}
+		native.AddNotify(
+			&event.NotifyEventInfo{
+				ContractAddress: utils.SideChainManagerContractAddress,
+				States: []interface{}{"SetBtcTxParam", hex.EncodeToString(rk), params.RedeemChainId,
+					params.Detial.FeeRate, params.Detial.MinChange},
+			})
+	}
 	return utils.BYTE_TRUE, nil
 }

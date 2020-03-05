@@ -165,3 +165,79 @@ func (this *RegisterRedeemParam) Deserialization(source *common.ZeroCopySource) 
 	this.Signs = signs
 	return nil
 }
+
+type BtcTxParamDetial struct {
+	PVersion  uint64
+	FeeRate   uint64
+	MinChange uint64
+}
+
+func (this *BtcTxParamDetial) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteUint64(this.PVersion)
+	sink.WriteUint64(this.FeeRate)
+	sink.WriteUint64(this.MinChange)
+}
+
+func (this *BtcTxParamDetial) Deserialization(source *common.ZeroCopySource) error {
+	var eof bool
+	this.PVersion, eof = source.NextUint64()
+	if eof {
+		return fmt.Errorf("BtcTxParamDetial deserialize version error")
+	}
+	this.FeeRate, eof = source.NextUint64()
+	if eof {
+		return fmt.Errorf("BtcTxParamDetial deserialize fee rate error")
+	}
+	this.MinChange, eof = source.NextUint64()
+	if eof {
+		return fmt.Errorf("BtcTxParamDetial deserialize min-change error")
+	}
+	return nil
+}
+
+type BtcTxParam struct {
+	Redeem        []byte
+	RedeemChainId uint64
+	Sigs          [][]byte
+	Detial        *BtcTxParamDetial
+}
+
+func (this *BtcTxParam) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteVarBytes(this.Redeem)
+	sink.WriteUint64(this.RedeemChainId)
+	sink.WriteUint64(uint64(len(this.Sigs)))
+	for _, v := range this.Sigs {
+		sink.WriteVarBytes(v)
+	}
+	this.Detial.Serialization(sink)
+}
+
+func (this *BtcTxParam) Deserialization(source *common.ZeroCopySource) error {
+	var eof bool
+	this.Redeem, eof = source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("BtcFeeRateParam deserialize redeem error")
+	}
+	this.RedeemChainId, eof = source.NextUint64()
+	if eof {
+		return fmt.Errorf("BtcFeeRateParam deserialize redeem chain-id error")
+	}
+	l, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("BtcFeeRateParam deserialize length of signature array error")
+	}
+	sigs := make([][]byte, l)
+	for i := uint64(0); i < l; i++ {
+		sigs[i], eof = source.NextVarBytes()
+		if eof {
+			return fmt.Errorf("BtcFeeRateParam deserialize no.%d signature error", i+1)
+		}
+	}
+	this.Sigs = sigs
+	detial := &BtcTxParamDetial{}
+	if err := detial.Deserialization(source); err != nil {
+		return fmt.Errorf("BtcFeeRateParam deserialize detail error: %v", err)
+	}
+	this.Detial = detial
+	return nil
+}
