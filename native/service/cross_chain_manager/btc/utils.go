@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	OP_RETURN_SCRIPT_FLAG                   = byte(0x66)
+	OP_RETURN_SCRIPT_FLAG                   = byte(0xcc)
 	BTC_TX_PREFIX                           = "btctx"
 	BTC_FROM_TX_PREFIX                      = "btcfromtx"
 	REDEEM_P2SH_5_OF_7_MULTISIG_SCRIPT_SIZE = 1 + 5*(1+75) + 1 + 1 + 7*(1+33) + 1 + 1
