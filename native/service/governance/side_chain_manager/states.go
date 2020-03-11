@@ -30,14 +30,16 @@ type SideChain struct {
 	Router       uint64
 	Name         string
 	BlocksToWait uint64
+	CCMCAddress  []byte
 }
 
 func (this *SideChain) Serialization(sink *common.ZeroCopySink) error {
 	sink.WriteVarBytes(this.Address[:])
-	sink.WriteUint64(this.ChainId)
-	sink.WriteUint64(this.Router)
+	sink.WriteVarUint(this.ChainId)
+	sink.WriteVarUint(this.Router)
 	sink.WriteVarBytes([]byte(this.Name))
-	sink.WriteUint64(this.BlocksToWait)
+	sink.WriteVarUint(this.BlocksToWait)
+	sink.WriteVarBytes(this.CCMCAddress)
 	return nil
 }
 
@@ -50,27 +52,32 @@ func (this *SideChain) Deserialization(source *common.ZeroCopySource) error {
 	if err != nil {
 		return fmt.Errorf("common.AddressParseFromBytes, deserialize address error: %s", err)
 	}
-	chainId, eof := source.NextUint64()
+	chainId, eof := source.NextVarUint()
 	if eof {
-		return fmt.Errorf("utils.DecodeVarUint, deserialize chainid error")
+		return fmt.Errorf("source.NextVarUint, deserialize chainid error")
 	}
-	router, eof := source.NextUint64()
+	router, eof := source.NextVarUint()
 	if eof {
-		return fmt.Errorf("utils.DecodeVarUint, deserialize router error")
+		return fmt.Errorf("source.NextVarUint, deserialize router error")
 	}
 	name, eof := source.NextString()
 	if eof {
-		return fmt.Errorf("utils.DecodeString, deserialize name error")
+		return fmt.Errorf("source.NextString, deserialize name error")
 	}
-	blocksToWait, eof := source.NextUint64()
+	blocksToWait, eof := source.NextVarUint()
 	if eof {
-		return fmt.Errorf("utils.DecodeVarUint, deserialize blocksToWait error")
+		return fmt.Errorf("source.NextVarUint, deserialize blocksToWait error")
+	}
+	CCMCAddress, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("source.NextVarBytes, deserialize CCMCAddress error")
 	}
 	this.Address = addr
 	this.ChainId = chainId
 	this.Router = router
 	this.Name = name
 	this.BlocksToWait = blocksToWait
+	this.CCMCAddress = CCMCAddress
 	return nil
 }
 

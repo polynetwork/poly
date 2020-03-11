@@ -29,14 +29,16 @@ type RegisterSideChainParam struct {
 	Router       uint64
 	Name         string
 	BlocksToWait uint64
+	CCMCAddress  []byte
 }
 
 func (this *RegisterSideChainParam) Serialization(sink *common.ZeroCopySink) error {
 	sink.WriteVarBytes(this.Address[:])
-	sink.WriteUint64(this.ChainId)
-	sink.WriteUint64(this.Router)
+	sink.WriteVarUint(this.ChainId)
+	sink.WriteVarUint(this.Router)
 	sink.WriteVarBytes([]byte(this.Name))
-	sink.WriteUint64(this.BlocksToWait)
+	sink.WriteVarUint(this.BlocksToWait)
+	sink.WriteVarBytes(this.CCMCAddress)
 	return nil
 }
 
@@ -49,27 +51,32 @@ func (this *RegisterSideChainParam) Deserialization(source *common.ZeroCopySourc
 	if err != nil {
 		return fmt.Errorf("common.AddressParseFromBytes, deserialize address error: %s", err)
 	}
-	chainId, eof := source.NextUint64()
+	chainId, eof := source.NextVarUint()
 	if eof {
-		return fmt.Errorf("utils.DecodeVarUint, deserialize chainid error")
+		return fmt.Errorf("source.NextVarUint, deserialize chainid error")
 	}
-	router, eof := source.NextUint64()
+	router, eof := source.NextVarUint()
 	if eof {
-		return fmt.Errorf("utils.DecodeVarUint, deserialize router error")
+		return fmt.Errorf("source.NextVarUint, deserialize router error")
 	}
 	name, eof := source.NextString()
 	if eof {
-		return fmt.Errorf("utils.DecodeString, deserialize name error")
+		return fmt.Errorf("source.NextString, deserialize name error")
 	}
-	blocksToWait, eof := source.NextUint64()
+	blocksToWait, eof := source.NextVarUint()
 	if eof {
-		return fmt.Errorf("utils.DecodeVarUint, deserialize blocksToWait error")
+		return fmt.Errorf("source.NextVarUint, deserialize blocksToWait error")
+	}
+	CCMCAddress, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("source.NextVarBytes, deserialize CCMCAddress error")
 	}
 	this.Address = addr
 	this.ChainId = chainId
 	this.Router = router
 	this.Name = name
 	this.BlocksToWait = blocksToWait
+	this.CCMCAddress = CCMCAddress
 	return nil
 }
 
@@ -79,14 +86,14 @@ type ChainidParam struct {
 }
 
 func (this *ChainidParam) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteUint64(this.Chainid)
+	sink.WriteVarUint(this.Chainid)
 	sink.WriteVarBytes(this.Address[:])
 }
 
 func (this *ChainidParam) Deserialization(source *common.ZeroCopySource) error {
-	chainid, eof := source.NextUint64()
+	chainid, eof := source.NextVarUint()
 	if eof {
-		return fmt.Errorf("utils.DecodeVarUint, deserialize chainid error")
+		return fmt.Errorf("source.NextVarUint, deserialize chainid error")
 	}
 
 	address, eof := source.NextVarBytes()
@@ -112,23 +119,23 @@ type RegisterRedeemParam struct {
 }
 
 func (this *RegisterRedeemParam) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteUint64(this.RedeemChainID)
-	sink.WriteUint64(this.ContractChainID)
+	sink.WriteVarUint(this.RedeemChainID)
+	sink.WriteVarUint(this.ContractChainID)
 	sink.WriteVarBytes(this.Redeem)
-	sink.WriteUint64(this.CVersion)
+	sink.WriteVarUint(this.CVersion)
 	sink.WriteVarBytes(this.ContractAddress)
-	sink.WriteUint64(uint64(len(this.Signs)))
+	sink.WriteVarUint(uint64(len(this.Signs)))
 	for _, v := range this.Signs {
 		sink.WriteVarBytes(v)
 	}
 }
 
 func (this *RegisterRedeemParam) Deserialization(source *common.ZeroCopySource) error {
-	redeemChainID, eof := source.NextUint64()
+	redeemChainID, eof := source.NextVarUint()
 	if eof {
 		return fmt.Errorf("RegisterRedeemParam deserialize redeemChainID error")
 	}
-	contractChainID, eof := source.NextUint64()
+	contractChainID, eof := source.NextVarUint()
 	if eof {
 		return fmt.Errorf("RegisterRedeemParam deserialize contractChainID error")
 	}
@@ -136,7 +143,7 @@ func (this *RegisterRedeemParam) Deserialization(source *common.ZeroCopySource) 
 	if eof {
 		return fmt.Errorf("RegisterRedeemParam deserialize redeemKey error")
 	}
-	cver, eof := source.NextUint64()
+	cver, eof := source.NextVarUint()
 	if eof {
 		return fmt.Errorf("RegisterRedeemParam deserialize contract version error")
 	}
@@ -144,7 +151,7 @@ func (this *RegisterRedeemParam) Deserialization(source *common.ZeroCopySource) 
 	if eof {
 		return fmt.Errorf("RegisterRedeemParam deserialize contractAddress error")
 	}
-	n, eof := source.NextUint64()
+	n, eof := source.NextVarUint()
 	if eof {
 		return fmt.Errorf("RegisterRedeemParam deserialize signs length error")
 	}
@@ -173,22 +180,22 @@ type BtcTxParamDetial struct {
 }
 
 func (this *BtcTxParamDetial) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteUint64(this.PVersion)
-	sink.WriteUint64(this.FeeRate)
-	sink.WriteUint64(this.MinChange)
+	sink.WriteVarUint(this.PVersion)
+	sink.WriteVarUint(this.FeeRate)
+	sink.WriteVarUint(this.MinChange)
 }
 
 func (this *BtcTxParamDetial) Deserialization(source *common.ZeroCopySource) error {
 	var eof bool
-	this.PVersion, eof = source.NextUint64()
+	this.PVersion, eof = source.NextVarUint()
 	if eof {
 		return fmt.Errorf("BtcTxParamDetial deserialize version error")
 	}
-	this.FeeRate, eof = source.NextUint64()
+	this.FeeRate, eof = source.NextVarUint()
 	if eof {
 		return fmt.Errorf("BtcTxParamDetial deserialize fee rate error")
 	}
-	this.MinChange, eof = source.NextUint64()
+	this.MinChange, eof = source.NextVarUint()
 	if eof {
 		return fmt.Errorf("BtcTxParamDetial deserialize min-change error")
 	}
@@ -204,8 +211,8 @@ type BtcTxParam struct {
 
 func (this *BtcTxParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteVarBytes(this.Redeem)
-	sink.WriteUint64(this.RedeemChainId)
-	sink.WriteUint64(uint64(len(this.Sigs)))
+	sink.WriteVarUint(this.RedeemChainId)
+	sink.WriteVarUint(uint64(len(this.Sigs)))
 	for _, v := range this.Sigs {
 		sink.WriteVarBytes(v)
 	}
@@ -218,11 +225,11 @@ func (this *BtcTxParam) Deserialization(source *common.ZeroCopySource) error {
 	if eof {
 		return fmt.Errorf("BtcFeeRateParam deserialize redeem error")
 	}
-	this.RedeemChainId, eof = source.NextUint64()
+	this.RedeemChainId, eof = source.NextVarUint()
 	if eof {
 		return fmt.Errorf("BtcFeeRateParam deserialize redeem chain-id error")
 	}
-	l, eof := source.NextUint64()
+	l, eof := source.NextVarUint()
 	if eof {
 		return fmt.Errorf("BtcFeeRateParam deserialize length of signature array error")
 	}

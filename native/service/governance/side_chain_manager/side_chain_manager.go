@@ -98,6 +98,7 @@ func RegisterSideChain(native *native.NativeService) ([]byte, error) {
 		Router:       params.Router,
 		Name:         params.Name,
 		BlocksToWait: params.BlocksToWait,
+		CCMCAddress:  params.CCMCAddress,
 	}
 	err = putSideChainApply(native, sideChain)
 	if err != nil {
