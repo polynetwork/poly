@@ -67,7 +67,7 @@ func NewNative(args []byte, db *storage.CacheDB) *native.NativeService {
 		ChainId:      2,
 		BlocksToWait: 1,
 		Router:       1,
-		CCMCAddress: contaractAddr,
+		CCMCAddress:  contaractAddr,
 	}
 	sink := common.NewZeroCopySink(nil)
 	_ = side.Serialization(sink)
@@ -82,7 +82,7 @@ func SetContract(ns *native.NativeService, contractAddr string) {
 		ChainId:      2,
 		BlocksToWait: 1,
 		Router:       1,
-		CCMCAddress: contaractAddr,
+		CCMCAddress:  contaractAddr,
 	}
 	sink := common.NewZeroCopySink(nil)
 	_ = side.Serialization(sink)
@@ -185,9 +185,9 @@ func TestProofHandle(t *testing.T) {
 
 		native = NewNative(sink.Bytes(), native.GetCacheDB())
 		SetContract(native, "4b61a4c0ab51b53cfabf1339bfdb7dfd27be596a")
- 		_, err := ethTxHandler.MakeDepositProposal(native)
- 		if err != nil {
- 			fmt.Printf("%v", err)
+		_, err := ethTxHandler.MakeDepositProposal(native)
+		if err != nil {
+			fmt.Printf("%v", err)
 		}
 		assert.Equal(t, SUCCESS, typeOfError(err))
 	}

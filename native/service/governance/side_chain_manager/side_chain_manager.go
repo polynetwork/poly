@@ -183,6 +183,7 @@ func UpdateSideChain(native *native.NativeService) ([]byte, error) {
 		Router:       params.Router,
 		Name:         params.Name,
 		BlocksToWait: params.BlocksToWait,
+		CCMCAddress:  params.CCMCAddress,
 	}
 	err = putUpdateSideChain(native, updateSideChain)
 	if err != nil {
