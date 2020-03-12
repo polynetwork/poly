@@ -5,6 +5,7 @@ import (
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native"
 	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
+	"github.com/ontio/multi-chain/native/service/governance/side_chain_manager"
 	"github.com/ontio/multi-chain/native/service/utils"
 )
 
@@ -21,7 +22,12 @@ func (this *ETHHandler) MakeDepositProposal(service *native.NativeService) (*sco
 		return nil, fmt.Errorf("eth MakeDepositProposal, contract params deserialize error: %s", err)
 	}
 
-	value, err := verifyFromEthTx(service, params.Proof, params.Extra, params.SourceChainID, params.Height)
+	sideChain, err := side_chain_manager.GetSideChain(service, params.SourceChainID)
+	if err != nil {
+		return nil, fmt.Errorf("eth MakeDepositProposal, side_chain_manager.GetSideChain error: %v", err)
+	}
+
+	value, err := verifyFromEthTx(service, params.Proof, params.Extra, params.SourceChainID, params.Height, sideChain.CCMCAddress)
 	if err != nil {
 		return nil, fmt.Errorf("eth MakeDepositProposal, verifyFromEthTx error: %s", err)
 	}

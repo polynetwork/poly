@@ -2,6 +2,7 @@ package eth
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -19,7 +20,7 @@ import (
 	"github.com/ontio/multi-chain/native/service/header_sync/eth"
 )
 
-func verifyFromEthTx(native *native.NativeService, proof, extra []byte, fromChainID uint64, height uint32) (*scom.MakeTxParam, error) {
+func verifyFromEthTx(native *native.NativeService, proof, extra []byte, fromChainID uint64, height uint32, contractAddr []byte) (*scom.MakeTxParam, error) {
 	blockData, _, err := eth.GetHeaderByHeight(native, uint64(height), fromChainID)
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromEthProof, get header by height, height:%d, error:%s", height, err)
@@ -37,7 +38,7 @@ func verifyFromEthTx(native *native.NativeService, proof, extra []byte, fromChai
 
 	//todo 1. verify the proof with header
 	//determine where the k and v from
-	proofResult, err := verifyMerkleProof(ethProof, blockData)
+	proofResult, err := verifyMerkleProof(ethProof, blockData, contractAddr)
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromEthProof, verifyMerkleProof error:%v", err)
 	}
@@ -57,7 +58,7 @@ func verifyFromEthTx(native *native.NativeService, proof, extra []byte, fromChai
 	return txParam, nil
 }
 
-func verifyMerkleProof(ethProof *ETHProof, blockData *types.Header) ([]byte, error) {
+func verifyMerkleProof(ethProof *ETHProof, blockData *types.Header, contractAddr []byte) ([]byte, error) {
 	//1. prepare verify account
 	nodeList := new(light.NodeList)
 
@@ -67,12 +68,16 @@ func verifyMerkleProof(ethProof *ETHProof, blockData *types.Header) ([]byte, err
 	}
 	ns := nodeList.NodeSet()
 
-	acctKey := crypto.Keccak256(ecom.Hex2Bytes(scom.Replace0x(ethProof.Address)))
+	addr := ecom.Hex2Bytes(scom.Replace0x(ethProof.Address))
+	if !bytes.Equal(addr, contractAddr) {
+		return nil, fmt.Errorf("verifyMerkleProof, contract address is error, proof address: %s, side chain address: %s", ethProof.Address, hex.EncodeToString(contractAddr))
+	}
+	acctKey := crypto.Keccak256(addr)
 
 	//2. verify account proof
 	acctVal, _, err := trie.VerifyProof(blockData.Root, acctKey, ns)
 	if err != nil {
-		return nil, fmt.Errorf("F, verify account proof error:%s\n", err)
+		return nil, fmt.Errorf("verifyMerkleProof, verify account proof error:%s\n", err)
 	}
 
 	nounce := new(big.Int)

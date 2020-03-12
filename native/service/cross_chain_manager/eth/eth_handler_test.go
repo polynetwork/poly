@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"github.com/ontio/multi-chain/account"
 	"github.com/ontio/multi-chain/common"
 	cstates "github.com/ontio/multi-chain/core/states"
@@ -11,6 +12,7 @@ import (
 	"github.com/ontio/multi-chain/core/store/overlaydb"
 	"github.com/ontio/multi-chain/native"
 	ccmcom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
+	"github.com/ontio/multi-chain/native/service/governance/side_chain_manager"
 	synccom "github.com/ontio/multi-chain/native/service/header_sync/common"
 	synceth "github.com/ontio/multi-chain/native/service/header_sync/eth"
 	"github.com/ontio/multi-chain/native/service/utils"
@@ -57,7 +59,34 @@ func NewNative(args []byte, db *storage.CacheDB) *native.NativeService {
 		store, _ := leveldbstore.NewMemLevelDBStore()
 		db = storage.NewCacheDB(overlaydb.NewOverlayDB(store))
 	}
-	return native.NewNativeService(db, nil, 0, 0, common.Uint256{0}, 0, args, false)
+	ns := native.NewNativeService(db, nil, 0, 0, common.Uint256{0}, 0, args, false)
+
+	contaractAddr, _ := hex.DecodeString("48A77F43C0D7A6D6f588c4758dbA22bf6C5D95a0")
+	side := &side_chain_manager.SideChain{
+		Name:         "eth",
+		ChainId:      2,
+		BlocksToWait: 1,
+		Router:       1,
+		CCMCAddress: contaractAddr,
+	}
+	sink := common.NewZeroCopySink(nil)
+	_ = side.Serialization(sink)
+	ns.GetCacheDB().Put(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(side_chain_manager.SIDE_CHAIN), utils.GetUint64Bytes(2)), cstates.GenRawStorageItem(sink.Bytes()))
+	return ns
+}
+
+func SetContract(ns *native.NativeService, contractAddr string) {
+	contaractAddr, _ := hex.DecodeString(contractAddr)
+	side := &side_chain_manager.SideChain{
+		Name:         "eth",
+		ChainId:      2,
+		BlocksToWait: 1,
+		Router:       1,
+		CCMCAddress: contaractAddr,
+	}
+	sink := common.NewZeroCopySink(nil)
+	_ = side.Serialization(sink)
+	ns.GetCacheDB().Put(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(side_chain_manager.SIDE_CHAIN), utils.GetUint64Bytes(2)), cstates.GenRawStorageItem(sink.Bytes()))
 }
 
 func getLatestHeight(native *native.NativeService) uint64 {
@@ -155,7 +184,11 @@ func TestProofHandle(t *testing.T) {
 		param.Serialization(sink)
 
 		native = NewNative(sink.Bytes(), native.GetCacheDB())
-		_, err := ethTxHandler.MakeDepositProposal(native)
+		SetContract(native, "4b61a4c0ab51b53cfabf1339bfdb7dfd27be596a")
+ 		_, err := ethTxHandler.MakeDepositProposal(native)
+ 		if err != nil {
+ 			fmt.Printf("%v", err)
+		}
 		assert.Equal(t, SUCCESS, typeOfError(err))
 	}
 }
@@ -210,7 +243,11 @@ func TestProofHandle1(t *testing.T) {
 		param.Serialization(sink)
 
 		native = NewNative(sink.Bytes(), native.GetCacheDB())
+		SetContract(native, "8d069f5a5b877d9ecc5ee28715982c12f3879414")
 		_, err := ethTxHandler.MakeDepositProposal(native)
+		if err != nil {
+			fmt.Printf("%v", err)
+		}
 		assert.Equal(t, SUCCESS, typeOfError(err))
 	}
 }
@@ -266,7 +303,11 @@ func TestProofHandle2(t *testing.T) {
 		param.Serialization(sink)
 
 		native = NewNative(sink.Bytes(), native.GetCacheDB())
+		SetContract(native, "8d069f5a5b877d9ecc5ee28715982c12f3879414")
 		_, err := ethTxHandler.MakeDepositProposal(native)
+		if err != nil {
+			fmt.Printf("%v", err)
+		}
 		assert.Equal(t, SUCCESS, typeOfError(err))
 	}
 }
@@ -321,7 +362,11 @@ func TestProofHandle_HeaderNotExist(t *testing.T) {
 		param.Serialization(sink)
 
 		native = NewNative(sink.Bytes(), native.GetCacheDB())
+		SetContract(native, "8d069f5a5b877d9ecc5ee28715982c12f3879414")
 		_, err := ethTxHandler.MakeDepositProposal(native)
+		if err != nil {
+			fmt.Printf("%v\n", err)
+		}
 		assert.Equal(t, HEADER_NOT_EXIST, typeOfError(err))
 	}
 }
@@ -381,6 +426,9 @@ func TestProofHandle_ProofFormatWrong(t *testing.T) {
 
 		native = NewNative(sink.Bytes(), native.GetCacheDB())
 		_, err := ethTxHandler.MakeDepositProposal(native)
+		if err != nil {
+			fmt.Printf("%v\n", err)
+		}
 		assert.Equal(t, PROOF_FORMAT_ERROR, typeOfError(err))
 	}
 }
@@ -439,7 +487,11 @@ func TestProofHandle_VerifyProofWrong(t *testing.T) {
 		param.Serialization(sink)
 
 		native = NewNative(sink.Bytes(), native.GetCacheDB())
+		SetContract(native, "4b61a4c0ab51b53cfabf1339bfdb7dfd27be596a")
 		_, err := ethTxHandler.MakeDepositProposal(native)
+		if err != nil {
+			fmt.Printf("%v\n", err)
+		}
 		assert.Equal(t, VERIFY_PROOT_ERROR, typeOfError(err))
 	}
 }
@@ -498,7 +550,11 @@ func TestProofHandle_CommitTwice(t *testing.T) {
 		param.Serialization(sink)
 
 		native = NewNative(sink.Bytes(), native.GetCacheDB())
+		SetContract(native, "4b61a4c0ab51b53cfabf1339bfdb7dfd27be596a")
 		_, err := ethTxHandler.MakeDepositProposal(native)
+		if err != nil {
+			fmt.Printf("%v\n", err)
+		}
 		assert.Equal(t, SUCCESS, typeOfError(err))
 	}
 	{
@@ -515,7 +571,11 @@ func TestProofHandle_CommitTwice(t *testing.T) {
 		param.Serialization(sink)
 
 		native = NewNative(sink.Bytes(), native.GetCacheDB())
+		SetContract(native, "4b61a4c0ab51b53cfabf1339bfdb7dfd27be596a")
 		_, err := ethTxHandler.MakeDepositProposal(native)
+		if err != nil {
+			fmt.Printf("%v\n", err)
+		}
 		assert.Equal(t, TX_HAS_COMMIT, typeOfError(err))
 	}
 }
