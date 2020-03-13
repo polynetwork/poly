@@ -128,8 +128,10 @@ func getUpdateSideChain(native *native.NativeService, chanid uint64) (*SideChain
 		if err := sideChain.Deserialization(common.NewZeroCopySource(sideChainBytes)); err != nil {
 			return nil, fmt.Errorf("getUpdateSideChain, deserialize sideChain error: %v", err)
 		}
+		return sideChain, nil
+	} else {
+		return nil, nil
 	}
-	return sideChain, nil
 }
 
 func putUpdateSideChain(native *native.NativeService, sideChain *SideChain) error {
