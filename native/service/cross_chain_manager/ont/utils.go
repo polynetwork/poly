@@ -39,11 +39,3 @@ func VerifyFromOntTx(proof []byte, crossChainMsg *otypes.CrossChainMsg) (*scom.M
 	}
 	return txParam, nil
 }
-
-func getUnlockArgs(args []byte, fromContractAddress []byte, fromChainID uint64) []byte {
-	sink := common.NewZeroCopySink(nil)
-	sink.WriteVarBytes(args)
-	sink.WriteVarBytes(fromContractAddress)
-	sink.WriteVarUint(fromChainID)
-	return sink.Bytes()
-}

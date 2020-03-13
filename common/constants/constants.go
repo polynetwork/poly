@@ -39,19 +39,3 @@ const (
 	NETWORK_MAGIC_MAINNET = 0x8c77ab60
 	NETWORK_MAGIC_TESTNET = 0x2d8829df
 )
-
-// ont constants
-const (
-	ONT_NAME         = "ONT Token"
-	ONT_SYMBOL       = "ONT"
-	ONT_DECIMALS     = 0
-	ONT_TOTAL_SUPPLY = uint64(1000000000)
-)
-
-// ong constants
-const (
-	ONG_NAME         = "ONG Token"
-	ONG_SYMBOL       = "ONG"
-	ONG_DECIMALS     = 9
-	ONG_TOTAL_SUPPLY = uint64(1000000000000000000)
-)
