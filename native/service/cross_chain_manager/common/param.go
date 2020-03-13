@@ -20,7 +20,6 @@ var (
 
 type ChainHandler interface {
 	MakeDepositProposal(service *native.NativeService) (*MakeTxParam, error)
-	ProcessMultiChainTx(service *native.NativeService, txParam *MakeTxParam) ([]byte, error)
 }
 
 type InitRedeemScriptParam struct {

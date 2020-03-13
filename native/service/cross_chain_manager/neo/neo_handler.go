@@ -19,10 +19,8 @@
 package neo
 
 import (
-	"fmt"
 	"github.com/ontio/multi-chain/native"
 	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
-	"github.com/ontio/multi-chain/native/service/utils"
 )
 
 type NEOHandler struct {
@@ -52,8 +50,4 @@ func (this *NEOHandler) MakeDepositProposal(service *native.NativeService) (*sco
 	//}
 	//return value, nil
 	return nil, nil
-}
-
-func (this *NEOHandler) ProcessMultiChainTx(service *native.NativeService, txParam *scom.MakeTxParam) ([]byte, error) {
-	return utils.BYTE_FALSE, fmt.Errorf("Currently Does not support neo->multichain for multich-ONT ")
 }

@@ -20,19 +20,14 @@ package ont
 
 import (
 	"fmt"
-	"github.com/ontio/ontology-crypto/keypair"
 
-	"bytes"
-	"encoding/hex"
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native"
 	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/header_sync/ont"
-	"github.com/ontio/multi-chain/native/service/utils"
+	"github.com/ontio/ontology-crypto/keypair"
 	ocommon "github.com/ontio/ontology/common"
 	otypes "github.com/ontio/ontology/core/types"
-	ontccm "github.com/ontio/ontology/smartcontract/service/native/cross_chain/cross_chain_manager"
-	utils2 "github.com/ontio/ontology/smartcontract/service/native/utils"
 )
 
 type ONTHandler struct {
@@ -93,48 +88,4 @@ func (this *ONTHandler) MakeDepositProposal(service *native.NativeService) (*sco
 		return nil, fmt.Errorf("VerifyFromOntTx, putDoneTx error:%s", err)
 	}
 	return value, nil
-}
-
-func (this *ONTHandler) ProcessMultiChainTx(service *native.NativeService, txParam *scom.MakeTxParam) ([]byte, error) {
-	//target chain is multi-chain
-	if txParam.ToChainID == service.GetChainID() {
-		if !bytes.Equal(txParam.ToContractAddress, utils.LockProxyContractAddress[:]) {
-			return utils.BYTE_FALSE, fmt.Errorf("[ProcessMultiChainTx], to contract address is not ORChain lock proxy contract address, expect:%s, get:%s",
-				utils.LockProxyContractAddress.ToHexString(), hex.EncodeToString(common.ToArrayReverse(txParam.ToContractAddress)))
-		}
-
-		input := getUnlockArgs(txParam.Args, txParam.FromContractAddress, ontccm.ONT_CHAIN_ID)
-		if res, err := service.NativeCall(utils.LockProxyContractAddress, txParam.Method, input); !bytes.Equal(res.([]byte), utils.BYTE_TRUE) || err != nil {
-			return utils.BYTE_FALSE, fmt.Errorf("[ProcessMultiChainTx] Unlock, error:%s", err)
-		}
-	}
-	return utils.BYTE_TRUE, nil
-}
-
-func (this *ONTHandler) CreateTx(service *native.NativeService) (*scom.MakeTxParam, error) {
-	params := new(ontccm.CreateCrossChainTxParam)
-	if err := params.Deserialization(ocommon.NewZeroCopySource(service.GetInput())); err != nil {
-		return nil, fmt.Errorf("[CreateTx], contract params deserialize error: %v", err)
-	}
-
-	if !bytes.Equal(utils2.LockProxyContractAddress[:], params.ToContractAddress) {
-		return nil, fmt.Errorf("[CreateTx], ToContractAddress is ont lock proxy contract address in ontology network!")
-	}
-
-	if err := utils.ValidateOwner(service, utils.LockProxyContractAddress); err != nil {
-		return nil, fmt.Errorf("[CreateTx] should be invoked by ont lock proxy contract, checkwitness failed!")
-	}
-
-	txHash := service.GetTx().Hash()
-
-	txParam := &scom.MakeTxParam{
-		TxHash:              txHash.ToArray(),
-		CrossChainID:        txHash.ToArray(),
-		FromContractAddress: utils.LockProxyContractAddress[:],
-		ToChainID:           params.ToChainID,
-		ToContractAddress:   params.ToContractAddress,
-		Method:              params.Method,
-		Args:                params.Args,
-	}
-	return txParam, nil
 }

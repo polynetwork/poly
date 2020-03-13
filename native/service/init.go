@@ -25,9 +25,6 @@ import (
 	"github.com/ontio/multi-chain/native/service/governance/relayer_manager"
 	"github.com/ontio/multi-chain/native/service/governance/side_chain_manager"
 	"github.com/ontio/multi-chain/native/service/header_sync"
-	"github.com/ontio/multi-chain/native/service/lock_proxy"
-	"github.com/ontio/multi-chain/native/service/ong"
-	"github.com/ontio/multi-chain/native/service/ont"
 	"github.com/ontio/multi-chain/native/service/utils"
 )
 
@@ -37,7 +34,4 @@ func init() {
 	native.Contracts[utils.CrossChainManagerContractAddress] = cross_chain_manager.RegisterCrossChainManagerContract
 	native.Contracts[utils.NodeManagerContractAddress] = node_manager.RegisterNodeManagerContract
 	native.Contracts[utils.RelayerManagerContractAddress] = relayer_manager.RegisterRelayerManagerContract
-	native.Contracts[utils.OntContractAddress] = ont.RegisterOntContract
-	native.Contracts[utils.LockProxyContractAddress] = lock_proxy.RegisterLockContract
-	native.Contracts[utils.OngContractAddress] = ong.RegisterOngContract
 }

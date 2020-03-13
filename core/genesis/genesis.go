@@ -38,14 +38,9 @@ const (
 	GenesisNonce uint64 = 2083236893
 
 	INIT_CONFIG = "initConfig"
-	INIT_ONT    = "init" // should be the same name as Ont contract INIT_NAME
 )
 
 var GenBlockTime = (config.DEFAULT_GEN_BLOCK_TIME * time.Second)
-
-var INIT_PARAM = map[string]string{
-	"gasPrice": "0",
-}
 
 var GenesisBookkeepers []keypair.PublicKey
 
@@ -105,22 +100,6 @@ func newNodeManagerInit(config []byte) *types.Transaction {
 		panic("construct genesis node manager transaction error ")
 	}
 	return tx
-}
-
-func newOntInit() *types.Transaction {
-	contractInvokeParam := &states.ContractInvokeParam{Address: utils.OntContractAddress,
-		Method: INIT_ONT, Args: []byte{}}
-	invokeCode := new(common.ZeroCopySink)
-	contractInvokeParam.Serialization(invokeCode)
-	return NewInvokeTransaction(invokeCode.Bytes(), 0)
-}
-
-func newOngInit() *types.Transaction {
-	contractInvokeParam := &states.ContractInvokeParam{Address: utils.OngContractAddress,
-		Method: INIT_ONT, Args: []byte{}}
-	invokeCode := new(common.ZeroCopySink)
-	contractInvokeParam.Serialization(invokeCode)
-	return NewInvokeTransaction(invokeCode.Bytes(), 0)
 }
 
 //NewInvokeTransaction return smart contract invoke transaction

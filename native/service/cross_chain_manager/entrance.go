@@ -14,20 +14,16 @@ import (
 	"github.com/ontio/multi-chain/native/service/cross_chain_manager/eth"
 	"github.com/ontio/multi-chain/native/service/cross_chain_manager/ont"
 	"github.com/ontio/multi-chain/native/service/governance/side_chain_manager"
-	ontcommon "github.com/ontio/ontology/common"
-	ontccm "github.com/ontio/ontology/smartcontract/service/native/cross_chain/cross_chain_manager"
 )
 
 const (
 	IMPORT_OUTER_TRANSFER_NAME = "ImportOuterTransfer"
 	MULTI_SIGN                 = "MultiSign"
-	CREATE_TX                  = "createTx"
 )
 
 func RegisterCrossChainManagerContract(native *native.NativeService) {
 	native.Register(IMPORT_OUTER_TRANSFER_NAME, ImportExTransfer)
 	native.Register(MULTI_SIGN, MultiSign)
-	native.Register(CREATE_TX, CreateTx)
 }
 
 func GetChainHandler(router uint64) (scom.ChainHandler, error) {
@@ -91,15 +87,6 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_TRUE, nil
 	}
 
-	// if the target chain is multi chain
-	if targetid == native.GetChainID() {
-		_, err = handler.ProcessMultiChainTx(native, txParam)
-		if err != nil {
-			return utils.BYTE_FALSE, err
-		}
-		return utils.BYTE_TRUE, nil
-	}
-
 	//NOTE, you need to store the tx in this
 	err = MakeTransaction(native, txParam, chainID)
 	if err != nil {
@@ -113,25 +100,6 @@ func MultiSign(native *native.NativeService) ([]byte, error) {
 
 	//1. multi sign
 	err := handler.MultiSign(native)
-	if err != nil {
-		return utils.BYTE_FALSE, err
-	}
-	return utils.BYTE_TRUE, nil
-}
-
-// this method is only available for multi-chain ontology native smart contract
-func CreateTx(native *native.NativeService) ([]byte, error) {
-	params := new(ontccm.CreateCrossChainTxParam)
-	if err := params.Deserialization(ontcommon.NewZeroCopySource(native.GetInput())); err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("[CreateTx], contract params deserialize error: %v", err)
-	}
-
-	txParam, err := ont.NewONTHandler().CreateTx(native)
-	if err != nil {
-		return utils.BYTE_FALSE, err
-	}
-	//NOTE, you need to store the tx in this
-	err = MakeTransaction(native, txParam, native.GetChainID())
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}

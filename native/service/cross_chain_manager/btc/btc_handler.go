@@ -32,7 +32,6 @@ import (
 	"github.com/ontio/multi-chain/native"
 	"github.com/ontio/multi-chain/native/event"
 	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
-	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/utils"
 )
 
@@ -41,9 +40,6 @@ type BTCHandler struct {
 
 func NewBTCHandler() *BTCHandler {
 	return &BTCHandler{}
-}
-func (this *BTCHandler) ProcessMultiChainTx(service *native.NativeService, txParam *scom.MakeTxParam) ([]byte, error) {
-	return utils.BYTE_FALSE, fmt.Errorf("Does not support btc->multichain for multich-ONT ")
 }
 
 func (this *BTCHandler) MultiSign(service *native.NativeService) error {
