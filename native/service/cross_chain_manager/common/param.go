@@ -2,8 +2,6 @@ package common
 
 import (
 	"fmt"
-	"sort"
-
 	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native"
 )
@@ -153,38 +151,6 @@ func (this *MakeTxParam) Deserialization(source *common.ZeroCopySource) error {
 	return nil
 }
 
-type VoteParam struct {
-	FromChainID uint64
-	Address     string
-	TxHash      []byte
-}
-
-func (this *VoteParam) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteUint64(this.FromChainID)
-	sink.WriteVarBytes([]byte(this.Address))
-	sink.WriteVarBytes(this.TxHash)
-}
-
-func (this *VoteParam) Deserialization(source *common.ZeroCopySource) error {
-	fromChainID, eof := source.NextUint64()
-	if eof {
-		return fmt.Errorf("VoteParam deserialize fromChainID error")
-	}
-	address, eof := source.NextString()
-	if eof {
-		return fmt.Errorf("VoteParam deserialize address error")
-	}
-	txHash, eof := source.NextVarBytes()
-	if eof {
-		return fmt.Errorf("VoteParam deserialize txHash error")
-	}
-
-	this.FromChainID = fromChainID
-	this.Address = address
-	this.TxHash = txHash
-	return nil
-}
-
 type MultiSignParam struct {
 	ChainID   uint64
 	RedeemKey string
@@ -239,41 +205,6 @@ func (this *MultiSignParam) Deserialization(source *common.ZeroCopySource) error
 	this.TxHash = txHash
 	this.Address = address
 	this.Signs = signs
-	return nil
-}
-
-type Vote struct {
-	VoteMap map[string]string
-}
-
-func (this *Vote) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteUint64(uint64(len(this.VoteMap)))
-	var voteList []string
-	for _, v := range this.VoteMap {
-		voteList = append(voteList, v)
-	}
-	sort.SliceStable(voteList, func(i, j int) bool {
-		return voteList[i] > voteList[j]
-	})
-	for _, v := range voteList {
-		sink.WriteVarBytes([]byte(v))
-	}
-}
-
-func (this *Vote) Deserialization(source *common.ZeroCopySource) error {
-	n, eof := source.NextUint64()
-	if eof {
-		return fmt.Errorf("utils.DecodeVarUint, deserialize VoteMap length error")
-	}
-	voteMap := make(map[string]string)
-	for i := 0; uint64(i) < n; i++ {
-		v, eof := source.NextString()
-		if eof {
-			return fmt.Errorf("deserialize VoteMap error")
-		}
-		voteMap[v] = v
-	}
-	this.VoteMap = voteMap
 	return nil
 }
 

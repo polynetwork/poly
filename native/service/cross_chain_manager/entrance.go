@@ -3,27 +3,35 @@ package cross_chain_manager
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/ontio/multi-chain/native/service/cross_chain_manager/neo"
 
 	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/core/genesis"
+	"github.com/ontio/multi-chain/core/types"
 	"github.com/ontio/multi-chain/native"
-	"github.com/ontio/multi-chain/native/service/utils"
-
 	"github.com/ontio/multi-chain/native/service/cross_chain_manager/btc"
 	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
 	"github.com/ontio/multi-chain/native/service/cross_chain_manager/eth"
+	"github.com/ontio/multi-chain/native/service/cross_chain_manager/neo"
 	"github.com/ontio/multi-chain/native/service/cross_chain_manager/ont"
 	"github.com/ontio/multi-chain/native/service/governance/side_chain_manager"
+	"github.com/ontio/multi-chain/native/service/utils"
 )
 
 const (
 	IMPORT_OUTER_TRANSFER_NAME = "ImportOuterTransfer"
 	MULTI_SIGN                 = "MultiSign"
+	BLACK_CHAIN                = "BlackChain"
+	WHITE_CHAIN                = "WhiteChain"
+
+	BLACKED_CHAIN = "BlackedChain"
 )
 
 func RegisterCrossChainManagerContract(native *native.NativeService) {
 	native.Register(IMPORT_OUTER_TRANSFER_NAME, ImportExTransfer)
 	native.Register(MULTI_SIGN, MultiSign)
+
+	native.Register(BLACK_CHAIN, BlackChain)
+	native.Register(WHITE_CHAIN, WhiteChain)
 }
 
 func GetChainHandler(router uint64) (scom.ChainHandler, error) {
@@ -48,6 +56,13 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	}
 
 	chainID := params.SourceChainID
+	blacked, err := CheckIfChainBlacked(native, chainID)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, CheckIfChainBlacked error: %v", err)
+	}
+	if blacked {
+		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, source chain is blacked")
+	}
 
 	//check if chainid exist
 	sideChain, err := side_chain_manager.GetSideChain(native, chainID)
@@ -70,6 +85,13 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 
 	//2. make target chain tx
 	targetid := txParam.ToChainID
+	blacked, err = CheckIfChainBlacked(native, targetid)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, CheckIfChainBlacked error: %v", err)
+	}
+	if blacked {
+		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, target chain is blacked")
+	}
 
 	//check if chainid exist
 	sideChain, err = side_chain_manager.GetSideChain(native, targetid)
@@ -132,4 +154,46 @@ func PutRequest(native *native.NativeService, txHash []byte, chainID uint64, req
 	chainIDBytes := utils.GetUint64Bytes(chainID)
 	utils.PutBytes(native, utils.ConcatKey(contract, []byte(scom.REQUEST), chainIDBytes, txHash), request)
 	return nil
+}
+
+func BlackChain(native *native.NativeService) ([]byte, error) {
+	params := new(BlackChainParam)
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("BlackChain, contract params deserialize error: %v", err)
+	}
+
+	// get operator from database
+	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
+	//check witness
+	err = utils.ValidateOwner(native, operatorAddress)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("BlackChain, checkWitness error: %v", err)
+	}
+
+	PutBlackChain(native, params.ChainID)
+	return utils.BYTE_TRUE, nil
+}
+
+func WhiteChain(native *native.NativeService) ([]byte, error) {
+	params := new(BlackChainParam)
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("WhiteChain, contract params deserialize error: %v", err)
+	}
+
+	// get operator from database
+	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
+	//check witness
+	err = utils.ValidateOwner(native, operatorAddress)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("BlackChain, checkWitness error: %v", err)
+	}
+
+	RemoveBlackChain(native, params.ChainID)
+	return utils.BYTE_TRUE, nil
 }
