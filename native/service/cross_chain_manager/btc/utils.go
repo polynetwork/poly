@@ -33,12 +33,10 @@ const (
 	MIN_CHANGE                              = 2000
 	UTXOS                                   = "utxos"
 	STXOS                                   = "stxos"
-	REDEEM_SCRIPT                           = "redeemScript"
 	MULTI_SIGN_INFO                         = "multiSignInfo"
 	MAX_FEE_COST_PERCENTS                   = 1.0
 	MAX_SELECTING_TRY_LIMIT                 = 1000000
 	SELECTING_K                             = 4.0
-	BTC_CHAIN_ID                            = 1
 )
 
 var netParam = &chaincfg.TestNet3Params
@@ -98,7 +96,7 @@ func verifyFromBtcTx(native *native.NativeService, proof, tx []byte, fromChainID
 	if err != nil {
 		return nil, fmt.Errorf("verifyFromBtcTx, hex.DecodeString error: %v", err)
 	}
-	toContractAddress, err := side_chain_manager.GetContractBind(native, BTC_CHAIN_ID, p.args.ToChainID, redeemKey)
+	toContractAddress, err := side_chain_manager.GetContractBind(native, side_chain_manager.BTC_CHAIN_ID, p.args.ToChainID, redeemKey)
 	if err != nil {
 		return nil, fmt.Errorf("verifyFromBtcTx, side_chain_manager.GetContractBind error: %v", err)
 	}
@@ -302,7 +300,7 @@ func chooseUtxos(native *native.NativeService, chainID uint64, amount int64, out
 		return nil, 0, 0, fmt.Errorf("chooseUtxos, getUtxos error: %v", err)
 	}
 	sort.Sort(sort.Reverse(utxos))
-	detail, err := side_chain_manager.GetBtcTxParam(native, rk, BTC_CHAIN_ID)
+	detail, err := side_chain_manager.GetBtcTxParam(native, rk, side_chain_manager.BTC_CHAIN_ID)
 	if err != nil {
 		return nil, 0, 0, fmt.Errorf("chooseUtxos, failed to get btcTxParam: %v", err)
 	}
@@ -415,43 +413,6 @@ func getStxoAmts(service *native.NativeService, chainID uint64, txIns []*wire.Tx
 	}
 
 	return amts, stxos, nil
-}
-
-func putBtcRedeemScript(native *native.NativeService, redeemScriptKey string, redeemScriptBytes []byte) error {
-	chainIDBytes := utils.GetUint64Bytes(BTC_CHAIN_ID)
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(REDEEM_SCRIPT), chainIDBytes, []byte(redeemScriptKey))
-
-	cls := txscript.GetScriptClass(redeemScriptBytes)
-	if cls.String() != "multisig" {
-		return fmt.Errorf("putBtcRedeemScript, wrong type of redeem: %s", cls)
-	}
-	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(redeemScriptBytes))
-	return nil
-}
-
-func getBtcRedeemScript(native *native.NativeService, redeemScriptKey string) (string, error) {
-	redeem, err := getBtcRedeemScriptBytes(native, redeemScriptKey)
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(redeem), nil
-}
-
-func getBtcRedeemScriptBytes(native *native.NativeService, redeemScriptKey string) ([]byte, error) {
-	chainIDBytes := utils.GetUint64Bytes(BTC_CHAIN_ID)
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(REDEEM_SCRIPT), chainIDBytes, []byte(redeemScriptKey))
-	redeemStore, err := native.GetCacheDB().Get(key)
-	if err != nil {
-		return nil, fmt.Errorf("getBtcRedeemScript, get btcProofStore error: %v", err)
-	}
-	if redeemStore == nil {
-		return nil, fmt.Errorf("getBtcRedeemScript, can not find any records")
-	}
-	redeemBytes, err := cstates.GetValueFromRawStorageItem(redeemStore)
-	if err != nil {
-		return nil, fmt.Errorf("getBtcRedeemScript, deserialize from raw storage item err:%v", err)
-	}
-	return redeemBytes, nil
 }
 
 func verifySigs(sigs [][]byte, addr string, addrs []btcutil.Address, redeem []byte, tx *wire.MsgTx,

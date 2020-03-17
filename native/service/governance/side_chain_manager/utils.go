@@ -19,9 +19,11 @@
 package side_chain_manager
 
 import (
+	"encoding/hex"
 	"fmt"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
+	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
 	"github.com/ontio/multi-chain/common"
 	cstates "github.com/ontio/multi-chain/core/states"
@@ -321,4 +323,41 @@ func verify(sigs [][]byte, addrs []btcutil.Address, hash []byte) (map[string][]b
 		return nil, fmt.Errorf("no sigs is verified")
 	}
 	return res, nil
+}
+
+func putBtcRedeemScript(native *native.NativeService, redeemScriptKey string, redeemScriptBytes []byte) error {
+	chainIDBytes := utils.GetUint64Bytes(BTC_CHAIN_ID)
+	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(REDEEM_SCRIPT), chainIDBytes, []byte(redeemScriptKey))
+
+	cls := txscript.GetScriptClass(redeemScriptBytes)
+	if cls.String() != "multisig" {
+		return fmt.Errorf("putBtcRedeemScript, wrong type of redeem: %s", cls)
+	}
+	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(redeemScriptBytes))
+	return nil
+}
+
+func getBtcRedeemScript(native *native.NativeService, redeemScriptKey string) (string, error) {
+	redeem, err := GetBtcRedeemScriptBytes(native, redeemScriptKey)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(redeem), nil
+}
+
+func GetBtcRedeemScriptBytes(native *native.NativeService, redeemScriptKey string) ([]byte, error) {
+	chainIDBytes := utils.GetUint64Bytes(BTC_CHAIN_ID)
+	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(REDEEM_SCRIPT), chainIDBytes, []byte(redeemScriptKey))
+	redeemStore, err := native.GetCacheDB().Get(key)
+	if err != nil {
+		return nil, fmt.Errorf("getBtcRedeemScript, get btcProofStore error: %v", err)
+	}
+	if redeemStore == nil {
+		return nil, fmt.Errorf("getBtcRedeemScript, can not find any records")
+	}
+	redeemBytes, err := cstates.GetValueFromRawStorageItem(redeemStore)
+	if err != nil {
+		return nil, fmt.Errorf("getBtcRedeemScript, deserialize from raw storage item err:%v", err)
+	}
+	return redeemBytes, nil
 }

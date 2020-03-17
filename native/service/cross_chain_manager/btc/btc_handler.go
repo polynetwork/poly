@@ -57,7 +57,7 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 		return fmt.Errorf("MultiSign, address %s already sign", params.Address)
 	}
 
-	redeemScript, err := getBtcRedeemScriptBytes(service, params.RedeemKey)
+	redeemScript, err := side_chain_manager.GetBtcRedeemScriptBytes(service, params.RedeemKey)
 	if err != nil {
 		return fmt.Errorf("MultiSign, get btc redeem script with redeem key %v from db error: %v", params.RedeemKey, err)
 	}
@@ -150,8 +150,8 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 		service.AddNotify(
 			&event.NotifyEventInfo{
 				ContractAddress: utils.CrossChainManagerContractAddress,
-				States: []interface{}{"btcTxToRelay", btcFromTxInfo.FromChainID, BTC_CHAIN_ID, hex.EncodeToString(buf.Bytes()),
-					hex.EncodeToString(btcFromTxInfo.FromTxHash)},
+				States: []interface{}{"btcTxToRelay", btcFromTxInfo.FromChainID, side_chain_manager.BTC_CHAIN_ID,
+					hex.EncodeToString(buf.Bytes()), hex.EncodeToString(btcFromTxInfo.FromTxHash)},
 			})
 	}
 	return nil
@@ -214,7 +214,7 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *cr
 	}
 
 	redeemKey := btcutil.Hash160(redeemScriptBytes)
-	contractBind, err := side_chain_manager.GetContractBind(service, BTC_CHAIN_ID, fromChainID, redeemKey)
+	contractBind, err := side_chain_manager.GetContractBind(service, side_chain_manager.BTC_CHAIN_ID, fromChainID, redeemKey)
 	if err != nil {
 		return fmt.Errorf("btc MakeTransaction, side_chain_manager.GetContractBind error: %v", err)
 	}
@@ -297,9 +297,6 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 	}
 	if err = putBtcFromInfo(service, txHash[:], btcFromInfo); err != nil {
 		return fmt.Errorf("makeBtcTx, putBtcFromInfo failed: %v", err)
-	}
-	if err = putBtcRedeemScript(service, hex.EncodeToString(rk), redeemScript); err != nil {
-		return fmt.Errorf("makeBtcTx, failed to save redeemscript %v with key %v, error: %v", hex.EncodeToString(redeemScript), rk, err)
 	}
 	service.AddNotify(
 		&event.NotifyEventInfo{
