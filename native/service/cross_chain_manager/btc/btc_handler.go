@@ -219,10 +219,12 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *cr
 		return fmt.Errorf("btc MakeTransaction, side_chain_manager.GetContractBind error: %v", err)
 	}
 	if contractBind == nil {
-		return fmt.Errorf("btc MakeTransaction, contract for %s of chain-id %d is not registered", redeemKey, fromChainID)
+		return fmt.Errorf("btc MakeTransaction, contract for %s of chain-id %d is not registered",
+			hex.EncodeToString(redeemKey), fromChainID)
 	}
 	if !bytes.Equal(contractBind.Contract, param.FromContractAddress) {
-		return fmt.Errorf("btc MakeTransaction, redeem script and from contract address is not match")
+		return fmt.Errorf("btc MakeTransaction, your contract %s is not match with %s registered",
+			hex.EncodeToString(param.FromContractAddress), hex.EncodeToString(contractBind.Contract))
 	}
 	err = makeBtcTx(service, param.ToChainID, amounts, param.TxHash, fromChainID, redeemScriptBytes, redeemKey)
 	if err != nil {
