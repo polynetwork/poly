@@ -295,11 +295,12 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 		FromTxHash:  fromTxHash,
 		FromChainID: fromChainID,
 	}
-	err = putBtcFromInfo(service, txHash[:], btcFromInfo)
-	if err != nil {
+	if err = putBtcFromInfo(service, txHash[:], btcFromInfo); err != nil {
 		return fmt.Errorf("makeBtcTx, putBtcFromInfo failed: %v", err)
 	}
-
+	if err = putBtcRedeemScript(service, hex.EncodeToString(rk), redeemScript); err != nil {
+		return fmt.Errorf("makeBtcTx, failed to save redeemscript %v with key %v, error: %v", hex.EncodeToString(redeemScript), rk, err)
+	}
 	service.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
