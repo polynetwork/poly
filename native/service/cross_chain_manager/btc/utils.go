@@ -418,7 +418,7 @@ func getStxoAmts(service *native.NativeService, chainID uint64, txIns []*wire.Tx
 }
 
 func putBtcRedeemScript(native *native.NativeService, redeemScriptKey string, redeemScriptBytes []byte) error {
-	chainIDBytes := utils.GetUint64Bytes(0)
+	chainIDBytes := utils.GetUint64Bytes(BTC_CHAIN_ID)
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(REDEEM_SCRIPT), chainIDBytes, []byte(redeemScriptKey))
 
 	cls := txscript.GetScriptClass(redeemScriptBytes)
@@ -438,7 +438,7 @@ func getBtcRedeemScript(native *native.NativeService, redeemScriptKey string) (s
 }
 
 func getBtcRedeemScriptBytes(native *native.NativeService, redeemScriptKey string) ([]byte, error) {
-	chainIDBytes := utils.GetUint64Bytes(0)
+	chainIDBytes := utils.GetUint64Bytes(BTC_CHAIN_ID)
 	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(REDEEM_SCRIPT), chainIDBytes, []byte(redeemScriptKey))
 	redeemStore, err := native.GetCacheDB().Get(key)
 	if err != nil {
