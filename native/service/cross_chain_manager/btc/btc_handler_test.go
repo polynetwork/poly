@@ -39,11 +39,11 @@ var (
 	ebtcxAddr         = "0x9702640a6b971CA18EFC20AD73CA4e8bA390C910"
 
 	sigs = []string{
-		"3044022010efd2114373c5961902333ff29ca79ab033add8bcd1ac90b96260cc37d6556f022041e9f882204259d86d10ff06736dc090ad3d4b1dd555c587c70809ac7e412c0a01",
-		"3045022100a9076013a5f0bac46435b7cc5788d23d3054a8d04998ba20228db40174661e68022061ba9c827c08748b5cbb6f744becfbd6344582fb8e34a15255cfe4e9d5fe70c101",
-		"30440220737beb8f70082739927a7008282160abdcbd15ca2c671975e8e430f6100645bb0220178f44de5190f83a2fac4871b632a39b3c62f471cd328c8897ce76c95aa52b9a01",
-		"3044022007151b9b211ec9ab6ba92bc7f1d92ef8be65024f38c82fe973a2d1d14d8dff8d022006721914f148426ae92baafd5478e3b12cd05a81b99b4f77b9dfd9b4f5d5e5fc01",
-		"30440220162dd3953f1cf211eb15d0ca692b36b116abdd8e3608f7158fec44db96cc4a720220428dd1e1f5c02f3de0243d20d6969aa45abc27f93e29b6b39e25e23d3d65002001",
+		"3045022100f77b28268bfed3c0ddc8d35e556164d7ce2f571715b5afbf79373e699f4023e102200f86442f305528088caca96453d7f4fd782c831198c51e7637a7024ca844e10d01",
+		"30450221009a320292de5b0881f2988b603d7dac98c666c9653c177e1add6e26b2ae7902860220211d58d5e261e9ce80fa1b12892f02eb1a10c04712fe1609464629a794f5eaa001",
+		"30440220269ba3ab6e8d2513bb908e13c73b89fad28743136e56434bce7f9467c92a70cc02207149b2ae0b8648d5048d2505464582972f12522b36f1517af16af5408c0ed01a01",
+		"3044022046e9fa4e00ace70f5f1136a97257144cb83947d2685cfb6167fb3d61e563896802202f085fd5a202b1ccd471b4341effb788e36a5beed9b1bed4865e2c9a8a5f86e501",
+		"3045022100b457c88a42276924eafbb07e48f642410a07d72516739ab077386088e31ed6dc0220679a39f6aef46d980d031a0df301d74ee750d82ac2c8e0951d2ab1d8444346ec01",
 	}
 
 	signers = []string{
@@ -95,9 +95,11 @@ var (
 		sink := common.NewZeroCopySink(nil)
 		cb.Serialization(sink)
 		rk, _ := hex.DecodeString(utxoKey)
+		redeem, _ := hex.DecodeString(rdm)
 		db.Put(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(side_chain_manager.REDEEM_BIND),
 			utils.GetUint64Bytes(1), utils.GetUint64Bytes(2), rk), states.GenRawStorageItem(sink.Bytes()))
-
+		db.Put(utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(side_chain_manager.REDEEM_SCRIPT),
+			utils.GetUint64Bytes(1), []byte(utxoKey)), states.GenRawStorageItem(redeem))
 		return db
 	}
 
@@ -117,17 +119,16 @@ var (
 
 func TestBTCHandler_MakeDepositProposal(t *testing.T) {
 	gh := netParam.GenesisBlock.Header
-	mr, _ := chainhash.NewHashFromStr("f68a7646782d6d52f63f94633f4b4fb6cea67d1f14c80fc1fa8f999014c99359")
+	mr, _ := chainhash.NewHashFromStr("502e1d655973488e2394b56865f46cf204e5e2fdd0ea5873c51c65a3125ab3dd")
 	gh.MerkleRoot = *mr
-
 	db, err := syncGenesisHeader(&gh)
 	if err != nil {
 		t.Fatal(err)
 	}
 	db = registerRC(db)
 
-	txid, _ := chainhash.NewHashFromStr("470284c7e435b28b379901668e4129c408bf1253874317842e2986282265b423")
-	rawTx, _ := hex.DecodeString("01000000017811f6394ef9b03e3953ac48de13c69e2d9865fe3f6e17dd42ccfd0c4694b015000000006a47304402206b048cdd7f19be0d3f46a7e785339cf81cf35b33be75297254f41bac7548985202202520d33eaf7a728ed4fab42056e241de5d375378145251e429ade0327c92aa07012102141d092eca49eac51de2760d28cbced212b60efc23fdcbb57304823bb17aa64effffffff0300e1f50500000000220020216a09cb8ee51da1a91ea8942552d7936c886a10b507299003661816c0e9f18b0000000000000000286a266602000000000000000000000000000000145cd3143f91a13fe971043e1e4605c1c23b46bf44180d1024010000001976a9145f35a2cc0318fbc17c4c479964734e7a9f8819d788ac00000000")
+	txid, _ := chainhash.NewHashFromStr("67cb330dc68d90a376444a6c8b3e37445050453e72ca43305874daff4b6c51d0")
+	rawTx, _ := hex.DecodeString("01000000015dbdab5a45905efd23e0753d1aaf2a417d77dd8c079499a1643bc168817bf8ab4f0000006a47304402206553c4a3cb1c37cd68b4bb25412cc35d73b731dcef3874635761172f53d70bbf0220264e5afd78936a920d6bcc0720ef5f5d25e7a153f25e18264bd3952038780224012102141d092eca49eac51de2760d28cbced212b60efc23fdcbb57304823bb17aa64effffffff031027000000000000220020216a09cb8ee51da1a91ea8942552d7936c886a10b507299003661816c0e9f18b0000000000000000286a26cc02000000000000000000000000000000145cd3143f91a13fe971043e1e4605c1c23b46bf44a85b0100000000001976a9145f35a2cc0318fbc17c4c479964734e7a9f8819d788ac00000000")
 	scAddr, _ := hex.DecodeString(strings.Replace(ebtcxAddr, "0x", "", 1))
 	handler := NewBTCHandler()
 
@@ -149,7 +150,7 @@ func TestBTCHandler_MakeDepositProposal(t *testing.T) {
 	assert.Error(t, err)
 
 	// normal case
-	proof, _ = hex.DecodeString("0000002012f9b192ec5ec403d9a438dcfdf00f2025118cffafcdc0b26c88218a0d26b6355993c91490998ffac10fc8141f7da6ceb64f4b3f63943ff6526d2d7846768af6ca1b5f5effff7f20000000000200000002db0fcc77abf1be640e42d997a4eeacc4bf7075e791de8d3be21dcb29c337efe323b465222886292e841743875312bf08c429418e660199378bb235e4c78402470105")
+	proof, _ = hex.DecodeString("0000002037083b799b61659dedf733d4945e4ce65e31018ca7e1c2a247f0120000000000ddb35a12a3651cc57358ead0fde2e504f26cf46568b594238e487359651d2e5060d5715effff001d74ec61d6370100000a4702e34d13d88ca00bcea9e15428040de063fd3772fb0492b46bc9ac734612f7d1f8a7ffd7d1f965cad52b3ec06efa3e49e20344de6463d7688453050a37b52b09a2a2efe3057dca55982d5f7ff3b1f36fda89d2b2a1f015acd3ce7afda0abfe96662da89072ef81d5795add6f50dee212a41dbdd2720a1d8c53520bed8e7fa8732bbc20668e26657be4de157fe22cbb508e6e92030bf97b75298db89026f027d0516c4bffda74583043ca723e45505044373e8b6c4a4476a3908dc60d33cb6721b2bc97b3e2074d2ab6617ad3204fec91130fe06e5736ac9d07f66caee0c05309d5d8e752dadbe4c365f815e1902f6ce80be7269f296cb49bfd832c243dd4580dcba943ed5b67f8d233d19b6402fcc39e61bfe01938dc98e4dd2043efed8dabbd65df34229b60bd0a0afd0823ef8c8055cd52d1737d3a991575a6a41cbaeb1e03b75a00")
 	params.Proof = proof
 
 	sink.Reset()
@@ -162,7 +163,7 @@ func TestBTCHandler_MakeDepositProposal(t *testing.T) {
 	ethAddr, _ := hex.DecodeString(strings.Replace(toEthAddr, "0x", "", 1))
 	sink.Reset()
 	sink.WriteVarBytes(ethAddr[:])
-	sink.WriteUint64(uint64(100000000))
+	sink.WriteUint64(uint64(10000))
 
 	assert.Equal(t, txid[:], p.CrossChainID)
 	assert.Equal(t, txid[:], p.TxHash)
@@ -175,8 +176,8 @@ func TestBTCHandler_MakeDepositProposal(t *testing.T) {
 	utxos, err := getUtxos(ns, 1, utxoKey)
 	assert.NoError(t, err)
 	assert.Equal(t, 1, len(utxos.Utxos))
-	assert.Equal(t, uint64(100000000), utxos.Utxos[0].Value)
-	assert.Equal(t, "470284c7e435b28b379901668e4129c408bf1253874317842e2986282265b423:0", utxos.Utxos[0].Op.String())
+	assert.Equal(t, uint64(10000), utxos.Utxos[0].Value)
+	assert.Equal(t, "67cb330dc68d90a376444a6c8b3e37445050453e72ca43305874daff4b6c51d0:0", utxos.Utxos[0].Op.String())
 
 	// repeated commit
 	sink.Reset()
@@ -190,7 +191,6 @@ func TestBTCHandler_MakeTransaction(t *testing.T) {
 	rawTx, _ := hex.DecodeString(fromBtcRawTx)
 	mtx := wire.NewMsgTx(wire.TxVersion)
 	_ = mtx.BtcDecode(bytes.NewBuffer(rawTx), wire.ProtocolVersion, wire.LatestEncoding)
-
 	ns := getNativeFunc(nil, nil)
 	_ = addUtxos(ns, 1, 0, mtx)
 	setSideChain(ns)
@@ -226,9 +226,10 @@ func TestBTCHandler_MultiSign(t *testing.T) {
 	rawTx, _ := hex.DecodeString(fromBtcRawTx)
 	mtx := wire.NewMsgTx(wire.TxVersion)
 	_ = mtx.BtcDecode(bytes.NewBuffer(rawTx), wire.ProtocolVersion, wire.LatestEncoding)
-
 	ns := getNativeFunc(nil, nil)
 	_ = addUtxos(ns, 1, 0, mtx)
+	setBtcTxParam(ns.GetCacheDB(), utxoKey)
+	registerRC(ns.GetCacheDB())
 
 	rb, _ := hex.DecodeString(rdm)
 	err := makeBtcTx(ns, 1, map[string]int64{"mjEoyyCPsLzJ23xMX6Mti13zMyN36kzn57": 6000}, []byte{123},
@@ -247,7 +248,6 @@ func TestBTCHandler_MultiSign(t *testing.T) {
 	rawTx, _ = hex.DecodeString(stateArr[2].(string))
 	_ = mtx.BtcDecode(bytes.NewBuffer(rawTx), wire.ProtocolVersion, wire.LatestEncoding)
 	assert.Equal(t, int64(4000), mtx.TxOut[1].Value)
-
 	handler := NewBTCHandler()
 	sigArr := getSigs()
 	txid := mtx.TxHash()
@@ -317,7 +317,6 @@ func TestBTCHandler_MultiSign(t *testing.T) {
 	assert.NoError(t, err)
 	err = mtx.BtcDecode(bytes.NewBuffer(rawTx), wire.ProtocolVersion, wire.LatestEncoding)
 	assert.NoError(t, err)
-
 	txid = mtx.TxHash()
 	utxos, err = getUtxos(ns, 1, utxoKey)
 	assert.NoError(t, err)

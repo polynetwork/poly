@@ -77,7 +77,7 @@ func TestCalcRequiredWork(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if work <= bestHeader.Header.Bits {
+	if work < bestHeader.Header.Bits {
 		t.Error("Returned in correct bits")
 	}
 	newHdr.Bits = work
@@ -313,6 +313,7 @@ func TestGetBlockHashByHeight(t *testing.T) {
 }
 
 func TestGetPreviousHeader(t *testing.T) {
+	netParam = &chaincfg.RegressionNetParams
 	db, _ := syncGenesisHeader(&netParam.GenesisBlock.Header)
 	ns := getNativeFunc(nil, db)
 

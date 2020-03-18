@@ -26,17 +26,15 @@ import (
 )
 
 const (
-	OP_RETURN_SCRIPT_FLAG                   = byte(0xcc)
-	BTC_TX_PREFIX                           = "btctx"
-	BTC_FROM_TX_PREFIX                      = "btcfromtx"
-	REDEEM_P2SH_5_OF_7_MULTISIG_SCRIPT_SIZE = 1 + 5*(1+75) + 1 + 1 + 7*(1+33) + 1 + 1
-	MIN_CHANGE                              = 2000
-	UTXOS                                   = "utxos"
-	STXOS                                   = "stxos"
-	MULTI_SIGN_INFO                         = "multiSignInfo"
-	MAX_FEE_COST_PERCENTS                   = 1.0
-	MAX_SELECTING_TRY_LIMIT                 = 1000000
-	SELECTING_K                             = 4.0
+	OP_RETURN_SCRIPT_FLAG   = byte(0xcc)
+	BTC_TX_PREFIX           = "btctx"
+	BTC_FROM_TX_PREFIX      = "btcfromtx"
+	UTXOS                   = "utxos"
+	STXOS                   = "stxos"
+	MULTI_SIGN_INFO         = "multiSignInfo"
+	MAX_FEE_COST_PERCENTS   = 1.0
+	MAX_SELECTING_TRY_LIMIT = 1000000
+	SELECTING_K             = 4.0
 )
 
 var netParam = &chaincfg.TestNet3Params
@@ -293,7 +291,7 @@ func addUtxos(native *native.NativeService, chainID uint64, height uint32, mtx *
 	return nil
 }
 
-func chooseUtxos(native *native.NativeService, chainID uint64, amount int64, outs []*wire.TxOut, rk []byte) ([]*Utxo, int64, int64, error) {
+func chooseUtxos(native *native.NativeService, chainID uint64, amount int64, outs []*wire.TxOut, rk []byte, m, n int) ([]*Utxo, int64, int64, error) {
 	utxoKey := hex.EncodeToString(rk)
 	utxos, err := getUtxos(native, chainID, utxoKey)
 	if err != nil {
@@ -308,14 +306,16 @@ func chooseUtxos(native *native.NativeService, chainID uint64, amount int64, out
 		return nil, 0, 0, fmt.Errorf("chooseUtxos, no btcTxParam is set for redeem key %s", hex.EncodeToString(rk))
 	}
 	cs := &CoinSelector{
-		SortedUtxos: utxos,
-		Target:      uint64(amount),
-		MaxP:        MAX_FEE_COST_PERCENTS,
-		Tries:       MAX_SELECTING_TRY_LIMIT,
-		Mc:          detail.MinChange,
-		K:           SELECTING_K,
-		TxOuts:      outs,
+		sortedUtxos: utxos,
+		target:      uint64(amount),
+		maxP:        MAX_FEE_COST_PERCENTS,
+		tries:       MAX_SELECTING_TRY_LIMIT,
+		mc:          detail.MinChange,
+		k:           SELECTING_K,
+		txOuts:      outs,
 		feeRate:     detail.FeeRate,
+		m:           m,
+		n:           n,
 	}
 	result, sum, fee := cs.Select()
 	if result == nil || len(result) == 0 {
@@ -457,7 +457,7 @@ func verifySigs(sigs [][]byte, addr string, addrs []btcutil.Address, redeem []by
 			return fmt.Errorf("script %s not supported", c)
 		}
 		if !pSig.Verify(hash, signerAddr.(*btcutil.AddressPubKey).PubKey()) {
-			return fmt.Errorf("verify no.%d sig and not pass", i)
+			return fmt.Errorf("verify no.%d sig and not pass", i+1)
 		}
 	}
 

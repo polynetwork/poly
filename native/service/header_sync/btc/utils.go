@@ -352,7 +352,6 @@ func calcDiffAdjust(start, end wire.BlockHeader, p *chaincfg.Params) uint32 {
 	newTarget.Div(newTarget, big.NewInt(int64(targetTimespan)))
 	// clip again if above minimum target (too easy)
 	if newTarget.Cmp(p.PowLimit) > 0 {
-		fmt.Println(p.PowLimit.String(), newTarget.String())
 		newTarget.Set(p.PowLimit)
 	}
 

@@ -106,14 +106,16 @@ func TestCoinSelector_getLossRatio(t *testing.T) {
 
 	sort.Sort(sort.Reverse(us))
 	cs := &CoinSelector{
-		SortedUtxos: us,
-		Target:      uint64(9904),
-		MaxP:        MAX_FEE_COST_PERCENTS,
-		Tries:       MAX_SELECTING_TRY_LIMIT,
-		Mc:          MIN_CHANGE,
-		K:           SELECTING_K,
-		TxOuts:      outs,
+		sortedUtxos: us,
+		target:      uint64(9904),
+		maxP:        MAX_FEE_COST_PERCENTS,
+		tries:       MAX_SELECTING_TRY_LIMIT,
+		mc:          2000,
+		k:           SELECTING_K,
+		txOuts:      outs,
 		feeRate:     2,
+		n:           7,
+		m:           5,
 	}
 
 	fee, lr := cs.getLossRatio(us.Utxos)
@@ -131,52 +133,54 @@ func TestCoinSelector_SimpleBnbSearch(t *testing.T) {
 	sort.Sort(sort.Reverse(utxos))
 
 	s := &CoinSelector{
-		TxOuts:      mtx.TxOut,
-		K:           1.5,
-		Mc:          2000,
-		Tries:       10000,
-		MaxP:        0.2,
-		Target:      35e4,
-		SortedUtxos: utxos,
+		txOuts:      mtx.TxOut,
+		k:           1.5,
+		mc:          2000,
+		tries:       10000,
+		maxP:        0.2,
+		target:      35e4,
+		sortedUtxos: utxos,
 		feeRate:     2,
+		m:           5,
+		n:           7,
 	}
 	// normal case
 	res, sum, _ := s.SimpleBnbSearch(0, make([]*Utxo, 0), 0)
-	if !(len(res) == 2 && sum == 35e4 && res[0].AtHeight == 3 && res[1].AtHeight == 2 && s.Tries == 9998) {
+	if !(len(res) == 2 && sum == 35e4 && res[0].AtHeight == 3 && res[1].AtHeight == 2 && s.tries == 9998) {
 		t.Fatal("wrong selection")
 	}
 
-	s.Target = 12e4
+	s.target = 12e4
 	res, sum, _ = s.SimpleBnbSearch(0, make([]*Utxo, 0), 0)
-	if !(len(res) == 2 && sum == 15e4 && res[0].AtHeight == 2 && res[1].AtHeight == 1 && s.Tries == 9995) {
+	if !(len(res) == 2 && sum == 15e4 && res[0].AtHeight == 2 && res[1].AtHeight == 1 && s.tries == 9995) {
 		t.Fatal("wrong selection")
 	}
 
-	s.Target = 34e4
-	s.Mc = 3e4
+	s.target = 34e4
+	s.mc = 3e4
 	res, sum, _ = s.SimpleBnbSearch(0, make([]*Utxo, 0), 0)
-	if !(len(res) == 3 && sum == 45e4 && res[0].AtHeight == 3 && res[1].AtHeight == 2 && s.Tries == 9992) {
+	if !(len(res) == 3 && sum == 45e4 && res[0].AtHeight == 3 && res[1].AtHeight == 2 && s.tries == 9992) {
 		t.Fatal("wrong selection")
 	}
 
 	// over fee rate
-	s.MaxP = 0.001
+	s.maxP = 0.001
 	res, sum, _ = s.SimpleBnbSearch(0, make([]*Utxo, 0), 0)
 	if res != nil {
 		t.Fatal("wrong selection")
 	}
 
 	// not enough
-	s.Target = 5e5
-	s.Mc = 2000
-	s.MaxP = 0.2
+	s.target = 5e5
+	s.mc = 2000
+	s.maxP = 0.2
 	res, sum, _ = s.SimpleBnbSearch(0, make([]*Utxo, 0), 0)
 	if res != nil {
 		t.Fatal("wrong selection")
 	}
 
 	// out of max
-	s.Target = 5000
+	s.target = 5000
 	res, sum, _ = s.SimpleBnbSearch(0, make([]*Utxo, 0), 0)
 	if res != nil {
 		t.Fatal("should be nil")
@@ -194,14 +198,16 @@ func TestCoinSelector_SortedSearch(t *testing.T) {
 	sort.Sort(sort.Reverse(utxos))
 
 	s := &CoinSelector{
-		TxOuts:      mtx.TxOut,
-		K:           1.5,
-		Mc:          2000,
-		Tries:       10000,
-		MaxP:        0.2,
-		Target:      35e4,
-		SortedUtxos: utxos,
+		txOuts:      mtx.TxOut,
+		k:           1.5,
+		mc:          2000,
+		tries:       10000,
+		maxP:        0.2,
+		target:      35e4,
+		sortedUtxos: utxos,
 		feeRate:     2,
+		m:           5,
+		n:           7,
 	}
 
 	res, sum, _ := s.SortedSearch()
@@ -209,20 +215,20 @@ func TestCoinSelector_SortedSearch(t *testing.T) {
 		t.Fatal("wrong selection")
 	}
 
-	s.Target = 5e4
+	s.target = 5e4
 	res, sum, _ = s.SortedSearch()
 	if !(len(res) == 1 && sum == 5e4 && res[0].AtHeight == 2) {
 		t.Fatal("wrong selection")
 	}
 
-	s.Target = 5e5
+	s.target = 5e5
 	res, sum, _ = s.SortedSearch()
 	if res != nil {
 		t.Fatal("wrong")
 	}
 
-	s.Target = 41e4
-	s.Mc = 5e4
+	s.target = 41e4
+	s.mc = 5e4
 	res, sum, _ = s.SortedSearch()
 	if res != nil {
 		t.Fatal("wrong")

@@ -151,7 +151,7 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 			&event.NotifyEventInfo{
 				ContractAddress: utils.CrossChainManagerContractAddress,
 				States: []interface{}{"btcTxToRelay", btcFromTxInfo.FromChainID, side_chain_manager.BTC_CHAIN_ID,
-					hex.EncodeToString(buf.Bytes()), hex.EncodeToString(btcFromTxInfo.FromTxHash)},
+					hex.EncodeToString(buf.Bytes()), hex.EncodeToString(btcFromTxInfo.FromTxHash), params.RedeemKey},
 			})
 	}
 	return nil
@@ -259,7 +259,9 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, %v", err)
 	}
-	choosed, sum, gasFee, err := chooseUtxos(service, chainID, amountSum, append(outs, out), rk)
+
+	_, addrs, m, _ := txscript.ExtractPkScriptAddrs(redeemScript, netParam)
+	choosed, sum, gasFee, err := chooseUtxos(service, chainID, amountSum, append(outs, out), rk, m, len(addrs))
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, chooseUtxos error: %v", err)
 	}

@@ -239,7 +239,7 @@ func TestUtxos_Choose(t *testing.T) {
 	mtx := wire.NewMsgTx(wire.TxVersion)
 	mtx.BtcDecode(bytes.NewBuffer(txb), wire.TxVersion, wire.LatestEncoding)
 
-	set, sum, _, err := chooseUtxos(ns, 1, 35e4, mtx.TxOut, rk)
+	set, sum, _, err := chooseUtxos(ns, 1, 35e4, mtx.TxOut, rk, 5, 7)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -247,7 +247,7 @@ func TestUtxos_Choose(t *testing.T) {
 		bytes.Equal(set[1].ScriptPubkey, p2sh)) {
 		t.Fatal("wrong choose")
 	}
-	_, _, _, err = chooseUtxos(ns, 1, 100e4, mtx.TxOut, rk)
+	_, _, _, err = chooseUtxos(ns, 1, 100e4, mtx.TxOut, rk, 5, 7)
 	if err == nil {
 		t.Fatal("err should not be nil")
 	}
