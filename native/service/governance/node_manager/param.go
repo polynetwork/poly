@@ -81,35 +81,6 @@ func (this *PeerParam) Deserialization(source *common.ZeroCopySource) error {
 	return nil
 }
 
-type PeerParam2 struct {
-	PeerPubkey string
-	Address    common.Address
-}
-
-func (this *PeerParam2) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteString(this.PeerPubkey)
-	sink.WriteVarBytes(this.Address[:])
-}
-
-func (this *PeerParam2) Deserialization(source *common.ZeroCopySource) error {
-	peerPubkey, eof := source.NextString()
-	if eof {
-		return fmt.Errorf("source.NextString, deserialize peerPubkey error")
-	}
-	address, eof := source.NextVarBytes()
-	if eof {
-		return fmt.Errorf("source.NextVarBytes, deserialize address error")
-	}
-	addr, err := common.AddressParseFromBytes(address)
-	if err != nil {
-		return fmt.Errorf("common.AddressParseFromBytes, deserialize address error: %s", err)
-	}
-
-	this.PeerPubkey = peerPubkey
-	this.Address = addr
-	return nil
-}
-
 type PeerListParam struct {
 	PeerPubkeyList []string
 	Address        common.Address

@@ -226,7 +226,7 @@ func RegisterCandidate(native *native.NativeService) ([]byte, error) {
 
 //Unregister a registered candidate node, will remove node from pool
 func UnRegisterCandidate(native *native.NativeService) ([]byte, error) {
-	params := new(PeerParam2)
+	params := new(PeerParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("unRegisterCandidate, contract params deserialize error: %v", err)
 	}
@@ -506,7 +506,7 @@ func WhiteNode(native *native.NativeService) ([]byte, error) {
 //Quit a registered node, used by node owner.
 //Remove node from pool
 func QuitNode(native *native.NativeService) ([]byte, error) {
-	params := new(PeerParam2)
+	params := new(PeerParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("quitNode, contract params deserialize error: %v", err)
 	}
