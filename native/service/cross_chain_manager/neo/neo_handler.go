@@ -19,8 +19,12 @@
 package neo
 
 import (
+	"fmt"
+	"github.com/ontio/multi-chain/common"
 	"github.com/ontio/multi-chain/native"
 	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
+	"github.com/ontio/multi-chain/native/service/governance/side_chain_manager"
+	"github.com/ontio/multi-chain/native/service/header_sync/neo"
 )
 
 type NEOHandler struct {
@@ -31,23 +35,39 @@ func NewNEOHandler() *NEOHandler {
 }
 
 func (this *NEOHandler) MakeDepositProposal(service *native.NativeService) (*scom.MakeTxParam, error) {
-	//params := new(scom.EntranceParam)
-	//if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
-	//	return nil, fmt.Errorf("ont MakeDepositProposal, contract params deserialize error: %v", err)
-	//}
-	//
-	//if err := scom.CheckDoneTx(service, params.TxHash, params.Proof, params.SourceChainID); err != nil {
-	//	return nil, fmt.Errorf("MakeDepositProposal, check done transaction error:%s", err)
-	//}
-	//
-	//value, err := verifyFromNEOTx(service, params.Proof, params.TxHash, params.SourceChainID, params.Height)
-	//if err != nil {
-	//	return nil, fmt.Errorf("ont MakeDepositProposal, VerifyOntTx error: %v", err)
-	//}
-	//
-	//if err = scom.PutDoneTx(service, value.TxHash, params.Proof, params.SourceChainID); err != nil {
-	//	return nil, fmt.Errorf("VerifyFromOntTx, putDoneTx error:%s", err)
-	//}
-	//return value, nil
-	return nil, nil
+	params := new(scom.EntranceParam)
+	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
+		return nil, fmt.Errorf("neo MakeDepositProposal, contract params deserialize error: %v", err)
+	}
+
+	crossChainMsg, err := neo.GetCrossChainMsg(service, params.SourceChainID, params.Height)
+	if crossChainMsg == nil {
+		crossChainMsg = new(neo.NeoCrossChainMsg)
+		if err := crossChainMsg.Deserialization(common.NewZeroCopySource(params.HeaderOrCrossChainMsg)); err != nil {
+			return nil, fmt.Errorf("neo MakeDepositProposal, deserialize crossChainMsg error: %v", err)
+		}
+		err = neo.VerifyCrossChainMsg(service, params.SourceChainID, crossChainMsg)
+		if err != nil {
+			return nil, fmt.Errorf("neo MakeDepositProposal, VerifyCrossChainMsg error: %v", err)
+		}
+		err = neo.PutCrossChainMsg(service, params.SourceChainID, crossChainMsg)
+		if err != nil {
+			return nil, fmt.Errorf("neo MakeDepositProposal, put PutCrossChainMsg error: %v", err)
+		}
+	}
+	sideChain, err := side_chain_manager.GetSideChain(service, params.SourceChainID)
+	if err != nil {
+		return nil, fmt.Errorf("neo MakeDepositProposal, side_chain_manager.GetSideChain error: %v", err)
+	}
+	value, err := verifyFromNeoTx(params.Proof, crossChainMsg, sideChain.CCMCAddress)
+	if err != nil {
+		return nil, fmt.Errorf("neo MakeDepositProposal, VerifyFromNeoTx error: %v", err)
+	}
+	if err := scom.CheckDoneTx(service, value.CrossChainID, params.SourceChainID); err != nil {
+		return nil, fmt.Errorf("neo MakeDepositProposal, check done transaction error:%s", err)
+	}
+	if err = scom.PutDoneTx(service, value.CrossChainID, params.SourceChainID); err != nil {
+		return nil, fmt.Errorf("neo MakeDepositProposal, putDoneTx error:%s", err)
+	}
+	return value, nil
 }

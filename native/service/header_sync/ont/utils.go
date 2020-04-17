@@ -22,8 +22,6 @@ package ont
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ontio/multi-chain/common/config"
-	"github.com/ontio/multi-chain/native/event"
 	"github.com/ontio/ontology-crypto/keypair"
 
 	"github.com/ontio/multi-chain/common"
@@ -48,7 +46,7 @@ func PutCrossChainMsg(native *native.NativeService, chainID uint64, crossChainMs
 		cstates.GenRawStorageItem(sink.Bytes()))
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(hscommon.CURRENT_MSG_HEIGHT), chainIDBytes),
 		cstates.GenRawStorageItem(heightBytes))
-	notifyPutCrossChainMsg(native, chainID, crossChainMsg.Height)
+	hscommon.NotifyPutCrossChainMsg(native, chainID, crossChainMsg.Height)
 	return nil
 }
 
@@ -90,7 +88,7 @@ func PutBlockHeader(native *native.NativeService, chainID uint64, blockHeader *o
 		cstates.GenRawStorageItem(blockHash.ToArray()))
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(hscommon.CURRENT_HEADER_HEIGHT), chainIDBytes),
 		cstates.GenRawStorageItem(heightBytes))
-	notifyPutHeader(native, chainID, blockHeader.Height, blockHash.ToHexString())
+	hscommon.NotifyPutHeader(native, chainID, blockHeader.Height, blockHash.ToHexString())
 	return nil
 }
 
@@ -156,7 +154,7 @@ func VerifyCrossChainMsg(native *native.NativeService, chainID uint64, crossChai
 	bookkeepers []keypair.PublicKey) error {
 	height := crossChainMsg.Height
 	//search consensus peer
-	keyHeight, err := findKeyHeight(native, height, chainID)
+	keyHeight, err := FindKeyHeight(native, height, chainID)
 	if err != nil {
 		return fmt.Errorf("verifyCrossChainMsg, findKeyHeight error:%v", err)
 	}
@@ -191,7 +189,7 @@ func VerifyCrossChainMsg(native *native.NativeService, chainID uint64, crossChai
 func verifyHeader(native *native.NativeService, chainID uint64, header *otypes.Header) error {
 	height := header.Height
 	//search consensus peer
-	keyHeight, err := findKeyHeight(native, height, chainID)
+	keyHeight, err := FindKeyHeight(native, height, chainID)
 	if err != nil {
 		return fmt.Errorf("verifyHeader, findKeyHeight error:%v", err)
 	}
@@ -240,7 +238,7 @@ func GetKeyHeights(native *native.NativeService, chainID uint64) (*KeyHeights, e
 	return keyHeights, nil
 }
 
-func putKeyHeights(native *native.NativeService, chainID uint64, keyHeights *KeyHeights) error {
+func PutKeyHeights(native *native.NativeService, chainID uint64, keyHeights *KeyHeights) error {
 	contract := utils.HeaderSyncContractAddress
 	sink := common.NewZeroCopySink(nil)
 	keyHeights.Serialization(sink)
@@ -291,8 +289,9 @@ func putConsensusPeers(native *native.NativeService, consensusPeers *ConsensusPe
 	if err != nil {
 		return fmt.Errorf("putConsensusPeer, GetKeyHeights error: %v", err)
 	}
+
 	keyHeights.HeightList = append(keyHeights.HeightList, consensusPeers.Height)
-	err = putKeyHeights(native, consensusPeers.ChainID, keyHeights)
+	err = PutKeyHeights(native, consensusPeers.ChainID, keyHeights)
 	if err != nil {
 		return fmt.Errorf("putConsensusPeer, putKeyHeights error: %v", err)
 	}
@@ -321,7 +320,7 @@ func UpdateConsensusPeer(native *native.NativeService, chainID uint64, header *o
 	return nil
 }
 
-func findKeyHeight(native *native.NativeService, height uint32, chainID uint64) (uint32, error) {
+func FindKeyHeight(native *native.NativeService, height uint32, chainID uint64) (uint32, error) {
 	keyHeights, err := GetKeyHeights(native, chainID)
 	if err != nil {
 		return 0, fmt.Errorf("findKeyHeight, GetKeyHeights error: %v", err)
@@ -332,26 +331,4 @@ func findKeyHeight(native *native.NativeService, height uint32, chainID uint64) 
 		}
 	}
 	return 0, fmt.Errorf("findKeyHeight, can not find key height with height %d", height)
-}
-
-func notifyPutHeader(native *native.NativeService, chainID uint64, height uint32, blockHash string) {
-	if !config.DefConfig.Common.EnableEventLog {
-		return
-	}
-	native.AddNotify(
-		&event.NotifyEventInfo{
-			ContractAddress: utils.HeaderSyncContractAddress,
-			States:          []interface{}{chainID, height, blockHash, native.GetHeight()},
-		})
-}
-
-func notifyPutCrossChainMsg(native *native.NativeService, chainID uint64, height uint32) {
-	if !config.DefConfig.Common.EnableEventLog {
-		return
-	}
-	native.AddNotify(
-		&event.NotifyEventInfo{
-			ContractAddress: utils.HeaderSyncContractAddress,
-			States:          []interface{}{chainID, height, native.GetHeight()},
-		})
 }

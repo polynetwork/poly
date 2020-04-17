@@ -118,9 +118,6 @@ func (this *ConsensusPeers) Deserialization(source *common.ZeroCopySource) error
 	if eof {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize height error")
 	}
-	if height > math.MaxUint32 {
-		return fmt.Errorf("deserialize height error: height more than max uint32")
-	}
 	n, eof := source.NextVarUint()
 	if eof {
 		return fmt.Errorf("utils.DecodeVarUint, deserialize HeightList length error")

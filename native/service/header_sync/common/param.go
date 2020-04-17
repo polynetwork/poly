@@ -3,7 +3,10 @@ package common
 import (
 	"fmt"
 	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/common/config"
 	"github.com/ontio/multi-chain/native"
+	"github.com/ontio/multi-chain/native/event"
+	"github.com/ontio/multi-chain/native/service/utils"
 )
 
 const (
@@ -135,4 +138,26 @@ func (this *SyncCrossChainMsgParam) Deserialization(source *common.ZeroCopySourc
 	this.Address = address
 	this.CrossChainMsgs = crossChainMsgs
 	return nil
+}
+
+func NotifyPutHeader(native *native.NativeService, chainID uint64, height uint32, blockHash string) {
+	if !config.DefConfig.Common.EnableEventLog {
+		return
+	}
+	native.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.HeaderSyncContractAddress,
+			States:          []interface{}{chainID, height, blockHash, native.GetHeight()},
+		})
+}
+
+func NotifyPutCrossChainMsg(native *native.NativeService, chainID uint64, height uint32) {
+	if !config.DefConfig.Common.EnableEventLog {
+		return
+	}
+	native.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.HeaderSyncContractAddress,
+			States:          []interface{}{chainID, height, native.GetHeight()},
+		})
 }

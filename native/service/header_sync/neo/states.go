@@ -19,123 +19,130 @@
 package neo
 
 import (
+	"encoding/hex"
 	"fmt"
-	"math"
-	"sort"
-
+	"github.com/joeqian10/neo-gogogo/block"
+	"github.com/joeqian10/neo-gogogo/crypto"
+	"github.com/joeqian10/neo-gogogo/helper"
+	"github.com/joeqian10/neo-gogogo/helper/io"
+	"github.com/joeqian10/neo-gogogo/mpt"
+	"github.com/joeqian10/neo-gogogo/tx"
 	"github.com/ontio/multi-chain/common"
 )
 
-type Peer struct {
-	Index      uint32
-	PeerPubkey string
+type NeoConsensus struct {
+	ChainID       uint64
+	Height        uint32
+	NextConsensus helper.UInt160
 }
 
-func (this *Peer) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteUint32(this.Index)
-	sink.WriteVarBytes([]byte(this.PeerPubkey))
-}
-
-func (this *Peer) Deserialization(source *common.ZeroCopySource) error {
-	index, eof := source.NextUint32()
-	if eof {
-		return fmt.Errorf("utils.DecodeVarUint, deserialize index error")
-	}
-	if index > math.MaxUint32 {
-		return fmt.Errorf("deserialize index error: index more than max uint32")
-	}
-	peerPubkey, eof := source.NextString()
-	if eof {
-		return fmt.Errorf("utils.DecodeString, deserialize peerPubkey error")
-	}
-	this.Index = uint32(index)
-	this.PeerPubkey = peerPubkey
-	return nil
-}
-
-type KeyHeights struct {
-	HeightList []uint32
-}
-
-func (this *KeyHeights) Serialization(sink *common.ZeroCopySink) {
-	//first sort the list  (big -> small)
-	sort.SliceStable(this.HeightList, func(i, j int) bool {
-		return this.HeightList[i] > this.HeightList[j]
-	})
-	sink.WriteVarUint(uint64(len(this.HeightList)))
-	for _, v := range this.HeightList {
-		sink.WriteUint32(v)
-	}
-}
-
-func (this *KeyHeights) Deserialization(source *common.ZeroCopySource) error {
-	n, eof := source.NextVarUint()
-	if eof {
-		return fmt.Errorf("utils.DecodeVarUint, deserialize HeightList length error")
-	}
-	heightList := make([]uint32, 0)
-	for i := 0; uint64(i) < n; i++ {
-		height, eof := source.NextUint32()
-		if eof {
-			return fmt.Errorf("utils.DecodeVarUint, deserialize height error")
-		}
-		if height > math.MaxUint32 {
-			return fmt.Errorf("deserialize height error: height more than max uint32")
-		}
-		heightList = append(heightList, uint32(height))
-	}
-	this.HeightList = heightList
-	return nil
-}
-
-type ConsensusPeers struct {
-	ChainID uint64
-	Height  uint32
-	PeerMap map[string]*Peer
-}
-
-func (this *ConsensusPeers) Serialization(sink *common.ZeroCopySink) {
+func (this *NeoConsensus) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteUint64(this.ChainID)
 	sink.WriteUint32(this.Height)
-	sink.WriteVarUint(uint64(len(this.PeerMap)))
-	var peerList []*Peer
-	for _, v := range this.PeerMap {
-		peerList = append(peerList, v)
-	}
-	sort.SliceStable(peerList, func(i, j int) bool {
-		return peerList[i].PeerPubkey > peerList[j].PeerPubkey
-	})
-	for _, v := range peerList {
-		v.Serialization(sink)
-	}
+	sink.WriteVarBytes(this.NextConsensus.Bytes())
 }
 
-func (this *ConsensusPeers) Deserialization(source *common.ZeroCopySource) error {
-	chainID, eof := source.NextUint64()
+func (this *NeoConsensus) Deserialization(source *common.ZeroCopySource) error {
+	var eof bool
+	if this.ChainID, eof = source.NextUint64(); eof {
+		return fmt.Errorf("NeoConsensus.Deserialization, ChainID NextUint64 error")
+	}
+	if this.Height, eof = source.NextUint32(); eof {
+		return fmt.Errorf("NeoConsensus.Deserialization, Height NextUint32 error")
+	}
+
+	nextConsensusBs, eof := source.NextVarBytes()
 	if eof {
-		return fmt.Errorf("utils.DecodeVarUint, deserialize chainID error")
+		return fmt.Errorf("NeoConsensus.Deserialization, NextConsensus NextVarBytes error")
 	}
-	height, eof := source.NextUint32()
-	if eof {
-		return fmt.Errorf("utils.DecodeVarUint, deserialize height error")
+
+	var err error
+	if this.NextConsensus, err = helper.UInt160FromBytes(nextConsensusBs); err != nil {
+		return fmt.Errorf("NeoConsensus.Deserialization, NextConsensus UInt160FromBytes error:%s", err)
 	}
-	if height > math.MaxUint32 {
-		return fmt.Errorf("deserialize height error: height more than max uint32")
-	}
-	n, eof := source.NextVarUint()
-	if eof {
-		return fmt.Errorf("utils.DecodeVarUint, deserialize HeightList length error")
-	}
-	peerMap := make(map[string]*Peer)
-	for i := 0; uint64(i) < n; i++ {
-		peer := new(Peer)
-		if err := peer.Deserialization(source); err != nil {
-			return fmt.Errorf("deserialize peer error: %v", err)
-		}
-		peerMap[peer.PeerPubkey] = peer
-	}
-	this.ChainID = chainID
-	this.Height = uint32(height)
-	this.PeerMap = peerMap
 	return nil
+}
+
+type NeoBlockHeader struct {
+	*block.BlockHeader
+}
+
+func (this *NeoBlockHeader) Deserialization(source *common.ZeroCopySource) error {
+	//var header *block.BlockHeader
+	this.BlockHeader = &block.BlockHeader{
+		Witness: &tx.Witness{},
+	}
+	br := io.NewBinaryReaderFromBuf(source.Bytes())
+	this.BlockHeader.Deserialize(br)
+	if br.Err != nil {
+		return fmt.Errorf("joeqian10/neo-gogogo/block.BlockHeader Deserialize error:%s", br.Err)
+	}
+	return nil
+}
+
+func (this *NeoBlockHeader) Serialization(sink *common.ZeroCopySink) error {
+	bw := io.NewBufBinaryWriter()
+	this.Serialize(bw.BinaryWriter)
+	if bw.Err != nil {
+		return fmt.Errorf("joeqian10/neo-gogogo/block.BlockHeader Serialize error:%s", bw.Err)
+	}
+	sink.WriteBytes(bw.Bytes())
+	return nil
+}
+
+func (this *NeoBlockHeader) GetMessage() ([]byte, error) {
+	buf := io.NewBufBinaryWriter()
+	this.SerializeUnsigned(buf.BinaryWriter)
+	if buf.Err != nil {
+		return nil, fmt.Errorf("GetHashData of NeoBlockHeader joeqian10/neo-gogogo/block.BlockHeader SerializeUnsigned error:%s", buf.Err)
+	}
+	return buf.Bytes(), nil
+}
+
+type NeoCrossChainMsg struct {
+	*mpt.StateRoot
+}
+
+func (this *NeoCrossChainMsg) Deserialization(source *common.ZeroCopySource) error {
+	this.StateRoot = new(mpt.StateRoot)
+	br := io.NewBinaryReaderFromBuf(source.Bytes())
+	this.Deserialize(br)
+	if br.Err != nil {
+		return fmt.Errorf("joeqian10/neo-gogogo/mpt.StateRoot Deserialize error:%s", br.Err)
+	}
+	return nil
+}
+
+func (this *NeoCrossChainMsg) Serialization(sink *common.ZeroCopySink) error {
+	bw := io.NewBufBinaryWriter()
+	this.Serialize(bw.BinaryWriter)
+	if bw.Err != nil {
+		return fmt.Errorf("joeqian10/neo-gogogo/mpt.StateRoot Serialize error:%s", bw.Err)
+	}
+	sink.WriteBytes(bw.Bytes())
+	return nil
+}
+
+func (this *NeoCrossChainMsg) GetScriptHash() (helper.UInt160, error) {
+	verificationScriptBs, err := hex.DecodeString(this.Witness.VerificationScript)
+	if err != nil {
+		return helper.UInt160{}, fmt.Errorf("NeoCrossChainMsg.Witness.VerificationScript decode to bytes error:%s", err)
+	}
+	if len(verificationScriptBs) == 0 {
+		return helper.UInt160{}, fmt.Errorf("NeoCrossChainMsg.Witness.VerificationScript length is 0 ")
+	}
+	scriptHash, err := helper.UInt160FromBytes(crypto.Hash160(verificationScriptBs))
+	if err != nil {
+		return helper.UInt160{}, fmt.Errorf("joeqian10/neo-gogogo/tx.Witness GetScriptHash error:%s", err)
+	}
+	return scriptHash, nil
+}
+
+func (this *NeoCrossChainMsg) GetMessage() ([]byte, error) {
+	buf := io.NewBufBinaryWriter()
+	this.SerializeUnsigned(buf.BinaryWriter)
+	if buf.Err != nil {
+		return nil, fmt.Errorf("GetHashData of NeoBlockHeader joeqian10/neo-gogogo/mpt.StateRoot SerializeUnsigned error:%s", buf.Err)
+	}
+	return buf.Bytes(), nil
 }

@@ -18,26 +18,49 @@
 
 package neo
 
-//func verifyFromNEOTx(native *native.NativeService, proof, txHash []byte, fromChainid uint64, height uint32) (*scom.MakeTxParam, error) {
-////get block header
-//header, err := neo.GetHeaderByHeight(native, fromChainid, height)
-//if err != nil {
-//	return nil, fmt.Errorf("verifyFromOntTx, get header by height %d from chain %d error: %v",
-//		height, fromChainid, err)
-//}
-//
-//v, err := merkle.MerkleProve(proof, header.CrossStatesRoot.Bytes())
-//if err != nil {
-//	return nil, fmt.Errorf("VerifyFromOntTx, merkle.MerkleProve verify merkle proof error")
-//}
-//
-//s := common.NewZeroCopySource(v)
-//txParam := new(scom.MakeTxParam)
-//if err := txParam.Deserialization(s); err != nil {
-//	return nil, fmt.Errorf("VerifyFromOntTx, deserialize merkleValue error:%s", err)
-//}
-//if !bytes.Equal(txHash, txParam.TxHash) {
-//	return nil, fmt.Errorf("VerifyFromOntTx, relayer txHash:%x doesn't equal user txHash:%x", txParam.TxHash, txParam.TxHash)
-//}
-//return txParam, nil
-//}
+import (
+	"bytes"
+	"encoding/hex"
+	"fmt"
+	"github.com/joeqian10/neo-gogogo/helper"
+	"github.com/joeqian10/neo-gogogo/mpt"
+	"github.com/ontio/multi-chain/common"
+	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
+	"github.com/ontio/multi-chain/native/service/header_sync/neo"
+)
+
+func verifyFromNeoTx(proof []byte, crosschainMsg *neo.NeoCrossChainMsg, contractAddr []byte) (*scom.MakeTxParam, error) {
+	crossStateProofRoot, err := helper.UInt256FromString(crosschainMsg.StateRoot.StateRoot)
+	if err != nil {
+		return nil, fmt.Errorf("verifyFromNeoTx, decode cross state proof root from string error:%s", err)
+	}
+	value, err := VerifyNeoCrossChainProof(proof, crossStateProofRoot.Bytes(), contractAddr)
+	if err != nil {
+		return nil, fmt.Errorf("VerifyFromNeoTx, Verify Neo cross chain proof error:%v", err)
+	}
+	source := common.NewZeroCopySource(value)
+	txParam := new(scom.MakeTxParam)
+	if err := txParam.Deserialization(source); err != nil {
+		return nil, fmt.Errorf("VerifyFromNeoTx, deserialize merkleValue error:%s", err)
+	}
+	return txParam, nil
+}
+
+func VerifyNeoCrossChainProof(proof []byte, stateRoot []byte, contractAddr []byte) ([]byte, error) {
+	scriptHash, key, proofs, err := mpt.ResolveProof(proof)
+	if err != nil {
+		return nil, fmt.Errorf("VerifyNeoCrossChainProof, joeqian10/neo-gogogo/mpt.ResolveProof error:%v", err)
+	}
+
+	if !bytes.Equal(scriptHash.Bytes(), contractAddr) {
+		return nil, fmt.Errorf("VerifyNeoCrossChainProof, error:scriptHash is not CCMC contract address, expected:%s, but got %s", hex.EncodeToString(common.ToArrayReverse(contractAddr)), scriptHash.String())
+	}
+
+	value, err := mpt.VerifyProof(stateRoot, scriptHash, key, proofs)
+	if err != nil {
+		return nil, fmt.Errorf("VerifyNeoCrossChainProof, joeqian10/neo-gogogo/mpt.VerifyProof error:%v", err)
+	}
+
+	return value, nil
+
+}
