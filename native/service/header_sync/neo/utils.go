@@ -246,10 +246,6 @@ func getNextConsensusByHeight(native *native.NativeService, chainID uint64, heig
 	if err != nil {
 		return nil, fmt.Errorf("getNextConsensusByHeight, get nextConsensusStore error: %v", err)
 	}
-	neoConsensus := &NeoConsensus{
-		ChainID: chainID,
-		Height:  height,
-	}
 	if neoConsensusStore == nil {
 		return nil, fmt.Errorf("getNextConsensusByHeight, can not find any record")
 	}
@@ -257,6 +253,7 @@ func getNextConsensusByHeight(native *native.NativeService, chainID uint64, heig
 	if err != nil {
 		return nil, fmt.Errorf("getConsensusPeerByHeight, deserialize from raw storage item err:%v", err)
 	}
+	neoConsensus := new(NeoConsensus)
 	if err := neoConsensus.Deserialization(common.NewZeroCopySource(neoConsensusBytes)); err != nil {
 		return nil, fmt.Errorf("getConsensusPeerByHeight, deserialize consensusPeer error: %v", err)
 	}

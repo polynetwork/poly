@@ -55,7 +55,6 @@ func GetCrossChainMsg(native *native.NativeService, chainID uint64, height uint3
 	chainIDBytes := utils.GetUint64Bytes(chainID)
 	heightBytes := utils.GetUint32Bytes(height)
 
-	crossChainMsg := new(otypes.CrossChainMsg)
 	crossChainMsgStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(hscommon.CROSS_CHAIN_MSG),
 		chainIDBytes, heightBytes))
 	if err != nil {
@@ -68,6 +67,7 @@ func GetCrossChainMsg(native *native.NativeService, chainID uint64, height uint3
 	if err != nil {
 		return nil, fmt.Errorf("GetCrossChainMsg, deserialize headerBytes from raw storage item err:%v", err)
 	}
+	crossChainMsg := new(otypes.CrossChainMsg)
 	if err := crossChainMsg.Deserialization(ocommon.NewZeroCopySource(crossChainMsgBytes)); err != nil {
 		return nil, fmt.Errorf("GetCrossChainMsg, deserialize header error: %v", err)
 	}
@@ -109,7 +109,6 @@ func GetHeaderByHeight(native *native.NativeService, chainID uint64, height uint
 	if err != nil {
 		return nil, fmt.Errorf("GetHeaderByHeight, deserialize blockHashBytes from raw storage item err:%v", err)
 	}
-	header := new(otypes.Header)
 	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(hscommon.BLOCK_HEADER),
 		chainIDBytes, blockHashBytes))
 	if err != nil {
@@ -122,6 +121,7 @@ func GetHeaderByHeight(native *native.NativeService, chainID uint64, height uint
 	if err != nil {
 		return nil, fmt.Errorf("GetHeaderByHeight, deserialize headerBytes from raw storage item err:%v", err)
 	}
+	header := new(otypes.Header)
 	if err := header.Deserialization(ocommon.NewZeroCopySource(headerBytes)); err != nil {
 		return nil, fmt.Errorf("GetHeaderByHeight, deserialize header error: %v", err)
 	}
@@ -131,7 +131,6 @@ func GetHeaderByHeight(native *native.NativeService, chainID uint64, height uint
 func GetHeaderByHash(native *native.NativeService, chainID uint64, hash common.Uint256) (*otypes.Header, error) {
 	contract := utils.HeaderSyncContractAddress
 
-	header := new(otypes.Header)
 	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(hscommon.BLOCK_HEADER),
 		utils.GetUint64Bytes(chainID), hash.ToArray()))
 	if err != nil {
@@ -144,6 +143,7 @@ func GetHeaderByHash(native *native.NativeService, chainID uint64, hash common.U
 	if err != nil {
 		return nil, fmt.Errorf("GetHeaderByHash, deserialize from raw storage item err:%v", err)
 	}
+	header := new(otypes.Header)
 	if err := header.Deserialization(ocommon.NewZeroCopySource(headerBytes)); err != nil {
 		return nil, fmt.Errorf("GetHeaderByHash, deserialize header error: %v", err)
 	}
@@ -222,9 +222,7 @@ func GetKeyHeights(native *native.NativeService, chainID uint64) (*KeyHeights, e
 	if err != nil {
 		return nil, fmt.Errorf("GetKeyHeights, get keyHeights value error: %v", err)
 	}
-	keyHeights := &KeyHeights{
-		HeightList: make([]uint32, 0),
-	}
+	keyHeights := new(KeyHeights)
 	if value != nil {
 		keyHeightsBytes, err := cstates.GetValueFromRawStorageItem(value)
 		if err != nil {
@@ -254,11 +252,7 @@ func getConsensusPeersByHeight(native *native.NativeService, chainID uint64, hei
 	if err != nil {
 		return nil, fmt.Errorf("getConsensusPeerByHeight, get consensusPeerStore error: %v", err)
 	}
-	consensusPeers := &ConsensusPeers{
-		ChainID: chainID,
-		Height:  height,
-		PeerMap: make(map[string]*Peer),
-	}
+
 	if consensusPeerStore == nil {
 		return nil, fmt.Errorf("getConsensusPeerByHeight, can not find any record")
 	}
@@ -266,6 +260,7 @@ func getConsensusPeersByHeight(native *native.NativeService, chainID uint64, hei
 	if err != nil {
 		return nil, fmt.Errorf("getConsensusPeerByHeight, deserialize from raw storage item err:%v", err)
 	}
+	consensusPeers := new(ConsensusPeers)
 	if err := consensusPeers.Deserialization(common.NewZeroCopySource(consensusPeerBytes)); err != nil {
 		return nil, fmt.Errorf("getConsensusPeerByHeight, deserialize consensusPeer error: %v", err)
 	}
@@ -314,7 +309,7 @@ func UpdateConsensusPeer(native *native.NativeService, chainID uint64, header *o
 		}
 		err := putConsensusPeers(native, consensusPeers)
 		if err != nil {
-			return fmt.Errorf("updateConsensusPeer, put ConsensusPeer eerror: %s", err)
+			return fmt.Errorf("updateConsensusPeer, put ConsensusPeer error: %s", err)
 		}
 	}
 	return nil

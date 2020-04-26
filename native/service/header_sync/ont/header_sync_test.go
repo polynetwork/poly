@@ -159,6 +159,6 @@ func TestSyncBlockHeaderTwice(t *testing.T) {
 
 		native = NewNative(sink.Bytes(), tx, native.GetCacheDB())
 		err := ontHandler.SyncBlockHeader(native)
-		assert.Error(t, err)
+		assert.Nil(t, err)
 	}
 }

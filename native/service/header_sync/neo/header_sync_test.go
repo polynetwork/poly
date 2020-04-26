@@ -76,13 +76,10 @@ func TestSyncGenesisHeader(t *testing.T) {
 	}
 	param := new(scom.SyncGenesisHeaderParam)
 	param.ChainID = 4
-	var err error
 	sink := common.NewZeroCopySink(nil)
-	genesisHeader.Serialization(sink)
+	err := genesisHeader.Serialization(sink)
 	param.GenesisHeader = sink.Bytes()
-	if err != nil {
-		t.Errorf("NeoBlockHeaderToBytes error:%v", err)
-	}
+	assert.Nil(t, err)
 
 	sink = common.NewZeroCopySink(nil)
 	param.Serialization(sink)
@@ -211,11 +208,7 @@ func TestSyncBlockHeader(t *testing.T) {
 
 		native = NewNative(sink.Bytes(), tx, native.GetCacheDB())
 		err := neoHandler.SyncBlockHeader(native)
-		//assert.NoError(t, err)
-
-		if err != nil {
-			t.Errorf("syncBlockHeader error:%v", err)
-		}
+		assert.NoError(t, err)
 	}
 
 }
