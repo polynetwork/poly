@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"encoding/binary"
-	"encoding/hex"
 	"github.com/joeqian10/neo-gogogo/block"
 	"github.com/joeqian10/neo-gogogo/helper"
 	"github.com/joeqian10/neo-gogogo/mpt"
@@ -82,22 +81,4 @@ func Test_NeoCrossChainMsg_Serialization(t *testing.T) {
 	err := paramDeserialize.Deserialization(common.NewZeroCopySource(sink.Bytes()))
 	assert.Nil(t, err)
 	assert.Equal(t, paramDeserialize, paramSerialize)
-}
-
-func Test_DeSerialization_NeoBlockHeader(t *testing.T) {
-	var err error
-	header1 := new(NeoBlockHeader)
-	header1bs, _ := hex.DecodeString("00000000000000000000000000000000000000000000000000000000000000000000000058106c4e7be51589f2993ea20392f7470ed27fd5a767b006cd1a0d68cda43bee65fc8857000000001dac2b7c00000000ed02ac39071130e1f8fdadd7f0b4bb91a3c92138010000")
-	source1 := common.NewZeroCopySource(header1bs)
-	err = header1.Deserialization(source1)
-	if err != nil {
-		t.Errorf("header1.Deserialization = %v", err)
-	}
-
-	crossChainMsgStr := "000000005e1b000043dd8d18ed199817a69ab5531fc080d381951e043fb6635dd23a1d9a990bcd7da705796b6b9025476deb1ff2ebd70d75f0e344847a1d98017d8bc90595a0573501c3404dc81e192850389a5f776c5ab0e3247b5b9bc1a857ae1da2f0cb907bca1ad0092c1fd1ce7b0cf58a528d3dda7fa6badaa974187209c2cc7305bc3e99bfe9fd1a401ecef31fb0df7bf13959b52905e6ebc562da9424b341f1481fec5242a567bfe7682debb9332166029260b48e3565ab38219af247a4fd98caa366149c35f6743c4040706b57a38df1cabf5a91057998a9dc973d1ea4ed3a3207493cdbff5bdba799b64bd598e8c4f98dbf52d075271f28303852c7cf13e8cca69f76416521c4bd8e8b5321030f59a5482a4e42a2e5a848608dac4e84a698e567e2860e0ca5f23fc9e818d37c21032e78261370d4d62cf4c13584ca90f46c5565117b5b97544312f2e7b7c36b9eba21026e271722c21c482f0ac74dd932e61cdc2a2dd889633a2c5d8ecef43f2769f51e2103d55bfbcd493d06ab49c09cde0cea5d9ba890d81331a2fcd6f68d329932d0398f54ae"
-	crossChainMsgBs, _ := hex.DecodeString(crossChainMsgStr)
-	paramDeserialize := new(NeoCrossChainMsg)
-	err = paramDeserialize.Deserialization(common.NewZeroCopySource(crossChainMsgBs))
-	assert.Nil(t, err)
-
 }

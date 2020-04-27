@@ -26,7 +26,6 @@ import (
 	"github.com/joeqian10/neo-gogogo/helper"
 	"github.com/joeqian10/neo-gogogo/helper/io"
 	"github.com/joeqian10/neo-gogogo/mpt"
-	"github.com/joeqian10/neo-gogogo/tx"
 	"github.com/ontio/multi-chain/common"
 )
 
@@ -68,10 +67,7 @@ type NeoBlockHeader struct {
 }
 
 func (this *NeoBlockHeader) Deserialization(source *common.ZeroCopySource) error {
-	//var header *block.BlockHeader
-	this.BlockHeader = &block.BlockHeader{
-		Witness: &tx.Witness{},
-	}
+	this.BlockHeader = new(block.BlockHeader)
 	br := io.NewBinaryReaderFromBuf(source.Bytes())
 	this.BlockHeader.Deserialize(br)
 	if br.Err != nil {
