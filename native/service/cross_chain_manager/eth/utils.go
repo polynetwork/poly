@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/ontio/multi-chain/native/states"
 	"math/big"
 
 	ecom "github.com/ethereum/go-ethereum/common"
@@ -17,10 +18,20 @@ import (
 	"github.com/ontio/multi-chain/common/log"
 	"github.com/ontio/multi-chain/native"
 	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
+	cmanager "github.com/ontio/multi-chain/native/service/governance/side_chain_manager"
 	"github.com/ontio/multi-chain/native/service/header_sync/eth"
 )
 
-func verifyFromEthTx(native *native.NativeService, proof, extra []byte, fromChainID uint64, height uint32, contractAddr []byte) (*scom.MakeTxParam, error) {
+func verifyFromEthTx(native *native.NativeService, proof, extra []byte, fromChainID uint64, height uint32, sideChain *cmanager.SideChain) (*scom.MakeTxParam, error) {
+	bestHeader, _, err := eth.GetCurrentHeader(native, fromChainID)
+	if err != nil {
+		return nil, fmt.Errorf("VerifyFromEthProof, get current header fail, error:%s", err)
+	}
+	bestHeight := uint32(bestHeader.Number.Uint64())
+	if bestHeight < height || bestHeight-height < uint32(sideChain.BlocksToWait-1) {
+		return nil, fmt.Errorf("VerifyFromEthProof, transaction is not confirmed, current height: %d, input height: %d", bestHeight, height)
+	}
+
 	blockData, _, err := eth.GetHeaderByHeight(native, uint64(height), fromChainID)
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromEthProof, get header by height, height:%d, error:%s", height, err)
@@ -38,7 +49,7 @@ func verifyFromEthTx(native *native.NativeService, proof, extra []byte, fromChai
 
 	//todo 1. verify the proof with header
 	//determine where the k and v from
-	proofResult, err := verifyMerkleProof(ethProof, blockData, contractAddr)
+	proofResult, err := verifyMerkleProof(ethProof, blockData, sideChain.CCMCAddress)
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromEthProof, verifyMerkleProof error:%v", err)
 	}
