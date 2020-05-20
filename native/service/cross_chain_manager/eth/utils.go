@@ -5,7 +5,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/ontio/multi-chain/native/states"
 	"math/big"
 
 	ecom "github.com/ethereum/go-ethereum/common"
