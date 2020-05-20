@@ -162,22 +162,35 @@ func IsHeaderExist(native *native.NativeService, hash []byte, chainID uint64) (b
 }
 func RestructChain(native *native.NativeService, current, new *types.Header, chainID uint64) error {
 	si, ti := current.Number.Uint64(), new.Number.Uint64()
+	var err error
 	if si > ti {
-		current, _, _ = GetHeaderByHeight(native, ti, chainID)
+		current, _, err = GetHeaderByHeight(native, ti, chainID)
+		if err != nil {
+			return fmt.Errorf("RestructChain GetHeaderByHeight height:%d error:%s", ti, err)
+		}
 		si = ti
 	}
 	newHashs := make([]common.Hash, 0)
 	for ti > si {
 		newHashs = append(newHashs, new.Hash())
-		new, _, _ = GetHeaderByHash(native, new.ParentHash.Bytes(), chainID)
+		new, _, err = GetHeaderByHash(native, new.ParentHash.Bytes(), chainID)
+		if err != nil {
+			return fmt.Errorf("RestructChain GetHeaderByHash hash:%x error:%s", new.ParentHash.Bytes(), err)
+		}
 		ti--
 	}
 	for current.ParentHash != new.ParentHash {
 		newHashs = append(newHashs, new.Hash())
-		new, _, _ = GetHeaderByHash(native, new.ParentHash.Bytes(), chainID)
+		new, _, err = GetHeaderByHash(native, new.ParentHash.Bytes(), chainID)
+		if err != nil {
+			return fmt.Errorf("RestructChain GetHeaderByHash hash:%x  error:%s", new.ParentHash.Bytes(), err)
+		}
 		ti--
 		si--
-		current, _, _ = GetHeaderByHeight(native, si, chainID)
+		current, _, err = GetHeaderByHeight(native, si, chainID)
+		if err != nil {
+			return fmt.Errorf("RestructChain GetHeaderByHeight height:%d error:%s", ti, err)
+		}
 	}
 	newHashs = append(newHashs, new.Hash())
 	for i := len(newHashs) - 1; i >= 0; i-- {
