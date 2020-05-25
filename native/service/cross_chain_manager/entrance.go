@@ -13,6 +13,7 @@ import (
 	"github.com/ontio/multi-chain/native/service/cross_chain_manager/eth"
 	"github.com/ontio/multi-chain/native/service/cross_chain_manager/neo"
 	"github.com/ontio/multi-chain/native/service/cross_chain_manager/ont"
+	"github.com/ontio/multi-chain/native/service/cross_chain_manager/cosmos"
 	"github.com/ontio/multi-chain/native/service/governance/side_chain_manager"
 	"github.com/ontio/multi-chain/native/service/utils"
 )
@@ -44,6 +45,8 @@ func GetChainHandler(router uint64) (scom.ChainHandler, error) {
 		return ont.NewONTHandler(), nil
 	case utils.NEO_ROUTER:
 		return neo.NewNEOHandler(), nil
+	case utils.COSMOS_ROUTER:
+		return cosmos.NewCosmosHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported router:%d", router)
 	}

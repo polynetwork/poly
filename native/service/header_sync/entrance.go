@@ -11,6 +11,7 @@ import (
 	"github.com/ontio/multi-chain/native/service/header_sync/eth"
 	"github.com/ontio/multi-chain/native/service/header_sync/neo"
 	"github.com/ontio/multi-chain/native/service/header_sync/ont"
+	"github.com/ontio/multi-chain/native/service/header_sync/cosmos"
 	"github.com/ontio/multi-chain/native/service/utils"
 )
 
@@ -37,6 +38,8 @@ func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
 		return ont.NewONTHandler(), nil
 	case utils.NEO_ROUTER:
 		return neo.NewNEOHandler(), nil
+	case utils.COSMOS_ROUTER:
+		return cosmos.NewCosmosHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported router:%d", router)
 	}

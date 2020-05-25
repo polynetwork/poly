@@ -33,4 +33,5 @@ var (
 	ETH_ROUTER = uint64(2)
 	ONT_ROUTER = uint64(3)
 	NEO_ROUTER = uint64(4)
+	COSMOS_ROUTER = uint64(6)
 )
