@@ -7,6 +7,8 @@ import (
 	"encoding/json"
 	"github.com/ontio/multi-chain/account"
 	"github.com/ontio/multi-chain/common"
+	"github.com/ontio/multi-chain/core/genesis"
+	"github.com/ontio/multi-chain/core/types"
 	cstates "github.com/ontio/multi-chain/core/states"
 	"github.com/ontio/multi-chain/core/store/leveldbstore"
 	"github.com/ontio/multi-chain/core/store/overlaydb"
@@ -14,6 +16,7 @@ import (
 	scom "github.com/ontio/multi-chain/native/service/header_sync/common"
 	"github.com/ontio/multi-chain/native/service/utils"
 	"github.com/ontio/multi-chain/native/storage"
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
@@ -23,6 +26,9 @@ import (
 
 var (
 	acct *account.Account = account.NewAccount("")
+	setBKers = func() {
+		genesis.GenesisBookkeepers = []keypair.PublicKey{acct.PublicKey}
+	}
 )
 
 const (
@@ -35,6 +41,10 @@ const (
 	NONCE_ERROR
 	UNKNOWN
 )
+
+func init() {
+	setBKers()
+}
 
 func typeOfError(e error) int {
 	if e == nil {
@@ -57,12 +67,12 @@ func typeOfError(e error) int {
 	return UNKNOWN
 }
 
-func NewNative(args []byte, db *storage.CacheDB) *native.NativeService {
+func NewNative(args []byte, tx *types.Transaction, db *storage.CacheDB) *native.NativeService {
 	if db == nil {
 		store, _ := leveldbstore.NewMemLevelDBStore()
 		db = storage.NewCacheDB(overlaydb.NewOverlayDB(store))
 	}
-	return native.NewNativeService(db, nil, 0, 0, common.Uint256{0}, 0, args, false)
+	return native.NewNativeService(db, tx, 0, 0, common.Uint256{0}, 0, args, false)
 }
 
 func getLatestHeight(native *native.NativeService) uint64 {
@@ -114,7 +124,11 @@ func TestSyncGenesisHeader(t *testing.T) {
 	sink := common.NewZeroCopySink(nil)
 	param.Serialization(sink)
 
-	native := NewNative(sink.Bytes(), nil)
+	tx := &types.Transaction{
+		SignedAddr: []common.Address{acct.Address},
+	}
+
+	native := NewNative(sink.Bytes(), tx, nil)
 	ethHandler := NewETHHandler()
 	err := ethHandler.SyncGenesisHeader(native)
 	assert.Equal(t, SUCCESS, typeOfError(err))
@@ -136,7 +150,11 @@ func TestSyncGenesisHeaderTwice(t *testing.T) {
 		param.GenesisHeader = header7152785
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
-		native = NewNative(sink.Bytes(), nil)
+		tx := &types.Transaction{
+			SignedAddr: []common.Address{acct.Address},
+		}
+
+		native = NewNative(sink.Bytes(), tx, nil)
 		err := ethHandler.SyncGenesisHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)
@@ -153,7 +171,11 @@ func TestSyncGenesisHeaderTwice(t *testing.T) {
 		param.GenesisHeader = header7152785
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
-		native = NewNative(sink.Bytes(), native.GetCacheDB())
+		tx := &types.Transaction{
+			SignedAddr: []common.Address{acct.Address},
+		}
+
+		native = NewNative(sink.Bytes(), tx, native.GetCacheDB())
 		err := ethHandler.SyncGenesisHeader(native)
 		assert.Equal(t, GENESIS_INITIALIZED, typeOfError(err))
 		height := getLatestHeight(native)
@@ -173,7 +195,11 @@ func TestSyncGenesisHeader_ParamError(t *testing.T) {
 	sink := common.NewZeroCopySink(nil)
 	param.Serialization(sink)
 
-	native := NewNative(sink.Bytes(), nil)
+	tx := &types.Transaction{
+		SignedAddr: []common.Address{acct.Address},
+	}
+
+	native := NewNative(sink.Bytes(), tx, nil)
 	ethHandler := NewETHHandler()
 	err := ethHandler.SyncGenesisHeader(native)
 	assert.Equal(t, GENESIS_PARAM_ERROR, typeOfError(err))
@@ -190,7 +216,11 @@ func TestSyncBlockHeader(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil)
+		tx := &types.Transaction{
+			SignedAddr: []common.Address{acct.Address},
+		}
+
+		native = NewNative(sink.Bytes(), tx, nil)
 		err := ethHandler.SyncGenesisHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)
@@ -215,7 +245,7 @@ func TestSyncBlockHeader(t *testing.T) {
 	sink := common.NewZeroCopySink(nil)
 	param.Serialization(sink)
 
-	native = NewNative(sink.Bytes(), native.GetCacheDB())
+	native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
 	err := ethHandler.SyncBlockHeader(native)
 	assert.Equal(t, SUCCESS, typeOfError(err))
 	height := getLatestHeight(native)
@@ -253,7 +283,11 @@ func TestSyncBlockHeaderTwice(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil)
+		tx := &types.Transaction{
+			SignedAddr: []common.Address{acct.Address},
+		}
+
+		native = NewNative(sink.Bytes(), tx, nil)
 		err := ethHandler.SyncGenesisHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)
@@ -273,7 +307,7 @@ func TestSyncBlockHeaderTwice(t *testing.T) {
 		param.Headers = append(param.Headers, header7152787)
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
-		native = NewNative(sink.Bytes(), native.GetCacheDB())
+		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
 		err := ethHandler.SyncBlockHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)
@@ -294,7 +328,7 @@ func TestSyncBlockHeaderTwice(t *testing.T) {
 		param.Headers = append(param.Headers, header7152789)
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
-		native = NewNative(sink.Bytes(), native.GetCacheDB())
+		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
 		err := ethHandler.SyncBlockHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)
@@ -333,7 +367,11 @@ func TestSyncBlockHeader_ParamError(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil)
+		tx := &types.Transaction{
+			SignedAddr: []common.Address{acct.Address},
+		}
+
+		native = NewNative(sink.Bytes(), tx, nil)
 		err := ethHandler.SyncGenesisHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)
@@ -359,7 +397,7 @@ func TestSyncBlockHeader_ParamError(t *testing.T) {
 	sink := common.NewZeroCopySink(nil)
 	param.Serialization(sink)
 
-	native = NewNative(sink.Bytes(), native.GetCacheDB())
+	native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
 	err := ethHandler.SyncBlockHeader(native)
 	assert.Equal(t, SYNCBLOCK_PARAM_ERROR, typeOfError(err))
 	height := getLatestHeight(native)
@@ -377,7 +415,11 @@ func TestSyncBlockHeader_OrphanBlock(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil)
+		tx := &types.Transaction{
+			SignedAddr: []common.Address{acct.Address},
+		}
+
+		native = NewNative(sink.Bytes(), tx, nil)
 		err := ethHandler.SyncGenesisHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)
@@ -402,7 +444,7 @@ func TestSyncBlockHeader_OrphanBlock(t *testing.T) {
 	sink := common.NewZeroCopySink(nil)
 	param.Serialization(sink)
 
-	native = NewNative(sink.Bytes(), native.GetCacheDB())
+	native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
 	err := ethHandler.SyncBlockHeader(native)
 	assert.Equal(t, SYNCBLOCK_ORPHAN, typeOfError(err))
 	height := getLatestHeight(native)
@@ -423,7 +465,11 @@ func TestSyncBlockHeader_DifficultyWrong(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil)
+		tx := &types.Transaction{
+			SignedAddr: []common.Address{acct.Address},
+		}
+
+		native = NewNative(sink.Bytes(), tx, nil)
 		err := ethHandler.SyncGenesisHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)
@@ -449,7 +495,7 @@ func TestSyncBlockHeader_DifficultyWrong(t *testing.T) {
 	sink := common.NewZeroCopySink(nil)
 	param.Serialization(sink)
 
-	native = NewNative(sink.Bytes(), native.GetCacheDB())
+	native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
 	err := ethHandler.SyncBlockHeader(native)
 	assert.Equal(t, DIFFICULTY_ERROR, typeOfError(err))
 	height := getLatestHeight(native)
@@ -480,7 +526,11 @@ func TestSyncBlockHeader_NonceWrong(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil)
+		tx := &types.Transaction{
+			SignedAddr: []common.Address{acct.Address},
+		}
+
+		native = NewNative(sink.Bytes(), tx, nil)
 		err := ethHandler.SyncGenesisHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)
@@ -506,7 +556,7 @@ func TestSyncBlockHeader_NonceWrong(t *testing.T) {
 	sink := common.NewZeroCopySink(nil)
 	param.Serialization(sink)
 
-	native = NewNative(sink.Bytes(), native.GetCacheDB())
+	native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
 	err := ethHandler.SyncBlockHeader(native)
 	assert.Equal(t, NONCE_ERROR, typeOfError(err))
 	height := getLatestHeight(native)
@@ -534,7 +584,11 @@ func TestSyncBlockHeaderEpoch(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil)
+		tx := &types.Transaction{
+			SignedAddr: []common.Address{acct.Address},
+		}
+
+		native = NewNative(sink.Bytes(), tx, nil)
 		err := ethHandler.SyncGenesisHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)
@@ -559,7 +613,7 @@ func TestSyncBlockHeaderEpoch(t *testing.T) {
 	sink := common.NewZeroCopySink(nil)
 	param.Serialization(sink)
 
-	native = NewNative(sink.Bytes(), native.GetCacheDB())
+	native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
 	err := ethHandler.SyncBlockHeader(native)
 	assert.Equal(t, SUCCESS, typeOfError(err))
 	height := getLatestHeight(native)
@@ -597,7 +651,11 @@ func TestSyncBlockHeaderForked(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil)
+		tx := &types.Transaction{
+			SignedAddr: []common.Address{acct.Address},
+		}
+
+		native = NewNative(sink.Bytes(), tx, nil)
 		err := ethHandler.SyncGenesisHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)
@@ -616,7 +674,7 @@ func TestSyncBlockHeaderForked(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), native.GetCacheDB())
+		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
 		err := ethHandler.SyncBlockHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)
@@ -634,7 +692,7 @@ func TestSyncBlockHeaderForked(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), native.GetCacheDB())
+		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
 		err := ethHandler.SyncBlockHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)
@@ -653,7 +711,11 @@ func TestSyncBlockHeaderForked2(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil)
+		tx := &types.Transaction{
+			SignedAddr: []common.Address{acct.Address},
+		}
+
+		native = NewNative(sink.Bytes(), tx, nil)
 		err := ethHandler.SyncGenesisHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)
@@ -672,7 +734,7 @@ func TestSyncBlockHeaderForked2(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), native.GetCacheDB())
+		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
 		err := ethHandler.SyncBlockHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)
@@ -693,7 +755,7 @@ func TestSyncBlockHeaderForked2(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), native.GetCacheDB())
+		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
 		err := ethHandler.SyncBlockHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)

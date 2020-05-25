@@ -167,8 +167,12 @@ func putHeader(native *native.NativeService, cdc *codec.Codec, chainID uint64, h
 	}
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(hscommon.MAIN_CHAIN), utils.GetUint64Bytes(chainID), utils.GetUint64Bytes(uint64(header.Header.Height))),
 		cstates.GenRawStorageItem(headerBs))
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(hscommon.CURRENT_HEADER_HEIGHT), utils.GetUint64Bytes(chainID)),
-		cstates.GenRawStorageItem(utils.GetUint64Bytes(uint64(header.Header.Height))))
+
+	currentHeight, _ := getCurrentHeight(native, chainID)
+	if currentHeight < header.Header.Height {
+		native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(hscommon.CURRENT_HEADER_HEIGHT), utils.GetUint64Bytes(chainID)),
+			cstates.GenRawStorageItem(utils.GetUint64Bytes(uint64(header.Header.Height))))
+	}
 	notifyPutHeader(native, chainID, uint64(header.Header.Height), header.Header.Hash().String())
 	return nil
 }

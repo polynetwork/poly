@@ -20,6 +20,7 @@ package cosmos
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/ontio/multi-chain/common"
@@ -143,22 +144,22 @@ func (this *CosmosHandler) SyncBlockHeader(native *native.NativeService) error {
 		header := myHeader.Header
 		commit := myHeader.Commit
 		if bytes.Equal(valHash, valset.Hash()) != true {
-			return fmt.Errorf("block validator is not right!")
+			return fmt.Errorf("block validator is not right!, next validator hash: %s, validator set hash: %s", valHash.String(), hex.EncodeToString(valset.Hash()))
 		}
 		if bytes.Equal(header.ValidatorsHash, valset.Hash()) != true {
-			return fmt.Errorf("block validator is not right!")
+			return fmt.Errorf("block validator is not right!, header validator hash: %s, validator set hash: %s", header.ValidatorsHash.String(), hex.EncodeToString(valset.Hash()))
 		}
 		if commit.Height() != header.Height {
-			return fmt.Errorf("commit height is not right!")
+			return fmt.Errorf("commit height is not right! commit height: %d, header height: %d", commit.Height(), header.Height)
 		}
 		if bytes.Equal(commit.BlockID.Hash, header.Hash()) != true {
-			return fmt.Errorf("commit hash is not right!")
+			return fmt.Errorf("commit hash is not right!, commit block hash: %s, header hash: %s", commit.BlockID.Hash.String(), hex.EncodeToString(valset.Hash()))
 		}
 		if err := commit.ValidateBasic(); err != nil {
-			return fmt.Errorf("commit is not right!")
+			return fmt.Errorf("commit is not right! err: %s", err.Error())
 		}
 		if valset.Size() != len(commit.Precommits) {
-			return fmt.Errorf("precommits is not right!")
+			return fmt.Errorf("the size of precommits is not right!")
 		}
 		talliedVotingPower := int64(0)
 		for idx, precommit := range commit.Precommits {
