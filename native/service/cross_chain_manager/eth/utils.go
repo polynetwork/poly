@@ -128,12 +128,7 @@ func verifyMerkleProof(ethProof *ETHProof, blockData *types.Header, contractAddr
 	}
 
 	sp := ethProof.StorageProofs[0]
-	hash1 := scom.Replace0x(sp.Key)
-	for len(hash1) < 64 {
-		hash1 = "0" + hash1
-	}
-	storageKey := crypto.Keccak256(ecom.Hex2Bytes(hash1))
-	//storageKey := crypto.Keccak256(ecom.Hex2Bytes(scom.Replace0x(sp.Key)))
+	storageKey := crypto.Keccak256(ecom.HexToHash(scom.Replace0x(sp.Key)).Bytes())
 
 	for _, prf := range sp.Proof {
 		nodeList.Put(nil, ecom.Hex2Bytes(scom.Replace0x(prf)))
