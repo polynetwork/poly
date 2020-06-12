@@ -55,7 +55,7 @@ func (this *NEOHandler) SyncGenesisHeader(native *native.NativeService) error {
 	}
 	header := new(NeoBlockHeader)
 
-	if header.Deserialization(common.NewZeroCopySource(params.GenesisHeader)); err != nil {
+	if err := header.Deserialization(common.NewZeroCopySource(params.GenesisHeader)); err != nil {
 		return fmt.Errorf("SyncGenesisHeader, deserialize header err: %v", err)
 	}
 	//block header storage
