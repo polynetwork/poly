@@ -149,8 +149,8 @@ func (this *CosmosHandler) SyncBlockHeader(native *native.NativeService) error {
 		if bytes.Equal(header.ValidatorsHash, valset.Hash()) != true {
 			return fmt.Errorf("block validator is not right!, header validator hash: %s, validator set hash: %s", header.ValidatorsHash.String(), hex.EncodeToString(valset.Hash()))
 		}
-		if commit.Height() != header.Height {
-			return fmt.Errorf("commit height is not right! commit height: %d, header height: %d", commit.Height(), header.Height)
+		if commit.GetHeight() != header.Height {
+			return fmt.Errorf("commit height is not right! commit height: %d, header height: %d", commit.GetHeight(), header.Height)
 		}
 		if bytes.Equal(commit.BlockID.Hash, header.Hash()) != true {
 			return fmt.Errorf("commit hash is not right!, commit block hash: %s, header hash: %s", commit.BlockID.Hash.String(), hex.EncodeToString(valset.Hash()))
@@ -158,22 +158,22 @@ func (this *CosmosHandler) SyncBlockHeader(native *native.NativeService) error {
 		if err := commit.ValidateBasic(); err != nil {
 			return fmt.Errorf("commit is not right! err: %s", err.Error())
 		}
-		if valset.Size() != len(commit.Precommits) {
+		if valset.Size() != len(commit.Signatures) {
 			return fmt.Errorf("the size of precommits is not right!")
 		}
 		talliedVotingPower := int64(0)
-		for idx, precommit := range commit.Precommits {
-			if precommit == nil {
+		for idx, commitSig := range commit.Signatures {
+			if commitSig.Absent() {
 				continue // OK, some precommits can be missing.
 			}
 			_, val := valset.GetByIndex(idx)
 			// Validate signature.
 			precommitSignBytes := commit.VoteSignBytes(prevHeader.Header.ChainID, idx)
-			if !val.PubKey.VerifyBytes(precommitSignBytes, precommit.Signature) {
-				return fmt.Errorf("Invalid commit -- invalid signature: %v", precommit)
+			if !val.PubKey.VerifyBytes(precommitSignBytes, commitSig.Signature) {
+				return fmt.Errorf("Invalid commit -- invalid signature: %v", commitSig)
 			}
 			// Good precommit!
-			if commit.BlockID.Equals(precommit.BlockID) {
+			if commit.BlockID.Equals(commitSig.BlockID(commit.BlockID)) {
 				talliedVotingPower += val.VotingPower
 			}
 		}
