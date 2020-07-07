@@ -1,3 +1,19 @@
+/*
+ * Copyright (C) 2020 The poly network Authors
+ * This file is part of The poly network library.
+ *
+ * The  poly network  is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * The  poly network  is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with The poly network .  If not, see <http://www.gnu.org/licenses/>.
+ */
 package btc
 
 import (
@@ -15,13 +31,13 @@ import (
 	"github.com/btcsuite/btcutil"
 	wire_bch "github.com/gcash/bchd/wire"
 	"github.com/gcash/bchutil/merkleblock"
-	"github.com/ontio/multi-chain/common"
-	cstates "github.com/ontio/multi-chain/core/states"
-	"github.com/ontio/multi-chain/native"
-	crosscommon "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
-	"github.com/ontio/multi-chain/native/service/governance/side_chain_manager"
-	"github.com/ontio/multi-chain/native/service/header_sync/btc"
-	"github.com/ontio/multi-chain/native/service/utils"
+	"github.com/polynetwork/poly/common"
+	cstates "github.com/polynetwork/poly/core/states"
+	"github.com/polynetwork/poly/native"
+	crosscommon "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
+	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
+	"github.com/polynetwork/poly/native/service/header_sync/btc"
+	"github.com/polynetwork/poly/native/service/utils"
 	"golang.org/x/crypto/ripemd160"
 )
 

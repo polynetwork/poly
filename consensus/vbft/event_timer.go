@@ -25,7 +25,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ontio/multi-chain/common/log"
+	"github.com/polynetwork/poly/common/log"
 )
 
 type TimerEventType int

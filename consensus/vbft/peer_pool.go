@@ -23,7 +23,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ontio/multi-chain/consensus/vbft/config"
+	"github.com/polynetwork/poly/consensus/vbft/config"
 	"github.com/ontio/ontology-crypto/keypair"
 )
 

@@ -20,7 +20,7 @@ package signature
 import (
 	"testing"
 
-	"github.com/ontio/multi-chain/account"
+	"github.com/polynetwork/poly/account"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/stretchr/testify/assert"
 )

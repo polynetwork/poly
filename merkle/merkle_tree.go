@@ -23,8 +23,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/log"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/log"
 )
 
 // const UINT256_SIZE int = 32

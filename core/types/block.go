@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ontio/multi-chain/common"
+	"github.com/polynetwork/poly/common"
 )
 
 type Block struct {

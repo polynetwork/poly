@@ -22,12 +22,12 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/ontio/multi-chain/core/store/overlaydb"
+	"github.com/polynetwork/poly/core/store/overlaydb"
 	"math"
 	"sync"
 
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/log"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/log"
 	"github.com/ontio/ontology-crypto/keypair"
 )
 

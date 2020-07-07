@@ -19,7 +19,7 @@ package test
 
 import (
 	"bytes"
-	"github.com/ontio/multi-chain/common"
+	"github.com/polynetwork/poly/common"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

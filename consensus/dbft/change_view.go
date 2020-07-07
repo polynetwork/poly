@@ -21,7 +21,7 @@ package dbft
 import (
 	"io"
 
-	"github.com/ontio/multi-chain/common"
+	"github.com/polynetwork/poly/common"
 )
 
 type ChangeView struct {

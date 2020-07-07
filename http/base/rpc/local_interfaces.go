@@ -22,10 +22,10 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/ontio/multi-chain/common/log"
-	bactor "github.com/ontio/multi-chain/http/base/actor"
-	"github.com/ontio/multi-chain/http/base/common"
-	berr "github.com/ontio/multi-chain/http/base/error"
+	"github.com/polynetwork/poly/common/log"
+	bactor "github.com/polynetwork/poly/http/base/actor"
+	"github.com/polynetwork/poly/http/base/common"
+	berr "github.com/polynetwork/poly/http/base/error"
 )
 
 const (

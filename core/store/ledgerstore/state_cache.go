@@ -20,7 +20,7 @@ package ledgerstore
 
 import (
 	"github.com/hashicorp/golang-lru"
-	"github.com/ontio/multi-chain/core/states"
+	"github.com/polynetwork/poly/core/states"
 )
 
 const (

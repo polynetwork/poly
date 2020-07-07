@@ -21,8 +21,8 @@ package sigsvr
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ontio/multi-chain/cmd/sigsvr/common"
-	"github.com/ontio/multi-chain/common/log"
+	"github.com/polynetwork/poly/cmd/sigsvr/common"
+	"github.com/polynetwork/poly/common/log"
 	"io/ioutil"
 	"net/http"
 )

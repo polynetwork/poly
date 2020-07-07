@@ -20,10 +20,10 @@ package ledgerstore
 
 import (
 	"fmt"
-	"github.com/ontio/multi-chain/account"
-	"github.com/ontio/multi-chain/common/config"
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/core/genesis"
+	"github.com/polynetwork/poly/account"
+	"github.com/polynetwork/poly/common/config"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/core/genesis"
 	"github.com/ontio/ontology-crypto/keypair"
 	"os"
 	"testing"

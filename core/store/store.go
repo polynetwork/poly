@@ -19,12 +19,12 @@
 package store
 
 import (
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/core/states"
-	"github.com/ontio/multi-chain/core/store/overlaydb"
-	"github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/multi-chain/native/event"
-	cstates "github.com/ontio/multi-chain/native/states"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/core/states"
+	"github.com/polynetwork/poly/core/store/overlaydb"
+	"github.com/polynetwork/poly/core/types"
+	"github.com/polynetwork/poly/native/event"
+	cstates "github.com/polynetwork/poly/native/states"
 	"github.com/ontio/ontology-crypto/keypair"
 )
 

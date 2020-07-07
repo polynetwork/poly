@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ontio/multi-chain/common/log"
+	"github.com/polynetwork/poly/common/log"
 )
 
 var p *Peer

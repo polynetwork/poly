@@ -19,8 +19,8 @@ package handlers
 
 import (
 	"encoding/json"
-	clisvrcom "github.com/ontio/multi-chain/cmd/sigsvr/common"
-	"github.com/ontio/multi-chain/common/log"
+	clisvrcom "github.com/polynetwork/poly/cmd/sigsvr/common"
+	"github.com/polynetwork/poly/common/log"
 	"github.com/ontio/ontology-crypto/keypair"
 	s "github.com/ontio/ontology-crypto/signature"
 )

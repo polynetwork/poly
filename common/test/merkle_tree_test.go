@@ -22,7 +22,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"github.com/ontio/multi-chain/common"
+	"github.com/polynetwork/poly/common"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

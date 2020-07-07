@@ -18,7 +18,7 @@
 package handlers
 
 import (
-	clisvrcom "github.com/ontio/multi-chain/cmd/sigsvr/common"
+	clisvrcom "github.com/polynetwork/poly/cmd/sigsvr/common"
 	"testing"
 )
 

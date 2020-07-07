@@ -20,13 +20,13 @@
 package common
 
 import (
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/core/types"
-	ontErrors "github.com/ontio/multi-chain/errors"
-	bactor "github.com/ontio/multi-chain/http/base/actor"
-	"github.com/ontio/multi-chain/native/event"
-	cstate "github.com/ontio/multi-chain/native/states"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/core/types"
+	ontErrors "github.com/polynetwork/poly/errors"
+	bactor "github.com/polynetwork/poly/http/base/actor"
+	"github.com/polynetwork/poly/native/event"
+	cstate "github.com/polynetwork/poly/native/states"
 	"github.com/ontio/ontology-crypto/keypair"
 )
 

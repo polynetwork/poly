@@ -25,13 +25,13 @@ import (
 	"os"
 
 	"github.com/gosuri/uiprogress"
-	"github.com/ontio/multi-chain/cmd/utils"
-	"github.com/ontio/multi-chain/common/config"
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/common/serialization"
-	"github.com/ontio/multi-chain/core/genesis"
-	"github.com/ontio/multi-chain/core/ledger"
-	"github.com/ontio/multi-chain/core/types"
+	"github.com/polynetwork/poly/cmd/utils"
+	"github.com/polynetwork/poly/common/config"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/common/serialization"
+	"github.com/polynetwork/poly/core/genesis"
+	"github.com/polynetwork/poly/core/ledger"
+	"github.com/polynetwork/poly/core/types"
 	"github.com/urfave/cli"
 )
 

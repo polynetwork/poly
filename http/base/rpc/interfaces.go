@@ -21,15 +21,15 @@ package rpc
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/config"
-	"github.com/ontio/multi-chain/common/log"
-	scom "github.com/ontio/multi-chain/core/store/common"
-	"github.com/ontio/multi-chain/core/types"
-	ontErrors "github.com/ontio/multi-chain/errors"
-	bactor "github.com/ontio/multi-chain/http/base/actor"
-	bcomn "github.com/ontio/multi-chain/http/base/common"
-	berr "github.com/ontio/multi-chain/http/base/error"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/config"
+	"github.com/polynetwork/poly/common/log"
+	scom "github.com/polynetwork/poly/core/store/common"
+	"github.com/polynetwork/poly/core/types"
+	ontErrors "github.com/polynetwork/poly/errors"
+	bactor "github.com/polynetwork/poly/http/base/actor"
+	bcomn "github.com/polynetwork/poly/http/base/common"
+	berr "github.com/polynetwork/poly/http/base/error"
 )
 
 //get best block hash

@@ -19,10 +19,10 @@
 package event
 
 import (
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/multi-chain/events"
-	"github.com/ontio/multi-chain/events/message"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/core/types"
+	"github.com/polynetwork/poly/events"
+	"github.com/polynetwork/poly/events/message"
 )
 
 const (

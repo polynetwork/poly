@@ -19,10 +19,10 @@
 package utils
 
 import (
-	"github.com/ontio/multi-chain/common/log"
-	msgCommon "github.com/ontio/multi-chain/p2pserver/common"
-	"github.com/ontio/multi-chain/p2pserver/message/types"
-	"github.com/ontio/multi-chain/p2pserver/net/protocol"
+	"github.com/polynetwork/poly/common/log"
+	msgCommon "github.com/polynetwork/poly/p2pserver/common"
+	"github.com/polynetwork/poly/p2pserver/message/types"
+	"github.com/polynetwork/poly/p2pserver/net/protocol"
 	"github.com/ontio/ontology-eventbus/actor"
 )
 

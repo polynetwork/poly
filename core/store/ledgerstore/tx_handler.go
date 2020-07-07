@@ -20,16 +20,16 @@ package ledgerstore
 
 import (
 	"fmt"
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/config"
-	"github.com/ontio/multi-chain/core/payload"
-	"github.com/ontio/multi-chain/core/store"
-	scommon "github.com/ontio/multi-chain/core/store/common"
-	"github.com/ontio/multi-chain/core/store/overlaydb"
-	"github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/multi-chain/native"
-	"github.com/ontio/multi-chain/native/event"
-	"github.com/ontio/multi-chain/native/storage"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/config"
+	"github.com/polynetwork/poly/core/payload"
+	"github.com/polynetwork/poly/core/store"
+	scommon "github.com/polynetwork/poly/core/store/common"
+	"github.com/polynetwork/poly/core/store/overlaydb"
+	"github.com/polynetwork/poly/core/types"
+	"github.com/polynetwork/poly/native"
+	"github.com/polynetwork/poly/native/event"
+	"github.com/polynetwork/poly/native/storage"
 )
 
 //HandleInvokeTransaction deal with smart contract invoke transaction

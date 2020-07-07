@@ -18,7 +18,7 @@
 
 package types
 
-import "github.com/ontio/multi-chain/common"
+import "github.com/polynetwork/poly/common"
 
 type SmartCodeEvent struct {
 	TxHash common.Uint256

@@ -18,9 +18,9 @@
 package genesis
 
 import (
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/config"
-	"github.com/ontio/multi-chain/common/log"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/config"
+	"github.com/polynetwork/poly/common/log"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/stretchr/testify/assert"
 	"os"

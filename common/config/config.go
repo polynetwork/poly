@@ -26,10 +26,10 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/constants"
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/errors"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/constants"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/errors"
 	"github.com/ontio/ontology-crypto/keypair"
 )
 

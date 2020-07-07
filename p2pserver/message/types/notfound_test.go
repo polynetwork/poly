@@ -21,7 +21,7 @@ package types
 import (
 	"testing"
 
-	cm "github.com/ontio/multi-chain/common"
+	cm "github.com/polynetwork/poly/common"
 )
 
 func Uint256ParseFromBytes(f []byte) cm.Uint256 {

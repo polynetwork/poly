@@ -19,7 +19,7 @@
 // Package error privides error code for http
 package error
 
-import ontErrors "github.com/ontio/multi-chain/errors"
+import ontErrors "github.com/polynetwork/poly/errors"
 
 const (
 	SUCCESS            int64 = 0

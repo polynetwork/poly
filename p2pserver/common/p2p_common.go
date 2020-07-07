@@ -23,8 +23,8 @@ import (
 	"strconv"
 	"strings"
 
-	com "github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/core/types"
+	com "github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/core/types"
 )
 
 //peer capability

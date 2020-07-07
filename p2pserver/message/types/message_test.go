@@ -24,8 +24,8 @@ import (
 	"testing"
 	"time"
 
-	common2 "github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/p2pserver/common"
+	common2 "github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/p2pserver/common"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -24,10 +24,10 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/common/serialization"
-	"github.com/ontio/multi-chain/core/signature"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/common/serialization"
+	"github.com/polynetwork/poly/core/signature"
 	"github.com/ontio/ontology-crypto/keypair"
 )
 

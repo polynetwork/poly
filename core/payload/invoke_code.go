@@ -20,7 +20,7 @@ package payload
 
 import (
 	"fmt"
-	"github.com/ontio/multi-chain/common"
+	"github.com/polynetwork/poly/common"
 )
 
 // InvokeCode is an implementation of transaction payload for invoke smartcontract

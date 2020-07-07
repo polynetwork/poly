@@ -24,9 +24,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/serialization"
-	vconfig "github.com/ontio/multi-chain/consensus/vbft/config"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/serialization"
+	vconfig "github.com/polynetwork/poly/consensus/vbft/config"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/ontology-crypto/signature"
 )

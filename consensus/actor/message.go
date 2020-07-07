@@ -18,7 +18,7 @@
 
 package actor
 
-import "github.com/ontio/multi-chain/core/types"
+import "github.com/polynetwork/poly/core/types"
 
 type StartConsensus struct{}
 type StopConsensus struct{}

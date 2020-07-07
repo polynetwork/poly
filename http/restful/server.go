@@ -20,7 +20,7 @@
 package restful
 
 import (
-	"github.com/ontio/multi-chain/http/restful/restful"
+	"github.com/polynetwork/poly/http/restful/restful"
 )
 
 //start restful

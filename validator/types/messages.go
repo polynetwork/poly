@@ -19,9 +19,9 @@
 package types
 
 import (
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/multi-chain/errors"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/core/types"
+	"github.com/polynetwork/poly/errors"
 	"github.com/ontio/ontology-eventbus/actor"
 )
 

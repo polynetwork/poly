@@ -22,10 +22,10 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"github.com/ontio/multi-chain/common/constants"
+	"github.com/polynetwork/poly/common/constants"
 
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/core/payload"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/core/payload"
 	"github.com/ontio/ontology-crypto/keypair"
 )
 

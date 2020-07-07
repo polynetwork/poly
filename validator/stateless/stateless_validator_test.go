@@ -19,19 +19,19 @@ package stateless
 
 import (
 	"fmt"
-	"github.com/ontio/multi-chain/core/payload"
-	"github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/multi-chain/errors"
+	"github.com/polynetwork/poly/core/payload"
+	"github.com/polynetwork/poly/core/types"
+	"github.com/polynetwork/poly/errors"
 	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
 
-	"github.com/ontio/multi-chain/account"
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/core/signature"
-	ctypes "github.com/ontio/multi-chain/core/types"
-	types2 "github.com/ontio/multi-chain/validator/types"
+	"github.com/polynetwork/poly/account"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/core/signature"
+	ctypes "github.com/polynetwork/poly/core/types"
+	types2 "github.com/polynetwork/poly/validator/types"
 	"github.com/ontio/ontology-crypto/keypair"
 )
 

@@ -3,7 +3,7 @@ package ont
 import (
 	"testing"
 
-	"github.com/ontio/multi-chain/common"
+	"github.com/polynetwork/poly/common"
 	"github.com/stretchr/testify/assert"
 )
 

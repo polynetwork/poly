@@ -20,17 +20,17 @@
 package websocket
 
 import (
-	"github.com/ontio/multi-chain/common"
-	cfg "github.com/ontio/multi-chain/common/config"
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/multi-chain/events/message"
-	bactor "github.com/ontio/multi-chain/http/base/actor"
-	bcomn "github.com/ontio/multi-chain/http/base/common"
-	Err "github.com/ontio/multi-chain/http/base/error"
-	"github.com/ontio/multi-chain/http/base/rest"
-	"github.com/ontio/multi-chain/http/websocket/websocket"
-	"github.com/ontio/multi-chain/native/event"
+	"github.com/polynetwork/poly/common"
+	cfg "github.com/polynetwork/poly/common/config"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/core/types"
+	"github.com/polynetwork/poly/events/message"
+	bactor "github.com/polynetwork/poly/http/base/actor"
+	bcomn "github.com/polynetwork/poly/http/base/common"
+	Err "github.com/polynetwork/poly/http/base/error"
+	"github.com/polynetwork/poly/http/base/rest"
+	"github.com/polynetwork/poly/http/websocket/websocket"
+	"github.com/polynetwork/poly/native/event"
 )
 
 var ws *websocket.WsServer

@@ -18,7 +18,7 @@
 package payload
 
 import (
-	"github.com/ontio/multi-chain/common"
+	"github.com/polynetwork/poly/common"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

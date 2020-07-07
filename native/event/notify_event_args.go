@@ -19,7 +19,7 @@
 package event
 
 import (
-	"github.com/ontio/multi-chain/common"
+	"github.com/polynetwork/poly/common"
 )
 
 const (

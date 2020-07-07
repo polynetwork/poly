@@ -22,14 +22,14 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/constants"
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/core/ledger"
-	"github.com/ontio/multi-chain/core/payload"
-	"github.com/ontio/multi-chain/core/signature"
-	"github.com/ontio/multi-chain/core/types"
-	ontErrors "github.com/ontio/multi-chain/errors"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/constants"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/core/ledger"
+	"github.com/polynetwork/poly/core/payload"
+	"github.com/polynetwork/poly/core/signature"
+	"github.com/polynetwork/poly/core/types"
+	ontErrors "github.com/polynetwork/poly/errors"
 )
 
 // VerifyTransaction verifys received single transaction

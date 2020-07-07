@@ -24,9 +24,9 @@ import (
 	"strconv"
 
 	"fmt"
-	cfg "github.com/ontio/multi-chain/common/config"
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/http/base/rpc"
+	cfg "github.com/polynetwork/poly/common/config"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/http/base/rpc"
 )
 
 const (

@@ -22,9 +22,9 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/ontio/multi-chain/common"
-	vconfig "github.com/ontio/multi-chain/consensus/vbft/config"
-	"github.com/ontio/multi-chain/core/types"
+	"github.com/polynetwork/poly/common"
+	vconfig "github.com/polynetwork/poly/consensus/vbft/config"
+	"github.com/polynetwork/poly/core/types"
 )
 
 func TestBlock_getProposer(t *testing.T) {

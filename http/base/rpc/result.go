@@ -19,7 +19,7 @@
 package rpc
 
 import (
-	Err "github.com/ontio/multi-chain/http/base/error"
+	Err "github.com/polynetwork/poly/http/base/error"
 )
 
 func responseSuccess(result interface{}) map[string]interface{} {

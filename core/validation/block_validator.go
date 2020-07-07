@@ -22,10 +22,10 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/ontio/multi-chain/core/ledger"
-	"github.com/ontio/multi-chain/core/signature"
-	"github.com/ontio/multi-chain/core/types"
-	ontErrors "github.com/ontio/multi-chain/errors"
+	"github.com/polynetwork/poly/core/ledger"
+	"github.com/polynetwork/poly/core/signature"
+	"github.com/polynetwork/poly/core/types"
+	ontErrors "github.com/polynetwork/poly/errors"
 )
 
 // VerifyBlock checks whether the block is valid

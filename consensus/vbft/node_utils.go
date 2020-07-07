@@ -23,11 +23,11 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/ontio/multi-chain/common/log"
-	vconfig "github.com/ontio/multi-chain/consensus/vbft/config"
-	"github.com/ontio/multi-chain/core/signature"
-	msgpack "github.com/ontio/multi-chain/p2pserver/message/msg_pack"
-	p2pmsg "github.com/ontio/multi-chain/p2pserver/message/types"
+	"github.com/polynetwork/poly/common/log"
+	vconfig "github.com/polynetwork/poly/consensus/vbft/config"
+	"github.com/polynetwork/poly/core/signature"
+	msgpack "github.com/polynetwork/poly/p2pserver/message/msg_pack"
+	p2pmsg "github.com/polynetwork/poly/p2pserver/message/types"
 )
 
 func (self *Server) GetCurrentBlockNo() uint32 {

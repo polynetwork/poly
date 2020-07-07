@@ -1,12 +1,12 @@
 package test
 
 import (
-	"github.com/ontio/multi-chain/account"
-	"github.com/ontio/multi-chain/cmd/utils"
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/core/payload"
-	"github.com/ontio/multi-chain/core/signature"
-	"github.com/ontio/multi-chain/core/types"
+	"github.com/polynetwork/poly/account"
+	"github.com/polynetwork/poly/cmd/utils"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/core/payload"
+	"github.com/polynetwork/poly/core/signature"
+	"github.com/polynetwork/poly/core/types"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/stretchr/testify/assert"
 	"testing"

@@ -19,13 +19,13 @@ package native
 
 import (
 	"fmt"
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/multi-chain/merkle"
-	"github.com/ontio/multi-chain/native/event"
-	"github.com/ontio/multi-chain/native/states"
-	"github.com/ontio/multi-chain/native/storage"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/core/types"
+	"github.com/polynetwork/poly/merkle"
+	"github.com/polynetwork/poly/native/event"
+	"github.com/polynetwork/poly/native/states"
+	"github.com/polynetwork/poly/native/storage"
 )
 
 type (

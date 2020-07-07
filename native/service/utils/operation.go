@@ -21,10 +21,10 @@ package utils
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/ontio/multi-chain/common"
-	vbftconfig "github.com/ontio/multi-chain/consensus/vbft/config"
-	"github.com/ontio/multi-chain/errors"
-	"github.com/ontio/multi-chain/native"
+	"github.com/polynetwork/poly/common"
+	vbftconfig "github.com/polynetwork/poly/consensus/vbft/config"
+	"github.com/polynetwork/poly/errors"
+	"github.com/polynetwork/poly/native"
 	"github.com/ontio/ontology-crypto/vrf"
 )
 

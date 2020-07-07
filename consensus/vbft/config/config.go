@@ -26,8 +26,8 @@ import (
 	"io"
 	"time"
 
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/serialization"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/serialization"
 )
 
 var (

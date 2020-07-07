@@ -21,9 +21,9 @@ package vbft
 import (
 	"testing"
 
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/log"
-	vconfig "github.com/ontio/multi-chain/consensus/vbft/config"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/log"
+	vconfig "github.com/polynetwork/poly/consensus/vbft/config"
 )
 
 func peerPool() *PeerPool {

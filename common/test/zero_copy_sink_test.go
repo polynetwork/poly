@@ -18,11 +18,11 @@
 package test
 
 import (
-	"github.com/ontio/multi-chain/common"
+	"github.com/polynetwork/poly/common"
 	"testing"
 
 	"bytes"
-	ser "github.com/ontio/multi-chain/common/serialization"
+	ser "github.com/polynetwork/poly/common/serialization"
 	"github.com/stretchr/testify/assert"
 )
 

@@ -20,8 +20,8 @@ package handlers
 
 import (
 	"encoding/json"
-	clisvrcom "github.com/ontio/multi-chain/cmd/sigsvr/common"
-	"github.com/ontio/multi-chain/cmd/utils"
+	clisvrcom "github.com/polynetwork/poly/cmd/sigsvr/common"
+	"github.com/polynetwork/poly/cmd/utils"
 	"testing"
 )
 

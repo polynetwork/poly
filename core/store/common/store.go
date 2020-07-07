@@ -20,9 +20,9 @@ package common
 
 import (
 	"errors"
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/core/states"
-	"github.com/ontio/multi-chain/native/event"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/core/states"
+	"github.com/polynetwork/poly/native/event"
 )
 
 var ErrNotFound = errors.New("not found")

@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/core/types"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/core/types"
 )
 
 // IncrementValidator do increment check of transaction

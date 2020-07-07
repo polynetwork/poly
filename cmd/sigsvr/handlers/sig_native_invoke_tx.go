@@ -22,11 +22,11 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
-	"github.com/ontio/multi-chain/cmd/abi"
-	clisvrcom "github.com/ontio/multi-chain/cmd/sigsvr/common"
-	cliutil "github.com/ontio/multi-chain/cmd/utils"
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/log"
+	"github.com/polynetwork/poly/cmd/abi"
+	clisvrcom "github.com/polynetwork/poly/cmd/sigsvr/common"
+	cliutil "github.com/polynetwork/poly/cmd/utils"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/log"
 )
 
 type SigNativeInvokeTxReq struct {

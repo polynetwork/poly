@@ -24,13 +24,13 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/config"
-	"github.com/ontio/multi-chain/common/log"
-	vconfig "github.com/ontio/multi-chain/consensus/vbft/config"
-	"github.com/ontio/multi-chain/core/ledger"
-	"github.com/ontio/multi-chain/core/signature"
-	"github.com/ontio/multi-chain/core/types"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/config"
+	"github.com/polynetwork/poly/common/log"
+	vconfig "github.com/polynetwork/poly/consensus/vbft/config"
+	"github.com/polynetwork/poly/core/ledger"
+	"github.com/polynetwork/poly/core/signature"
+	"github.com/polynetwork/poly/core/types"
 	"github.com/ontio/ontology-crypto/keypair"
 )
 

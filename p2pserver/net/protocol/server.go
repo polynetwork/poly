@@ -20,9 +20,9 @@
 package p2p
 
 import (
-	"github.com/ontio/multi-chain/p2pserver/common"
-	"github.com/ontio/multi-chain/p2pserver/message/types"
-	"github.com/ontio/multi-chain/p2pserver/peer"
+	"github.com/polynetwork/poly/p2pserver/common"
+	"github.com/polynetwork/poly/p2pserver/message/types"
+	"github.com/polynetwork/poly/p2pserver/peer"
 )
 
 //P2P represent the net interface of p2p package

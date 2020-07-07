@@ -22,7 +22,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/ontio/multi-chain/account"
+	"github.com/polynetwork/poly/account"
 )
 
 func constructMsg() *blockProposalMsg {

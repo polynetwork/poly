@@ -19,8 +19,8 @@ package handlers
 
 import (
 	"encoding/json"
-	"github.com/ontio/multi-chain/account"
-	clisvrcom "github.com/ontio/multi-chain/cmd/sigsvr/common"
+	"github.com/polynetwork/poly/account"
+	clisvrcom "github.com/polynetwork/poly/cmd/sigsvr/common"
 	"os"
 	"testing"
 )

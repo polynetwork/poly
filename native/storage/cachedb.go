@@ -19,8 +19,8 @@
 package storage
 
 import (
-	"github.com/ontio/multi-chain/core/store/common"
-	"github.com/ontio/multi-chain/core/store/overlaydb"
+	"github.com/polynetwork/poly/core/store/common"
+	"github.com/polynetwork/poly/core/store/overlaydb"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 

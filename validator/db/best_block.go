@@ -19,8 +19,8 @@
 package db
 
 import (
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/core/types"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/core/types"
 )
 
 type BestBlock struct {

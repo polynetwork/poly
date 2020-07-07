@@ -21,11 +21,11 @@ package handlers
 import (
 	"encoding/hex"
 	"encoding/json"
-	clisvrcom "github.com/ontio/multi-chain/cmd/sigsvr/common"
-	cliutil "github.com/ontio/multi-chain/cmd/utils"
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/core/types"
+	clisvrcom "github.com/polynetwork/poly/cmd/sigsvr/common"
+	cliutil "github.com/polynetwork/poly/cmd/utils"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/core/types"
 	"github.com/ontio/ontology-crypto/keypair"
 )
 

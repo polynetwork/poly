@@ -19,11 +19,11 @@
 package consensus
 
 import (
-	"github.com/ontio/multi-chain/account"
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/consensus/dbft"
-	"github.com/ontio/multi-chain/consensus/solo"
-	"github.com/ontio/multi-chain/consensus/vbft"
+	"github.com/polynetwork/poly/account"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/consensus/dbft"
+	"github.com/polynetwork/poly/consensus/solo"
+	"github.com/polynetwork/poly/consensus/vbft"
 	"github.com/ontio/ontology-eventbus/actor"
 )
 

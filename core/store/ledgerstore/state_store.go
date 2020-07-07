@@ -24,14 +24,14 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/common/serialization"
-	"github.com/ontio/multi-chain/core/states"
-	scom "github.com/ontio/multi-chain/core/store/common"
-	"github.com/ontio/multi-chain/core/store/leveldbstore"
-	"github.com/ontio/multi-chain/core/store/overlaydb"
-	"github.com/ontio/multi-chain/merkle"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/common/serialization"
+	"github.com/polynetwork/poly/core/states"
+	scom "github.com/polynetwork/poly/core/store/common"
+	"github.com/polynetwork/poly/core/store/leveldbstore"
+	"github.com/polynetwork/poly/core/store/overlaydb"
+	"github.com/polynetwork/poly/merkle"
 )
 
 var (

@@ -21,12 +21,12 @@ package vbft
 import (
 	"fmt"
 
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/core/ledger"
-	"github.com/ontio/multi-chain/core/store"
-	"github.com/ontio/multi-chain/core/store/overlaydb"
-	"github.com/ontio/multi-chain/events/message"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/core/ledger"
+	"github.com/polynetwork/poly/core/store"
+	"github.com/polynetwork/poly/core/store/overlaydb"
+	"github.com/polynetwork/poly/events/message"
 	"github.com/ontio/ontology-eventbus/actor"
 )
 

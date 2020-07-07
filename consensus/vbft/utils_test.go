@@ -21,8 +21,8 @@ package vbft
 import (
 	"testing"
 
-	"github.com/ontio/multi-chain/account"
-	"github.com/ontio/multi-chain/common"
+	"github.com/polynetwork/poly/account"
+	"github.com/polynetwork/poly/common"
 )
 
 func HashBlock(blk *Block) (common.Uint256, error) {

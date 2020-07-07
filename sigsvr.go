@@ -18,14 +18,14 @@
 package main
 
 import (
-	"github.com/ontio/multi-chain/cmd"
-	"github.com/ontio/multi-chain/cmd/abi"
-	cmdsvr "github.com/ontio/multi-chain/cmd/sigsvr"
-	clisvrcom "github.com/ontio/multi-chain/cmd/sigsvr/common"
-	"github.com/ontio/multi-chain/cmd/sigsvr/store"
-	"github.com/ontio/multi-chain/cmd/utils"
-	"github.com/ontio/multi-chain/common/config"
-	"github.com/ontio/multi-chain/common/log"
+	"github.com/polynetwork/poly/cmd"
+	"github.com/polynetwork/poly/cmd/abi"
+	cmdsvr "github.com/polynetwork/poly/cmd/sigsvr"
+	clisvrcom "github.com/polynetwork/poly/cmd/sigsvr/common"
+	"github.com/polynetwork/poly/cmd/sigsvr/store"
+	"github.com/polynetwork/poly/cmd/utils"
+	"github.com/polynetwork/poly/common/config"
+	"github.com/polynetwork/poly/common/log"
 	"github.com/urfave/cli"
 	"os"
 	"os/signal"

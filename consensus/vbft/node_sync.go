@@ -23,9 +23,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/core/ledger"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/core/ledger"
 )
 
 type SyncCheckReq struct {

@@ -20,16 +20,16 @@ package genesis
 
 import (
 	"fmt"
-	"github.com/ontio/multi-chain/native/service/utils"
+	"github.com/polynetwork/poly/native/service/utils"
 	"time"
 
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/config"
-	"github.com/ontio/multi-chain/common/constants"
-	"github.com/ontio/multi-chain/consensus/vbft/config"
-	"github.com/ontio/multi-chain/core/payload"
-	"github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/multi-chain/native/states"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/config"
+	"github.com/polynetwork/poly/common/constants"
+	"github.com/polynetwork/poly/consensus/vbft/config"
+	"github.com/polynetwork/poly/core/payload"
+	"github.com/polynetwork/poly/core/types"
+	"github.com/polynetwork/poly/native/states"
 	"github.com/ontio/ontology-crypto/keypair"
 )
 

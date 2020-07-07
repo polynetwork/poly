@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ontio/multi-chain/common"
-	ct "github.com/ontio/multi-chain/core/types"
-	comm "github.com/ontio/multi-chain/p2pserver/common"
+	"github.com/polynetwork/poly/common"
+	ct "github.com/polynetwork/poly/core/types"
+	comm "github.com/polynetwork/poly/p2pserver/common"
 )
 
 type BlkHeader struct {

@@ -22,12 +22,12 @@ package common
 import (
 	"sync"
 
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/config"
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/multi-chain/errors"
-	vt "github.com/ontio/multi-chain/validator/types"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/config"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/core/types"
+	"github.com/polynetwork/poly/errors"
+	vt "github.com/polynetwork/poly/validator/types"
 )
 
 type TXAttr struct {

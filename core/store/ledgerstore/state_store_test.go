@@ -22,8 +22,8 @@ import (
 	"math/rand"
 	"testing"
 
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/merkle"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/merkle"
 	"github.com/stretchr/testify/assert"
 )
 

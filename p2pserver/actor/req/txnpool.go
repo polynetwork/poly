@@ -21,12 +21,12 @@ package req
 import (
 	"time"
 
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/multi-chain/errors"
-	p2pcommon "github.com/ontio/multi-chain/p2pserver/common"
-	tc "github.com/ontio/multi-chain/txnpool/common"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/core/types"
+	"github.com/polynetwork/poly/errors"
+	p2pcommon "github.com/polynetwork/poly/p2pserver/common"
+	tc "github.com/polynetwork/poly/txnpool/common"
 	"github.com/ontio/ontology-eventbus/actor"
 )
 

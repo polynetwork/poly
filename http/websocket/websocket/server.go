@@ -30,12 +30,12 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/ontio/multi-chain/common"
-	cfg "github.com/ontio/multi-chain/common/config"
-	"github.com/ontio/multi-chain/common/log"
-	Err "github.com/ontio/multi-chain/http/base/error"
-	"github.com/ontio/multi-chain/http/base/rest"
-	"github.com/ontio/multi-chain/http/websocket/session"
+	"github.com/polynetwork/poly/common"
+	cfg "github.com/polynetwork/poly/common/config"
+	"github.com/polynetwork/poly/common/log"
+	Err "github.com/polynetwork/poly/http/base/error"
+	"github.com/polynetwork/poly/http/base/rest"
+	"github.com/polynetwork/poly/http/websocket/session"
 )
 
 const (

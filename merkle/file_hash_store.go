@@ -23,7 +23,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/ontio/multi-chain/common"
+	"github.com/polynetwork/poly/common"
 )
 
 // HashStore is an interface for persist hash

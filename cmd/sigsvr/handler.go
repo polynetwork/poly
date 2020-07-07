@@ -18,7 +18,7 @@
 
 package sigsvr
 
-import "github.com/ontio/multi-chain/cmd/sigsvr/handlers"
+import "github.com/polynetwork/poly/cmd/sigsvr/handlers"
 
 func init() {
 	DefCliRpcSvr.RegHandler("createaccount", handlers.CreateAccount)

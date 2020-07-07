@@ -24,7 +24,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/ontio/multi-chain/common/serialization"
+	"github.com/polynetwork/poly/common/serialization"
 )
 
 type TransactionAttributeUsage byte

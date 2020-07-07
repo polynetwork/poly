@@ -19,12 +19,12 @@
 package stateful
 
 import (
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/core/ledger"
-	"github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/multi-chain/errors"
-	"github.com/ontio/multi-chain/validator/db"
-	vatypes "github.com/ontio/multi-chain/validator/types"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/core/ledger"
+	"github.com/polynetwork/poly/core/types"
+	"github.com/polynetwork/poly/errors"
+	"github.com/polynetwork/poly/validator/db"
+	vatypes "github.com/polynetwork/poly/validator/types"
 	"github.com/ontio/ontology-eventbus/actor"
 	"reflect"
 )

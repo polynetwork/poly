@@ -19,11 +19,11 @@ package sigsvr
 
 import (
 	"fmt"
-	"github.com/ontio/multi-chain/account"
-	"github.com/ontio/multi-chain/cmd"
-	"github.com/ontio/multi-chain/cmd/sigsvr/store"
-	"github.com/ontio/multi-chain/cmd/utils"
-	"github.com/ontio/multi-chain/common"
+	"github.com/polynetwork/poly/account"
+	"github.com/polynetwork/poly/cmd"
+	"github.com/polynetwork/poly/cmd/sigsvr/store"
+	"github.com/polynetwork/poly/cmd/utils"
+	"github.com/polynetwork/poly/common"
 	"github.com/urfave/cli"
 )
 

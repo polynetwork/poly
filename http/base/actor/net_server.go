@@ -22,9 +22,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/ontio/multi-chain/common/log"
-	ac "github.com/ontio/multi-chain/p2pserver/actor/server"
-	"github.com/ontio/multi-chain/p2pserver/common"
+	"github.com/polynetwork/poly/common/log"
+	ac "github.com/polynetwork/poly/p2pserver/actor/server"
+	"github.com/polynetwork/poly/p2pserver/common"
 	"github.com/ontio/ontology-eventbus/actor"
 )
 

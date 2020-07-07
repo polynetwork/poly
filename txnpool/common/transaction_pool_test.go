@@ -19,9 +19,9 @@
 package common
 
 import (
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/core/payload"
-	"github.com/ontio/multi-chain/core/types"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/core/payload"
+	"github.com/polynetwork/poly/core/types"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"

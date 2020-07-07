@@ -1,12 +1,12 @@
 GOFMT=gofmt
 GC=go build
 VERSION := $(shell git describe --always --tags --long)
-BUILD_NODE_PAR = -ldflags "-X github.com/ontio/multi-chain/common/config.Version=$(VERSION)" #-race
+BUILD_NODE_PAR = -ldflags "-X github.com/polynetwork/poly/common/config.Version=$(VERSION)" #-race
 
 ARCH=$(shell uname -m)
 DBUILD=docker build
 DRUN=docker run
-DOCKER_NS ?= ontio
+DOCKER_NS ?= polynetwork
 DOCKER_TAG=$(ARCH)-$(VERSION)
 
 SRC_FILES = $(shell git ls-files | grep -e .go$ | grep -v _test.go)
@@ -77,7 +77,7 @@ docker/build/bin/%: Makefile
 		-v $(abspath docker/build/bin):/go/bin \
 		-v $(abspath docker/build/pkg):/go/pkg \
 		-v $(GOPATH)/src:/go/src \
-		-w /go/src/github.com/ontio/ontology \
+		-w /go/src/github.com/polynetwork/ontology \
 		golang:1.9.5-stretch \
 		$(GC)  $(BUILD_NODE_PAR) -o docker/build/bin/ontology main.go
 	@touch $@

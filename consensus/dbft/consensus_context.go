@@ -21,13 +21,13 @@ package dbft
 import (
 	"fmt"
 
-	"github.com/ontio/multi-chain/account"
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/core/ledger"
-	"github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/multi-chain/core/vote"
-	msg "github.com/ontio/multi-chain/p2pserver/message/types"
+	"github.com/polynetwork/poly/account"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/core/ledger"
+	"github.com/polynetwork/poly/core/types"
+	"github.com/polynetwork/poly/core/vote"
+	msg "github.com/polynetwork/poly/p2pserver/message/types"
 	"github.com/ontio/ontology-crypto/keypair"
 )
 

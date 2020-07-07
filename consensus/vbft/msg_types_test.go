@@ -23,11 +23,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ontio/multi-chain/account"
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/consensus/vbft/config"
-	"github.com/ontio/multi-chain/core/signature"
-	"github.com/ontio/multi-chain/core/types"
+	"github.com/polynetwork/poly/account"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/consensus/vbft/config"
+	"github.com/polynetwork/poly/core/signature"
+	"github.com/polynetwork/poly/core/types"
 )
 
 func constructProposalMsgTest(acc *account.Account) *blockProposalMsg {

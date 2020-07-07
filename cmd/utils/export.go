@@ -22,7 +22,7 @@ import (
 	"bytes"
 	"compress/zlib"
 	"fmt"
-	"github.com/ontio/multi-chain/common/serialization"
+	"github.com/polynetwork/poly/common/serialization"
 	"io"
 	"io/ioutil"
 )

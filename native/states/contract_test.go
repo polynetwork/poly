@@ -20,7 +20,7 @@ package states
 import (
 	"testing"
 
-	"github.com/ontio/multi-chain/common"
+	"github.com/polynetwork/poly/common"
 )
 
 func TestContract_Serialize_Deserialize(t *testing.T) {

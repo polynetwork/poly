@@ -23,11 +23,11 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/serialization"
-	scom "github.com/ontio/multi-chain/core/store/common"
-	"github.com/ontio/multi-chain/core/store/leveldbstore"
-	"github.com/ontio/multi-chain/core/types"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/serialization"
+	scom "github.com/polynetwork/poly/core/store/common"
+	"github.com/polynetwork/poly/core/store/leveldbstore"
+	"github.com/polynetwork/poly/core/types"
 	"io"
 )
 

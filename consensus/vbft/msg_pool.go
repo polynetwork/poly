@@ -22,8 +22,8 @@ import (
 	"errors"
 	"sync"
 
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/log"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/log"
 )
 
 var errDropFarFutureMsg = errors.New("msg pool dropped msg for far future")

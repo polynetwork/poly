@@ -21,9 +21,9 @@ package stateless
 import (
 	"reflect"
 
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/core/validation"
-	vatypes "github.com/ontio/multi-chain/validator/types"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/core/validation"
+	vatypes "github.com/polynetwork/poly/validator/types"
 	"github.com/ontio/ontology-eventbus/actor"
 )
 

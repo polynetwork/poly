@@ -20,11 +20,11 @@ package common
 
 import (
 	"fmt"
-	"github.com/ontio/multi-chain/account"
-	"github.com/ontio/multi-chain/cmd/utils"
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/config"
-	"github.com/ontio/multi-chain/common/password"
+	"github.com/polynetwork/poly/account"
+	"github.com/polynetwork/poly/cmd/utils"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/config"
+	"github.com/polynetwork/poly/common/password"
 	"github.com/urfave/cli"
 	"strconv"
 )

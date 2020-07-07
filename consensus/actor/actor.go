@@ -22,11 +22,11 @@ import (
 	"errors"
 	"time"
 
-	"github.com/ontio/multi-chain/core/types"
-	ontErrors "github.com/ontio/multi-chain/errors"
-	netActor "github.com/ontio/multi-chain/p2pserver/actor/server"
-	ptypes "github.com/ontio/multi-chain/p2pserver/message/types"
-	txpool "github.com/ontio/multi-chain/txnpool/common"
+	"github.com/polynetwork/poly/core/types"
+	ontErrors "github.com/polynetwork/poly/errors"
+	netActor "github.com/polynetwork/poly/p2pserver/actor/server"
+	ptypes "github.com/polynetwork/poly/p2pserver/message/types"
+	txpool "github.com/polynetwork/poly/txnpool/common"
 	"github.com/ontio/ontology-eventbus/actor"
 )
 

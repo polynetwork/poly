@@ -22,11 +22,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	clisvrcom "github.com/ontio/multi-chain/cmd/sigsvr/common"
-	cliutil "github.com/ontio/multi-chain/cmd/utils"
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/log"
-	httpcom "github.com/ontio/multi-chain/http/base/common"
+	clisvrcom "github.com/polynetwork/poly/cmd/sigsvr/common"
+	cliutil "github.com/polynetwork/poly/cmd/utils"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/log"
+	httpcom "github.com/polynetwork/poly/http/base/common"
 )
 
 type SigNeoVMInvokeTxReq struct {

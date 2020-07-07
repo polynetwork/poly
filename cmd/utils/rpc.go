@@ -21,8 +21,8 @@ package utils
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ontio/multi-chain/common/config"
-	rpcerr "github.com/ontio/multi-chain/http/base/error"
+	"github.com/polynetwork/poly/common/config"
+	rpcerr "github.com/polynetwork/poly/http/base/error"
 	"io/ioutil"
 	"net/http"
 	"strings"

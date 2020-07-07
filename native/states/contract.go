@@ -21,8 +21,8 @@ package states
 import (
 	"errors"
 	"fmt"
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/native/event"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/native/event"
 )
 
 const MAX_NATIVE_VERSION = 0

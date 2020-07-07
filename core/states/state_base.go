@@ -21,8 +21,8 @@ package states
 import (
 	"io"
 
-	"github.com/ontio/multi-chain/common/serialization"
-	"github.com/ontio/multi-chain/errors"
+	"github.com/polynetwork/poly/common/serialization"
+	"github.com/polynetwork/poly/errors"
 )
 
 type StateBase struct {

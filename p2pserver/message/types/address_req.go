@@ -19,8 +19,8 @@
 package types
 
 import (
-	"github.com/ontio/multi-chain/common"
-	comm "github.com/ontio/multi-chain/p2pserver/common"
+	"github.com/polynetwork/poly/common"
+	comm "github.com/polynetwork/poly/p2pserver/common"
 )
 
 type AddrReq struct{}

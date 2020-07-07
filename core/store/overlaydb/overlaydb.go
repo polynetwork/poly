@@ -21,8 +21,8 @@ package overlaydb
 import (
 	"crypto/sha256"
 
-	comm "github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/core/store/common"
+	comm "github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/core/store/common"
 	"github.com/syndtr/goleveldb/leveldb/util"
 )
 

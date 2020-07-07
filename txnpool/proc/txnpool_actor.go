@@ -24,13 +24,13 @@ import (
 
 	"github.com/ontio/ontology-eventbus/actor"
 
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/log"
-	tx "github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/multi-chain/errors"
-	"github.com/ontio/multi-chain/events/message"
-	tc "github.com/ontio/multi-chain/txnpool/common"
-	"github.com/ontio/multi-chain/validator/types"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/log"
+	tx "github.com/polynetwork/poly/core/types"
+	"github.com/polynetwork/poly/errors"
+	"github.com/polynetwork/poly/events/message"
+	tc "github.com/polynetwork/poly/txnpool/common"
+	"github.com/polynetwork/poly/validator/types"
 )
 
 // NewTxActor creates an actor to handle the transaction-based messages from

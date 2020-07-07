@@ -25,7 +25,7 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/ontio/multi-chain/common"
+	"github.com/polynetwork/poly/common"
 	"github.com/ontio/ontology-crypto/keypair"
 )
 

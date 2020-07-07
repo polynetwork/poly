@@ -19,8 +19,8 @@
 package vote
 
 import (
-	"github.com/ontio/multi-chain/core/genesis"
-	"github.com/ontio/multi-chain/core/types"
+	"github.com/polynetwork/poly/core/genesis"
+	"github.com/polynetwork/poly/core/types"
 	"github.com/ontio/ontology-crypto/keypair"
 )
 

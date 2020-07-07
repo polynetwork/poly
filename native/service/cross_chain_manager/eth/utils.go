@@ -1,3 +1,20 @@
+/*
+ * Copyright (C) 2020 The poly network Authors
+ * This file is part of The poly network library.
+ *
+ * The  poly network  is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * The  poly network  is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with The poly network .  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package eth
 
 import (
@@ -13,12 +30,12 @@ import (
 	"github.com/ethereum/go-ethereum/light"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/native"
-	scom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
-	cmanager "github.com/ontio/multi-chain/native/service/governance/side_chain_manager"
-	"github.com/ontio/multi-chain/native/service/header_sync/eth"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/native"
+	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
+	cmanager "github.com/polynetwork/poly/native/service/governance/side_chain_manager"
+	"github.com/polynetwork/poly/native/service/header_sync/eth"
 )
 
 func verifyFromEthTx(native *native.NativeService, proof, extra []byte, fromChainID uint64, height uint32, sideChain *cmanager.SideChain) (*scom.MakeTxParam, error) {
@@ -85,7 +102,7 @@ func verifyMerkleProof(ethProof *ETHProof, blockData *types.Header, contractAddr
 	acctKey := crypto.Keccak256(addr)
 
 	//2. verify account proof
-	acctVal, _, err := trie.VerifyProof(blockData.Root, acctKey, ns)
+	acctVal, err := trie.VerifyProof(blockData.Root, acctKey, ns)
 	if err != nil {
 		return nil, fmt.Errorf("verifyMerkleProof, verify account proof error:%s\n", err)
 	}
@@ -135,7 +152,7 @@ func verifyMerkleProof(ethProof *ETHProof, blockData *types.Header, contractAddr
 	}
 
 	ns = nodeList.NodeSet()
-	val, _, err := trie.VerifyProof(storageHash, storageKey, ns)
+	val, err := trie.VerifyProof(storageHash, storageKey, ns)
 	if err != nil {
 		return nil, fmt.Errorf("verifyMerkleProof, verify storage proof error:%s\n", err)
 	}

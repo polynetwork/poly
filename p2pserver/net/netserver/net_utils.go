@@ -27,9 +27,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/ontio/multi-chain/common/config"
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/p2pserver/common"
+	"github.com/polynetwork/poly/common/config"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/p2pserver/common"
 )
 
 // createListener creates a net listener on the port

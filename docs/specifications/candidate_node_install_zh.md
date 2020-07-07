@@ -12,7 +12,7 @@ cd /data/gopath/mainnet
 ```
 curl  <https://dev.ont.io/ontology_install>  | sh`
 ```
-   或者可以自行在这里下载：<https://github.com/ontio/multi-chain/releases> 
+   或者可以自行在这里下载：<https://github.com/polynetwork/poly/releases> 
 
 3、把生成的钱包文件 wallet.dat拷贝到ontology二进制目录下，执行命令 ./ontology account list -v  确认Public key和之前提交的保持一致。注意：不能用同一个钱包开启2条链。
 

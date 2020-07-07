@@ -26,11 +26,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	comm "github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/p2pserver/common"
-	conn "github.com/ontio/multi-chain/p2pserver/link"
-	"github.com/ontio/multi-chain/p2pserver/message/types"
+	comm "github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/p2pserver/common"
+	conn "github.com/polynetwork/poly/p2pserver/link"
+	"github.com/polynetwork/poly/p2pserver/message/types"
 )
 
 // PeerCom provides the basic information of a peer

@@ -21,8 +21,8 @@ package common
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/ontio/multi-chain/account"
-	"github.com/ontio/multi-chain/cmd/sigsvr/store"
+	"github.com/polynetwork/poly/account"
+	"github.com/polynetwork/poly/cmd/sigsvr/store"
 )
 
 var DefWalletStore *store.WalletStore

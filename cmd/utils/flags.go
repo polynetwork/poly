@@ -21,7 +21,7 @@ package utils
 import (
 	"strings"
 
-	"github.com/ontio/multi-chain/common/config"
+	"github.com/polynetwork/poly/common/config"
 	"github.com/urfave/cli"
 )
 

@@ -19,8 +19,8 @@
 package server
 
 import (
-	types "github.com/ontio/multi-chain/p2pserver/common"
-	ptypes "github.com/ontio/multi-chain/p2pserver/message/types"
+	types "github.com/polynetwork/poly/p2pserver/common"
+	ptypes "github.com/polynetwork/poly/p2pserver/message/types"
 )
 
 //stop net server

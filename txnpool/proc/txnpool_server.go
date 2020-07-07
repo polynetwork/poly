@@ -21,12 +21,12 @@
 package proc
 
 import (
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/log"
-	tx "github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/multi-chain/errors"
-	tc "github.com/ontio/multi-chain/txnpool/common"
-	"github.com/ontio/multi-chain/validator/types"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/log"
+	tx "github.com/polynetwork/poly/core/types"
+	"github.com/polynetwork/poly/errors"
+	tc "github.com/polynetwork/poly/txnpool/common"
+	"github.com/polynetwork/poly/validator/types"
 	"github.com/ontio/ontology-eventbus/actor"
 	"sort"
 	"sync"

@@ -1,22 +1,38 @@
+/*
+ * Copyright (C) 2020 The poly network Authors
+ * This file is part of The poly network library.
+ *
+ * The  poly network  is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * The  poly network  is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License for more details.
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with The poly network .  If not, see <http://www.gnu.org/licenses/>.
+ */
 package cosmos
 
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/ontio/multi-chain/account"
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/core/genesis"
-	cstates "github.com/ontio/multi-chain/core/states"
-	"github.com/ontio/multi-chain/core/store/leveldbstore"
-	"github.com/ontio/multi-chain/core/store/overlaydb"
-	"github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/multi-chain/native"
-	ccmcom "github.com/ontio/multi-chain/native/service/cross_chain_manager/common"
-	"github.com/ontio/multi-chain/native/service/governance/side_chain_manager"
-	scom "github.com/ontio/multi-chain/native/service/header_sync/common"
-	synccom "github.com/ontio/multi-chain/native/service/header_sync/cosmos"
-	"github.com/ontio/multi-chain/native/service/utils"
-	"github.com/ontio/multi-chain/native/storage"
+	"github.com/polynetwork/poly/account"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/core/genesis"
+	cstates "github.com/polynetwork/poly/core/states"
+	"github.com/polynetwork/poly/core/store/leveldbstore"
+	"github.com/polynetwork/poly/core/store/overlaydb"
+	"github.com/polynetwork/poly/core/types"
+	"github.com/polynetwork/poly/native"
+	ccmcom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
+	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
+	scom "github.com/polynetwork/poly/native/service/header_sync/common"
+	synccom "github.com/polynetwork/poly/native/service/header_sync/cosmos"
+	"github.com/polynetwork/poly/native/service/utils"
+	"github.com/polynetwork/poly/native/storage"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/stretchr/testify/assert"
 	"strings"

@@ -22,7 +22,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"errors"
-	"github.com/ontio/multi-chain/common"
+	"github.com/polynetwork/poly/common"
 	"io"
 	"math"
 )

@@ -25,7 +25,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/ontio/multi-chain/common"
+	"github.com/polynetwork/poly/common"
 )
 
 const (

@@ -19,7 +19,7 @@
 package account
 
 import (
-	"github.com/ontio/multi-chain/common"
+	"github.com/polynetwork/poly/common"
 )
 
 type ClientStore interface {

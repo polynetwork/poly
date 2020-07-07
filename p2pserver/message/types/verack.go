@@ -21,8 +21,8 @@ package types
 import (
 	"io"
 
-	comm "github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/p2pserver/common"
+	comm "github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/p2pserver/common"
 )
 
 type VerACK struct {

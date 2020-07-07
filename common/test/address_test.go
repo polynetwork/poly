@@ -21,7 +21,7 @@ package test
 import (
 	"bytes"
 	"crypto/rand"
-	"github.com/ontio/multi-chain/common"
+	"github.com/polynetwork/poly/common"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

@@ -24,13 +24,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/common/log"
-	"github.com/ontio/multi-chain/core/ledger"
-	"github.com/ontio/multi-chain/core/types"
-	p2pComm "github.com/ontio/multi-chain/p2pserver/common"
-	"github.com/ontio/multi-chain/p2pserver/message/msg_pack"
-	"github.com/ontio/multi-chain/p2pserver/peer"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/core/ledger"
+	"github.com/polynetwork/poly/core/types"
+	p2pComm "github.com/polynetwork/poly/p2pserver/common"
+	"github.com/polynetwork/poly/p2pserver/message/msg_pack"
+	"github.com/polynetwork/poly/p2pserver/peer"
 )
 
 const (

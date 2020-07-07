@@ -19,8 +19,8 @@
 package actor
 
 import (
-	"github.com/ontio/multi-chain/events"
-	"github.com/ontio/multi-chain/events/message"
+	"github.com/polynetwork/poly/events"
+	"github.com/polynetwork/poly/events/message"
 	"github.com/ontio/ontology-eventbus/actor"
 )
 

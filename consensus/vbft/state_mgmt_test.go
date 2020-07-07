@@ -22,7 +22,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/ontio/multi-chain/common/log"
+	"github.com/polynetwork/poly/common/log"
 )
 
 func Test_isReady(t *testing.T) {

@@ -23,7 +23,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/ontio/multi-chain/core/types"
+	"github.com/polynetwork/poly/core/types"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/stretchr/testify/assert"
 )

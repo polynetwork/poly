@@ -19,11 +19,11 @@
 package actor
 
 import (
-	"github.com/ontio/multi-chain/common"
-	"github.com/ontio/multi-chain/core/ledger"
-	"github.com/ontio/multi-chain/core/types"
-	"github.com/ontio/multi-chain/native/event"
-	cstate "github.com/ontio/multi-chain/native/states"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/core/ledger"
+	"github.com/polynetwork/poly/core/types"
+	"github.com/polynetwork/poly/native/event"
+	cstate "github.com/polynetwork/poly/native/states"
 )
 
 const (

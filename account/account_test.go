@@ -18,7 +18,7 @@
 package account
 
 import (
-	"github.com/ontio/multi-chain/core/types"
+	"github.com/polynetwork/poly/core/types"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
