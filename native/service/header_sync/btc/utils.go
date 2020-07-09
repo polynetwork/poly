@@ -18,6 +18,7 @@
 package btc
 
 import (
+	"encoding/binary"
 	"encoding/hex"
 	"fmt"
 	"github.com/btcsuite/btcd/blockchain"
@@ -30,6 +31,7 @@ import (
 	cstates "github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/event"
+	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	scom "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/utils"
 	"math/big"
@@ -45,7 +47,23 @@ const (
 	maxRetargetTimespan = int64(targetTimespan * maxDiffAdjust)
 )
 
-var netParam = &chaincfg.TestNet3Params
+func getNetParam(service *native.NativeService, chainId uint64) (*chaincfg.Params, error) {
+	side, err := side_chain_manager.GetSideChain(service, chainId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get bitcoin net parameter: %v", err)
+	}
+
+	switch utils.BtcNetType(binary.LittleEndian.Uint64(side.CCMCAddress)) {
+	case utils.TyTestnet3:
+		return &chaincfg.TestNet3Params, nil
+	case utils.TyRegtest:
+		return &chaincfg.RegressionNetParams, nil
+	case utils.TySimnet:
+		return &chaincfg.SimNetParams, nil
+	default:
+		return &chaincfg.MainNetParams, nil
+	}
+}
 
 func putGenesisBlockHeader(native *native.NativeService, chainID uint64, blockHeader StoredHeader) {
 	contract := utils.HeaderSyncContractAddress
@@ -189,19 +207,26 @@ func CheckHeader(native *native.NativeService, chainID uint64, header wire.Block
 	prevHash := prevHeader.Header.BlockHash()
 	height := prevHeader.Height
 
+	netParam, err := getNetParam(native, chainID)
+	if err != nil {
+		return false, fmt.Errorf("CheckHeader, %v", err)
+	}
+
 	// Check if headers link together.  That whole 'blockchain' thing.
 	if !prevHash.IsEqual(&header.PrevBlock) {
 		return false, fmt.Errorf("CheckHeader error: Headers %d and %d don't link.", height, height+1)
 	}
 
-	// Check the header meets the difficulty requirement
-	diffTarget, err := calcRequiredWork(native, chainID, header, int32(height+1), prevHeader)
-	if err != nil {
-		return false, fmt.Errorf("CheckHeader, calclating difficulty error: %v", err)
-	}
-	if header.Bits != diffTarget {
-		return false, fmt.Errorf("CheckHeader, Block %d %s incorrect difficulty.  Read %d, expect %d\n",
-			height+1, header.BlockHash().String(), header.Bits, diffTarget)
+	if netParam.Name != "regtest" && netParam.Name != "simnet" {
+		// Check the header meets the difficulty requirement
+		diffTarget, err := calcRequiredWork(native, chainID, header, int32(height+1), prevHeader, netParam)
+		if err != nil {
+			return false, fmt.Errorf("CheckHeader, calclating difficulty error: %v", err)
+		}
+		if header.Bits != diffTarget {
+			return false, fmt.Errorf("CheckHeader, Block %d %s incorrect difficulty.  Read %d, expect %d\n",
+				height+1, header.BlockHash().String(), header.Bits, diffTarget)
+		}
 	}
 
 	// Check if there's a valid proof of work.  That whole "Bitcoin" thing.
@@ -215,7 +240,7 @@ func CheckHeader(native *native.NativeService, chainID uint64, header wire.Block
 
 // Get the PoW target this block should meet. We may need to handle a difficulty adjustment
 // or testnet difficulty rules.
-func calcRequiredWork(native *native.NativeService, chainID uint64, header wire.BlockHeader, height int32, prevHeader *StoredHeader) (uint32, error) {
+func calcRequiredWork(native *native.NativeService, chainID uint64, header wire.BlockHeader, height int32, prevHeader *StoredHeader, netParam *chaincfg.Params) (uint32, error) {
 	// If this is not a difficulty adjustment period
 	if height%epochLength != 0 {
 		// If we are on testnet

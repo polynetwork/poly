@@ -19,6 +19,15 @@ package utils
 
 import "github.com/polynetwork/poly/common"
 
+type BtcNetType int
+
+const (
+	TyTestnet3 BtcNetType = iota
+	TyRegtest
+	TySimnet
+	TyMainnet
+)
+
 var (
 	BYTE_FALSE = []byte{0}
 	BYTE_TRUE  = []byte{1}

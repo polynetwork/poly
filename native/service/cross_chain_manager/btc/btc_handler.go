@@ -61,6 +61,10 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 		return fmt.Errorf("MultiSign, get btc redeem script with redeem key %v from db error: %v", params.RedeemKey, err)
 	}
 
+	netParam, err := getNetParam(service, params.ChainID)
+	if err != nil {
+		return fmt.Errorf("MultiSign, %v", err)
+	}
 	_, addrs, n, err := txscript.ExtractPkScriptAddrs(redeemScript, netParam)
 	if err != nil {
 		return fmt.Errorf("MultiSign, failed to extract pkscript addrs: %v", err)
@@ -117,7 +121,7 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 			return fmt.Errorf("MultiSign, failed to encode msgtx to bytes: %v", err)
 		}
 
-		witScript, err := getLockScript(redeemScript)
+		witScript, err := getLockScript(redeemScript, netParam)
 		if err != nil {
 			return fmt.Errorf("MultiSign, failed to get lock script: %v", err)
 		}
@@ -248,17 +252,20 @@ func makeBtcTx(service *native.NativeService, chainID uint64, amounts map[string
 		return fmt.Errorf("makeBtcTx, sum(%d) of amounts exceeds the MaxSatoshi", amountSum)
 	}
 
+	netParam, err := getNetParam(service, chainID)
+	if err != nil {
+		return fmt.Errorf("makeBtcTx, %v", err)
+	}
 	// get tx outs
-	outs, err := getTxOuts(amounts)
+	outs, err := getTxOuts(amounts, netParam)
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, %v", err)
 	}
-
-	out, err := getChangeTxOut(0, redeemScript)
+	script, err := getLockScript(redeemScript, netParam)
 	if err != nil {
 		return fmt.Errorf("makeBtcTx, %v", err)
 	}
-
+	out := wire.NewTxOut(0, script)
 	_, addrs, m, _ := txscript.ExtractPkScriptAddrs(redeemScript, netParam)
 	choosed, sum, gasFee, err := chooseUtxos(service, chainID, amountSum, append(outs, out), rk, m, len(addrs))
 	if err != nil {

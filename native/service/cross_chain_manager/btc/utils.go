@@ -19,6 +19,7 @@ package btc
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -53,10 +54,22 @@ const (
 	SELECTING_K             = 4.0
 )
 
-var netParam = &chaincfg.TestNet3Params
+func getNetParam(service *native.NativeService, chainId uint64) (*chaincfg.Params, error) {
+	side, err := side_chain_manager.GetSideChain(service, chainId)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get bitcoin net parameter: %v", err)
+	}
 
-func GetNetParam() *chaincfg.Params {
-	return netParam
+	switch utils.BtcNetType(binary.LittleEndian.Uint64(side.CCMCAddress)) {
+	case utils.TyTestnet3:
+		return &chaincfg.TestNet3Params, nil
+	case utils.TyRegtest:
+		return &chaincfg.RegressionNetParams, nil
+	case utils.TySimnet:
+		return &chaincfg.SimNetParams, nil
+	default:
+		return &chaincfg.MainNetParams, nil
+	}
 }
 
 func verifyFromBtcTx(native *native.NativeService, proof, tx []byte, fromChainID uint64, height uint32) (*crosscommon.MakeTxParam, error) {
@@ -223,7 +236,7 @@ func getUnsignedTx(txIns []*wire.TxIn, outs []*wire.TxOut, changeOut *wire.TxOut
 	return mtx, nil
 }
 
-func getTxOuts(amounts map[string]int64) ([]*wire.TxOut, error) {
+func getTxOuts(amounts map[string]int64, netParam *chaincfg.Params) ([]*wire.TxOut, error) {
 	outs := make([]*wire.TxOut, 0)
 	for encodedAddr, amount := range amounts {
 		// Decode the provided address.
@@ -249,12 +262,7 @@ func getTxOuts(amounts map[string]int64) ([]*wire.TxOut, error) {
 	return outs, nil
 }
 
-func getChangeTxOut(change int64, redeem []byte) (*wire.TxOut, error) {
-	script, err := getLockScript(redeem)
-	return wire.NewTxOut(change, script), err
-}
-
-func getLockScript(redeem []byte) ([]byte, error) {
+func getLockScript(redeem []byte, netParam *chaincfg.Params) ([]byte, error) {
 	hasher := sha256.New()
 	hasher.Write(redeem)
 	witAddr, err := btcutil.NewAddressWitnessScriptHash(hasher.Sum(nil), netParam)
