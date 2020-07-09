@@ -21,13 +21,13 @@ package vbft
 import (
 	"fmt"
 
+	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
 	"github.com/polynetwork/poly/core/ledger"
 	"github.com/polynetwork/poly/core/store"
 	"github.com/polynetwork/poly/core/store/overlaydb"
 	"github.com/polynetwork/poly/events/message"
-	"github.com/ontio/ontology-eventbus/actor"
 )
 
 type PendingBlock struct {
@@ -128,6 +128,7 @@ func (self *ChainStore) ReloadFromLedger() {
 }
 
 func (self *ChainStore) AddBlock(block *Block) error {
+	log.Debugf("ChainStore.AddBlock, block.Block.Header: %+v\n", *block.Block.Header)
 	if block == nil {
 		return fmt.Errorf("try add nil block")
 	}
@@ -145,6 +146,7 @@ func (self *ChainStore) AddBlock(block *Block) error {
 	if err != nil {
 		log.Errorf("chainstore blkNum:%d, SubmitBlock: %s", blkNum-1, err)
 	}
+	log.Debugf("ChainStore.AddBlock, blkNum= %d\n", blkNum)
 	execResult, err := self.db.ExecuteBlock(block.Block)
 	if err != nil {
 		log.Errorf("chainstore AddBlock GetBlockExecResult: %s", err)

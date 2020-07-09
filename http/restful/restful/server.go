@@ -65,7 +65,7 @@ const (
 	GET_SMTCOCE_EVT_TXS   = "/api/v1/smartcode/event/transactions/:height"
 	GET_SMTCOCE_EVTS      = "/api/v1/smartcode/event/txhash/:hash"
 	GET_BLK_HGT_BY_TXHASH = "/api/v1/block/height/txhash/:hash"
-	GET_MERKLE_PROOF      = "/api/v1/merkleproof/:hash"
+	GET_MERKLE_PROOF      = "/api/v1/merkleproof/:bheight/:rheight"
 	GET_GAS_PRICE         = "/api/v1/gasprice"
 	GET_ALLOWANCE         = "/api/v1/allowance/:asset/:from/:to"
 	GET_UNBOUNDONG        = "/api/v1/unboundong/:addr"
@@ -180,7 +180,7 @@ func (this *restServer) getPath(url string) string {
 		return GET_STORAGE
 	} else if strings.Contains(url, strings.TrimRight(GET_BALANCE, ":addr")) {
 		return GET_BALANCE
-	} else if strings.Contains(url, strings.TrimRight(GET_MERKLE_PROOF, ":hash")) {
+	} else if strings.Contains(url, strings.TrimRight(GET_MERKLE_PROOF, ":bheight/:rheight")) {
 		return GET_MERKLE_PROOF
 	} else if strings.Contains(url, strings.TrimRight(GET_ALLOWANCE, ":asset/:from/:to")) {
 		return GET_ALLOWANCE
@@ -224,7 +224,7 @@ func (this *restServer) getParams(r *http.Request, url string, req map[string]in
 	case GET_BALANCE:
 		req["Addr"] = getParam(r, "addr")
 	case GET_MERKLE_PROOF:
-		req["Hash"] = getParam(r, "hash")
+		req["BlockHeight"], req["RootHeight"] = getParam(r, "bheight"), getParam(r, "rheight")
 	case GET_ALLOWANCE:
 		req["Asset"] = getParam(r, "asset")
 		req["From"], req["To"] = getParam(r, "from"), getParam(r, "to")

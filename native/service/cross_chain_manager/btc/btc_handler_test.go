@@ -29,6 +29,7 @@ import (
 	"github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/core/store/leveldbstore"
 	"github.com/polynetwork/poly/core/store/overlaydb"
+	"github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/native"
 	ccmcom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
@@ -77,7 +78,8 @@ var (
 			db = storage.NewCacheDB(overlaydb.NewOverlayDB(store))
 		}
 
-		return native.NewNativeService(db, nil, 0, 0, common.Uint256{0}, 0, args, false)
+		service, _ := native.NewNativeService(db, &types.Transaction{ChainID: 0}, 0, 0, common.Uint256{0}, 0, args, false)
+		return service
 	}
 
 	setSideChain = func(ns *native.NativeService) {

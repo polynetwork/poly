@@ -23,6 +23,8 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/ontio/ontology-crypto/keypair"
+	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/polynetwork/poly/account"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/config"
@@ -34,8 +36,6 @@ import (
 	"github.com/polynetwork/poly/events"
 	"github.com/polynetwork/poly/events/message"
 	"github.com/polynetwork/poly/validator/increment"
-	"github.com/ontio/ontology-crypto/keypair"
-	"github.com/ontio/ontology-eventbus/actor"
 )
 
 /*
@@ -196,8 +196,7 @@ func (self *SoloService) makeBlock() (*types.Block, error) {
 		txHash = append(txHash, t.Hash())
 	}
 	txRoot := common.ComputeMerkleRoot(txHash)
-
-	blockRoot := ledger.DefLedger.GetBlockRootWithNewTxRoots(height+1, []common.Uint256{txRoot})
+	blockRoot := ledger.DefLedger.GetBlockRootWithPreBlockHashes(height+1, []common.Uint256{prevHash})
 	header := &types.Header{
 		Version:          ContextVersion,
 		PrevBlockHash:    prevHash,

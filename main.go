@@ -29,6 +29,9 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/fdlimit"
+	"github.com/ontio/ontology-crypto/keypair"
+	"github.com/ontio/ontology-eventbus/actor"
+	alog "github.com/ontio/ontology-eventbus/log"
 	"github.com/polynetwork/poly/account"
 	"github.com/polynetwork/poly/cmd"
 	cmdcom "github.com/polynetwork/poly/cmd/common"
@@ -56,9 +59,6 @@ import (
 	"github.com/polynetwork/poly/txnpool/proc"
 	"github.com/polynetwork/poly/validator/stateful"
 	"github.com/polynetwork/poly/validator/stateless"
-	"github.com/ontio/ontology-crypto/keypair"
-	"github.com/ontio/ontology-eventbus/actor"
-	alog "github.com/ontio/ontology-eventbus/log"
 	"github.com/urfave/cli"
 )
 
@@ -256,6 +256,7 @@ func initLedger(ctx *cli.Context) (*ledger.Ledger, error) {
 	if err != nil {
 		return nil, fmt.Errorf("genesisBlock error %s", err)
 	}
+	log.Infof("Current ChainId: %d", genesisBlock.Header.ChainID)
 	err = ledger.DefLedger.Init(bookKeepers, genesisBlock)
 	if err != nil {
 		return nil, fmt.Errorf("Init ledger error:%s", err)

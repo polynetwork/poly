@@ -20,16 +20,16 @@ package cosmos
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/account"
 	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/core/genesis"
 	"github.com/polynetwork/poly/core/store/leveldbstore"
 	"github.com/polynetwork/poly/core/store/overlaydb"
+	"github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/native"
 	scom "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/storage"
-	"github.com/polynetwork/poly/core/genesis"
-	"github.com/polynetwork/poly/core/types"
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
@@ -47,8 +47,8 @@ const (
 )
 
 var (
-	acct *account.Account = account.NewAccount("")
-	setBKers = func() {
+	acct     *account.Account = account.NewAccount("")
+	setBKers                  = func() {
 		genesis.GenesisBookkeepers = []keypair.PublicKey{acct.PublicKey}
 	}
 )
@@ -83,7 +83,8 @@ func NewNative(args []byte, tx *types.Transaction, db *storage.CacheDB) *native.
 		store, _ := leveldbstore.NewMemLevelDBStore()
 		db = storage.NewCacheDB(overlaydb.NewOverlayDB(store))
 	}
-	return native.NewNativeService(db, tx, 0, 0, common.Uint256{0}, 0, args, false)
+	ns, _ := native.NewNativeService(db, tx, 0, 0, common.Uint256{0}, 0, args, false)
+	return ns
 }
 
 func TestSyncGenesisHeader(t *testing.T) {
@@ -152,7 +153,7 @@ func TestSyncBlockHeader(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), new(types.Transaction), native.GetCacheDB())
 		err := cosmosHandler.SyncBlockHeader(native)
 		if err != nil {
 			fmt.Printf("err: %s", err.Error())
@@ -166,7 +167,7 @@ func TestSyncBlockHeader(t *testing.T) {
 
 /*
 insert a new block
- */
+*/
 func TestSyncBlockHeader2(t *testing.T) {
 	cosmosHandler := NewCosmosHandler()
 	var native *native.NativeService
@@ -206,7 +207,7 @@ func TestSyncBlockHeader2(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), new(types.Transaction), native.GetCacheDB())
 		err := cosmosHandler.SyncBlockHeader(native)
 		if err != nil {
 			fmt.Printf("err: %s", err.Error())
@@ -227,7 +228,7 @@ func TestSyncBlockHeader2(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), new(types.Transaction), native.GetCacheDB())
 		err := cosmosHandler.SyncBlockHeader(native)
 		if err != nil {
 			fmt.Printf("err: %s", err.Error())
@@ -241,7 +242,7 @@ func TestSyncBlockHeader2(t *testing.T) {
 
 /*
 sync block before genensis
- */
+*/
 func TestSyncBlockHeader3(t *testing.T) {
 	cosmosHandler := NewCosmosHandler()
 	var native *native.NativeService
@@ -279,7 +280,7 @@ func TestSyncBlockHeader3(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), new(types.Transaction), native.GetCacheDB())
 		err := cosmosHandler.SyncBlockHeader(native)
 		if err != nil {
 			fmt.Printf("err: %s", err.Error())
@@ -327,7 +328,7 @@ func TestSyncBlockHeaderTwice(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), new(types.Transaction), native.GetCacheDB())
 		err := cosmosHandler.SyncBlockHeader(native)
 		if err != nil {
 			fmt.Printf("err: %s", err.Error())
@@ -348,7 +349,7 @@ func TestSyncBlockHeaderTwice(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), new(types.Transaction), native.GetCacheDB())
 		err := cosmosHandler.SyncBlockHeader(native)
 		if err != nil {
 			fmt.Printf("err: %s", err.Error())
@@ -399,7 +400,7 @@ func TestSyncBlockHeaderUnorder(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), new(types.Transaction), native.GetCacheDB())
 		err := cosmosHandler.SyncBlockHeader(native)
 		if err != nil {
 			fmt.Printf("err: %s", err.Error())

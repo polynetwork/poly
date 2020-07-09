@@ -36,10 +36,11 @@ import (
 func (self *StateStore) HandleInvokeTransaction(store store.LedgerStore, overlay *overlaydb.OverlayDB, cache *storage.CacheDB,
 	tx *types.Transaction, block *types.Block, notify *event.ExecuteNotify) ([]common.Uint256, error) {
 	invoke := tx.Payload.(*payload.InvokeCode)
-
-	service := native.NewNativeService(cache, tx, block.Header.Timestamp, block.Header.Height,
+	service, err := native.NewNativeService(cache, tx, block.Header.Timestamp, block.Header.Height,
 		block.Hash(), block.Header.ChainID, invoke.Code, false)
-
+	if err != nil {
+		return nil, fmt.Errorf("HandleInvokeTransaction Error: %+v\n", err)
+	}
 	if _, err := service.Invoke(); err != nil {
 		return nil, err
 	}

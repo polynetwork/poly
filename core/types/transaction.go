@@ -24,9 +24,9 @@ import (
 	"fmt"
 	"github.com/polynetwork/poly/common/constants"
 
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/core/payload"
-	"github.com/ontio/ontology-crypto/keypair"
 )
 
 const MAX_TX_SIZE = 1024 * 1024 // The max size of a transaction to prevent DOS attacks

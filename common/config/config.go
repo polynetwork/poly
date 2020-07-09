@@ -26,11 +26,11 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/constants"
 	"github.com/polynetwork/poly/common/log"
 	"github.com/polynetwork/poly/errors"
-	"github.com/ontio/ontology-crypto/keypair"
 )
 
 var Version = "" //Set value when build project
@@ -81,6 +81,8 @@ const (
 	NETWORK_NAME_MAIN_NET = "main"
 	NETWORK_NAME_TEST_NET = "test"
 	NETWORK_NAME_SOLO_NET = "testmode"
+	MAINNET_CHAIN_ID      = 0
+	TESTNET_CHAIN_ID      = common.MAX_UINT64
 )
 
 var NETWORK_MAGIC = map[uint32]uint32{
@@ -93,6 +95,10 @@ var NETWORK_NAME = map[uint32]string{
 	NETWORK_ID_MAIN_NET: NETWORK_NAME_MAIN_NET,
 	NETWORK_ID_TEST_NET: NETWORK_NAME_TEST_NET,
 	NETWORK_ID_SOLO_NET: NETWORK_NAME_SOLO_NET,
+}
+var CHAIN_ID = map[uint32]uint64{
+	NETWORK_ID_MAIN_NET: MAINNET_CHAIN_ID,
+	NETWORK_ID_TEST_NET: TESTNET_CHAIN_ID,
 }
 
 func GetNetworkMagic(id uint32) uint32 {
@@ -111,12 +117,23 @@ func GetNetworkName(id uint32) string {
 	return fmt.Sprintf("%d", id)
 }
 
+func GetChainIdByNetId(id uint32) uint64 {
+	chainId, ok := CHAIN_ID[id]
+	if ok {
+		return chainId
+	}
+	return uint64(id)
+}
+
 var PolarisConfig = &GenesisConfig{
 	SeedList: []string{
-		"polaris1.ont.io:20338",
-		"polaris2.ont.io:20338",
-		"polaris3.ont.io:20338",
-		"polaris4.ont.io:20338"},
+		"beta1.poly.network:20338",
+		"beta2.poly.network:20338",
+		"beta3.poly.network:20338",
+		"beta4.poly.network:20338",
+		"beta5.poly.network:20338",
+		"beta6.poly.network:20338",
+		"beta7.poly.network:20338"},
 	ConsensusType: CONSENSUS_TYPE_VBFT,
 	VBFT: &VBFTConfig{
 		BlockMsgDelay:        10000,
@@ -128,38 +145,38 @@ var PolarisConfig = &GenesisConfig{
 		Peers: []*VBFTPeerInfo{
 			{
 				Index:      1,
-				PeerPubkey: "037c9e6c6a446b6b296f89b722cbf686b81e0a122444ef05f0f87096777663284b",
-				Address:    "AXmQDzzvpEtPkNwBEFsREzApTTDZFW6frD",
+				PeerPubkey: "120503ef44beba84422bd76a599531c9fe50969a929a0fee35df66690f370ce19fa8c0",
+				Address:    "ATkhypXmvPNSeX64ECyL6kT8zSruDBLtBJ",
 			},
 			{
 				Index:      2,
-				PeerPubkey: "03dff4c63267ae5e23da44ace1bc47d0da1eb8d36fd71181dcccf0e872cb7b31fa",
-				Address:    "AY5W6p4jHeZG2jjW6nS1p4KDUhcqLkU6jz",
+				PeerPubkey: "1205038247efcfeae0fdf760685d1ac1c083be3ff5e9a4a548bc3a2e98f0434f092483",
+				Address:    "AVrKPxydgNjtLEQxT2krpBkksBWZMq5Sv3",
 			},
 			{
 				Index:      3,
-				PeerPubkey: "0205bc592aa9121428c4144fcd669ece1fa73fee440616c75624967f83fb881050",
-				Address:    "ALZVrZrFqoSvqyi38n7mpPoeDp7DMtZ9b6",
+				PeerPubkey: "1205022092e34e0176dccf8abb496b833d591d25533469b3caf0e279b9742955dd8fc3",
+				Address:    "ARMkJPzh7dR4p6Wi44T55dJ4sjr6C5hBUg",
 			},
 			{
 				Index:      4,
-				PeerPubkey: "030a34dcb075d144df1f65757b85acaf053395bb47b019970607d2d1cdd222525c",
-				Address:    "AMogjmLf2QohTcGST7niV75ekZfj44SKme",
+				PeerPubkey: "1205027bd771e68adb88398282e21a8b03c12f64c2351ea49a2ba06a0327c83b239ca9",
+				Address:    "AScEX1ibeBZtGxkpujLKEB3T1yW6ufUj5C",
 			},
 			{
 				Index:      5,
-				PeerPubkey: "021844159f97d81da71da52f84e8451ee573c83b296ff2446387b292e44fba5c98",
-				Address:    "AZzQTkZvjy7ih9gjvwU8KYiZZyNoy6jE9p",
+				PeerPubkey: "120502d0d0e883c73d8256cf4314822ddd973c0179b73d8ed3df85aad38d36a8b2b0c7",
+				Address:    "AKPQsGZG5zyRouHT6MAWbvYpoy8nzBFwjV",
 			},
 			{
 				Index:      6,
-				PeerPubkey: "020cc76feb375d6ea8ec9ff653bab18b6bbc815610cecc76e702b43d356f885835",
-				Address:    "AKEqQKmxCsjWJz8LPGryXzb6nN5fkK1WDY",
+				PeerPubkey: "120503a4f44dd65cbcc52b1d1ac51747378a7f84753b5f7bf2760ca21390ced6b172bb",
+				Address:    "ASR4S4eBWpftG4tVv1Ku9YWJubzFuw66iL",
 			},
 			{
 				Index:      7,
-				PeerPubkey: "03aa4d52b200fd91ca12deff46505c4608a0f66d28d9ae68a342c8a8c1266de0f9",
-				Address:    "AQNpGWz4oHHFBejtBbakeR43DHfen7cm8L",
+				PeerPubkey: "120502696c0cbe74f01ee85e3c0ebe4ebdc5bea404f199d0262f1941fd39ff0d100257",
+				Address:    "AdUy5qgWTkSf6x4kiWf1fZ9pw8cuvCqoaf",
 			},
 		},
 	},
@@ -169,11 +186,11 @@ var PolarisConfig = &GenesisConfig{
 
 var MainNetConfig = &GenesisConfig{
 	SeedList: []string{
-		"seed1.ont.io:20338",
-		"seed2.ont.io:20338",
-		"seed3.ont.io:20338",
-		"seed4.ont.io:20338",
-		"seed5.ont.io:20338"},
+		"seed1.poly.network:20338",
+		"seed2.poly.network:20338",
+		"seed3.poly.network:20338",
+		"seed4.poly.network:20338",
+		"seed5.poly.network:20338"},
 	ConsensusType: CONSENSUS_TYPE_VBFT,
 	VBFT: &VBFTConfig{
 		BlockMsgDelay:        10000,

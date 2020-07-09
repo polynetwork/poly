@@ -19,6 +19,7 @@ package cosmos
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/account"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/core/genesis"
@@ -33,15 +34,14 @@ import (
 	synccom "github.com/polynetwork/poly/native/service/header_sync/cosmos"
 	"github.com/polynetwork/poly/native/service/utils"
 	"github.com/polynetwork/poly/native/storage"
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
 )
 
 var (
-	acct *account.Account = account.NewAccount("")
-	setBKers = func() {
+	acct     *account.Account = account.NewAccount("")
+	setBKers                  = func() {
 		genesis.GenesisBookkeepers = []keypair.PublicKey{acct.PublicKey}
 	}
 )
@@ -49,7 +49,6 @@ var (
 func init() {
 	setBKers()
 }
-
 
 const (
 	SUCCESS = iota
@@ -82,12 +81,15 @@ func NewNative(args []byte, tx *types.Transaction, db *storage.CacheDB) *native.
 		store, _ := leveldbstore.NewMemLevelDBStore()
 		db = storage.NewCacheDB(overlaydb.NewOverlayDB(store))
 	}
-	ns := native.NewNativeService(db, tx, 0, 0, common.Uint256{0}, 0, args, false)
+	ns, err := native.NewNativeService(db, tx, 0, 0, common.Uint256{0}, 0, args, false)
+	if err != nil {
+		panic(fmt.Sprintf("NewNativeService error: %+v", err))
+	}
 
 	contaractAddr, _ := hex.DecodeString("48A77F43C0D7A6D6f588c4758dbA22bf6C5D95a0")
 	side := &side_chain_manager.SideChain{
 		Name:         "cosmos",
-		ChainId:     5,
+		ChainId:      5,
 		BlocksToWait: 1,
 		Router:       1,
 		CCMCAddress:  contaractAddr,

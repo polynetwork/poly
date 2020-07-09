@@ -20,7 +20,7 @@ package dbft
 
 import (
 	"fmt"
-
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/account"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
@@ -28,7 +28,6 @@ import (
 	"github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/core/vote"
 	msg "github.com/polynetwork/poly/p2pserver/message/types"
-	"github.com/ontio/ontology-crypto/keypair"
 )
 
 const ContextVersion uint32 = 0
@@ -100,7 +99,7 @@ func (ctx *ConsensusContext) MakeHeader() *types.Block {
 			txHash = append(txHash, t.Hash())
 		}
 		txRoot := common.ComputeMerkleRoot(txHash)
-		blockRoot := ledger.DefLedger.GetBlockRootWithNewTxRoots(ctx.Height, []common.Uint256{txRoot})
+		blockRoot := ledger.DefLedger.GetBlockRootWithPreBlockHashes(ctx.Height, []common.Uint256{ctx.PrevHash})
 		header := &types.Header{
 			Version:          ContextVersion,
 			PrevBlockHash:    ctx.PrevHash,

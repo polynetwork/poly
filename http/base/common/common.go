@@ -20,6 +20,7 @@
 package common
 
 import (
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
 	"github.com/polynetwork/poly/core/types"
@@ -27,7 +28,6 @@ import (
 	bactor "github.com/polynetwork/poly/http/base/actor"
 	"github.com/polynetwork/poly/native/event"
 	cstate "github.com/polynetwork/poly/native/states"
-	"github.com/ontio/ontology-crypto/keypair"
 )
 
 const MAX_SEARCH_HEIGHT uint32 = 100
@@ -38,12 +38,12 @@ type BalanceOfRsp struct {
 }
 
 type MerkleProof struct {
-	Type             string
-	TransactionsRoot string
-	BlockHeight      uint32
-	CurBlockRoot     string
-	CurBlockHeight   uint32
-	TargetHashes     []string
+	Type           string
+	BlockHash      string
+	BlockHeight    uint32
+	CurBlockRoot   string
+	CurBlockHeight uint32
+	TargetHashes   []string
 }
 
 type CrossStatesProof struct {

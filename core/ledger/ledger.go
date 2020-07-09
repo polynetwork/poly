@@ -20,6 +20,7 @@ package ledger
 
 import (
 	"fmt"
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
 	"github.com/polynetwork/poly/core/states"
@@ -28,7 +29,6 @@ import (
 	"github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/native/event"
 	cstate "github.com/polynetwork/poly/native/states"
-	"github.com/ontio/ontology-crypto/keypair"
 )
 
 var DefLedger *Ledger
@@ -87,8 +87,8 @@ func (self *Ledger) GetCrossStateRoot(height uint32) (common.Uint256, error) {
 	return self.ldgStore.GetCrossStateRoot(height)
 }
 
-func (self *Ledger) GetBlockRootWithNewTxRoots(startHeight uint32, txRoots []common.Uint256) common.Uint256 {
-	return self.ldgStore.GetBlockRootWithNewTxRoots(startHeight, txRoots)
+func (self *Ledger) GetBlockRootWithPreBlockHashes(startHeight uint32, txRoots []common.Uint256) common.Uint256 {
+	return self.ldgStore.GetBlockRootWithPreBlockHashes(startHeight, txRoots)
 }
 
 func (self *Ledger) GetBlockByHeight(height uint32) (*types.Block, error) {

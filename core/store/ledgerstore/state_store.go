@@ -285,7 +285,7 @@ func (self *StateStore) AddBlockMerkleTreeRoot(txRoot common.Uint256) error {
 	return nil
 }
 
-//GetMerkleProof return merkle proof of block
+//GetMerkleProof return merkle proof of block hash
 func (self *StateStore) GetMerkleProof(proofHeight, rootHeight uint32) ([]common.Uint256, error) {
 	return self.merkleTree.InclusionProof(proofHeight, rootHeight+1)
 }
@@ -429,8 +429,8 @@ func (self *StateStore) GetStateMerkleRootWithNewHash(writeSetHash common.Uint25
 	return self.deltaMerkleTree.GetRootWithNewLeaf(writeSetHash)
 }
 
-func (self *StateStore) GetBlockRootWithNewTxRoots(txRoots []common.Uint256) common.Uint256 {
-	return self.merkleTree.GetRootWithNewLeaves(txRoots)
+func (self *StateStore) GetBlockRootWithPreBlockHashes(preBlockHashes []common.Uint256) common.Uint256 {
+	return self.merkleTree.GetRootWithNewLeaves(preBlockHashes)
 }
 
 func (self *StateStore) genBlockMerkleTreeKey() []byte {

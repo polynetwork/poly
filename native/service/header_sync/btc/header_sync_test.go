@@ -28,6 +28,7 @@ import (
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/core/store/leveldbstore"
 	"github.com/polynetwork/poly/core/store/overlaydb"
+	"github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/native"
 	scom "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/storage"
@@ -43,7 +44,8 @@ var (
 			store, _ := leveldbstore.NewMemLevelDBStore()
 			db = storage.NewCacheDB(overlaydb.NewOverlayDB(store))
 		}
-		return native.NewNativeService(db, nil, 0, 0, common.Uint256{0}, 0, args, false)
+		ns, _ := native.NewNativeService(db, new(types.Transaction), 0, 0, common.Uint256{0}, 0, args, false)
+		return ns
 	}
 
 	getHeaders = func() []*wire.BlockHeader {

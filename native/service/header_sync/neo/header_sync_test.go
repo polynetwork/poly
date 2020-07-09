@@ -26,6 +26,7 @@ import (
 	"github.com/joeqian10/neo-gogogo/helper"
 	tx2 "github.com/joeqian10/neo-gogogo/tx"
 	"github.com/joeqian10/neo-gogogo/wallet"
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/account"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/core/genesis"
@@ -35,7 +36,6 @@ import (
 	"github.com/polynetwork/poly/native"
 	scom "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/storage"
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -48,7 +48,7 @@ var (
 	getNativeFunc                  = func() *native.NativeService {
 		store, _ := leveldbstore.NewMemLevelDBStore()
 		cacheDB := storage.NewCacheDB(overlaydb.NewOverlayDB(store))
-		service := native.NewNativeService(cacheDB, nil, 0, 200, common.Uint256{}, 0, nil, false)
+		service, _ := native.NewNativeService(cacheDB, new(types.Transaction), 0, 200, common.Uint256{}, 0, nil, false)
 		return service
 	}
 	getNeoHanderFunc = func() *NEOHandler {
@@ -68,7 +68,8 @@ func NewNative(args []byte, tx *types.Transaction, db *storage.CacheDB) *native.
 		store, _ := leveldbstore.NewMemLevelDBStore()
 		db = storage.NewCacheDB(overlaydb.NewOverlayDB(store))
 	}
-	return native.NewNativeService(db, tx, 0, 0, common.Uint256{0}, 0, args, false)
+	ns, _ := native.NewNativeService(db, tx, 0, 0, common.Uint256{0}, 0, args, false)
+	return ns
 }
 
 func TestSyncGenesisHeader(t *testing.T) {

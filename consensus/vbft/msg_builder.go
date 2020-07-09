@@ -24,6 +24,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/common/log"
@@ -31,7 +32,6 @@ import (
 	"github.com/polynetwork/poly/core/ledger"
 	"github.com/polynetwork/poly/core/signature"
 	"github.com/polynetwork/poly/core/types"
-	"github.com/ontio/ontology-crypto/keypair"
 )
 
 type ConsensusMsgPayload struct {
@@ -191,7 +191,8 @@ func (self *Server) constructBlock(blkNum uint32, prevBlkHash common.Uint256, tx
 		return nil, fmt.Errorf("constructBlock getlastblock failed blknum:%d", blkNum-1)
 	}
 	txRoot := common.ComputeMerkleRoot(txHash)
-	blockRoot := ledger.DefLedger.GetBlockRootWithNewTxRoots(lastBlock.Block.Header.Height, []common.Uint256{lastBlock.Block.Header.TransactionsRoot, txRoot})
+
+	blockRoot := ledger.DefLedger.GetBlockRootWithPreBlockHashes(blkNum-1, []common.Uint256{lastBlock.Block.Header.PrevBlockHash, prevBlkHash})
 	crossStateRoot, err := self.blockPool.getCrossStatesRoot(blkNum - 1)
 	if err != nil {
 		return nil, fmt.Errorf("failed to GetCrossStatesRoot: %s,blkNum:%d", err, (blkNum - 1))
@@ -199,7 +200,7 @@ func (self *Server) constructBlock(blkNum uint32, prevBlkHash common.Uint256, tx
 
 	blkHeader := &types.Header{
 		Version:          types.CURR_HEADER_VERSION,
-		ChainID:          types.MAIN_CHAIN_ID,
+		ChainID:          config.GetChainIdByNetId(config.DefConfig.P2PNode.NetworkId),
 		PrevBlockHash:    prevBlkHash,
 		TransactionsRoot: txRoot,
 		CrossStateRoot:   crossStateRoot,
@@ -209,12 +210,6 @@ func (self *Server) constructBlock(blkNum uint32, prevBlkHash common.Uint256, tx
 		NextBookkeeper:   nextBookkeeper,
 		ConsensusData:    common.GetNonce(),
 		ConsensusPayload: consensusPayload,
-	}
-
-	if config.DefConfig.P2PNode.NetworkId == config.NETWORK_ID_MAIN_NET {
-		blkHeader.ChainID = types.MAIN_CHAIN_ID
-	} else if config.DefConfig.P2PNode.NetworkId == config.NETWORK_ID_TEST_NET {
-		blkHeader.ChainID = types.TESTNET_CHAIN_ID
 	}
 
 	blk := &types.Block{

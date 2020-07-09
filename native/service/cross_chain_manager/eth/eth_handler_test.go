@@ -21,13 +21,14 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/account"
 	"github.com/polynetwork/poly/common"
-	cstates "github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/core/genesis"
-	"github.com/polynetwork/poly/core/types"
+	cstates "github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/core/store/leveldbstore"
 	"github.com/polynetwork/poly/core/store/overlaydb"
+	"github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/native"
 	ccmcom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
@@ -35,7 +36,6 @@ import (
 	synceth "github.com/polynetwork/poly/native/service/header_sync/eth"
 	"github.com/polynetwork/poly/native/service/utils"
 	"github.com/polynetwork/poly/native/storage"
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
@@ -44,8 +44,8 @@ import (
 )
 
 var (
-	acct *account.Account = account.NewAccount("")
-	setBKers = func() {
+	acct     *account.Account = account.NewAccount("")
+	setBKers                  = func() {
 		genesis.GenesisBookkeepers = []keypair.PublicKey{acct.PublicKey}
 	}
 )
@@ -88,8 +88,10 @@ func NewNative(args []byte, tx *types.Transaction, db *storage.CacheDB) *native.
 		store, _ := leveldbstore.NewMemLevelDBStore()
 		db = storage.NewCacheDB(overlaydb.NewOverlayDB(store))
 	}
-	ns := native.NewNativeService(db, tx, 0, 0, common.Uint256{0}, 0, args, false)
-
+	ns, err := native.NewNativeService(db, tx, 0, 0, common.Uint256{0}, 0, args, false)
+	if err != nil {
+		panic(fmt.Sprintf("NewNativeService error: %+v", err))
+	}
 	contaractAddr, _ := hex.DecodeString("bA6F835ECAE18f5Fc5eBc074e5A0B94422a13126")
 	side := &side_chain_manager.SideChain{
 		Name:         "eth",
@@ -169,6 +171,7 @@ func TestProofHandle(t *testing.T) {
 		param.Serialization(sink)
 
 		tx := &types.Transaction{
+			ChainID:    0,
 			SignedAddr: []common.Address{acct.Address},
 		}
 		native = NewNative(sink.Bytes(), tx, nil)
@@ -193,7 +196,7 @@ func TestProofHandle(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), &types.Transaction{ChainID: 0}, native.GetCacheDB())
 		err := ethSyncHandler.SyncBlockHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)
@@ -212,7 +215,7 @@ func TestProofHandle(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), &types.Transaction{ChainID: 0}, native.GetCacheDB())
 		SetChain(native, "4b61a4c0ab51b53cfabf1339bfdb7dfd27be596a", 1)
 		_, err := ethTxHandler.MakeDepositProposal(native)
 		if err != nil {
@@ -235,6 +238,7 @@ func TestProofHandle_HeaderNotConfirmed(t *testing.T) {
 		param.Serialization(sink)
 
 		tx := &types.Transaction{
+			ChainID:    0,
 			SignedAddr: []common.Address{acct.Address},
 		}
 		native = NewNative(sink.Bytes(), tx, nil)
@@ -259,7 +263,7 @@ func TestProofHandle_HeaderNotConfirmed(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), &types.Transaction{}, native.GetCacheDB())
 		err := ethSyncHandler.SyncBlockHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)
@@ -278,7 +282,7 @@ func TestProofHandle_HeaderNotConfirmed(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), &types.Transaction{}, native.GetCacheDB())
 		SetChain(native, "4b61a4c0ab51b53cfabf1339bfdb7dfd27be596a", 3)
 		_, err := ethTxHandler.MakeDepositProposal(native)
 		if err != nil {
@@ -301,6 +305,7 @@ func TestProofHandle1(t *testing.T) {
 		param.Serialization(sink)
 
 		tx := &types.Transaction{
+			ChainID:    0,
 			SignedAddr: []common.Address{acct.Address},
 		}
 
@@ -323,7 +328,7 @@ func TestProofHandle1(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), &types.Transaction{}, native.GetCacheDB())
 		err := ethSyncHandler.SyncBlockHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)
@@ -342,7 +347,7 @@ func TestProofHandle1(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), &types.Transaction{}, native.GetCacheDB())
 		SetChain(native, "8d069f5a5b877d9ecc5ee28715982c12f3879414", 1)
 		_, err := ethTxHandler.MakeDepositProposal(native)
 		if err != nil {
@@ -365,6 +370,7 @@ func TestProofHandle2(t *testing.T) {
 		param.Serialization(sink)
 
 		tx := &types.Transaction{
+			//ChainID: 0,
 			SignedAddr: []common.Address{acct.Address},
 		}
 		native = NewNative(sink.Bytes(), tx, nil)
@@ -386,7 +392,7 @@ func TestProofHandle2(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), &types.Transaction{}, native.GetCacheDB())
 		err := ethSyncHandler.SyncBlockHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)
@@ -405,7 +411,7 @@ func TestProofHandle2(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), &types.Transaction{}, native.GetCacheDB())
 		SetChain(native, "8d069f5a5b877d9ecc5ee28715982c12f3879414", 1)
 		_, err := ethTxHandler.MakeDepositProposal(native)
 		if err != nil {
@@ -448,7 +454,7 @@ func TestProofHandle_HeaderNotExist(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), &types.Transaction{}, native.GetCacheDB())
 		err := ethSyncHandler.SyncBlockHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)
@@ -467,7 +473,7 @@ func TestProofHandle_HeaderNotExist(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), &types.Transaction{}, native.GetCacheDB())
 		SetChain(native, "8d069f5a5b877d9ecc5ee28715982c12f3879414", 1)
 		_, err := ethTxHandler.MakeDepositProposal(native)
 		if err != nil {
@@ -514,7 +520,7 @@ func TestProofHandle_ProofFormatWrong(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), &types.Transaction{}, native.GetCacheDB())
 		err := ethSyncHandler.SyncBlockHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)
@@ -533,7 +539,7 @@ func TestProofHandle_ProofFormatWrong(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), &types.Transaction{}, native.GetCacheDB())
 		_, err := ethTxHandler.MakeDepositProposal(native)
 		if err != nil {
 			fmt.Printf("%v\n", err)
@@ -579,7 +585,7 @@ func TestProofHandle_VerifyProofWrong(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), &types.Transaction{}, native.GetCacheDB())
 		err := ethSyncHandler.SyncBlockHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)
@@ -598,7 +604,7 @@ func TestProofHandle_VerifyProofWrong(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), &types.Transaction{}, native.GetCacheDB())
 		SetChain(native, "4b61a4c0ab51b53cfabf1339bfdb7dfd27be596a", 1)
 		_, err := ethTxHandler.MakeDepositProposal(native)
 		if err != nil {
@@ -646,7 +652,7 @@ func TestProofHandle_CommitTwice(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), &types.Transaction{}, native.GetCacheDB())
 		err := ethSyncHandler.SyncBlockHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)
@@ -665,7 +671,7 @@ func TestProofHandle_CommitTwice(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), &types.Transaction{}, native.GetCacheDB())
 		SetChain(native, "4b61a4c0ab51b53cfabf1339bfdb7dfd27be596a", 1)
 		_, err := ethTxHandler.MakeDepositProposal(native)
 		if err != nil {
@@ -686,7 +692,7 @@ func TestProofHandle_CommitTwice(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), &types.Transaction{}, native.GetCacheDB())
 		SetChain(native, "4b61a4c0ab51b53cfabf1339bfdb7dfd27be596a", 1)
 		_, err := ethTxHandler.MakeDepositProposal(native)
 		if err != nil {
@@ -729,7 +735,7 @@ func TestProofHandle_ZEROPrefix(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), &types.Transaction{}, native.GetCacheDB())
 		err := ethSyncHandler.SyncBlockHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 		height := getLatestHeight(native)
@@ -748,7 +754,7 @@ func TestProofHandle_ZEROPrefix(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), &types.Transaction{}, native.GetCacheDB())
 		SetChain(native, "10bcc4b6c2555ff48540571ebe5aba6d32915250", 1)
 		_, err := ethTxHandler.MakeDepositProposal(native)
 		if err != nil {
@@ -770,7 +776,7 @@ func TestProofHandle_ZEROPrefix(t *testing.T) {
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
 
-		native = NewNative(sink.Bytes(), nil, native.GetCacheDB())
+		native = NewNative(sink.Bytes(), &types.Transaction{}, native.GetCacheDB())
 		SetChain(native, "10bcc4b6c2555ff48540571ebe5aba6d32915250", 1)
 		_, err := ethTxHandler.MakeDepositProposal(native)
 		if err != nil {

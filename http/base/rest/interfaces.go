@@ -376,32 +376,34 @@ func GetStorage(cmd map[string]interface{}) map[string]interface{} {
 //get merkle proof by transaction hash
 func GetMerkleProof(cmd map[string]interface{}) map[string]interface{} {
 	resp := ResponsePack(berr.SUCCESS)
-	str, ok := cmd["Hash"].(string)
+	bhStr, ok := cmd["BlockHeight"].(string)
 	if !ok {
 		return ResponsePack(berr.INVALID_PARAMS)
 	}
-	hash, err := common.Uint256FromHexString(str)
+	rhStr, ok := cmd["RootHeight"].(string)
+	if !ok {
+		return ResponsePack(berr.INVALID_PARAMS)
+	}
+	height, err := strconv.ParseInt(bhStr, 10, 64)
 	if err != nil {
 		return ResponsePack(berr.INVALID_PARAMS)
 	}
-	height, tx, err := bactor.GetTxnWithHeightByTxHash(hash)
+	rootHeight, err := strconv.ParseInt(rhStr, 10, 64)
 	if err != nil {
 		return ResponsePack(berr.INVALID_PARAMS)
 	}
-	if tx == nil {
-		return ResponsePack(berr.INVALID_PARAMS)
+	if height >= rootHeight {
+		ResponsePack(berr.INVALID_PARAMS)
 	}
-	header, err := bactor.GetHeaderByHeight(height)
+	header, err := bactor.GetHeaderByHeight(uint32(height))
 	if err != nil {
 		return ResponsePack(berr.INVALID_PARAMS)
 	}
-
-	curHeight := bactor.GetCurrentBlockHeight()
-	curHeader, err := bactor.GetHeaderByHeight(curHeight)
+	rootHeader, err := bactor.GetHeaderByHeight(uint32(rootHeight))
 	if err != nil {
 		return ResponsePack(berr.INVALID_PARAMS)
 	}
-	proof, err := bactor.GetMerkleProof(uint32(height), uint32(curHeight))
+	proof, err := bactor.GetMerkleProof(header.Height, rootHeader.Height)
 	if err != nil {
 		return ResponsePack(berr.INTERNAL_ERROR)
 	}
@@ -409,8 +411,9 @@ func GetMerkleProof(cmd map[string]interface{}) map[string]interface{} {
 	for _, v := range proof {
 		hashes = append(hashes, v.ToHexString())
 	}
-	resp["Result"] = bcomn.MerkleProof{"MerkleProof", header.TransactionsRoot.ToHexString(), height,
-		curHeader.BlockRoot.ToHexString(), curHeight, hashes}
+	headerHash := header.Hash()
+	resp["Result"] = bcomn.MerkleProof{"MerkleProof", headerHash.ToHexString(), header.Height,
+		rootHeader.BlockRoot.ToHexString(), rootHeader.Height, hashes}
 	return resp
 }
 

@@ -23,6 +23,7 @@ import (
 	"github.com/polynetwork/poly/native/service/utils"
 	"time"
 
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/common/constants"
@@ -30,7 +31,6 @@ import (
 	"github.com/polynetwork/poly/core/payload"
 	"github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/native/states"
-	"github.com/ontio/ontology-crypto/keypair"
 )
 
 const (
@@ -65,7 +65,7 @@ func BuildGenesisBlock(defaultBookkeeper []keypair.PublicKey, genesisConfig *con
 	//blockdata
 	genesisHeader := &types.Header{
 		Version:          types.CURR_HEADER_VERSION,
-		ChainID:          types.MAIN_CHAIN_ID,
+		ChainID:          config.GetChainIdByNetId(config.DefConfig.P2PNode.NetworkId),
 		PrevBlockHash:    common.Uint256{},
 		TransactionsRoot: common.Uint256{},
 		Timestamp:        constants.GENESIS_BLOCK_TIMESTAMP,
@@ -73,15 +73,9 @@ func BuildGenesisBlock(defaultBookkeeper []keypair.PublicKey, genesisConfig *con
 		ConsensusData:    GenesisNonce,
 		NextBookkeeper:   nextBookkeeper,
 		ConsensusPayload: consensusPayload,
-
-		Bookkeepers: nil,
-		SigData:     nil,
-	}
-
-	if config.DefConfig.P2PNode.NetworkId == config.NETWORK_ID_MAIN_NET {
-		genesisHeader.ChainID = types.MAIN_CHAIN_ID
-	} else if config.DefConfig.P2PNode.NetworkId == config.NETWORK_ID_TEST_NET {
-		genesisHeader.ChainID = types.TESTNET_CHAIN_ID
+		BlockRoot:        common.UINT256_EMPTY,
+		Bookkeepers:      nil,
+		SigData:          nil,
 	}
 
 	genesisBlock := &types.Block{
@@ -109,16 +103,10 @@ func NewInvokeTransaction(invokeCode []byte, nonce uint32) *types.Transaction {
 	}
 	tx := &types.Transaction{
 		Version: types.CURR_TX_VERSION,
-		ChainID: types.MAIN_CHAIN_ID,
 		TxType:  types.Invoke,
 		Payload: invokePayload,
 		Nonce:   nonce,
-	}
-
-	if config.DefConfig.P2PNode.NetworkId == config.NETWORK_ID_MAIN_NET {
-		tx.ChainID = types.MAIN_CHAIN_ID
-	} else if config.DefConfig.P2PNode.NetworkId == config.NETWORK_ID_TEST_NET {
-		tx.ChainID = types.TESTNET_CHAIN_ID
+		ChainID: config.GetChainIdByNetId(config.DefConfig.P2PNode.NetworkId),
 	}
 
 	sink := common.NewZeroCopySink(nil)

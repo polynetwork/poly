@@ -24,7 +24,7 @@ import (
 
 func TestRegisterSideChain(t *testing.T) {
 	param := RegisterSideChainParam{
-		Address:      "123456",
+		Address:      common.Address{1, 2, 3},
 		ChainId:      123,
 		Name:         "123456",
 		BlocksToWait: 1234,

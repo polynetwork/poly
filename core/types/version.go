@@ -18,9 +18,6 @@
 
 package types
 
-const MAIN_CHAIN_ID = 0
-const TESTNET_CHAIN_ID = 0
-
 const CURR_TX_VERSION = 0
 const CURR_HEADER_VERSION = 0
 const MAX_ATTRIBUTES_LEN = 0

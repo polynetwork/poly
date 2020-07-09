@@ -5,7 +5,7 @@ go 1.14
 require (
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/btcsuite/btcutil v1.0.2
-	github.com/cosmos/cosmos-sdk v0.38.5
+	github.com/cosmos/cosmos-sdk v0.38.4
 	github.com/emirpasic/gods v1.12.0 // indirect
 	github.com/ethereum/go-ethereum v1.9.15
 	github.com/gcash/bchd v0.16.4
@@ -22,8 +22,9 @@ require (
 	github.com/ontio/ontology-eventbus v0.9.1
 	github.com/orcaman/concurrent-map v0.0.0-20190826125027-8c72a8bb44f6 // indirect
 	github.com/pborman/uuid v1.2.0
+	github.com/stretchr/testify v1.5.1
 	github.com/syndtr/goleveldb v1.0.1-0.20190923125748-758128399b1d
-	github.com/tendermint/tendermint v0.33.6
+	github.com/tendermint/tendermint v0.33.3
 	github.com/urfave/cli v1.22.4
 	github.com/valyala/bytebufferpool v1.0.0
 	golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9

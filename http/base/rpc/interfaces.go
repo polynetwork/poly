@@ -382,34 +382,31 @@ func GetBlockHeightByTxHash(params []interface{}) map[string]interface{} {
 	return responsePack(berr.INVALID_PARAMS, "")
 }
 
-//get merkle proof by transaction hash
+//get merkle proof by the block height to be verified
 func GetMerkleProof(params []interface{}) map[string]interface{} {
-	if len(params) < 1 {
+	if len(params) < 2 {
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
-	str, ok := params[0].(string)
+	height, ok := params[0].(float64)
 	if !ok {
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
-	hash, err := common.Uint256FromHexString(str)
+	rootHeight, ok := params[1].(float64)
+	if !ok {
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+	if height >= rootHeight {
+		responsePack(berr.INVALID_PARAMS, fmt.Sprintf("Cannot get proof of block hash at height: %d when the block root is at height: %d", uint32(height), uint32(rootHeight)))
+	}
+	header, err := bactor.GetHeaderByHeight(uint32(height))
 	if err != nil {
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
-	height, _, err := bactor.GetTxnWithHeightByTxHash(hash)
+	rootHeader, err := bactor.GetHeaderByHeight(uint32(rootHeight))
 	if err != nil {
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
-	header, err := bactor.GetHeaderByHeight(height)
-	if err != nil {
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-
-	curHeight := bactor.GetCurrentBlockHeight()
-	curHeader, err := bactor.GetHeaderByHeight(curHeight)
-	if err != nil {
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	proof, err := bactor.GetMerkleProof(uint32(height), uint32(curHeight))
+	proof, err := bactor.GetMerkleProof(header.Height, rootHeader.Height)
 	if err != nil {
 		return responsePack(berr.INTERNAL_ERROR, "")
 	}
@@ -417,8 +414,9 @@ func GetMerkleProof(params []interface{}) map[string]interface{} {
 	for _, v := range proof {
 		hashes = append(hashes, v.ToHexString())
 	}
-	return responseSuccess(bcomn.MerkleProof{"MerkleProof", header.TransactionsRoot.ToHexString(), height,
-		curHeader.BlockRoot.ToHexString(), curHeight, hashes})
+	headerHash := header.Hash()
+	return responseSuccess(bcomn.MerkleProof{"MerkleProof", headerHash.ToHexString(), header.Height,
+		rootHeader.BlockRoot.ToHexString(), rootHeader.Height, hashes})
 }
 
 //get cross chain state proof

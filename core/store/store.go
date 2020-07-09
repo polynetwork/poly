@@ -19,13 +19,13 @@
 package store
 
 import (
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/core/store/overlaydb"
 	"github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/native/event"
 	cstates "github.com/polynetwork/poly/native/states"
-	"github.com/ontio/ontology-crypto/keypair"
 )
 
 type ExecuteResult struct {
@@ -59,7 +59,7 @@ type LedgerStore interface {
 	GetTransaction(txHash common.Uint256) (*types.Transaction, uint32, error)
 	IsContainBlock(blockHash common.Uint256) (bool, error)
 	IsContainTransaction(txHash common.Uint256) (bool, error)
-	GetBlockRootWithNewTxRoots(startHeight uint32, txRoots []common.Uint256) common.Uint256
+	GetBlockRootWithPreBlockHashes(startHeight uint32, txRoots []common.Uint256) common.Uint256
 	GetMerkleProof(m, n uint32) ([]common.Uint256, error)
 	GetCrossStatesProof(height uint32, key []byte) ([]byte, error)
 	GetBookkeeperState() (*states.BookkeeperState, error)

@@ -24,7 +24,7 @@ import (
 
 func TestRelayerListParam_Serialization(t *testing.T) {
 	params := new(RelayerListParam)
-	params.AddressList = [][]byte{{1, 2, 4, 6}, {1, 4, 5, 7}, {1, 3, 5, 7, 9}}
+	params.AddressList = []common.Address{{1, 2, 4, 6}, {1, 4, 5, 7}, {1, 3, 5, 7, 9}}
 	sink := common.NewZeroCopySink(nil)
 	params.Serialization(sink)
 

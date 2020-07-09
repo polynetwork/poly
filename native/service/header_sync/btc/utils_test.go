@@ -28,6 +28,7 @@ import (
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/native"
 	scom "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/storage"
@@ -81,7 +82,7 @@ func TestCalcRequiredWork(t *testing.T) {
 	assert.Nil(t, err)
 	syncAssumedBtcBlockChain(cacheDB)
 
-	nativeService := native.NewNativeService(cacheDB, nil, 0, 0, common.Uint256{}, 0, nil, false)
+	nativeService, _ := native.NewNativeService(cacheDB, new(types.Transaction), 0, 0, common.Uint256{}, 0, nil, false)
 	bestHeader, err := GetBestBlockHeader(nativeService, 0)
 	if err != nil {
 		t.Error(err)

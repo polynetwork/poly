@@ -29,6 +29,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/common/log"
@@ -46,7 +47,6 @@ import (
 	cstates "github.com/polynetwork/poly/native/states"
 	sstate "github.com/polynetwork/poly/native/states"
 	"github.com/polynetwork/poly/native/storage"
-	"github.com/ontio/ontology-crypto/keypair"
 )
 
 const (
@@ -664,7 +664,7 @@ func (this *LedgerStoreImp) saveBlockToStateStore(block *types.Block, result sto
 		return fmt.Errorf("AddBlockMerkleTreeRoot error %s", err)
 	}
 
-	err = this.stateStore.AddBlockMerkleTreeRoot(block.Header.TransactionsRoot)
+	err = this.stateStore.AddBlockMerkleTreeRoot(block.Header.PrevBlockHash)
 	if err != nil {
 		return fmt.Errorf("AddBlockMerkleTreeRoot error %s", err)
 	}
@@ -739,7 +739,7 @@ func (this *LedgerStoreImp) releaseSavingBlockLock() {
 func (this *LedgerStoreImp) submitBlock(block *types.Block, result store.ExecuteResult) error {
 	blockHash := block.Hash()
 	blockHeight := block.Header.Height
-	blockRoot := this.GetBlockRootWithNewTxRoots(block.Header.Height, []common.Uint256{block.Header.TransactionsRoot})
+	blockRoot := this.GetBlockRootWithPreBlockHashes(block.Header.Height, []common.Uint256{block.Header.PrevBlockHash})
 	if block.Header.Height != 0 && blockRoot != block.Header.BlockRoot {
 		return fmt.Errorf("wrong block root at height:%d, expected:%s, got:%s",
 			block.Header.Height, blockRoot.ToHexString(), block.Header.BlockRoot.ToHexString())
@@ -866,9 +866,11 @@ func (this *LedgerStoreImp) PreExecuteContract(tx *types.Transaction) (*cstates.
 	overlay := this.stateStore.NewOverlayDB()
 	cache := storage.NewCacheDB(overlay)
 
-	service := native.NewNativeService(cache, tx, uint32(time.Now().Unix()), block.Header.Height,
+	service, err := native.NewNativeService(cache, tx, uint32(time.Now().Unix()), block.Header.Height,
 		hash, block.Header.ChainID, tx.Payload.(*payload.InvokeCode).Code, true)
-
+	if err != nil {
+		return result, fmt.Errorf("PreExecuteContract Error: %+v\n", err)
+	}
 	res, err := service.Invoke()
 	if err != nil {
 		return result, err
@@ -886,18 +888,19 @@ func (this *LedgerStoreImp) IsContainTransaction(txHash common.Uint256) (bool, e
 	return this.blockStore.ContainTransaction(txHash)
 }
 
-//GetBlockRootWithNewTxRoots return the block root(merkle root of blocks) after add a new tx root of block
-func (this *LedgerStoreImp) GetBlockRootWithNewTxRoots(startHeight uint32, txRoots []common.Uint256) common.Uint256 {
+func (this *LedgerStoreImp) GetBlockRootWithPreBlockHashes(startHeight uint32, preBlockHashes []common.Uint256) common.Uint256 {
 	this.lock.RLock()
 	defer this.lock.RUnlock()
+
 	// the block height in consensus is far behind ledger, this case should be rare
-	if this.currBlockHeight > startHeight+uint32(len(txRoots))-1 {
+	if this.currBlockHeight > startHeight+uint32(len(preBlockHashes))-1 {
 		// or return error?
+		log.Errorf("this.currBlockHeight= %d, startHeight= %d, len(preBlockHashes)= %d\n", this.currBlockHeight, startHeight, len(preBlockHashes))
 		return common.UINT256_EMPTY
 	}
 
-	needs := txRoots[this.currBlockHeight+1-startHeight:]
-	return this.stateStore.GetBlockRootWithNewTxRoots(needs)
+	needs := preBlockHashes[this.currBlockHeight+1-startHeight:]
+	return this.stateStore.GetBlockRootWithPreBlockHashes(needs)
 }
 
 //GetBlockHash return the block hash by block height
