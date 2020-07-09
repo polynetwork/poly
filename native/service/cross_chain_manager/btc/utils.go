@@ -110,7 +110,7 @@ func verifyFromBtcTx(native *native.NativeService, proof, tx []byte, fromChainID
 	if err != nil {
 		return nil, fmt.Errorf("verifyFromBtcTx, hex.DecodeString error: %v", err)
 	}
-	toContractAddress, err := side_chain_manager.GetContractBind(native, side_chain_manager.BTC_CHAIN_ID, p.args.ToChainID, redeemKey)
+	toContractAddress, err := side_chain_manager.GetContractBind(native, fromChainID, p.args.ToChainID, redeemKey)
 	if err != nil {
 		return nil, fmt.Errorf("verifyFromBtcTx, side_chain_manager.GetContractBind error: %v", err)
 	}
@@ -314,7 +314,7 @@ func chooseUtxos(native *native.NativeService, chainID uint64, amount int64, out
 		return nil, 0, 0, fmt.Errorf("chooseUtxos, getUtxos error: %v", err)
 	}
 	sort.Sort(sort.Reverse(utxos))
-	detail, err := side_chain_manager.GetBtcTxParam(native, rk, side_chain_manager.BTC_CHAIN_ID)
+	detail, err := side_chain_manager.GetBtcTxParam(native, rk, chainID)
 	if err != nil {
 		return nil, 0, 0, fmt.Errorf("chooseUtxos, failed to get btcTxParam: %v", err)
 	}

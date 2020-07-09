@@ -18,7 +18,6 @@
 package side_chain_manager
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -324,8 +323,8 @@ func verify(sigs [][]byte, addrs []btcutil.Address, hash []byte) (map[string][]b
 	return res, nil
 }
 
-func putBtcRedeemScript(native *native.NativeService, redeemScriptKey string, redeemScriptBytes []byte) error {
-	chainIDBytes := utils.GetUint64Bytes(BTC_CHAIN_ID)
+func putBtcRedeemScript(native *native.NativeService, redeemScriptKey string, redeemScriptBytes []byte, redeemChainId uint64) error {
+	chainIDBytes := utils.GetUint64Bytes(redeemChainId)
 	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(REDEEM_SCRIPT), chainIDBytes, []byte(redeemScriptKey))
 
 	cls := txscript.GetScriptClass(redeemScriptBytes)
@@ -336,16 +335,8 @@ func putBtcRedeemScript(native *native.NativeService, redeemScriptKey string, re
 	return nil
 }
 
-func getBtcRedeemScript(native *native.NativeService, redeemScriptKey string) (string, error) {
-	redeem, err := GetBtcRedeemScriptBytes(native, redeemScriptKey)
-	if err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(redeem), nil
-}
-
-func GetBtcRedeemScriptBytes(native *native.NativeService, redeemScriptKey string) ([]byte, error) {
-	chainIDBytes := utils.GetUint64Bytes(BTC_CHAIN_ID)
+func GetBtcRedeemScriptBytes(native *native.NativeService, redeemScriptKey string, redeemChainId uint64) ([]byte, error) {
+	chainIDBytes := utils.GetUint64Bytes(redeemChainId)
 	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(REDEEM_SCRIPT), chainIDBytes, []byte(redeemScriptKey))
 	redeemStore, err := native.GetCacheDB().Get(key)
 	if err != nil {

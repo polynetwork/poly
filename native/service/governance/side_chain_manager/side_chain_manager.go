@@ -49,7 +49,6 @@ const (
 	BIND_SIGN_INFO            = "bindSignInfo"
 	BTC_TX_PARAM              = "btcTxParam"
 	REDEEM_SCRIPT             = "redeemScript"
-	BTC_CHAIN_ID              = 1
 )
 
 //Register methods of node_manager contract
@@ -356,7 +355,7 @@ func RegisterRedeem(native *native.NativeService) ([]byte, error) {
 		if err != nil {
 			return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, putContractBind error: %v", err)
 		}
-		if err = putBtcRedeemScript(native, hex.EncodeToString(rk), params.Redeem); err != nil {
+		if err = putBtcRedeemScript(native, hex.EncodeToString(rk), params.Redeem, params.RedeemChainID); err != nil {
 			return utils.BYTE_FALSE, fmt.Errorf("RegisterRedeem, failed to save redeemscript %v with key %v, error: %v", hex.EncodeToString(params.Redeem), rk, err)
 		}
 		native.AddNotify(

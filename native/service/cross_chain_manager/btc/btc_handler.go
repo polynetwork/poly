@@ -56,7 +56,7 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 		return fmt.Errorf("MultiSign, address %s already sign", params.Address)
 	}
 
-	redeemScript, err := side_chain_manager.GetBtcRedeemScriptBytes(service, params.RedeemKey)
+	redeemScript, err := side_chain_manager.GetBtcRedeemScriptBytes(service, params.RedeemKey, params.ChainID)
 	if err != nil {
 		return fmt.Errorf("MultiSign, get btc redeem script with redeem key %v from db error: %v", params.RedeemKey, err)
 	}
@@ -149,7 +149,7 @@ func (this *BTCHandler) MultiSign(service *native.NativeService) error {
 		service.AddNotify(
 			&event.NotifyEventInfo{
 				ContractAddress: utils.CrossChainManagerContractAddress,
-				States: []interface{}{"btcTxToRelay", btcFromTxInfo.FromChainID, side_chain_manager.BTC_CHAIN_ID,
+				States: []interface{}{"btcTxToRelay", btcFromTxInfo.FromChainID, params.ChainID,
 					hex.EncodeToString(buf.Bytes()), hex.EncodeToString(btcFromTxInfo.FromTxHash), params.RedeemKey},
 			})
 	}
@@ -213,7 +213,7 @@ func (this *BTCHandler) MakeTransaction(service *native.NativeService, param *cr
 	}
 
 	redeemKey := btcutil.Hash160(redeemScriptBytes)
-	contractBind, err := side_chain_manager.GetContractBind(service, side_chain_manager.BTC_CHAIN_ID, fromChainID, redeemKey)
+	contractBind, err := side_chain_manager.GetContractBind(service, param.ToChainID, fromChainID, redeemKey)
 	if err != nil {
 		return fmt.Errorf("btc MakeTransaction, side_chain_manager.GetContractBind error: %v", err)
 	}
