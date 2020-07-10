@@ -14,8 +14,8 @@ TOOLS=./tools
 ABI=$(TOOLS)/abi
 NATIVE_ABI_SCRIPT=./cmd/abi/native_abi_script
 
-ontology: $(SRC_FILES)
-	$(GC)  $(BUILD_NODE_PAR) -o ontology main.go
+poly: $(SRC_FILES)
+	$(GC)  $(BUILD_NODE_PAR) -o poly main.go
  
 sigsvr: $(SRC_FILES) abi 
 	$(GC)  $(BUILD_NODE_PAR) -o sigsvr sigsvr.go
@@ -28,18 +28,18 @@ abi:
 
 tools: sigsvr abi
 
-all: ontology tools
+all: poly tools
 
-ontology-cross: ontology-windows ontology-linux ontology-darwin
+poly-cross: poly-windows poly-linux poly-darwin
 
-ontology-windows:
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 $(GC) $(BUILD_NODE_PAR) -o ontology-windows-amd64.exe main.go
+poly-windows:
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 $(GC) $(BUILD_NODE_PAR) -o poly-windows-amd64.exe main.go
 
-ontology-linux:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GC) $(BUILD_NODE_PAR) -o ontology-linux-amd64 main.go
+poly-linux:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GC) $(BUILD_NODE_PAR) -o poly-linux-amd64 main.go
 
-ontology-darwin:
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 $(GC) $(BUILD_NODE_PAR) -o ontology-darwin-amd64 main.go
+poly-darwin:
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 $(GC) $(BUILD_NODE_PAR) -o poly-darwin-amd64 main.go
 
 tools-cross: tools-windows tools-linux tools-darwin
 
@@ -58,37 +58,37 @@ tools-darwin: abi
 	@if [ ! -d $(TOOLS) ];then mkdir -p $(TOOLS) ;fi
 	@mv sigsvr-darwin-amd64 $(TOOLS)
 
-all-cross: ontology-cross tools-cross abi
+all-cross: poly-cross tools-cross abi
 
 format:
 	$(GOFMT) -w main.go
 
-docker/payload: docker/build/bin/ontology docker/Dockerfile
-	@echo "Building ontology payload"
+docker/payload: docker/build/bin/poly docker/Dockerfile
+	@echo "Building poly payload"
 	@mkdir -p $@
 	@cp docker/Dockerfile $@
-	@cp docker/build/bin/ontology $@
+	@cp docker/build/bin/poly $@
 	@touch $@
 
 docker/build/bin/%: Makefile
-	@echo "Building ontology in docker"
+	@echo "Building poly in docker"
 	@mkdir -p docker/build/bin docker/build/pkg
 	@$(DRUN) --rm \
 		-v $(abspath docker/build/bin):/go/bin \
 		-v $(abspath docker/build/pkg):/go/pkg \
 		-v $(GOPATH)/src:/go/src \
-		-w /go/src/github.com/polynetwork/ontology \
+		-w /go/src/github.com/polynetwork/poly \
 		golang:1.9.5-stretch \
-		$(GC)  $(BUILD_NODE_PAR) -o docker/build/bin/ontology main.go
+		$(GC)  $(BUILD_NODE_PAR) -o docker/build/bin/poly main.go
 	@touch $@
 
 docker: Makefile docker/payload docker/Dockerfile 
-	@echo "Building ontology docker"
-	@$(DBUILD) -t $(DOCKER_NS)/ontology docker/payload
-	@docker tag $(DOCKER_NS)/ontology $(DOCKER_NS)/ontology:$(DOCKER_TAG)
+	@echo "Building poly docker"
+	@$(DBUILD) -t $(DOCKER_NS)/poly docker/payload
+	@docker tag $(DOCKER_NS)/poly $(DOCKER_NS)/poly:$(DOCKER_TAG)
 	@touch $@
 
 clean:
 	rm -rf *.8 *.o *.out *.6 *exe
-	rm -rf ontology ontology-* tools docker/payload docker/build
+	rm -rf poly poly-* tools docker/payload docker/build
 
