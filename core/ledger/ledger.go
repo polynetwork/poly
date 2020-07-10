@@ -19,6 +19,7 @@
 package ledger
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/common"
@@ -164,8 +165,12 @@ func (self *Ledger) GetStorageItem(codeHash common.Address, key []byte) ([]byte,
 	return storageItem.Value, nil
 }
 
-func (self *Ledger) GetMerkleProof(proofHeight, rootHeight uint32) ([]common.Uint256, error) {
-	return self.ldgStore.GetMerkleProof(proofHeight, rootHeight)
+func (self *Ledger) GetMerkleProof(proofHeight, rootHeight uint32) ([]byte, error) {
+	blockHash := self.ldgStore.GetBlockHash(proofHeight)
+	if bytes.Equal(blockHash.ToArray(), common.UINT256_EMPTY.ToArray()) {
+		return nil, fmt.Errorf("GetBlockHash(%d) empty", proofHeight)
+	}
+	return self.ldgStore.GetMerkleProof(blockHash.ToArray(), proofHeight+1, rootHeight)
 }
 
 func (self *Ledger) GetCrossStatesProof(height uint32, key []byte) ([]byte, error) {

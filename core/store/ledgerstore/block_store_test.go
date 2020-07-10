@@ -21,11 +21,11 @@ package ledgerstore
 import (
 	"crypto/sha256"
 	"fmt"
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/account"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/core/payload"
 	"github.com/polynetwork/poly/core/types"
-	"github.com/ontio/ontology-crypto/keypair"
 	"testing"
 	"time"
 )
@@ -105,11 +105,11 @@ func TestBlockHash(t *testing.T) {
 
 func TestSaveTransaction(t *testing.T) {
 	invoke := &payload.InvokeCode{}
-	txTemp := &types.MutableTransaction{
+	tx := &types.Transaction{
 		TxType:  types.Invoke,
 		Payload: invoke,
 	}
-	tx, err := txTemp.IntoImmutable()
+
 	blockHeight := uint32(1)
 	txHash := tx.Hash()
 
@@ -287,12 +287,11 @@ func TestBlock(t *testing.T) {
 	}
 
 	invoke := &payload.InvokeCode{}
-	txTemp := &types.MutableTransaction{
+	tx := &types.Transaction{
 		TxType:  types.Invoke,
 		Payload: invoke,
 	}
-	fmt.Print(txTemp.Hash())
-	tx1, err := txTemp.IntoImmutable()
+	fmt.Print(tx.Hash())
 
 	if err != nil {
 		t.Errorf("TestBlock transferTx error:%s", err)
@@ -301,10 +300,10 @@ func TestBlock(t *testing.T) {
 
 	block := &types.Block{
 		Header:       header,
-		Transactions: []*types.Transaction{tx1},
+		Transactions: []*types.Transaction{tx},
 	}
 	blockHash := block.Hash()
-	tx1Hash := tx1.Hash()
+	tx1Hash := tx.Hash()
 
 	testBlockStore.NewBatch()
 

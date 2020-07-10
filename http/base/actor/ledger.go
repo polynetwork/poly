@@ -93,7 +93,7 @@ func GetEventNotifyByHeight(height uint32) ([]*event.ExecuteNotify, error) {
 }
 
 //GetMerkleProof from ledger
-func GetMerkleProof(proofHeight uint32, rootHeight uint32) ([]common.Uint256, error) {
+func GetMerkleProof(proofHeight uint32, rootHeight uint32) ([]byte, error) {
 	return ledger.DefLedger.GetMerkleProof(proofHeight, rootHeight)
 }
 

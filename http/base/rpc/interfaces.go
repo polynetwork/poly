@@ -395,28 +395,14 @@ func GetMerkleProof(params []interface{}) map[string]interface{} {
 	if !ok {
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
-	if height >= rootHeight {
+	if height >= rootHeight || height == 0 {
 		responsePack(berr.INVALID_PARAMS, fmt.Sprintf("Cannot get proof of block hash at height: %d when the block root is at height: %d", uint32(height), uint32(rootHeight)))
 	}
-	header, err := bactor.GetHeaderByHeight(uint32(height))
-	if err != nil {
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	rootHeader, err := bactor.GetHeaderByHeight(uint32(rootHeight))
-	if err != nil {
-		return responsePack(berr.INVALID_PARAMS, "")
-	}
-	proof, err := bactor.GetMerkleProof(header.Height, rootHeader.Height)
+	proof, err := bactor.GetMerkleProof(uint32(height), uint32(rootHeight))
 	if err != nil {
 		return responsePack(berr.INTERNAL_ERROR, "")
 	}
-	var hashes []string
-	for _, v := range proof {
-		hashes = append(hashes, v.ToHexString())
-	}
-	headerHash := header.Hash()
-	return responseSuccess(bcomn.MerkleProof{"MerkleProof", headerHash.ToHexString(), header.Height,
-		rootHeader.BlockRoot.ToHexString(), rootHeader.Height, hashes})
+	return responseSuccess(bcomn.MerkleProof{"MerkleProof", hex.EncodeToString(proof)})
 }
 
 //get cross chain state proof
@@ -440,7 +426,7 @@ func GetCrossStatesProof(params []interface{}) map[string]interface{} {
 	if err != nil {
 		return responsePack(berr.INTERNAL_ERROR, err.Error())
 	}
-	return responseSuccess(bcomn.CrossStatesProof{"CrossStatesProof", hex.EncodeToString(proof)})
+	return responseSuccess(bcomn.MerkleProof{"CrossStatesProof", hex.EncodeToString(proof)})
 }
 
 func GetHeaderByHeight(params []interface{}) map[string]interface{} {

@@ -22,6 +22,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"math"
 
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
@@ -119,7 +120,7 @@ func (self *CompactMerkleTree) Root() common.Uint256 {
 
 // GetRootWithNewLeaf returns the new root hash if newLeaf is appended to the merkle tree
 func (self *CompactMerkleTree) GetRootWithNewLeaf(newLeaf common.Uint256) common.Uint256 {
-	hashes := append(self.hashes, newLeaf)
+	hashes := append(self.hashes, self.hasher.hash_leaf(newLeaf.ToArray()))
 	root := self.hasher._hash_fold(hashes)
 
 	return root
@@ -141,7 +142,7 @@ func (self *CompactMerkleTree) cloneMem() CompactMerkleTree {
 func (self *CompactMerkleTree) GetRootWithNewLeaves(newLeaf []common.Uint256) common.Uint256 {
 	tree := self.cloneMem()
 	for _, h := range newLeaf {
-		tree.AppendHash(h)
+		tree.Append(h.ToArray())
 	}
 
 	return tree.Root()
@@ -151,11 +152,11 @@ func (self *CompactMerkleTree) GetRootWithNewLeaves(newLeaf []common.Uint256) co
 func (self *CompactMerkleTree) Append(leafv []byte) []common.Uint256 {
 	leaf := self.hasher.hash_leaf(leafv)
 
-	return self.AppendHash(leaf)
+	return self.appendHash(leaf)
 }
 
 // AppendHash appends a leaf hash to the merkle tree and returns the audit path
-func (self *CompactMerkleTree) AppendHash(leaf common.Uint256) []common.Uint256 {
+func (self *CompactMerkleTree) appendHash(leaf common.Uint256) []common.Uint256 {
 	size := len(self.hashes)
 	auditPath := make([]common.Uint256, size, size)
 	storehashes := make([]common.Uint256, 0)
@@ -291,6 +292,55 @@ func (self *CompactMerkleTree) subproof(m, n uint32, b bool) []common.Uint256 {
 	}
 
 	return reverse
+}
+
+// InclusionProof returns the proof d[m] in D[0:n]
+// m zero based index, n size 1-based
+// return sink.Bytes() of WriteVarBytes(hash_index_by_m) + loop of { WriteByte(PosInfo) + WriteByte(ProofPathNodeHash) }
+func (self *CompactMerkleTree) MerkleInclusionLeafPath(data []byte, m, n uint32) ([]byte, error) {
+	if m >= n {
+		return nil, errors.New("wrong parameters")
+	} else if self.treeSize < n {
+		return nil, errors.New("not available yet")
+	} else if self.hashStore == nil {
+		return nil, errors.New("hash store not available")
+	}
+
+	offset := uint32(0)
+	depth := int(math.Ceil(math.Log2(float64(n))))
+	hashes := make([]common.Uint256, 0, depth)
+	poses := make([]byte, 0, depth)
+	for n != 1 {
+		k := uint32(1 << (highBit(n-1) - 1))
+		if m < k {
+			pos := getSubTreePos(n - k)
+			subhashes := make([]common.Uint256, len(pos), len(pos))
+			for p := range pos {
+				pos[p] += offset + k*2 - 1
+				subhashes[p], _ = self.hashStore.GetHash(pos[p] - 1)
+			}
+			rootk2n := self.hasher._hash_fold(subhashes)
+			hashes = append(hashes, rootk2n)
+			poses = append(poses, byte(1))
+			n = k
+		} else {
+			offset += k*2 - 1
+			root02k, _ := self.hashStore.GetHash(offset - 1)
+			hashes = append(hashes, root02k)
+			poses = append(poses, byte(0))
+			m -= k
+			n -= k
+		}
+	}
+	length := len(hashes)
+	sink := common.NewZeroCopySink(nil)
+	sink.WriteVarBytes(data)
+	for k, _ := range hashes {
+		index := length - k - 1
+		sink.WriteByte(poses[index])
+		sink.WriteHash(hashes[index])
+	}
+	return sink.Bytes(), nil
 }
 
 // InclusionProof returns the proof d[m] in D[0:n]
