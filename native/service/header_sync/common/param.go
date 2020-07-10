@@ -39,6 +39,7 @@ const (
 	ETH_CACHE                   = "ethCaches"
 	GENESIS_HEADER              = "genesisHeader"
 	MAIN_CHAIN                  = "mainChain"
+	EPOCH_SWITCH                = "epochSwitch"
 )
 
 type HeaderSyncHandler interface {
