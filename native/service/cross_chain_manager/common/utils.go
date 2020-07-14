@@ -18,10 +18,8 @@ package common
 
 import (
 	"fmt"
-	"math/big"
 	"strings"
 
-	ethmath "github.com/ethereum/go-ethereum/common/math"
 	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/native"
@@ -31,16 +29,6 @@ import (
 
 func Replace0x(s string) string {
 	return strings.Replace(strings.ToLower(s), "0x", "", 1)
-}
-
-func ConverDecimal(fromDecimal int, toDecimal int, fromAmount *big.Int) *big.Int {
-	diff := fromDecimal - toDecimal
-	if diff > 0 {
-		return new(big.Int).Div(fromAmount, ethmath.Exp(big.NewInt(10), big.NewInt(int64(diff))))
-	} else if diff < 0 {
-		return new(big.Int).Mul(fromAmount, ethmath.Exp(big.NewInt(10), big.NewInt(int64(-diff))))
-	}
-	return fromAmount
 }
 
 func NotifyMakeProof(native *native.NativeService, fromChainID, toChainID uint64, txHash string, key string) {

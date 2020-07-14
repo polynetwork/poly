@@ -26,11 +26,9 @@ import (
 	"github.com/btcsuite/btcd/chaincfg/chainhash"
 	"github.com/btcsuite/btcd/wire"
 	"github.com/polynetwork/poly/common"
-	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/common/log"
 	cstates "github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/native"
-	"github.com/polynetwork/poly/native/event"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	scom "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/utils"
@@ -81,18 +79,7 @@ func putGenesisBlockHeader(native *native.NativeService, chainID uint64, blockHe
 
 	putBestBlockHeader(native, chainID, blockHeader)
 
-	notifyPutHeader(native, chainID, blockHeight, hex.EncodeToString(blockHash.CloneBytes()))
-}
-
-func notifyPutHeader(native *native.NativeService, chainID uint64, height uint32, blockHash string) {
-	if !config.DefConfig.Common.EnableEventLog {
-		return
-	}
-	native.AddNotify(
-		&event.NotifyEventInfo{
-			ContractAddress: utils.HeaderSyncContractAddress,
-			States:          []interface{}{chainID, height, blockHash, native.GetHeight()},
-		})
+	scom.NotifyPutHeader(native, chainID, uint64(blockHeight), hex.EncodeToString(blockHash.CloneBytes()))
 }
 
 func putBlockHash(native *native.NativeService, chainID uint64, height uint32, hash chainhash.Hash) {
@@ -131,6 +118,7 @@ func putBlockHeader(native *native.NativeService, chainID uint64, sh StoredHeade
 	sh.Serialization(sink)
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.BLOCK_HEADER), utils.GetUint64Bytes(chainID), blockHash.CloneBytes()),
 		cstates.GenRawStorageItem(sink.Bytes()))
+	scom.NotifyPutHeader(native, chainID, uint64(sh.Height), hex.EncodeToString(blockHash.CloneBytes()))
 }
 
 func GetHeaderByHash(native *native.NativeService, chainID uint64, hash chainhash.Hash) (*StoredHeader, error) {

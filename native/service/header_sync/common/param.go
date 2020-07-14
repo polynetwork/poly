@@ -40,6 +40,7 @@ const (
 	GENESIS_HEADER              = "genesisHeader"
 	MAIN_CHAIN                  = "mainChain"
 	EPOCH_SWITCH                = "epochSwitch"
+	SYNC_HEADER_NAME            = "syncHeader"
 )
 
 type HeaderSyncHandler interface {
@@ -158,14 +159,14 @@ func (this *SyncCrossChainMsgParam) Deserialization(source *common.ZeroCopySourc
 	return nil
 }
 
-func NotifyPutHeader(native *native.NativeService, chainID uint64, height uint32, blockHash string) {
+func NotifyPutHeader(native *native.NativeService, chainID uint64, height uint64, blockHash string) {
 	if !config.DefConfig.Common.EnableEventLog {
 		return
 	}
 	native.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.HeaderSyncContractAddress,
-			States:          []interface{}{chainID, height, blockHash, native.GetHeight()},
+			States:          []interface{}{SYNC_HEADER_NAME, chainID, height, blockHash, native.GetHeight()},
 		})
 }
 
