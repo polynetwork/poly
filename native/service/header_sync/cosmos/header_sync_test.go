@@ -107,11 +107,9 @@ func TestSyncGenesisHeader(t *testing.T) {
 	}
 	assert.Equal(t, SUCCESS, typeOfError(err))
 
-	has, _ := hasGenesis(native, param.ChainID)
-	assert.Equal(t, has, true)
-
-	height, _ := getCurrentHeight(native, param.ChainID)
-	assert.Equal(t, uint64(height), uint64(10000))
+	info, _ := GetEpochSwitchInfo(native, param.ChainID)
+	assert.Equal(t, info != nil, true)
+	assert.Equal(t, uint64(info.Height), uint64(10000))
 }
 
 func TestSyncBlockHeader(t *testing.T) {
@@ -136,11 +134,9 @@ func TestSyncBlockHeader(t *testing.T) {
 		}
 		assert.Equal(t, SUCCESS, typeOfError(err))
 
-		has, _ := hasGenesis(native, param.ChainID)
-		assert.Equal(t, has, true)
-
-		height, _ := getCurrentHeight(native, param.ChainID)
-		assert.Equal(t, uint64(height), uint64(10000))
+		info, _ := GetEpochSwitchInfo(native, param.ChainID)
+		assert.Equal(t, info != nil, true)
+		assert.Equal(t, uint64(info.Height), uint64(10000))
 	}
 	{
 		header10001, _ := hex.DecodeString("0aa8020a02080a120774657374696e6718914e220c08efe29ff70510cd98fefe022a480a20d7147608a68aa6e72f26d196dd5ea13ab1e580eee72cb1d84b3e6e49c5a5ffd3122408011220e9dc35792711de4bb8b19ecb7ce888cbd0835bec6b16d7dfc33fe4667bccb80932200622a4189db86c59caf2e5c993001125147821024fa1b4483ab8bfd9a5ab516c422058df3ad01815e689d296705e219563932f8edd3637c1cd8f4a785906ca8883794a2058df3ad01815e689d296705e219563932f8edd3637c1cd8f4a785906ca8883795220048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f5a200cee95b828cd74a3078db7c6e3ef8e75c282edf5396b525b831309632edc7a4a72146ff75a0ce1ed3596eb34a107bcfc1bebd1ea947812b70108914e1a480a208e0b7bb3f66dc7e215ffbf77c9971cfd12742bf495bbc92b38b6fdbf0a9c235f122408011220b27ce0ec06318b860c6b66b3a6ed10c49034532aaf159de509278cbf949969412268080212146ff75a0ce1ed3596eb34a107bcfc1bebd1ea94781a0c08f4e29ff70510edfbe0a603224012da471ec08ccd347b40f5c505054bc49b28dea720cb38e84c80a6fcb3042148a374e1a179b3b20064dc35aead710a6e8600a8e3b0e0823384801129924725061a3f0a146ff75a0ce1ed3596eb34a107bcfc1bebd1ea947812251624de6420760145874ef07a40698eea7afdf7d89719c76c96a5517ac2cf1162bb2e0a70a21864")
@@ -155,13 +151,7 @@ func TestSyncBlockHeader(t *testing.T) {
 
 		native = NewNative(sink.Bytes(), new(types.Transaction), native.GetCacheDB())
 		err := cosmosHandler.SyncBlockHeader(native)
-		if err != nil {
-			fmt.Printf("err: %s", err.Error())
-		}
-		assert.Equal(t, SUCCESS, typeOfError(err))
-
-		height, _ := getCurrentHeight(native, param.ChainID)
-		assert.Equal(t, uint64(height), uint64(10002))
+		assert.Error(t, err)
 	}
 }
 
@@ -190,11 +180,9 @@ func TestSyncBlockHeader2(t *testing.T) {
 		}
 		assert.Equal(t, SUCCESS, typeOfError(err))
 
-		has, _ := hasGenesis(native, param.ChainID)
-		assert.Equal(t, has, true)
-
-		height, _ := getCurrentHeight(native, param.ChainID)
-		assert.Equal(t, uint64(height), uint64(10000))
+		info, _ := GetEpochSwitchInfo(native, param.ChainID)
+		assert.Equal(t, info != nil , true)
+		assert.Equal(t, uint64(info.Height), uint64(10000))
 	}
 	{
 		header10010, _ := hex.DecodeString("0aa8020a02080a120774657374696e67189a4e220c089de39ff70510ddf7abe5022a480a20520e78552c565e47a32fae7d923e61e33565a1518952cfadd767d0cc763c1ba5122408011220f65f6b4edd4b7f52bd0ac8bec534a646d68d152021a391b387169a169194635232201450e9e06022e395b9176448a4718f2c1f161ce3cfd501205245f19686038765422058df3ad01815e689d296705e219563932f8edd3637c1cd8f4a785906ca8883794a2058df3ad01815e689d296705e219563932f8edd3637c1cd8f4a785906ca8883795220048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f5a200f4cb2e3e6b3437ff1810c3420884ffbe13a8826c2830d7bec2c586c95a33f1572146ff75a0ce1ed3596eb34a107bcfc1bebd1ea947812b701089a4e1a480a2064852da2991661fbd8d4f5e6789450b57662248ca4b996f640b327564c7c84601224080112209537acb3f8eebab33b949353ca450207614152c7df471b3aff1ffb683f78939c2268080212146ff75a0ce1ed3596eb34a107bcfc1bebd1ea94781a0c08a2e39ff70510a5fe848d032240bdbb92c73dd1bd5a61ebc72099b76d3d934573a5a54196a04e87e010964864d34e2a2a42ada217c5c9be210adc1cd0b2091c32fb9525fdabfb247fd7660466001a3f0a146ff75a0ce1ed3596eb34a107bcfc1bebd1ea947812251624de6420760145874ef07a40698eea7afdf7d89719c76c96a5517ac2cf1162bb2e0a70a21864")
@@ -209,13 +197,11 @@ func TestSyncBlockHeader2(t *testing.T) {
 
 		native = NewNative(sink.Bytes(), new(types.Transaction), native.GetCacheDB())
 		err := cosmosHandler.SyncBlockHeader(native)
-		if err != nil {
-			fmt.Printf("err: %s", err.Error())
-		}
+		assert.Error(t, err)
 		assert.Equal(t, SUCCESS, typeOfError(err))
 
-		height, _ := getCurrentHeight(native, param.ChainID)
-		assert.Equal(t, uint64(height), uint64(10011))
+		//height, _ := getCurrentHeight(native, param.ChainID)
+		//assert.Equal(t, uint64(height), uint64(10011))
 	}
 	{
 		header10001, _ := hex.DecodeString("0aa8020a02080a120774657374696e6718914e220c08efe29ff70510cd98fefe022a480a20d7147608a68aa6e72f26d196dd5ea13ab1e580eee72cb1d84b3e6e49c5a5ffd3122408011220e9dc35792711de4bb8b19ecb7ce888cbd0835bec6b16d7dfc33fe4667bccb80932200622a4189db86c59caf2e5c993001125147821024fa1b4483ab8bfd9a5ab516c422058df3ad01815e689d296705e219563932f8edd3637c1cd8f4a785906ca8883794a2058df3ad01815e689d296705e219563932f8edd3637c1cd8f4a785906ca8883795220048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f5a200cee95b828cd74a3078db7c6e3ef8e75c282edf5396b525b831309632edc7a4a72146ff75a0ce1ed3596eb34a107bcfc1bebd1ea947812b70108914e1a480a208e0b7bb3f66dc7e215ffbf77c9971cfd12742bf495bbc92b38b6fdbf0a9c235f122408011220b27ce0ec06318b860c6b66b3a6ed10c49034532aaf159de509278cbf949969412268080212146ff75a0ce1ed3596eb34a107bcfc1bebd1ea94781a0c08f4e29ff70510edfbe0a603224012da471ec08ccd347b40f5c505054bc49b28dea720cb38e84c80a6fcb3042148a374e1a179b3b20064dc35aead710a6e8600a8e3b0e0823384801129924725061a3f0a146ff75a0ce1ed3596eb34a107bcfc1bebd1ea947812251624de6420760145874ef07a40698eea7afdf7d89719c76c96a5517ac2cf1162bb2e0a70a21864")
@@ -235,8 +221,8 @@ func TestSyncBlockHeader2(t *testing.T) {
 		}
 		assert.Equal(t, SUCCESS, typeOfError(err))
 
-		height, _ := getCurrentHeight(native, param.ChainID)
-		assert.Equal(t, uint64(height), uint64(10011))
+		//height, _ := getCurrentHeight(native, param.ChainID)
+		//assert.Equal(t, uint64(height), uint64(10011))
 	}
 }
 
@@ -265,11 +251,11 @@ func TestSyncBlockHeader3(t *testing.T) {
 		}
 		assert.Equal(t, SUCCESS, typeOfError(err))
 
-		has, _ := hasGenesis(native, param.ChainID)
-		assert.Equal(t, has, true)
-
-		height, _ := getCurrentHeight(native, param.ChainID)
-		assert.Equal(t, uint64(height), uint64(10000))
+		//has, _ := hasGenesis(native, param.ChainID)
+		//assert.Equal(t, has, true)
+		//
+		//height, _ := getCurrentHeight(native, param.ChainID)
+		//assert.Equal(t, uint64(height), uint64(10000))
 	}
 	{
 		header9999, _ := hex.DecodeString("0aa8020a02080a120774657374696e67188f4e220c08e5e29ff70510abdb8ea7022a480a20727d85a7eb9a24c6fa1916456049197ba51046f84ee7270a00996f09206402fa1224080112206b044fe89ef52ac7977a9bd2569d49b47b3a5d895244fcb283fc875220fb5e063220a70dd9071d2ecac99ce7eeb462c7e56bcc99fab3cb52dd45cfe2502313777f55422058df3ad01815e689d296705e219563932f8edd3637c1cd8f4a785906ca8883794a2058df3ad01815e689d296705e219563932f8edd3637c1cd8f4a785906ca8883795220048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f5a209658cd0c9251c2514753fd85c0ebf649f8bec6bf885813dccbada1a575b2156c72146ff75a0ce1ed3596eb34a107bcfc1bebd1ea947812b701088f4e1a480a20a952550d320e34bd910fdf47d4b0d1b9b2c691d0432ebe5c2f25174c484663781224080112206fc745af7c59194f8e841a4e8bf89e6b7e873d1dfb807829deafc1093fcbe33e2268080212146ff75a0ce1ed3596eb34a107bcfc1bebd1ea94781a0c08eae29ff70510ffc5bfd5022240912bf904c00e06e8e922459179ee611d13082a10efefeb08ff238dae6d5f0c4f25034e70079c48709c1d3c0849a4fc2470743e871982dc860a94f2a68d07520c1a3f0a146ff75a0ce1ed3596eb34a107bcfc1bebd1ea947812251624de6420760145874ef07a40698eea7afdf7d89719c76c96a5517ac2cf1162bb2e0a70a21864")
@@ -282,10 +268,7 @@ func TestSyncBlockHeader3(t *testing.T) {
 
 		native = NewNative(sink.Bytes(), new(types.Transaction), native.GetCacheDB())
 		err := cosmosHandler.SyncBlockHeader(native)
-		if err != nil {
-			fmt.Printf("err: %s", err.Error())
-		}
-		assert.NotEqual(t, SUCCESS, typeOfError(err))
+		assert.Error(t, err)
 	}
 }
 
@@ -311,15 +294,15 @@ func TestSyncBlockHeaderTwice(t *testing.T) {
 		}
 		assert.Equal(t, SUCCESS, typeOfError(err))
 
-		has, _ := hasGenesis(native, param.ChainID)
-		assert.Equal(t, has, true)
-
-		height, _ := getCurrentHeight(native, param.ChainID)
-		assert.Equal(t, uint64(height), uint64(10000))
+		//has, _ := hasGenesis(native, param.ChainID)
+		//assert.Equal(t, has, true)
+		//
+		//height, _ := getCurrentHeight(native, param.ChainID)
+		//assert.Equal(t, uint64(height), uint64(10000))
 	}
 	{
-		header10010, _ := hex.DecodeString("0aa8020a02080a120774657374696e67189a4e220c089de39ff70510ddf7abe5022a480a20520e78552c565e47a32fae7d923e61e33565a1518952cfadd767d0cc763c1ba5122408011220f65f6b4edd4b7f52bd0ac8bec534a646d68d152021a391b387169a169194635232201450e9e06022e395b9176448a4718f2c1f161ce3cfd501205245f19686038765422058df3ad01815e689d296705e219563932f8edd3637c1cd8f4a785906ca8883794a2058df3ad01815e689d296705e219563932f8edd3637c1cd8f4a785906ca8883795220048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f5a200f4cb2e3e6b3437ff1810c3420884ffbe13a8826c2830d7bec2c586c95a33f1572146ff75a0ce1ed3596eb34a107bcfc1bebd1ea947812b701089a4e1a480a2064852da2991661fbd8d4f5e6789450b57662248ca4b996f640b327564c7c84601224080112209537acb3f8eebab33b949353ca450207614152c7df471b3aff1ffb683f78939c2268080212146ff75a0ce1ed3596eb34a107bcfc1bebd1ea94781a0c08a2e39ff70510a5fe848d032240bdbb92c73dd1bd5a61ebc72099b76d3d934573a5a54196a04e87e010964864d34e2a2a42ada217c5c9be210adc1cd0b2091c32fb9525fdabfb247fd7660466001a3f0a146ff75a0ce1ed3596eb34a107bcfc1bebd1ea947812251624de6420760145874ef07a40698eea7afdf7d89719c76c96a5517ac2cf1162bb2e0a70a21864")
 		header10011, _ := hex.DecodeString("0aa8020a02080a120774657374696e67189b4e220c08a2e39ff70510a5fe848d032a480a2064852da2991661fbd8d4f5e6789450b57662248ca4b996f640b327564c7c84601224080112209537acb3f8eebab33b949353ca450207614152c7df471b3aff1ffb683f78939c322055b77f9a764871721521ff6aeb920fe01bc440446712b483866cd4d09944839e422058df3ad01815e689d296705e219563932f8edd3637c1cd8f4a785906ca8883794a2058df3ad01815e689d296705e219563932f8edd3637c1cd8f4a785906ca8883795220048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f5a20b4cf9c1ec8e800ee5e201678c25580124ea8ae1e3dc7c4128d67b92ac876522f72146ff75a0ce1ed3596eb34a107bcfc1bebd1ea947812b701089b4e1a480a20dd5ee8ddd3d21d365aa11153d8e83367140de92e4ccfabd999e97f093b83d388122408011220d3ee12d83dbba28047922ee735604065bbf18286ab770262327e92aed9d7662b2268080212146ff75a0ce1ed3596eb34a107bcfc1bebd1ea94781a0c08a7e39ff70510ecbbe6b903224048b1c9b7b32bdc0ecc11cb491dcd23f621bb799969221dae82e28645d229310eac1e3cde1aae6056b395d75b4d3adc96190c3cc40dc1ecaa2e431f4d5b78620b1a3f0a146ff75a0ce1ed3596eb34a107bcfc1bebd1ea947812251624de6420760145874ef07a40698eea7afdf7d89719c76c96a5517ac2cf1162bb2e0a70a21864")
+		header10010, _ := hex.DecodeString("0aa8020a02080a120774657374696e67189a4e220c089de39ff70510ddf7abe5022a480a20520e78552c565e47a32fae7d923e61e33565a1518952cfadd767d0cc763c1ba5122408011220f65f6b4edd4b7f52bd0ac8bec534a646d68d152021a391b387169a169194635232201450e9e06022e395b9176448a4718f2c1f161ce3cfd501205245f19686038765422058df3ad01815e689d296705e219563932f8edd3637c1cd8f4a785906ca8883794a2058df3ad01815e689d296705e219563932f8edd3637c1cd8f4a785906ca8883795220048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f5a200f4cb2e3e6b3437ff1810c3420884ffbe13a8826c2830d7bec2c586c95a33f1572146ff75a0ce1ed3596eb34a107bcfc1bebd1ea947812b701089a4e1a480a2064852da2991661fbd8d4f5e6789450b57662248ca4b996f640b327564c7c84601224080112209537acb3f8eebab33b949353ca450207614152c7df471b3aff1ffb683f78939c2268080212146ff75a0ce1ed3596eb34a107bcfc1bebd1ea94781a0c08a2e39ff70510a5fe848d032240bdbb92c73dd1bd5a61ebc72099b76d3d934573a5a54196a04e87e010964864d34e2a2a42ada217c5c9be210adc1cd0b2091c32fb9525fdabfb247fd7660466001a3f0a146ff75a0ce1ed3596eb34a107bcfc1bebd1ea947812251624de6420760145874ef07a40698eea7afdf7d89719c76c96a5517ac2cf1162bb2e0a70a21864")
 		param := new(scom.SyncBlockHeaderParam)
 		param.ChainID = 5
 		param.Address = acct.Address
@@ -335,8 +318,8 @@ func TestSyncBlockHeaderTwice(t *testing.T) {
 		}
 		assert.Equal(t, SUCCESS, typeOfError(err))
 
-		height, _ := getCurrentHeight(native, param.ChainID)
-		assert.Equal(t, uint64(height), uint64(10011))
+		//height, _ := getCurrentHeight(native, param.ChainID)
+		//assert.Equal(t, uint64(height), uint64(10011))
 	}
 	{
 		header10011, _ := hex.DecodeString("0aa8020a02080a120774657374696e67189b4e220c08a2e39ff70510a5fe848d032a480a2064852da2991661fbd8d4f5e6789450b57662248ca4b996f640b327564c7c84601224080112209537acb3f8eebab33b949353ca450207614152c7df471b3aff1ffb683f78939c322055b77f9a764871721521ff6aeb920fe01bc440446712b483866cd4d09944839e422058df3ad01815e689d296705e219563932f8edd3637c1cd8f4a785906ca8883794a2058df3ad01815e689d296705e219563932f8edd3637c1cd8f4a785906ca8883795220048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f5a20b4cf9c1ec8e800ee5e201678c25580124ea8ae1e3dc7c4128d67b92ac876522f72146ff75a0ce1ed3596eb34a107bcfc1bebd1ea947812b701089b4e1a480a20dd5ee8ddd3d21d365aa11153d8e83367140de92e4ccfabd999e97f093b83d388122408011220d3ee12d83dbba28047922ee735604065bbf18286ab770262327e92aed9d7662b2268080212146ff75a0ce1ed3596eb34a107bcfc1bebd1ea94781a0c08a7e39ff70510ecbbe6b903224048b1c9b7b32bdc0ecc11cb491dcd23f621bb799969221dae82e28645d229310eac1e3cde1aae6056b395d75b4d3adc96190c3cc40dc1ecaa2e431f4d5b78620b1a3f0a146ff75a0ce1ed3596eb34a107bcfc1bebd1ea947812251624de6420760145874ef07a40698eea7afdf7d89719c76c96a5517ac2cf1162bb2e0a70a21864")
@@ -356,8 +339,8 @@ func TestSyncBlockHeaderTwice(t *testing.T) {
 		}
 		assert.Equal(t, SUCCESS, typeOfError(err))
 
-		height, _ := getCurrentHeight(native, param.ChainID)
-		assert.Equal(t, uint64(height), uint64(10012))
+		//height, _ := getCurrentHeight(native, param.ChainID)
+		//assert.Equal(t, uint64(height), uint64(10012))
 	}
 }
 
@@ -383,11 +366,11 @@ func TestSyncBlockHeaderUnorder(t *testing.T) {
 		}
 		assert.Equal(t, SUCCESS, typeOfError(err))
 
-		has, _ := hasGenesis(native, param.ChainID)
-		assert.Equal(t, has, true)
-
-		height, _ := getCurrentHeight(native, param.ChainID)
-		assert.Equal(t, uint64(height), uint64(10000))
+		//has, _ := hasGenesis(native, param.ChainID)
+		//assert.Equal(t, has, true)
+		//
+		//height, _ := getCurrentHeight(native, param.ChainID)
+		//assert.Equal(t, uint64(height), uint64(10000))
 	}
 	{
 		header10010, _ := hex.DecodeString("0aa8020a02080a120774657374696e67189a4e220c089de39ff70510ddf7abe5022a480a20520e78552c565e47a32fae7d923e61e33565a1518952cfadd767d0cc763c1ba5122408011220f65f6b4edd4b7f52bd0ac8bec534a646d68d152021a391b387169a169194635232201450e9e06022e395b9176448a4718f2c1f161ce3cfd501205245f19686038765422058df3ad01815e689d296705e219563932f8edd3637c1cd8f4a785906ca8883794a2058df3ad01815e689d296705e219563932f8edd3637c1cd8f4a785906ca8883795220048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f5a200f4cb2e3e6b3437ff1810c3420884ffbe13a8826c2830d7bec2c586c95a33f1572146ff75a0ce1ed3596eb34a107bcfc1bebd1ea947812b701089a4e1a480a2064852da2991661fbd8d4f5e6789450b57662248ca4b996f640b327564c7c84601224080112209537acb3f8eebab33b949353ca450207614152c7df471b3aff1ffb683f78939c2268080212146ff75a0ce1ed3596eb34a107bcfc1bebd1ea94781a0c08a2e39ff70510a5fe848d032240bdbb92c73dd1bd5a61ebc72099b76d3d934573a5a54196a04e87e010964864d34e2a2a42ada217c5c9be210adc1cd0b2091c32fb9525fdabfb247fd7660466001a3f0a146ff75a0ce1ed3596eb34a107bcfc1bebd1ea947812251624de6420760145874ef07a40698eea7afdf7d89719c76c96a5517ac2cf1162bb2e0a70a21864")
@@ -407,8 +390,8 @@ func TestSyncBlockHeaderUnorder(t *testing.T) {
 		}
 		assert.Equal(t, SUCCESS, typeOfError(err))
 
-		height, _ := getCurrentHeight(native, param.ChainID)
-		assert.Equal(t, uint64(height), uint64(10011))
+		//height, _ := getCurrentHeight(native, param.ChainID)
+		//assert.Equal(t, uint64(height), uint64(10011))
 	}
 	{
 		header10012, _ := hex.DecodeString("0aa8020a02080a120774657374696e67189c4e220c08a7e39ff70510ecbbe6b9032a480a20dd5ee8ddd3d21d365aa11153d8e83367140de92e4ccfabd999e97f093b83d388122408011220d3ee12d83dbba28047922ee735604065bbf18286ab770262327e92aed9d7662b32202496df827069967ea78dd93d07e6389e95abadd81cb5bd53cb9048b73a7ae0f2422058df3ad01815e689d296705e219563932f8edd3637c1cd8f4a785906ca8883794a2058df3ad01815e689d296705e219563932f8edd3637c1cd8f4a785906ca8883795220048091bc7ddc283f77bfbf91d73c44da58c3df8a9cbc867405d8b7f3daada22f5a206a1f58abdc0c358ed42023b6da978c6baa7c748f2534f42cec212c5ddeddd16172146ff75a0ce1ed3596eb34a107bcfc1bebd1ea947812b601089c4e1a480a20744cf79eec130b744c9325ee44eb74661cfbe090989ee27af6a6856750ff41751224080112204a684ab601bb25ede19c18622513ecd95637dff4ef6270a1cec154e35a939a212267080212146ff75a0ce1ed3596eb34a107bcfc1bebd1ea94781a0b08ade39ff70510e9cad70b2240d448c0de45611b935f1f4d37ca33cafa174c9eebdc074febdf70eaac9fc384bf669369c46ed279b18f5bd7a73999d4ae46c382204947f019fa3fca1ea9d0dc021a3f0a146ff75a0ce1ed3596eb34a107bcfc1bebd1ea947812251624de6420760145874ef07a40698eea7afdf7d89719c76c96a5517ac2cf1162bb2e0a70a21864")
@@ -430,7 +413,7 @@ func TestSyncBlockHeaderUnorder(t *testing.T) {
 		}
 		assert.Equal(t, SUCCESS, typeOfError(err))
 
-		height, _ := getCurrentHeight(native, param.ChainID)
-		assert.Equal(t, uint64(height), uint64(10012))
+		//height, _ := getCurrentHeight(native, param.ChainID)
+		//assert.Equal(t, uint64(height), uint64(10012))
 	}
 }
