@@ -59,7 +59,12 @@ func getNetParam(service *native.NativeService, chainId uint64) (*chaincfg.Param
 	if err != nil {
 		return nil, fmt.Errorf("failed to get bitcoin net parameter: %v", err)
 	}
-
+	if side == nil {
+		return nil, fmt.Errorf("side chain info for chainId: %d is not registered", chainId)
+	}
+	if side.CCMCAddress == nil || len(side.CCMCAddress) != 8 {
+		return nil, fmt.Errorf("CCMCAddress is nil or its length is not 8")
+	}
 	switch utils.BtcNetType(binary.LittleEndian.Uint64(side.CCMCAddress)) {
 	case utils.TyTestnet3:
 		return &chaincfg.TestNet3Params, nil
