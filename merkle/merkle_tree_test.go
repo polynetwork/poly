@@ -21,6 +21,7 @@ package merkle
 import (
 	"crypto/sha256"
 	"fmt"
+	"os"
 	"testing"
 
 	"github.com/polynetwork/poly/common"
@@ -73,8 +74,8 @@ func TestCompactMerkleTree_GetRootWithNewLeaves(t *testing.T) {
 		leaves[i][:][0] = byte(i)
 		hash := leaves[i]
 		assert.Equal(t, tree1.GetRootWithNewLeaf(hash), tree2.GetRootWithNewLeaves([]common.Uint256{hash}))
-		tree1.AppendHash(hash)
-		tree2.AppendHash(hash)
+		tree1.Append(hash.ToArray())
+		tree2.Append(hash.ToArray())
 	}
 }
 
@@ -163,21 +164,39 @@ func TestGetSubTreeSize(t *testing.T) {
 func TestMerkleIncludeProof(t *testing.T) {
 	n := uint32(9)
 	store, _ := NewFileHashStore("merkletree.db", 0)
+	defer func() { os.Remove("merkletree.db") }()
 	tree := NewTree(0, nil, store)
 	for i := uint32(0); i < n; i++ {
 		tree.Append([]byte{byte(i + 1)})
 	}
-
 	verify := NewMerkleVerifier()
-
 	root := tree.Root()
-	for i := uint32(0); i < n; i++ {
+	for i := uint32(2); i < n; i++ {
 		proof, _ := tree.InclusionProof(i, n)
 		leaf_hash := tree.hasher.hash_leaf([]byte{byte(i + 1)})
 		res := verify.VerifyLeafHashInclusion(leaf_hash, i, proof, root, n)
 		if res != nil {
 			t.Fatal(res, i, proof)
 		}
+	}
+}
+
+func TestMerkleInclusionLeafPath(t *testing.T) {
+	n := uint32(10)
+	store, _ := NewFileHashStore("merkletree.db", 0)
+	defer func() { os.Remove("merkletree.db") }()
+	tree := NewTree(0, nil, store)
+	for i := uint32(0); i < n; i++ {
+		tree.Append([]byte{byte(i + 1)})
+	}
+	root := tree.Root()
+	for i := uint32(0); i < n; i++ {
+		data := []byte{byte(i + 1)}
+		path, err := tree.MerkleInclusionLeafPath(data, i, n)
+		assert.Nil(t, err)
+		val, err := MerkleProve(path, root.ToArray())
+		assert.Nil(t, err)
+		assert.Equal(t, data, val)
 	}
 }
 

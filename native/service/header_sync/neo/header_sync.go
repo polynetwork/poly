@@ -40,37 +40,30 @@ func (this *NEOHandler) SyncGenesisHeader(native *native.NativeService) error {
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return fmt.Errorf("SyncGenesisHeader, contract params deserialize error: %v", err)
 	}
-
 	// get operator from database
 	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
 	if err != nil {
 		return err
 	}
-
 	//check witness
 	err = utils.ValidateOwner(native, operatorAddress)
 	if err != nil {
 		return fmt.Errorf("SyncGenesisHeader, checkWitness error: %v", err)
 	}
+	// Deserialize neo block header
 	header := new(NeoBlockHeader)
-
 	if err := header.Deserialization(common.NewZeroCopySource(params.GenesisHeader)); err != nil {
 		return fmt.Errorf("SyncGenesisHeader, deserialize header err: %v", err)
 	}
-	//block header storage
-	err = PutBlockHeader(native, params.ChainID, header)
-	if err != nil {
-		return fmt.Errorf("SyncGenesisHeader, put blockHeader error: %v", err)
-	}
-	//consensus NextConsensus storage
-	neoConsensus := &NeoConsensus{
-		ChainID:       params.ChainID,
-		Height:        header.Index,
-		NextConsensus: header.NextConsensus,
-	}
-	err = putNextConsensusByHeight(native, neoConsensus)
-	if err != nil {
-		return fmt.Errorf("SyncGenesisHeader, update ConsensusPeer error: %v", err)
+	if neoConsensus, _ := getConsensusValByChainId(native, params.ChainID); neoConsensus == nil {
+		// Put NeoConsensus.NextConsensus into storage
+		if err = putConsensusValByChainId(native, &NeoConsensus{
+			ChainID:       params.ChainID,
+			Height:        header.Index,
+			NextConsensus: header.NextConsensus,
+		}); err != nil {
+			return fmt.Errorf("SyncGenesisHeader, update ConsensusPeer error: %v", err)
+		}
 	}
 	return nil
 }
@@ -80,26 +73,29 @@ func (this *NEOHandler) SyncBlockHeader(native *native.NativeService) error {
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return fmt.Errorf("SyncBlockHeader, contract params deserialize error: %v", err)
 	}
+	neoConsensus, err := getConsensusValByChainId(native, params.ChainID)
+	if err != nil {
+		return fmt.Errorf("SyncBlockHeader, the consensus validator has not been initialized, chainId: %d", params.ChainID)
+	}
+	var newNeoConsensus *NeoConsensus
 	for _, v := range params.Headers {
 		header := new(NeoBlockHeader)
 		if err := header.Deserialization(common.NewZeroCopySource(v)); err != nil {
 			return fmt.Errorf("SyncBlockHeader, NeoBlockHeaderFromBytes error: %v", err)
 		}
-		_, err := GetHeaderByHeight(native, params.ChainID, header.Index)
-		if err == nil {
-			// the neo blockheader has already been synced
-			continue
+		if !header.NextConsensus.Equals(neoConsensus.NextConsensus) && header.Index > neoConsensus.Height {
+			if err = verifyHeader(native, params.ChainID, header); err != nil {
+				return fmt.Errorf("SyncBlockHeader, verifyHeader error: %v", err)
+			}
+			newNeoConsensus = &NeoConsensus{
+				ChainID:       neoConsensus.ChainID,
+				Height:        header.Index,
+				NextConsensus: header.NextConsensus,
+			}
 		}
-		err = verifyHeader(native, params.ChainID, header)
-		if err != nil {
-			return fmt.Errorf("SyncBlockHeader, verifyHeader error: %v", err)
-		}
-		err = PutBlockHeader(native, params.ChainID, header)
-		if err != nil {
-			return fmt.Errorf("SyncBlockHeader, put BlockHeader error: %v", err)
-		}
-		err = UpdateConsensusPeer(native, params.ChainID, header)
-		if err != nil {
+	}
+	if newNeoConsensus != nil {
+		if err = putConsensusValByChainId(native, newNeoConsensus); err != nil {
 			return fmt.Errorf("SyncBlockHeader, update ConsensusPeer error: %v", err)
 		}
 	}
@@ -107,28 +103,5 @@ func (this *NEOHandler) SyncBlockHeader(native *native.NativeService) error {
 }
 
 func (this *NEOHandler) SyncCrossChainMsg(native *native.NativeService) error {
-	params := new(hscommon.SyncCrossChainMsgParam)
-	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
-		return fmt.Errorf("SyncCrossChainMsg, contract params deserialize error: %v", err)
-	}
-	for _, v := range params.CrossChainMsgs {
-		crossChainMsg := new(NeoCrossChainMsg)
-		if err := crossChainMsg.Deserialization(common.NewZeroCopySource(v)); err != nil {
-			return fmt.Errorf("SyncCrossChainMsg, deserialize neo crossChainMsg error: %v", err)
-		}
-
-		_, err := GetCrossChainMsg(native, params.ChainID, crossChainMsg.Index)
-		if err == nil {
-			continue
-		}
-		err = VerifyCrossChainMsg(native, params.ChainID, crossChainMsg)
-		if err != nil {
-			return fmt.Errorf("SyncCrossChainMsg, VerifyCrossChainMsg error: %v", err)
-		}
-		err = PutCrossChainMsg(native, params.ChainID, crossChainMsg)
-		if err != nil {
-			return fmt.Errorf("SyncCrossChainMsg, put PutCrossChainMsg error: %v", err)
-		}
-	}
 	return nil
 }

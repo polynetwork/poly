@@ -60,7 +60,7 @@ type LedgerStore interface {
 	IsContainBlock(blockHash common.Uint256) (bool, error)
 	IsContainTransaction(txHash common.Uint256) (bool, error)
 	GetBlockRootWithPreBlockHashes(startHeight uint32, txRoots []common.Uint256) common.Uint256
-	GetMerkleProof(m, n uint32) ([]common.Uint256, error)
+	GetMerkleProof(raw []byte, m, n uint32) ([]byte, error)
 	GetCrossStatesProof(height uint32, key []byte) ([]byte, error)
 	GetBookkeeperState() (*states.BookkeeperState, error)
 	GetStorageItem(key *states.StorageKey) (*states.StorageItem, error)

@@ -28,10 +28,8 @@ import (
 
 	"github.com/ethereum/go-ethereum/core/types"
 	cty "github.com/ethereum/go-ethereum/core/types"
-	"github.com/polynetwork/poly/common/config"
 	cstates "github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/native"
-	"github.com/polynetwork/poly/native/event"
 	scom "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/utils"
 )
@@ -73,7 +71,7 @@ func putGenesisBlockHeader(native *native.NativeService, blockHeader types.Heade
 		cstates.GenRawStorageItem(blockHeader.Hash().Bytes()))
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.CURRENT_HEADER_HEIGHT),
 		utils.GetUint64Bytes(chainID)), cstates.GenRawStorageItem(utils.GetUint64Bytes(blockHeader.Number.Uint64())))
-	notifyPutHeader(native, chainID, blockHeader.Number.Uint64(), blockHeader.Hash().String())
+	scom.NotifyPutHeader(native, chainID, blockHeader.Number.Uint64(), blockHeader.Hash().String())
 	return nil
 }
 func putBlockHeader(native *native.NativeService, blockHeader types.Header, difficultySum *big.Int, chainID uint64) error {
@@ -85,6 +83,7 @@ func putBlockHeader(native *native.NativeService, blockHeader types.Header, diff
 	storeBytes, _ := json.Marshal(&headerWithDifficultySum)
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), blockHeader.Hash().Bytes()),
 		cstates.GenRawStorageItem(storeBytes))
+	scom.NotifyPutHeader(native, chainID, blockHeader.Number.Uint64(), blockHeader.Hash().String())
 	return nil
 }
 func appendHeader2Main(native *native.NativeService, height uint64, txhash common.Hash, chainID uint64) error {
@@ -93,7 +92,7 @@ func appendHeader2Main(native *native.NativeService, height uint64, txhash commo
 		cstates.GenRawStorageItem(txhash.Bytes()))
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.CURRENT_HEADER_HEIGHT),
 		utils.GetUint64Bytes(chainID)), cstates.GenRawStorageItem(utils.GetUint64Bytes(height)))
-	notifyPutHeader(native, chainID, height, txhash.String())
+	scom.NotifyPutHeader(native, chainID, height, txhash.String())
 	return nil
 }
 func GetCurrentHeader(native *native.NativeService, chainID uint64) (*cty.Header, *big.Int, error) {
@@ -215,17 +214,6 @@ func RestructChain(native *native.NativeService, current, new *types.Header, cha
 		ti++
 	}
 	return nil
-}
-
-func notifyPutHeader(native *native.NativeService, chainID uint64, height uint64, blockHash string) {
-	if !config.DefConfig.Common.EnableEventLog {
-		return
-	}
-	native.AddNotify(
-		&event.NotifyEventInfo{
-			ContractAddress: utils.HeaderSyncContractAddress,
-			States:          []interface{}{chainID, height, blockHash, native.GetHeight()},
-		})
 }
 
 var two256 = new(big.Int).Exp(big.NewInt(2), big.NewInt(256), big.NewInt(0))

@@ -19,6 +19,7 @@
 package rest
 
 import (
+	"encoding/hex"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/common/log"
@@ -392,28 +393,14 @@ func GetMerkleProof(cmd map[string]interface{}) map[string]interface{} {
 	if err != nil {
 		return ResponsePack(berr.INVALID_PARAMS)
 	}
-	if height >= rootHeight {
+	if height >= rootHeight || height == 0 {
 		ResponsePack(berr.INVALID_PARAMS)
 	}
-	header, err := bactor.GetHeaderByHeight(uint32(height))
+	proof, err := bactor.GetMerkleProof(uint32(height), uint32(rootHeight))
 	if err != nil {
-		return ResponsePack(berr.INVALID_PARAMS)
+		ResponsePack(berr.INTERNAL_ERROR)
 	}
-	rootHeader, err := bactor.GetHeaderByHeight(uint32(rootHeight))
-	if err != nil {
-		return ResponsePack(berr.INVALID_PARAMS)
-	}
-	proof, err := bactor.GetMerkleProof(header.Height, rootHeader.Height)
-	if err != nil {
-		return ResponsePack(berr.INTERNAL_ERROR)
-	}
-	var hashes []string
-	for _, v := range proof {
-		hashes = append(hashes, v.ToHexString())
-	}
-	headerHash := header.Hash()
-	resp["Result"] = bcomn.MerkleProof{"MerkleProof", headerHash.ToHexString(), header.Height,
-		rootHeader.BlockRoot.ToHexString(), rootHeader.Height, hashes}
+	resp["Result"] = bcomn.MerkleProof{"MerkleProof", hex.EncodeToString(proof)}
 	return resp
 }
 

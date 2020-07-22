@@ -220,7 +220,7 @@ func MerkleProve(path []byte, root []byte) ([]byte, error) {
 	}
 
 	if !bytes.Equal(hash[:], root) {
-		return nil, fmt.Errorf("except root is not equal actual root, except:%x, actual:%x", hash, root)
+		return nil, fmt.Errorf("expect root is not equal actual root, expect:%x, actual:%x", hash, root)
 	}
 	return value, nil
 }

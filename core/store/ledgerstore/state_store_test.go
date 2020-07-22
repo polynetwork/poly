@@ -49,7 +49,7 @@ func TestStateMerkleRoot(t *testing.T) {
 		merkleTree := merkle.NewTree(0, nil, nil)
 		for h, hash := range diffHashes[effectiveStateHashHeight:] {
 			height := uint32(h) + effectiveStateHashHeight
-			merkleTree.AppendHash(hash)
+			merkleTree.Append(hash.ToArray())
 			root1 := db.GetStateMerkleRootWithNewHash(hash)
 			db.NewBatch()
 			err := db.AddStateMerkleTreeRoot(height, hash)

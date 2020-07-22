@@ -953,8 +953,8 @@ func (this *LedgerStoreImp) GetBookkeeperState() (*states.BookkeeperState, error
 }
 
 //GetMerkleProof return the block merkle proof. Wrap function of StateStore.GetMerkleProof
-func (this *LedgerStoreImp) GetMerkleProof(proofHeight, rootHeight uint32) ([]common.Uint256, error) {
-	return this.stateStore.GetMerkleProof(proofHeight, rootHeight)
+func (this *LedgerStoreImp) GetMerkleProof(raw []byte, proofHeight, rootHeight uint32) ([]byte, error) {
+	return this.stateStore.GetMerkleProof(raw, proofHeight, rootHeight)
 }
 
 //GetStorageItem return the storage value of the key in smart contract. Wrap function of StateStore.GetStorageState

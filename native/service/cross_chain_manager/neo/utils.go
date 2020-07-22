@@ -49,11 +49,9 @@ func VerifyNeoCrossChainProof(proof []byte, stateRoot []byte, contractAddr []byt
 	if err != nil {
 		return nil, fmt.Errorf("VerifyNeoCrossChainProof, joeqian10/neo-gogogo/mpt.ResolveProof error:%v", err)
 	}
-
 	if !bytes.Equal(scriptHash.Bytes(), contractAddr) {
 		return nil, fmt.Errorf("VerifyNeoCrossChainProof, error:scriptHash is not CCMC contract address, expected:%s, but got %s", hex.EncodeToString(common.ToArrayReverse(contractAddr)), scriptHash.String())
 	}
-
 	value, err := mpt.VerifyProof(stateRoot, scriptHash, key, proofs)
 	if err != nil {
 		return nil, fmt.Errorf("VerifyNeoCrossChainProof, joeqian10/neo-gogogo/mpt.VerifyProof error:%v", err)

@@ -89,9 +89,8 @@ func GetSideChain(native *native.NativeService, chainID uint64) (*SideChain, err
 			return nil, fmt.Errorf("getSideChain, deserialize sideChain error: %v", err)
 		}
 		return sideChain, nil
-	} else {
-		return nil, nil
 	}
+	return nil, nil
 
 }
 

@@ -22,15 +22,15 @@ import (
 	"fmt"
 	"github.com/ontio/ontology-crypto/keypair"
 
+	ocommon "github.com/ontio/ontology/common"
+	"github.com/ontio/ontology/core/signature"
+	otypes "github.com/ontio/ontology/core/types"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/consensus/vbft/config"
 	cstates "github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/native"
 	hscommon "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/utils"
-	ocommon "github.com/ontio/ontology/common"
-	"github.com/ontio/ontology/core/signature"
-	otypes "github.com/ontio/ontology/core/types"
 )
 
 func PutCrossChainMsg(native *native.NativeService, chainID uint64, crossChainMsg *otypes.CrossChainMsg) error {
@@ -86,7 +86,7 @@ func PutBlockHeader(native *native.NativeService, chainID uint64, blockHeader *o
 		cstates.GenRawStorageItem(blockHash.ToArray()))
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(hscommon.CURRENT_HEADER_HEIGHT), chainIDBytes),
 		cstates.GenRawStorageItem(heightBytes))
-	hscommon.NotifyPutHeader(native, chainID, blockHeader.Height, blockHash.ToHexString())
+	hscommon.NotifyPutHeader(native, chainID, uint64(blockHeader.Height), blockHash.ToHexString())
 	return nil
 }
 

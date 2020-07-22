@@ -38,22 +38,15 @@ func (this *NEOHandler) MakeDepositProposal(service *native.NativeService) (*sco
 	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
 		return nil, fmt.Errorf("neo MakeDepositProposal, contract params deserialize error: %v", err)
 	}
-
-	crossChainMsg, err := neo.GetCrossChainMsg(service, params.SourceChainID, params.Height)
-	if crossChainMsg == nil {
-		crossChainMsg = new(neo.NeoCrossChainMsg)
-		if err := crossChainMsg.Deserialization(common.NewZeroCopySource(params.HeaderOrCrossChainMsg)); err != nil {
-			return nil, fmt.Errorf("neo MakeDepositProposal, deserialize crossChainMsg error: %v", err)
-		}
-		err = neo.VerifyCrossChainMsg(service, params.SourceChainID, crossChainMsg)
-		if err != nil {
-			return nil, fmt.Errorf("neo MakeDepositProposal, VerifyCrossChainMsg error: %v", err)
-		}
-		err = neo.PutCrossChainMsg(service, params.SourceChainID, crossChainMsg)
-		if err != nil {
-			return nil, fmt.Errorf("neo MakeDepositProposal, put PutCrossChainMsg error: %v", err)
-		}
+	// Deserialize neo cross chain msg and verify its signature
+	crossChainMsg := new(neo.NeoCrossChainMsg)
+	if err := crossChainMsg.Deserialization(common.NewZeroCopySource(params.HeaderOrCrossChainMsg)); err != nil {
+		return nil, fmt.Errorf("neo MakeDepositProposal, deserialize crossChainMsg error: %v", err)
 	}
+	if err := neo.VerifyCrossChainMsgSig(service, params.SourceChainID, crossChainMsg); err != nil {
+		return nil, fmt.Errorf("neo MakeDepositProposal, VerifyCrossChainMsg error: %v", err)
+	}
+	// Verify the validity of proof with the help of state root in verified neo cross chain msg
 	sideChain, err := side_chain_manager.GetSideChain(service, params.SourceChainID)
 	if err != nil {
 		return nil, fmt.Errorf("neo MakeDepositProposal, side_chain_manager.GetSideChain error: %v", err)
@@ -62,6 +55,7 @@ func (this *NEOHandler) MakeDepositProposal(service *native.NativeService) (*sco
 	if err != nil {
 		return nil, fmt.Errorf("neo MakeDepositProposal, VerifyFromNeoTx error: %v", err)
 	}
+	// Ensure the tx has not been processed before, and mark the tx as processed
 	if err := scom.CheckDoneTx(service, value.CrossChainID, params.SourceChainID); err != nil {
 		return nil, fmt.Errorf("neo MakeDepositProposal, check done transaction error:%s", err)
 	}

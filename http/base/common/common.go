@@ -38,15 +38,6 @@ type BalanceOfRsp struct {
 }
 
 type MerkleProof struct {
-	Type           string
-	BlockHash      string
-	BlockHeight    uint32
-	CurBlockRoot   string
-	CurBlockHeight uint32
-	TargetHashes   []string
-}
-
-type CrossStatesProof struct {
 	Type      string
 	AuditPath string
 }

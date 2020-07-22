@@ -186,7 +186,7 @@ func (self *StateStore) AddStateMerkleTreeRoot(blockHeight uint32, writeSetHash 
 	}
 	key := self.genStateMerkleTreeKey()
 
-	self.deltaMerkleTree.AppendHash(writeSetHash)
+	self.deltaMerkleTree.Append(writeSetHash.ToArray())
 	treeSize := self.deltaMerkleTree.TreeSize()
 	hashes := self.deltaMerkleTree.Hashes()
 	value := common.NewZeroCopySink(make([]byte, 0, 4+len(hashes)*common.UINT256_SIZE))
@@ -270,10 +270,10 @@ func (self *StateStore) GetCrossStates(height uint32) (hashes []common.Uint256, 
 }
 
 //AddBlockMerkleTreeRoot add a new tree root
-func (self *StateStore) AddBlockMerkleTreeRoot(txRoot common.Uint256) error {
+func (self *StateStore) AddBlockMerkleTreeRoot(preBlockHash common.Uint256) error {
 	key := self.genBlockMerkleTreeKey()
 
-	self.merkleTree.AppendHash(txRoot)
+	self.merkleTree.Append(preBlockHash.ToArray())
 	treeSize := self.merkleTree.TreeSize()
 	hashes := self.merkleTree.Hashes()
 	value := common.NewZeroCopySink(make([]byte, 0, 4+len(hashes)*common.UINT256_SIZE))
@@ -286,8 +286,8 @@ func (self *StateStore) AddBlockMerkleTreeRoot(txRoot common.Uint256) error {
 }
 
 //GetMerkleProof return merkle proof of block hash
-func (self *StateStore) GetMerkleProof(proofHeight, rootHeight uint32) ([]common.Uint256, error) {
-	return self.merkleTree.InclusionProof(proofHeight, rootHeight+1)
+func (self *StateStore) GetMerkleProof(raw []byte, proofHeight, rootHeight uint32) ([]byte, error) {
+	return self.merkleTree.MerkleInclusionLeafPath(raw, proofHeight, rootHeight+1)
 }
 
 func (self *StateStore) NewOverlayDB() *overlaydb.OverlayDB {
