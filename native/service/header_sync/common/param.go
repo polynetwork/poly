@@ -41,6 +41,7 @@ const (
 	MAIN_CHAIN                  = "mainChain"
 	EPOCH_SWITCH                = "epochSwitch"
 	SYNC_HEADER_NAME            = "syncHeader"
+	SYNC_CROSSCHAIN_MSG         = "syncCrossChainMsg"
 )
 
 type HeaderSyncHandler interface {
@@ -177,6 +178,6 @@ func NotifyPutCrossChainMsg(native *native.NativeService, chainID uint64, height
 	native.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.HeaderSyncContractAddress,
-			States:          []interface{}{chainID, height, native.GetHeight()},
+			States:          []interface{}{SYNC_CROSSCHAIN_MSG, chainID, height, native.GetHeight()},
 		})
 }
