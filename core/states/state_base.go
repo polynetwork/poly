@@ -19,10 +19,10 @@
 package states
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/polynetwork/poly/common/serialization"
-	"github.com/polynetwork/poly/errors"
 )
 
 type StateBase struct {
@@ -37,7 +37,7 @@ func (this *StateBase) Serialize(w io.Writer) error {
 func (this *StateBase) Deserialize(r io.Reader) error {
 	stateVersion, err := serialization.ReadByte(r)
 	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "[StateBase], StateBase Deserialize failed.")
+		return fmt.Errorf("[StateBase], StateBase Deserialize failed,%s", err)
 	}
 	this.StateVersion = stateVersion
 	return nil

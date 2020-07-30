@@ -102,7 +102,7 @@ func verifyMerkleProof(ethProof *ETHProof, blockData *types.Header, contractAddr
 	acctKey := crypto.Keccak256(addr)
 
 	//2. verify account proof
-	acctVal, err := trie.VerifyProof(blockData.Root, acctKey, ns)
+	acctVal, _, err := trie.VerifyProof(blockData.Root, acctKey, ns)
 	if err != nil {
 		return nil, fmt.Errorf("verifyMerkleProof, verify account proof error:%s\n", err)
 	}
@@ -152,7 +152,7 @@ func verifyMerkleProof(ethProof *ETHProof, blockData *types.Header, contractAddr
 	}
 
 	ns = nodeList.NodeSet()
-	val, err := trie.VerifyProof(storageHash, storageKey, ns)
+	val, _, err := trie.VerifyProof(storageHash, storageKey, ns)
 	if err != nil {
 		return nil, fmt.Errorf("verifyMerkleProof, verify storage proof error:%s\n", err)
 	}

@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"github.com/polynetwork/poly/common"
 	ct "github.com/polynetwork/poly/core/types"
-	"github.com/polynetwork/poly/errors"
 	comm "github.com/polynetwork/poly/p2pserver/common"
 )
 
@@ -35,7 +34,7 @@ type Block struct {
 func (this *Block) Serialization(sink *common.ZeroCopySink) error {
 	err := this.Blk.Serialization(sink)
 	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNetPackFail, fmt.Sprintf("serialize error. err:%v", err))
+		return fmt.Errorf("serialize error. err:%v", err)
 	}
 	sink.WriteHash(this.MerkleRoot)
 	return nil
@@ -50,7 +49,7 @@ func (this *Block) Deserialization(source *common.ZeroCopySource) error {
 	this.Blk = new(ct.Block)
 	err := this.Blk.Deserialization(source)
 	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNetUnPackFail, fmt.Sprintf("read Blk error. err:%v", err))
+		return fmt.Errorf("read Blk error. err:%v", err)
 	}
 
 	eof := false

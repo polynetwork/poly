@@ -20,10 +20,10 @@ package states
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 
 	"github.com/polynetwork/poly/common/serialization"
-	"github.com/polynetwork/poly/errors"
 )
 
 type StorageItem struct {
@@ -40,11 +40,11 @@ func (this *StorageItem) Serialize(w io.Writer) error {
 func (this *StorageItem) Deserialize(r io.Reader) error {
 	err := this.StateBase.Deserialize(r)
 	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "[StorageItem], StateBase Deserialize failed.")
+		return fmt.Errorf("[StorageItem], StateBase Deserialize failed, error:%s", err)
 	}
 	value, err := serialization.ReadVarBytes(r)
 	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "[StorageItem], Value Deserialize failed.")
+		return fmt.Errorf("[StorageItem], Value Deserialize failed, error:%s", err)
 	}
 	this.Value = value
 	return nil

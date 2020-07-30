@@ -19,11 +19,11 @@
 package states
 
 import (
+	"fmt"
 	"io"
 
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/common/serialization"
-	"github.com/polynetwork/poly/errors"
 )
 
 type ValidatorState struct {
@@ -43,15 +43,15 @@ func (this *ValidatorState) Serialize(w io.Writer) error {
 func (this *ValidatorState) Deserialize(r io.Reader) error {
 	err := this.StateBase.Deserialize(r)
 	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "[ValidatorState], StateBase Deserialize failed.")
+		return fmt.Errorf("[ValidatorState], StateBase Deserialize failed, error:%s", err)
 	}
 	buf, err := serialization.ReadVarBytes(r)
 	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "[ValidatorState], PublicKey Deserialize failed.")
+		return fmt.Errorf("[ValidatorState], PublicKey Deserialize failed, error:%s", err)
 	}
 	pk, err := keypair.DeserializePublicKey(buf)
 	if err != nil {
-		return errors.NewDetailErr(err, errors.ErrNoCode, "[ValidatorState], PublicKey Deserialize failed.")
+		return fmt.Errorf("[ValidatorState], PublicKey Deserialize failed, error:%s", err)
 	}
 	this.PublicKey = pk
 	return nil
