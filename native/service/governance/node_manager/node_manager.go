@@ -394,8 +394,12 @@ func BlackNode(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("blackNode, num of peers is less than 4")
 	}
 	for _, peerPubkey := range params.PeerPubkeyList {
-		if peerPoolMap.PeerPoolMap[peerPubkey].Status == BlackStatus {
-			return utils.BYTE_FALSE, fmt.Errorf("blackNode, peerPubkey is already blacked")
+		peerPoolItem, ok := peerPoolMap.PeerPoolMap[peerPubkey]
+		if !ok {
+			return utils.BYTE_FALSE, fmt.Errorf("blockNode, peerPubkey: %s is not in peerPoolMap", peerPubkey)
+		}
+		if peerPoolItem.Status == BlackStatus {
+			return utils.BYTE_FALSE, fmt.Errorf("blackNode, peerPubkey: %s is already blacked", peerPubkey)
 		}
 	}
 

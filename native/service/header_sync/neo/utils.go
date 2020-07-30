@@ -77,26 +77,6 @@ func VerifyCrossChainMsgSig(native *native.NativeService, chainID uint64, crossC
 	return nil
 }
 
-func UpdateConsensusPeer(native *native.NativeService, chainID uint64, header *NeoBlockHeader) error {
-	neoConsensus, err := getConsensusValByChainId(native, chainID)
-	if err != nil {
-		return fmt.Errorf("getNextConsensusByHeight error:%s", err)
-	}
-	if neoConsensus.NextConsensus != header.NextConsensus {
-		neoConsensus := &NeoConsensus{
-			ChainID:       chainID,
-			Height:        header.Index,
-			NextConsensus: header.NextConsensus,
-		}
-
-		err := putConsensusValByChainId(native, neoConsensus)
-		if err != nil {
-			return fmt.Errorf("updateConsensusPeer, putNextConsensusByHeight eerror: %s", err)
-		}
-	}
-	return nil
-}
-
 func getConsensusValByChainId(native *native.NativeService, chainID uint64) (*NeoConsensus, error) {
 	contract := utils.HeaderSyncContractAddress
 	chainIDBytes := utils.GetUint64Bytes(chainID)
