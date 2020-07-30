@@ -184,17 +184,9 @@ func (self *ChainStore) getBlock(blockNum uint32) (*Block, error) {
 	if blk, present := self.pendingBlocks[blockNum]; present {
 		return blk.block, nil
 	}
-	block, err := self.db.GetBlockByHeight(uint32(blockNum))
+	block, err := self.db.GetBlockByHeight(blockNum)
 	if err != nil {
 		return nil, err
 	}
-	prevMerkleRoot := common.Uint256{}
-	if blockNum > 1 {
-		prevMerkleRoot, err = self.db.GetStateMerkleRoot(blockNum - 1)
-		if err != nil {
-			log.Errorf("GetStateMerkleRoot blockNum:%d, error :%s", blockNum, err)
-			return nil, fmt.Errorf("GetStateMerkleRoot blockNum:%d, error :%s", blockNum, err)
-		}
-	}
-	return initVbftBlock(block, prevMerkleRoot)
+	return initVbftBlock(block)
 }

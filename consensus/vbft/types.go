@@ -24,7 +24,6 @@ import (
 	"io"
 
 	"github.com/polynetwork/poly/common"
-	"github.com/polynetwork/poly/common/log"
 	"github.com/polynetwork/poly/consensus/vbft/config"
 	"github.com/polynetwork/poly/core/types"
 )
@@ -33,7 +32,6 @@ type Block struct {
 	Block               *types.Block
 	EmptyBlock          *types.Block
 	Info                *vconfig.VbftBlockInfo
-	PrevBlockMerkleRoot common.Uint256
 }
 
 func (blk *Block) getProposer() uint32 {
@@ -56,9 +54,6 @@ func (blk *Block) getNewChainConfig() *vconfig.ChainConfig {
 	return blk.Info.NewChainConfig
 }
 
-func (blk *Block) getPrevBlockMerkleRoot() common.Uint256 {
-	return blk.PrevBlockMerkleRoot
-}
 
 func (blk *Block) getPrevBlockCrossStateRoot() common.Uint256 {
 	return blk.Block.Header.CrossStateRoot
@@ -91,7 +86,6 @@ func (blk *Block) Serialize() ([]byte, error) {
 		}
 		payload.WriteVarBytes(sink2.Bytes())
 	}
-	payload.WriteHash(blk.PrevBlockMerkleRoot)
 	return payload.Bytes(), nil
 }
 
@@ -123,22 +117,13 @@ func (blk *Block) Deserialize(data []byte) error {
 			emptyBlock = block2
 		}
 	}
-	var merkleRoot common.Uint256
-	if source.Len() > 0 {
-		merkleRoot, eof = source.NextHash()
-		if eof {
-			log.Errorf("Block Deserialize merkleRoot")
-			return io.ErrUnexpectedEOF
-		}
-	}
 	blk.Block = block
 	blk.EmptyBlock = emptyBlock
 	blk.Info = info
-	blk.PrevBlockMerkleRoot = merkleRoot
 	return nil
 }
 
-func initVbftBlock(block *types.Block, prevMerkleRoot common.Uint256) (*Block, error) {
+func initVbftBlock(block *types.Block) (*Block, error) {
 	if block == nil {
 		return nil, fmt.Errorf("nil block in initVbftBlock")
 	}
@@ -151,6 +136,5 @@ func initVbftBlock(block *types.Block, prevMerkleRoot common.Uint256) (*Block, e
 	return &Block{
 		Block:               block,
 		Info:                blkInfo,
-		PrevBlockMerkleRoot: prevMerkleRoot,
 	}, nil
 }
