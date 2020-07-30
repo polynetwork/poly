@@ -51,7 +51,7 @@ func (this *ValidatorState) Deserialize(r io.Reader) error {
 	}
 	pk, err := keypair.DeserializePublicKey(buf)
 	if err != nil {
-		return fmt.Errorf( "[ValidatorState], PublicKey Deserialize failed, error:%s", err)
+		return fmt.Errorf("[ValidatorState], PublicKey Deserialize failed, error:%s", err)
 	}
 	this.PublicKey = pk
 	return nil
