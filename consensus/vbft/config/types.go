@@ -23,8 +23,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/polynetwork/poly/core/types"
 	"github.com/ontio/ontology-crypto/keypair"
+	"github.com/polynetwork/poly/core/types"
 )
 
 // PubkeyID returns a marshaled representation of the given public key.

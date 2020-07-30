@@ -24,13 +24,13 @@ import (
 	"fmt"
 	"github.com/polynetwork/poly/native/event"
 
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/config"
 	cstates "github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/service/utils"
-	"github.com/ontio/ontology-crypto/keypair"
 )
 
 func GetPeeApply(native *native.NativeService, peerPubkey string) (*RegisterPeerParam, error) {

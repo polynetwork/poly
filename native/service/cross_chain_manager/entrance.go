@@ -26,10 +26,10 @@ import (
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/btc"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/cosmos"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/eth"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/neo"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/ont"
-	"github.com/polynetwork/poly/native/service/cross_chain_manager/cosmos"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	"github.com/polynetwork/poly/native/service/utils"
 )

@@ -1,13 +1,13 @@
 package test
 
 import (
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/account"
 	"github.com/polynetwork/poly/cmd/utils"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/core/payload"
 	"github.com/polynetwork/poly/core/signature"
 	"github.com/polynetwork/poly/core/types"
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

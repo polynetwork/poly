@@ -31,6 +31,7 @@ import (
 	"sync"
 	"time"
 
+	evtActor "github.com/ontio/ontology-eventbus/actor"
 	comm "github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/common/log"
@@ -43,7 +44,6 @@ import (
 	"github.com/polynetwork/poly/p2pserver/net/netserver"
 	p2pnet "github.com/polynetwork/poly/p2pserver/net/protocol"
 	"github.com/polynetwork/poly/p2pserver/peer"
-	evtActor "github.com/ontio/ontology-eventbus/actor"
 )
 
 //P2PServer control all network activities

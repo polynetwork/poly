@@ -19,10 +19,10 @@
 package types
 
 import (
+	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/errors"
-	"github.com/ontio/ontology-eventbus/actor"
 )
 
 // message

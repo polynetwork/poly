@@ -24,11 +24,11 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
 	"github.com/polynetwork/poly/common/serialization"
 	"github.com/polynetwork/poly/core/signature"
-	"github.com/ontio/ontology-crypto/keypair"
 )
 
 type ConsensusPayload struct {

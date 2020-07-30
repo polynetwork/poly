@@ -32,7 +32,7 @@ import (
 	"github.com/tendermint/tendermint/crypto/secp256k1"
 )
 
-type CosmosHandler struct {}
+type CosmosHandler struct{}
 
 func NewCosmosHandler() *CosmosHandler {
 	return &CosmosHandler{}

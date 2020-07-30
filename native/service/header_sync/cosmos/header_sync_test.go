@@ -181,7 +181,7 @@ func TestSyncBlockHeader2(t *testing.T) {
 		assert.Equal(t, SUCCESS, typeOfError(err))
 
 		info, _ := GetEpochSwitchInfo(native, param.ChainID)
-		assert.Equal(t, info != nil , true)
+		assert.Equal(t, info != nil, true)
 		assert.Equal(t, uint64(info.Height), uint64(10000))
 	}
 	{

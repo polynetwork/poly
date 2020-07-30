@@ -23,6 +23,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/common/log"
 	"github.com/polynetwork/poly/core/genesis"
@@ -33,7 +34,6 @@ import (
 	tp "github.com/polynetwork/poly/txnpool/proc"
 	"github.com/polynetwork/poly/validator/stateful"
 	"github.com/polynetwork/poly/validator/stateless"
-	"github.com/ontio/ontology-eventbus/actor"
 )
 
 var (

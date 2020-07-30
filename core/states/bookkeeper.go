@@ -22,8 +22,8 @@ import (
 	"bytes"
 	"io"
 
-	"github.com/polynetwork/poly/common/serialization"
 	"github.com/ontio/ontology-crypto/keypair"
+	"github.com/polynetwork/poly/common/serialization"
 )
 
 type BookkeeperState struct {

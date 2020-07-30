@@ -22,6 +22,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/polynetwork/poly/common/log"
 	"github.com/polynetwork/poly/core/payload"
 	"github.com/polynetwork/poly/core/types"
@@ -29,7 +30,6 @@ import (
 	tc "github.com/polynetwork/poly/txnpool/common"
 	"github.com/polynetwork/poly/validator/stateless"
 	vt "github.com/polynetwork/poly/validator/types"
-	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/stretchr/testify/assert"
 )
 

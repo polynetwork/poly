@@ -18,10 +18,10 @@
 package genesis
 
 import (
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/common/log"
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"

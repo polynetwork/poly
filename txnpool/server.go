@@ -22,11 +22,11 @@ package txnpool
 
 import (
 	"fmt"
+	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/polynetwork/poly/events"
 	"github.com/polynetwork/poly/events/message"
 	tc "github.com/polynetwork/poly/txnpool/common"
 	tp "github.com/polynetwork/poly/txnpool/proc"
-	"github.com/ontio/ontology-eventbus/actor"
 )
 
 // startActor starts an actor with the proxy and unique id,

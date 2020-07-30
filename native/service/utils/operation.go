@@ -21,11 +21,11 @@ package utils
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/ontio/ontology-crypto/vrf"
 	"github.com/polynetwork/poly/common"
 	vbftconfig "github.com/polynetwork/poly/consensus/vbft/config"
 	"github.com/polynetwork/poly/errors"
 	"github.com/polynetwork/poly/native"
-	"github.com/ontio/ontology-crypto/vrf"
 )
 
 func ConcatKey(contract common.Address, args ...[]byte) []byte {

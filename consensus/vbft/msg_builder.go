@@ -290,9 +290,9 @@ func (self *Server) constructProposalMsg(blkNum uint32, sysTxs, userTxs []*types
 
 	msg := &blockProposalMsg{
 		Block: &Block{
-			Block:               blk,
-			EmptyBlock:          emptyBlk,
-			Info:                vbftBlkInfo,
+			Block:      blk,
+			EmptyBlock: emptyBlk,
+			Info:       vbftBlkInfo,
 		},
 	}
 

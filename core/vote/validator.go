@@ -19,9 +19,9 @@
 package vote
 
 import (
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/core/genesis"
 	"github.com/polynetwork/poly/core/types"
-	"github.com/ontio/ontology-crypto/keypair"
 )
 
 func GetValidators(txs []*types.Transaction) ([]keypair.PublicKey, error) {

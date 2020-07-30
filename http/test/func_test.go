@@ -20,10 +20,10 @@ package test
 
 import (
 	"bytes"
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/merkle"
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

@@ -21,10 +21,10 @@ package server
 import (
 	"reflect"
 
+	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/polynetwork/poly/common/log"
 	"github.com/polynetwork/poly/p2pserver"
 	"github.com/polynetwork/poly/p2pserver/common"
-	"github.com/ontio/ontology-eventbus/actor"
 )
 
 type P2PActor struct {
