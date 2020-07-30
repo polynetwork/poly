@@ -206,10 +206,8 @@ func GetGovernanceView(native *native.NativeService) (*GovernanceView, error) {
 	if err != nil {
 		return nil, fmt.Errorf("getGovernanceView, get governanceViewBytes error: %v", err)
 	}
-	governanceView := new(GovernanceView)
-	if governanceViewBytes == nil {
-		return nil, fmt.Errorf("getGovernanceView, get nil governanceViewBytes")
-	} else {
+	if governanceViewBytes != nil {
+		governanceView := new(GovernanceView)
 		value, err := cstates.GetValueFromRawStorageItem(governanceViewBytes)
 		if err != nil {
 			return nil, fmt.Errorf("getGovernanceView, deserialize from raw storage item err:%v", err)
@@ -217,8 +215,9 @@ func GetGovernanceView(native *native.NativeService) (*GovernanceView, error) {
 		if err := governanceView.Deserialization(common.NewZeroCopySource(value)); err != nil {
 			return nil, fmt.Errorf("getGovernanceView, deserialize governanceView error: %v", err)
 		}
+		return governanceView, nil
 	}
-	return governanceView, nil
+	return nil, fmt.Errorf("getGovernanceView, get nil governanceViewBytes")
 }
 
 func putGovernanceView(native *native.NativeService, governanceView *GovernanceView) {
