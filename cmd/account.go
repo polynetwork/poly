@@ -21,11 +21,11 @@ package cmd
 import (
 	"bufio"
 	"fmt"
+	"github.com/ontio/ontology-crypto/keypair"
+	s "github.com/ontio/ontology-crypto/signature"
 	"github.com/polynetwork/poly/cmd/common"
 	"github.com/polynetwork/poly/cmd/utils"
 	"github.com/polynetwork/poly/common/config"
-	"github.com/ontio/ontology-crypto/keypair"
-	s "github.com/ontio/ontology-crypto/signature"
 	"github.com/urfave/cli"
 	"strings"
 )

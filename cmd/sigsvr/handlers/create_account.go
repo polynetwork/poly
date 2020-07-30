@@ -19,10 +19,10 @@ package handlers
 
 import (
 	"encoding/json"
-	clisvrcom "github.com/polynetwork/poly/cmd/sigsvr/common"
-	"github.com/polynetwork/poly/common/log"
 	"github.com/ontio/ontology-crypto/keypair"
 	s "github.com/ontio/ontology-crypto/signature"
+	clisvrcom "github.com/polynetwork/poly/cmd/sigsvr/common"
+	"github.com/polynetwork/poly/common/log"
 )
 
 type CreateAccountReq struct {

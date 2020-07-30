@@ -25,8 +25,8 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/polynetwork/poly/common"
 	"github.com/ontio/ontology-crypto/keypair"
+	"github.com/polynetwork/poly/common"
 )
 
 /** AccountData - for wallet read and save, no crypto object included **/

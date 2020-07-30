@@ -23,8 +23,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/polynetwork/poly/consensus/vbft/config"
 	"github.com/ontio/ontology-crypto/keypair"
+	"github.com/polynetwork/poly/consensus/vbft/config"
 )
 
 type Peer struct {

@@ -22,10 +22,10 @@ import (
 	"errors"
 	"time"
 
+	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/polynetwork/poly/common/log"
 	ac "github.com/polynetwork/poly/p2pserver/actor/server"
 	"github.com/polynetwork/poly/p2pserver/common"
-	"github.com/ontio/ontology-eventbus/actor"
 )
 
 var netServerPid *actor.PID

@@ -19,13 +19,13 @@
 package stateful
 
 import (
+	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/polynetwork/poly/common/log"
 	"github.com/polynetwork/poly/core/ledger"
 	"github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/errors"
 	"github.com/polynetwork/poly/validator/db"
 	vatypes "github.com/polynetwork/poly/validator/types"
-	"github.com/ontio/ontology-eventbus/actor"
 	"reflect"
 )
 

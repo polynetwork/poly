@@ -19,8 +19,8 @@
 package actor
 
 import (
-	cactor "github.com/polynetwork/poly/consensus/actor"
 	"github.com/ontio/ontology-eventbus/actor"
+	cactor "github.com/polynetwork/poly/consensus/actor"
 )
 
 var consensusSrvPid *actor.PID

@@ -22,12 +22,12 @@ import (
 	"errors"
 	"time"
 
+	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/polynetwork/poly/core/types"
 	ontErrors "github.com/polynetwork/poly/errors"
 	netActor "github.com/polynetwork/poly/p2pserver/actor/server"
 	ptypes "github.com/polynetwork/poly/p2pserver/message/types"
 	txpool "github.com/polynetwork/poly/txnpool/common"
-	"github.com/ontio/ontology-eventbus/actor"
 )
 
 type TxPoolActor struct {

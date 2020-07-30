@@ -25,10 +25,10 @@ import (
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	"github.com/polynetwork/poly/native/service/header_sync/btc"
 	hscommon "github.com/polynetwork/poly/native/service/header_sync/common"
+	"github.com/polynetwork/poly/native/service/header_sync/cosmos"
 	"github.com/polynetwork/poly/native/service/header_sync/eth"
 	"github.com/polynetwork/poly/native/service/header_sync/neo"
 	"github.com/polynetwork/poly/native/service/header_sync/ont"
-	"github.com/polynetwork/poly/native/service/header_sync/cosmos"
 	"github.com/polynetwork/poly/native/service/utils"
 )
 

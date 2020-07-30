@@ -19,11 +19,11 @@
 package utils
 
 import (
+	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/polynetwork/poly/common/log"
 	"github.com/polynetwork/poly/p2pserver/message/types"
 	"github.com/polynetwork/poly/p2pserver/net/netserver"
 	"github.com/polynetwork/poly/p2pserver/net/protocol"
-	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

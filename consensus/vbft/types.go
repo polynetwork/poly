@@ -29,9 +29,9 @@ import (
 )
 
 type Block struct {
-	Block               *types.Block
-	EmptyBlock          *types.Block
-	Info                *vconfig.VbftBlockInfo
+	Block      *types.Block
+	EmptyBlock *types.Block
+	Info       *vconfig.VbftBlockInfo
 }
 
 func (blk *Block) getProposer() uint32 {
@@ -53,7 +53,6 @@ func (blk *Block) getLastConfigBlockNum() uint32 {
 func (blk *Block) getNewChainConfig() *vconfig.ChainConfig {
 	return blk.Info.NewChainConfig
 }
-
 
 func (blk *Block) getPrevBlockCrossStateRoot() common.Uint256 {
 	return blk.Block.Header.CrossStateRoot
@@ -134,7 +133,7 @@ func initVbftBlock(block *types.Block) (*Block, error) {
 	}
 
 	return &Block{
-		Block:               block,
-		Info:                blkInfo,
+		Block: block,
+		Info:  blkInfo,
 	}, nil
 }

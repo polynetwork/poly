@@ -19,10 +19,10 @@ package ont
 
 import (
 	"fmt"
+	otypes "github.com/ontio/ontology/core/types"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/merkle"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
-	otypes "github.com/ontio/ontology/core/types"
 )
 
 func VerifyFromOntTx(proof []byte, crossChainMsg *otypes.CrossChainMsg) (*scom.MakeTxParam, error) {

@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/account"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/core/types"
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )

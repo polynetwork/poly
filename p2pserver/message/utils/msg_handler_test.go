@@ -25,6 +25,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/common/log"
@@ -39,7 +40,6 @@ import (
 	"github.com/polynetwork/poly/p2pserver/net/netserver"
 	"github.com/polynetwork/poly/p2pserver/net/protocol"
 	"github.com/polynetwork/poly/p2pserver/peer"
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/stretchr/testify/assert"
 )
 

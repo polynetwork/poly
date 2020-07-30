@@ -27,6 +27,7 @@ import (
 	"time"
 
 	lru "github.com/hashicorp/golang-lru"
+	evtActor "github.com/ontio/ontology-eventbus/actor"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/common/log"
@@ -37,7 +38,6 @@ import (
 	"github.com/polynetwork/poly/p2pserver/message/msg_pack"
 	msgTypes "github.com/polynetwork/poly/p2pserver/message/types"
 	"github.com/polynetwork/poly/p2pserver/net/protocol"
-	evtActor "github.com/ontio/ontology-eventbus/actor"
 )
 
 //respCache cache for some response data

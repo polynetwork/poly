@@ -21,18 +21,18 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/account"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/core/genesis"
-	"github.com/polynetwork/poly/core/types"
 	cstates "github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/core/store/leveldbstore"
 	"github.com/polynetwork/poly/core/store/overlaydb"
+	"github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/native"
 	scom "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/utils"
 	"github.com/polynetwork/poly/native/storage"
-	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/stretchr/testify/assert"
 	"strings"
 	"testing"
@@ -41,8 +41,8 @@ import (
 )
 
 var (
-	acct *account.Account = account.NewAccount("")
-	setBKers = func() {
+	acct     *account.Account = account.NewAccount("")
+	setBKers                  = func() {
 		genesis.GenesisBookkeepers = []keypair.PublicKey{acct.PublicKey}
 	}
 )
@@ -165,8 +165,7 @@ func TestSyncGenesisHeaderNoOperator(t *testing.T) {
 	sink := common.NewZeroCopySink(nil)
 	param.Serialization(sink)
 
-	tx := &types.Transaction{
-	}
+	tx := &types.Transaction{}
 
 	native := NewNative(sink.Bytes(), tx, nil)
 	ethHandler := NewETHHandler()

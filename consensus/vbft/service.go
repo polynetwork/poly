@@ -26,6 +26,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/ontio/ontology-crypto/keypair"
+	"github.com/ontio/ontology-crypto/vrf"
+	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/polynetwork/poly/account"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
@@ -42,9 +45,6 @@ import (
 	"github.com/polynetwork/poly/native/states"
 	p2pmsg "github.com/polynetwork/poly/p2pserver/message/types"
 	"github.com/polynetwork/poly/validator/increment"
-	"github.com/ontio/ontology-crypto/keypair"
-	"github.com/ontio/ontology-crypto/vrf"
-	"github.com/ontio/ontology-eventbus/actor"
 )
 
 type BftActionType uint8

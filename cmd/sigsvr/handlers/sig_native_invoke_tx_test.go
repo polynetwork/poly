@@ -20,11 +20,11 @@ package handlers
 
 import (
 	"encoding/json"
+	"github.com/ontio/ontology-crypto/keypair"
+	"github.com/ontio/ontology-crypto/signature"
 	"github.com/polynetwork/poly/cmd/abi"
 	clisvrcom "github.com/polynetwork/poly/cmd/sigsvr/common"
 	nutils "github.com/polynetwork/poly/native/service/native/utils"
-	"github.com/ontio/ontology-crypto/keypair"
-	"github.com/ontio/ontology-crypto/signature"
 	"testing"
 )
 

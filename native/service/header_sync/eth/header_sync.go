@@ -34,8 +34,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	cty "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	mctypes "github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/core/genesis"
+	mctypes "github.com/polynetwork/poly/core/types"
 
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"

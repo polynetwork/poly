@@ -24,9 +24,9 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/serialization"
-	"github.com/ontio/ontology-crypto/keypair"
 )
 
 type Header struct {

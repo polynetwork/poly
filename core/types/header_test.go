@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/polynetwork/poly/common"
 	"github.com/ontio/ontology-crypto/keypair"
+	"github.com/polynetwork/poly/common"
 	"github.com/stretchr/testify/assert"
 )
 

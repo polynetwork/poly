@@ -21,9 +21,9 @@ package states
 import (
 	"io"
 
+	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/common/serialization"
 	"github.com/polynetwork/poly/errors"
-	"github.com/ontio/ontology-crypto/keypair"
 )
 
 type ValidatorState struct {

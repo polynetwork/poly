@@ -23,6 +23,8 @@ import (
 	"crypto/sha512"
 	"encoding/json"
 	"fmt"
+	"github.com/ontio/ontology-crypto/keypair"
+	"github.com/ontio/ontology-crypto/vrf"
 	"github.com/polynetwork/poly/account"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/config"
@@ -34,8 +36,6 @@ import (
 	"github.com/polynetwork/poly/core/store/overlaydb"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	nutils "github.com/polynetwork/poly/native/service/utils"
-	"github.com/ontio/ontology-crypto/keypair"
-	"github.com/ontio/ontology-crypto/vrf"
 )
 
 func SignMsg(account *account.Account, msg ConsensusMsg) ([]byte, error) {

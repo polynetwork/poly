@@ -24,6 +24,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/ontio/ontology-crypto/keypair"
+	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
 	"github.com/polynetwork/poly/core/genesis"
@@ -35,8 +37,6 @@ import (
 	"github.com/polynetwork/poly/native/service/utils"
 	nutils "github.com/polynetwork/poly/native/service/utils"
 	tcomn "github.com/polynetwork/poly/txnpool/common"
-	"github.com/ontio/ontology-crypto/keypair"
-	"github.com/ontio/ontology-eventbus/actor"
 )
 
 var txnPid *actor.PID

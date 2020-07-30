@@ -30,11 +30,11 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/ontio/ontology-crypto/keypair"
+	sig "github.com/ontio/ontology-crypto/signature"
 	"github.com/polynetwork/poly/account"
 	"github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/native/states"
-	"github.com/ontio/ontology-crypto/keypair"
-	sig "github.com/ontio/ontology-crypto/signature"
 )
 
 func GetJsonObjectFromFile(filePath string, jsonObject interface{}) error {

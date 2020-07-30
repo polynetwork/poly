@@ -11,18 +11,18 @@ type CosmosEpochSwitchInfo struct {
 	// The height where validators set changed last time. Poly only accept
 	// header and proof signed by new validators. That means the header
 	// can not be lower than this height.
-	Height             int64
+	Height int64
 
 	// Hash of the block at `Height`. Poly don't save the whole header.
 	// So we can identify the content of this block by `BlockHash`.
-	BlockHash          bytes.HexBytes
+	BlockHash bytes.HexBytes
 
 	// The hash of new validators set which used to verify validators set
 	// committed with proof.
 	NextValidatorsHash bytes.HexBytes
 
 	// The cosmos chain-id of this chain basing Cosmos-sdk.
-	ChainID            string
+	ChainID string
 }
 
 func (info *CosmosEpochSwitchInfo) Serialization(sink *common.ZeroCopySink) {

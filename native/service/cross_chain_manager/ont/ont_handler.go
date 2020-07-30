@@ -20,13 +20,13 @@ package ont
 import (
 	"fmt"
 
+	"github.com/ontio/ontology-crypto/keypair"
+	ocommon "github.com/ontio/ontology/common"
+	otypes "github.com/ontio/ontology/core/types"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
 	"github.com/polynetwork/poly/native/service/header_sync/ont"
-	"github.com/ontio/ontology-crypto/keypair"
-	ocommon "github.com/ontio/ontology/common"
-	otypes "github.com/ontio/ontology/core/types"
 )
 
 type ONTHandler struct {

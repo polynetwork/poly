@@ -24,8 +24,8 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	cfg "github.com/polynetwork/poly/common/config"
 	"github.com/pborman/uuid"
+	cfg "github.com/polynetwork/poly/common/config"
 )
 
 type TxHashInfo struct {

@@ -19,8 +19,8 @@
 package types
 
 import (
-	"github.com/polynetwork/poly/common"
 	"github.com/ontio/ontology-crypto/keypair"
+	"github.com/polynetwork/poly/common"
 )
 
 func AddressFromPubKey(pubkey keypair.PublicKey) common.Address {
