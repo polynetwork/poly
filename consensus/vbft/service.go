@@ -1064,16 +1064,6 @@ func (self *Server) processProposalMsg(msg *blockProposalMsg) {
 		log.Errorf("BlockPrposalMessage  check LastConfigBlockNum blocknum:%d,prvLastConfigBlockNum:%d,self LastConfigBlockNum:%d", msg.GetBlockNum(), blk.Info.LastConfigBlockNum, self.LastConfigBlockNum)
 		return
 	}
-	merkleRoot, err := self.blockPool.getExecMerkleRoot(msgBlkNum - 1)
-	if err != nil {
-		log.Errorf("failed to GetExecMerkleRoot: %s,blkNum:%d", err, (msgBlkNum - 1))
-		return
-	}
-	if msg.Block.getPrevBlockMerkleRoot() != merkleRoot {
-		msgMerkleRoot := msg.Block.getPrevBlockMerkleRoot()
-		log.Errorf("BlockPrposalMessage check MerkleRoot blocknum:%d,msg MerkleRoot:%s,self MerkleRoot:%s", msg.GetBlockNum(), msgMerkleRoot.ToHexString(), merkleRoot.ToHexString())
-		return
-	}
 	crossStateRoot, err := self.blockPool.getCrossStatesRoot(msgBlkNum - 1)
 	if err != nil {
 		log.Errorf("failed to getCrossStatesRoot: %s,blkNum:%d", err, (msgBlkNum - 1))

@@ -287,17 +287,12 @@ func (self *Server) constructProposalMsg(blkNum uint32, sysTxs, userTxs []*types
 	if err != nil {
 		return nil, fmt.Errorf("failed to constuct blk: %s", err)
 	}
-	merkleRoot, err := self.blockPool.getExecMerkleRoot(blkNum - 1)
-	if err != nil {
-		return nil, fmt.Errorf("failed to GetExecMerkleRoot: %s,blkNum:%d", err, (blkNum - 1))
-	}
 
 	msg := &blockProposalMsg{
 		Block: &Block{
 			Block:               blk,
 			EmptyBlock:          emptyBlk,
 			Info:                vbftBlkInfo,
-			PrevBlockMerkleRoot: merkleRoot,
 		},
 	}
 
