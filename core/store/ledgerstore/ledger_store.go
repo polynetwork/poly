@@ -39,7 +39,6 @@ import (
 	scom "github.com/polynetwork/poly/core/store/common"
 	"github.com/polynetwork/poly/core/store/overlaydb"
 	"github.com/polynetwork/poly/core/types"
-	"github.com/polynetwork/poly/errors"
 	"github.com/polynetwork/poly/events"
 	"github.com/polynetwork/poly/events/message"
 	"github.com/polynetwork/poly/merkle"
@@ -803,7 +802,7 @@ func (this *LedgerStoreImp) saveBlock(block *types.Block, stateMerkleRoot common
 	}
 
 	if result.MerkleRoot != stateMerkleRoot {
-		return errors.NewErr("state merkle root mismatch!")
+		return fmt.Errorf("state merkle root mismatch!")
 	}
 
 	return this.submitBlock(block, result)

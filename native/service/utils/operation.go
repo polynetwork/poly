@@ -24,7 +24,6 @@ import (
 	"github.com/ontio/ontology-crypto/vrf"
 	"github.com/polynetwork/poly/common"
 	vbftconfig "github.com/polynetwork/poly/consensus/vbft/config"
-	"github.com/polynetwork/poly/errors"
 	"github.com/polynetwork/poly/native"
 )
 
@@ -38,7 +37,7 @@ func ConcatKey(contract common.Address, args ...[]byte) []byte {
 
 func ValidateOwner(native *native.NativeService, address common.Address) error {
 	if native.CheckWitness(address) == false {
-		return errors.NewErr("validateOwner, authentication failed!")
+		return fmt.Errorf("validateOwner, authentication failed!")
 	}
 	return nil
 }

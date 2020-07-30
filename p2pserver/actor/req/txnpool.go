@@ -22,10 +22,8 @@ import (
 	"time"
 
 	"github.com/ontio/ontology-eventbus/actor"
-	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
 	"github.com/polynetwork/poly/core/types"
-	"github.com/polynetwork/poly/errors"
 	p2pcommon "github.com/polynetwork/poly/p2pserver/common"
 	tc "github.com/polynetwork/poly/txnpool/common"
 )
@@ -50,19 +48,4 @@ func AddTransaction(transaction *types.Transaction) {
 		TxResultCh: nil,
 	}
 	txnPoolPid.Tell(txReq)
-}
-
-//get txn according to hash
-func GetTransaction(hash common.Uint256) (*types.Transaction, error) {
-	if txnPoolPid == nil {
-		log.Warn("[p2p]net_server tx pool pid is nil")
-		return nil, errors.NewErr("[p2p]net_server tx pool pid is nil")
-	}
-	future := txnPoolPid.RequestFuture(&tc.GetTxnReq{Hash: hash}, txnPoolReqTimeout)
-	result, err := future.Result()
-	if err != nil {
-		log.Warnf("[p2p]net_server GetTransaction error: %v\n", err)
-		return nil, err
-	}
-	return result.(tc.GetTxnRsp).Txn, nil
 }

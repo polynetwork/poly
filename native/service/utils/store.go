@@ -20,17 +20,17 @@ package utils
 
 import (
 	"bytes"
+	"fmt"
 
 	"github.com/polynetwork/poly/common/serialization"
 	cstates "github.com/polynetwork/poly/core/states"
-	"github.com/polynetwork/poly/errors"
 	"github.com/polynetwork/poly/native"
 )
 
 func GetStorageItem(native *native.NativeService, key []byte) (*cstates.StorageItem, error) {
 	store, err := native.GetCacheDB().Get(key)
 	if err != nil {
-		return nil, errors.NewDetailErr(err, errors.ErrNoCode, "[GetStorageItem] storage error!")
+		return nil, fmt.Errorf("[GetStorageItem] storage error!")
 	}
 	if store == nil {
 		return nil, nil
@@ -38,7 +38,7 @@ func GetStorageItem(native *native.NativeService, key []byte) (*cstates.StorageI
 	item := new(cstates.StorageItem)
 	err = item.Deserialize(bytes.NewBuffer(store))
 	if err != nil {
-		return nil, errors.NewDetailErr(err, errors.ErrNoCode, "[GetStorageItem] instance doesn't StorageItem!")
+		return nil, fmt.Errorf("[GetStorageItem] instance doesn't StorageItem!")
 	}
 	return item, nil
 }
