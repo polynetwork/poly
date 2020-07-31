@@ -22,16 +22,16 @@ package actor
 import (
 	"encoding/hex"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
-	"github.com/polynetwork/poly/core/genesis"
 	scommon "github.com/polynetwork/poly/core/store/common"
 	"github.com/polynetwork/poly/core/types"
-	ontErrors "github.com/polynetwork/poly/errors"
+	polyErrors "github.com/polynetwork/poly/errors"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	"github.com/polynetwork/poly/native/service/governance/relayer_manager"
 	"github.com/polynetwork/poly/native/service/utils"
@@ -51,86 +51,56 @@ func SetTxnPoolPid(actr *actor.PID) {
 }
 
 //append transaction to pool to txpool actor
-func AppendTxToPool(txn *types.Transaction) (ontErrors.ErrCode, string) {
-	//check if registered relayer
-	flag := true
+func AppendTxToPool(txn *types.Transaction) (polyErrors.ErrCode, string) {
+	// Get txn's signature addresses
 	addresses, err := txn.GetSignatureAddresses()
 	if err != nil {
-		return ontErrors.ErrUnknown, err.Error()
+		return polyErrors.ErrUnknown, err.Error()
 	}
 
-	//get consensus node address
-	governanceViewBytes, err := GetStorageItem(utils.NodeManagerContractAddress, []byte(node_manager.GOVERNANCE_VIEW))
-	if err != nil {
-		return ontErrors.ErrUnknown, err.Error()
-	}
-	governanceView := new(node_manager.GovernanceView)
-	err = governanceView.Deserialization(common.NewZeroCopySource(governanceViewBytes))
-	if err != nil {
-		return ontErrors.ErrUnknown, err.Error()
-	}
-	viewBytes := nutils.GetUint32Bytes(governanceView.View)
-	peerPoolMapBytes, err := GetStorageItem(utils.NodeManagerContractAddress, append([]byte(node_manager.PEER_POOL), viewBytes...))
-	if err != nil {
-		return ontErrors.ErrUnknown, err.Error()
-	}
-	peerMap := &node_manager.PeerPoolMap{
-		PeerPoolMap: make(map[string]*node_manager.PeerPoolItem),
-	}
-	err = peerMap.Deserialization(common.NewZeroCopySource(peerPoolMapBytes))
-	if err != nil {
-		return ontErrors.ErrUnknown, err.Error()
-	}
-
-	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
-	if err != nil {
-		return ontErrors.ErrUnknown, err.Error()
-	}
+	permittedAddrMap := make(map[common.Address]bool)
+	// flag is set to true, meaning not any address in the signed addresses is permitted.
+	flag := true
 	for _, address := range addresses {
 		key := append([]byte(relayer_manager.RELAYER), address[:]...)
 		value, err := GetStorageItem(utils.RelayerManagerContractAddress, key)
 		if err != nil {
 			if err != scommon.ErrNotFound {
-				return ontErrors.ErrUnknown, err.Error()
+				return polyErrors.ErrUnknown, err.Error()
 			}
 		}
-		if value != nil || address == operatorAddress {
+		// Check if address is registreed relayer
+		if value != nil {
+			// Here means address is registered relayer
 			flag = false
 			break
 		}
-
-		for k := range peerMap.PeerPoolMap {
-			kb, err := hex.DecodeString(k)
-			if err != nil {
-				return ontErrors.ErrUnknown, err.Error()
-			}
-			pk, err := keypair.DeserializePublicKey(kb)
-			if err != nil {
-				return ontErrors.ErrUnknown, err.Error()
-			}
-			addr := types.AddressFromPubKey(pk)
-			if address == addr {
-				flag = false
-				break
+		// Check if permittedAddrMap is empty
+		if len(permittedAddrMap) == 0 {
+			// If empty, permittedAddrMap will be updated only one time
+			if err := UpdatePermittedAddrMap(permittedAddrMap); err != nil {
+				return polyErrors.ErrUnknown, err.Error()
 			}
 		}
-		if !flag {
+		// Check if address is included in permittedAddrMap, if so, the txn is permitted
+		if val, ok := permittedAddrMap[address]; val && ok {
+			flag = false
 			break
 		}
 	}
 	if flag {
-		return ontErrors.ErrUnknown, "address is not registered"
+		// If flag is true, it means any address within addresses is not permitted address to send tx
+		return polyErrors.ErrUnknown, "address is not registered"
 	}
-
 	if DisableSyncVerifyTx {
 		txReq := &tcomn.TxReq{txn, tcomn.HttpSender, nil}
 		txnPid.Tell(txReq)
-		return ontErrors.ErrNoError, ""
+		return polyErrors.ErrNoError, ""
 	}
 	//add Pre Execute Contract
 	_, err = PreExecuteContract(txn)
 	if err != nil {
-		return ontErrors.ErrUnknown, err.Error()
+		return polyErrors.ErrUnknown, err.Error()
 	}
 	ch := make(chan *tcomn.TxResult, 1)
 	txReq := &tcomn.TxReq{txn, tcomn.HttpSender, ch}
@@ -138,7 +108,7 @@ func AppendTxToPool(txn *types.Transaction) (ontErrors.ErrCode, string) {
 	if msg, ok := <-ch; ok {
 		return msg.Err, msg.Desc
 	}
-	return ontErrors.ErrUnknown, ""
+	return polyErrors.ErrUnknown, ""
 }
 
 //GetTxsFromPool from txpool actor
@@ -205,4 +175,49 @@ func GetTxnCount() ([]uint32, error) {
 		return []uint32{}, errors.New("fail")
 	}
 	return txnCnt.Count, nil
+}
+
+func UpdatePermittedAddrMap(permittedAddrMap map[common.Address]bool) error {
+	//get consensus node address
+	governanceViewBytes, err := GetStorageItem(utils.NodeManagerContractAddress, []byte(node_manager.GOVERNANCE_VIEW))
+	if err != nil {
+		return fmt.Errorf("UpdatePermittedAddrMap, get governance view bytes from storage error: %v", err)
+	}
+	governanceView := new(node_manager.GovernanceView)
+	err = governanceView.Deserialization(common.NewZeroCopySource(governanceViewBytes))
+	if err != nil {
+		return fmt.Errorf("UpdatePermittedAddrMap, governanceView.Deserialization error: %v", err)
+	}
+	viewBytes := nutils.GetUint32Bytes(governanceView.View)
+	peerPoolMapBytes, err := GetStorageItem(utils.NodeManagerContractAddress, append([]byte(node_manager.PEER_POOL), viewBytes...))
+	if err != nil {
+		return fmt.Errorf("UpdatePermittedAddrMap, get peerPoolMap bytes from storage error: %v", err)
+	}
+	peerMap := &node_manager.PeerPoolMap{
+		PeerPoolMap: make(map[string]*node_manager.PeerPoolItem),
+	}
+	err = peerMap.Deserialization(common.NewZeroCopySource(peerPoolMapBytes))
+	if err != nil {
+		return fmt.Errorf("UpdatePermittedAddrMap, peerPoolMap.Deserialization error: %v", err)
+	}
+	// Update permittedAddrMap
+	publicKeys := make([]keypair.PublicKey, 0)
+	for k := range peerMap.PeerPoolMap {
+		kb, err := hex.DecodeString(k)
+		if err != nil {
+			return fmt.Errorf("UpdatePermittedAddrMap, DecodeString PeerPoolMap public key error: %v", err)
+		}
+		pk, err := keypair.DeserializePublicKey(kb)
+		if err != nil {
+			return fmt.Errorf("UpdatePermittedAddrMap, DeserializePublicKey error: %v", err)
+		}
+		permittedAddrMap[types.AddressFromPubKey(pk)] = true
+		publicKeys = append(publicKeys, pk)
+	}
+	operatorAddress, err := types.AddressFromBookkeepers(publicKeys)
+	if err != nil {
+		return fmt.Errorf("UpdatePermittedAddrMap, AddressFromBookkeepers error: %v", err)
+	}
+	permittedAddrMap[operatorAddress] = true
+	return nil
 }
