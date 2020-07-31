@@ -319,3 +319,38 @@ func CheckConsensusSigns(native *native.NativeService, method string, input []by
 		return false, nil
 	}
 }
+
+// Get current epoch operator derived from current epoch consensus book keepers' public keys
+func GetCurConOperator(native *native.NativeService) (common.Address, error) {
+	view, err := GetView(native)
+	if err != nil {
+		return common.ADDRESS_EMPTY, fmt.Errorf("GetCurConOperator, GetView error: %v", err)
+	}
+	//get consensus peer
+	peerPoolMap, err := GetPeerPoolMap(native, view)
+	if err != nil {
+		return common.ADDRESS_EMPTY, fmt.Errorf("GetCurConOperator, GetPeerPoolMap error: %v", err)
+	}
+	if peerPoolMap == nil {
+		return common.ADDRESS_EMPTY, fmt.Errorf("GetCurConOperator, GetPeerPoolMap empty peerPoolMap")
+	}
+	publicKeys := make([]keypair.PublicKey, 0)
+	for key, v := range peerPoolMap.PeerPoolMap {
+		if v.Status == ConsensusStatus {
+			k, err := hex.DecodeString(key)
+			if err != nil {
+				return common.ADDRESS_EMPTY, fmt.Errorf("GetCurConOperator, hex.DecodeString public key error: %v", err)
+			}
+			publicKey, err := keypair.DeserializePublicKey(k)
+			if err != nil {
+				return common.ADDRESS_EMPTY, fmt.Errorf("GetCurConOperator, keypair.DeserializePublicKey error: %v", err)
+			}
+			publicKeys = append(publicKeys, publicKey)
+		}
+	}
+	operator, err := types.AddressFromBookkeepers(publicKeys)
+	if err != nil {
+		return common.ADDRESS_EMPTY, fmt.Errorf("GetCurConOperator, AddressFromBookkeepers error: %v", err)
+	}
+	return operator, nil
+}

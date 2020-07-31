@@ -24,6 +24,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	"golang.org/x/crypto/sha3"
 	"hash"
 	"math/big"
@@ -34,9 +35,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	cty "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/polynetwork/poly/core/genesis"
-	mctypes "github.com/polynetwork/poly/core/types"
-
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	scom "github.com/polynetwork/poly/native/service/header_sync/common"
@@ -65,10 +63,10 @@ func (this *ETHHandler) SyncGenesisHeader(native *native.NativeService) error {
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return fmt.Errorf("ETHHandler SyncGenesisHeader, contract params deserialize error: %v", err)
 	}
-	// get operator from database
-	operatorAddress, err := mctypes.AddressFromBookkeepers(genesis.GenesisBookkeepers)
+	// Get current epoch operator
+	operatorAddress, err := node_manager.GetCurConOperator(native)
 	if err != nil {
-		return err
+		return fmt.Errorf("ETHHandler SyncGenesisHeader, get current consensus operator address error: %v", err)
 	}
 
 	//check witness

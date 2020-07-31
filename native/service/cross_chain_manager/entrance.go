@@ -19,10 +19,9 @@ package cross_chain_manager
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/polynetwork/poly/native/service/governance/node_manager"
 
 	"github.com/polynetwork/poly/common"
-	"github.com/polynetwork/poly/core/genesis"
-	"github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/btc"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
@@ -181,11 +180,12 @@ func BlackChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("BlackChain, contract params deserialize error: %v", err)
 	}
 
-	// get operator from database
-	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
+	// Get current epoch operator
+	operatorAddress, err := node_manager.GetCurConOperator(native)
 	if err != nil {
-		return utils.BYTE_FALSE, err
+		return utils.BYTE_FALSE, fmt.Errorf("BlackChain, get current consensus operator address error: %v", err)
 	}
+
 	//check witness
 	err = utils.ValidateOwner(native, operatorAddress)
 	if err != nil {
@@ -201,11 +201,10 @@ func WhiteChain(native *native.NativeService) ([]byte, error) {
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("WhiteChain, contract params deserialize error: %v", err)
 	}
-
-	// get operator from database
-	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
+	// Get current epoch operator
+	operatorAddress, err := node_manager.GetCurConOperator(native)
 	if err != nil {
-		return utils.BYTE_FALSE, err
+		return utils.BYTE_FALSE, fmt.Errorf("WhiteChain, get current consensus operator address error: %v", err)
 	}
 	//check witness
 	err = utils.ValidateOwner(native, operatorAddress)
