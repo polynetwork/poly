@@ -187,9 +187,9 @@ func RegisterCandidate(native *native.NativeService) ([]byte, error) {
 	}
 
 	//check if applied
-	peer, err := GetPeeApply(native, params.PeerPubkey)
+	peer, err := GetPeerApply(native, params.PeerPubkey)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("registerCandidate, GetPeeApply error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("registerCandidate, GetPeerApply error: %v", err)
 	}
 	if peer != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("registerCandidate, peer already applied")
@@ -238,9 +238,9 @@ func UnRegisterCandidate(native *native.NativeService) ([]byte, error) {
 	}
 
 	//check if applied
-	peer, err := GetPeeApply(native, params.PeerPubkey)
+	peer, err := GetPeerApply(native, params.PeerPubkey)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("unRegisterCandidate, GetPeeApply error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("unRegisterCandidate, GetPeerApply error: %v", err)
 	}
 	if peer == nil {
 		return utils.BYTE_FALSE, fmt.Errorf("unRegisterCandidate, peer is not applied")
@@ -278,9 +278,9 @@ func ApproveCandidate(native *native.NativeService) ([]byte, error) {
 	}
 
 	//check if applied
-	peer, err := GetPeeApply(native, params.PeerPubkey)
+	peer, err := GetPeerApply(native, params.PeerPubkey)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("approveCandidate, GetPeeApply error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("approveCandidate, GetPeerApply error: %v", err)
 	}
 	if peer == nil {
 		return utils.BYTE_FALSE, fmt.Errorf("approveCandidate, peer is not applied")

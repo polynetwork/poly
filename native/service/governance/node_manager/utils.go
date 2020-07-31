@@ -33,26 +33,26 @@ import (
 	"github.com/polynetwork/poly/native/service/utils"
 )
 
-func GetPeeApply(native *native.NativeService, peerPubkey string) (*RegisterPeerParam, error) {
+func GetPeerApply(native *native.NativeService, peerPubkey string) (*RegisterPeerParam, error) {
 	contract := utils.NodeManagerContractAddress
 	peerPubkeyPrefix, err := hex.DecodeString(peerPubkey)
 	if err != nil {
-		return nil, fmt.Errorf("GetPeeApply, peerPubkey format error: %v", err)
+		return nil, fmt.Errorf("GetPeerApply, peerPubkey format error: %v", err)
 	}
 	peerBytes, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(PEER_APPLY), peerPubkeyPrefix))
 	if err != nil {
-		return nil, fmt.Errorf("GetPeeApply, get peer error: %v", err)
+		return nil, fmt.Errorf("GetPeerApply, get peer error: %v", err)
 	}
 	if peerBytes == nil {
 		return nil, nil
 	}
 	peerStore, err := cstates.GetValueFromRawStorageItem(peerBytes)
 	if err != nil {
-		return nil, fmt.Errorf("GetPeeApply, deserialize from raw storage item err:%v", err)
+		return nil, fmt.Errorf("GetPeerApply, deserialize from raw storage item err:%v", err)
 	}
 	peer := new(RegisterPeerParam)
 	if err := peer.Deserialization(common.NewZeroCopySource(peerStore)); err != nil {
-		return nil, fmt.Errorf("GetPeeApply, deserialize peer error: %v", err)
+		return nil, fmt.Errorf("GetPeerApply, deserialize peer error: %v", err)
 	}
 	return peer, nil
 }
