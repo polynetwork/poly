@@ -80,7 +80,7 @@ const (
 	NETWORK_NAME_TEST_NET = "test"
 	NETWORK_NAME_SOLO_NET = "testmode"
 	MAINNET_CHAIN_ID      = 0
-	TESTNET_CHAIN_ID      = common.MAX_UINT64
+	TESTNET_CHAIN_ID      = common.MAX_INT64
 )
 
 var NETWORK_MAGIC = map[uint32]uint32{
