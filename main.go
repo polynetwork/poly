@@ -64,10 +64,10 @@ import (
 
 func setupAPP() *cli.App {
 	app := cli.NewApp()
-	app.Usage = "Ontology CLI"
+	app.Usage = "Poly CLI"
 	app.Action = startOntology
 	app.Version = config.Version
-	app.Copyright = "Copyright in 2018 The Ontology Authors"
+	app.Copyright = "Copyright in 2020 The Poly Authors"
 	app.Commands = []cli.Command{
 		cmd.AccountCommand,
 		cmd.InfoCommand,
@@ -140,7 +140,7 @@ func main() {
 func startOntology(ctx *cli.Context) {
 	initLog(ctx)
 
-	log.Infof("ontology version %s", config.Version)
+	log.Infof("poly version %s", config.Version)
 
 	setMaxOpenFiles()
 
