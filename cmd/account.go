@@ -53,7 +53,7 @@ type curveInfo struct {
 }
 
 var curveMap = map[string]curveInfo{
-	"":  {"P-256", keypair.P256},
+	"":  {"secp256k1", keypair.SECP256K1},
 	"1": {"P-224", keypair.P224},
 	"2": {"P-256", keypair.P256},
 	"3": {"P-384", keypair.P384},
