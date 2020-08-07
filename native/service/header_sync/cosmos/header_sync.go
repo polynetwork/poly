@@ -23,9 +23,8 @@ import (
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
-	"github.com/polynetwork/poly/core/genesis"
-	mctypes "github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/native"
+	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	hscommon "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/utils"
 	"github.com/tendermint/tendermint/crypto"
@@ -57,12 +56,12 @@ func newCDC() *codec.Codec {
 func (this *CosmosHandler) SyncGenesisHeader(native *native.NativeService) error {
 	param := new(hscommon.SyncGenesisHeaderParam)
 	if err := param.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
-		return fmt.Errorf("SyncGenesisHeader, contract params deserialize error: %v", err)
+		return fmt.Errorf("CosmosHandler SyncGenesisHeader, contract params deserialize error: %v", err)
 	}
-	// get operator from database
-	operatorAddress, err := mctypes.AddressFromBookkeepers(genesis.GenesisBookkeepers)
+	// Get current epoch operator
+	operatorAddress, err := node_manager.GetCurConOperator(native)
 	if err != nil {
-		return err
+		return fmt.Errorf("CosmosHandler SyncGenesisHeader, get current consensus operator address error: %v", err)
 	}
 	//check witness
 	err = utils.ValidateOwner(native, operatorAddress)

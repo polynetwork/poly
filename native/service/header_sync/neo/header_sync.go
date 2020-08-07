@@ -20,11 +20,10 @@ package neo
 import (
 	"fmt"
 	"github.com/polynetwork/poly/native"
+	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	hscommon "github.com/polynetwork/poly/native/service/header_sync/common"
 
 	"github.com/polynetwork/poly/common"
-	"github.com/polynetwork/poly/core/genesis"
-	"github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/native/service/utils"
 )
 
@@ -38,22 +37,22 @@ func NewNEOHandler() *NEOHandler {
 func (this *NEOHandler) SyncGenesisHeader(native *native.NativeService) error {
 	params := new(hscommon.SyncGenesisHeaderParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
-		return fmt.Errorf("SyncGenesisHeader, contract params deserialize error: %v", err)
+		return fmt.Errorf("NeoHandler SyncGenesisHeader, contract params deserialize error: %v", err)
 	}
-	// get operator from database
-	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
+	// Get current epoch operator
+	operatorAddress, err := node_manager.GetCurConOperator(native)
 	if err != nil {
-		return err
+		return fmt.Errorf("NeoHandler SyncGenesisHeader, get current consensus operator address error: %v", err)
 	}
 	//check witness
 	err = utils.ValidateOwner(native, operatorAddress)
 	if err != nil {
-		return fmt.Errorf("SyncGenesisHeader, checkWitness error: %v", err)
+		return fmt.Errorf("NeoHandler SyncGenesisHeader, checkWitness error: %v", err)
 	}
 	// Deserialize neo block header
 	header := new(NeoBlockHeader)
 	if err := header.Deserialization(common.NewZeroCopySource(params.GenesisHeader)); err != nil {
-		return fmt.Errorf("SyncGenesisHeader, deserialize header err: %v", err)
+		return fmt.Errorf("NeoHandler SyncGenesisHeader, deserialize header err: %v", err)
 	}
 	if neoConsensus, _ := getConsensusValByChainId(native, params.ChainID); neoConsensus == nil {
 		// Put NeoConsensus.NextConsensus into storage
@@ -62,7 +61,7 @@ func (this *NEOHandler) SyncGenesisHeader(native *native.NativeService) error {
 			Height:        header.Index,
 			NextConsensus: header.NextConsensus,
 		}); err != nil {
-			return fmt.Errorf("SyncGenesisHeader, update ConsensusPeer error: %v", err)
+			return fmt.Errorf("NeoHandler SyncGenesisHeader, update ConsensusPeer error: %v", err)
 		}
 	}
 	return nil

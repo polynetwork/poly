@@ -55,9 +55,11 @@ func RegisterRelayer(native *native.NativeService) ([]byte, error) {
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, contract params deserialize error: %v", err)
 	}
-
-	err := putRelayerApply(native, params)
-	if err != nil {
+	//check witness
+	if err := utils.ValidateOwner(native, params.Address); err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, checkWitness: %s, error: %v", params.Address.ToBase58(), err)
+	}
+	if err := putRelayerApply(native, params); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRelayer, putRelayer error: %v", err)
 	}
 	return utils.BYTE_TRUE, nil
@@ -109,7 +111,10 @@ func RemoveRelayer(native *native.NativeService) ([]byte, error) {
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RemoveRelayer, contract params deserialize error: %v", err)
 	}
-
+	//check witness
+	if err := utils.ValidateOwner(native, params.Address); err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RemoveRelayer, checkWitness: %s, error: %v", params.Address.ToBase58(), err)
+	}
 	err := putRelayerRemove(native, params)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RemoveRelayer, putRelayer error: %v", err)

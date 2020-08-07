@@ -22,6 +22,7 @@ import "math"
 
 const (
 	MAX_UINT64 = math.MaxUint64
+	MAX_INT64  = math.MaxInt64
 )
 
 func SafeSub(x, y uint64) (uint64, bool) {

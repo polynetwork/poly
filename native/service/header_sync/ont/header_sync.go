@@ -19,13 +19,12 @@ package ont
 
 import (
 	"fmt"
+	"github.com/polynetwork/poly/native/service/governance/node_manager"
 
 	"github.com/ontio/ontology-crypto/keypair"
 	ocommon "github.com/ontio/ontology/common"
 	otypes "github.com/ontio/ontology/core/types"
 	"github.com/polynetwork/poly/common"
-	"github.com/polynetwork/poly/core/genesis"
-	"github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/native"
 	hscommon "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/utils"
@@ -41,29 +40,29 @@ func NewONTHandler() *ONTHandler {
 func (this *ONTHandler) SyncGenesisHeader(native *native.NativeService) error {
 	params := new(hscommon.SyncGenesisHeaderParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
-		return fmt.Errorf("SyncGenesisHeader, contract params deserialize error: %v", err)
+		return fmt.Errorf("ONTHandler SyncGenesisHeader, contract params deserialize error: %v", err)
 	}
 
-	// get operator from database
-	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
+	// Get current epoch operator
+	operatorAddress, err := node_manager.GetCurConOperator(native)
 	if err != nil {
-		return err
+		return fmt.Errorf("ONTHandler SyncGenesisHeader, get current consensus operator address error: %v", err)
 	}
 
 	//check witness
 	err = utils.ValidateOwner(native, operatorAddress)
 	if err != nil {
-		return fmt.Errorf("SyncGenesisHeader, checkWitness error: %v", err)
+		return fmt.Errorf("ONTHandler SyncGenesisHeader, checkWitness error: %v", err)
 	}
 
 	header, err := otypes.HeaderFromRawBytes(params.GenesisHeader)
 	if err != nil {
-		return fmt.Errorf("SyncGenesisHeader, deserialize header err: %v", err)
+		return fmt.Errorf("ONTHandler SyncGenesisHeader, deserialize header err: %v", err)
 	}
 	//block header storage
 	err = PutBlockHeader(native, params.ChainID, header)
 	if err != nil {
-		return fmt.Errorf("SyncGenesisHeader, put blockHeader error: %v", err)
+		return fmt.Errorf("ONTHandler SyncGenesisHeader, put blockHeader error: %v", err)
 	}
 
 	//consensus node pk storage

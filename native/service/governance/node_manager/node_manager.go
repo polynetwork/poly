@@ -24,7 +24,6 @@ import (
 	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/core/genesis"
 	cstates "github.com/polynetwork/poly/core/states"
-	"github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/event"
 	"github.com/polynetwork/poly/native/service/utils"
@@ -187,9 +186,9 @@ func RegisterCandidate(native *native.NativeService) ([]byte, error) {
 	}
 
 	//check if applied
-	peer, err := GetPeeApply(native, params.PeerPubkey)
+	peer, err := GetPeerApply(native, params.PeerPubkey)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("registerCandidate, GetPeeApply error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("registerCandidate, GetPeerApply error: %v", err)
 	}
 	if peer != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("registerCandidate, peer already applied")
@@ -238,9 +237,9 @@ func UnRegisterCandidate(native *native.NativeService) ([]byte, error) {
 	}
 
 	//check if applied
-	peer, err := GetPeeApply(native, params.PeerPubkey)
+	peer, err := GetPeerApply(native, params.PeerPubkey)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("unRegisterCandidate, GetPeeApply error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("unRegisterCandidate, GetPeerApply error: %v", err)
 	}
 	if peer == nil {
 		return utils.BYTE_FALSE, fmt.Errorf("unRegisterCandidate, peer is not applied")
@@ -278,9 +277,9 @@ func ApproveCandidate(native *native.NativeService) ([]byte, error) {
 	}
 
 	//check if applied
-	peer, err := GetPeeApply(native, params.PeerPubkey)
+	peer, err := GetPeerApply(native, params.PeerPubkey)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("approveCandidate, GetPeeApply error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("approveCandidate, GetPeerApply error: %v", err)
 	}
 	if peer == nil {
 		return utils.BYTE_FALSE, fmt.Errorf("approveCandidate, peer is not applied")
@@ -580,10 +579,10 @@ func CommitDpos(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("commitDpos, get GovernanceView error: %v", err)
 	}
 
-	// get operator from database
-	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
+	// Get current epoch operator
+	operatorAddress, err := GetCurConOperator(native)
 	if err != nil {
-		return utils.BYTE_FALSE, err
+		return utils.BYTE_FALSE, fmt.Errorf("commitDPos, get current consensus operator address error: %v", err)
 	}
 
 	//check witness
@@ -616,10 +615,10 @@ func UpdateConfig(native *native.NativeService) ([]byte, error) {
 	sink := common.NewZeroCopySink(nil)
 	params.Configuration.Serialization(sink)
 
-	// get operator from database
-	operatorAddress, err := types.AddressFromBookkeepers(genesis.GenesisBookkeepers)
+	// Get current epoch operator
+	operatorAddress, err := GetCurConOperator(native)
 	if err != nil {
-		return utils.BYTE_FALSE, err
+		return utils.BYTE_FALSE, fmt.Errorf("updateConfig, get current consensus operator address error: %v", err)
 	}
 	//check witness
 	err = utils.ValidateOwner(native, operatorAddress)

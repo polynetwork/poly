@@ -33,26 +33,26 @@ import (
 	"github.com/polynetwork/poly/native/service/utils"
 )
 
-func GetPeeApply(native *native.NativeService, peerPubkey string) (*RegisterPeerParam, error) {
+func GetPeerApply(native *native.NativeService, peerPubkey string) (*RegisterPeerParam, error) {
 	contract := utils.NodeManagerContractAddress
 	peerPubkeyPrefix, err := hex.DecodeString(peerPubkey)
 	if err != nil {
-		return nil, fmt.Errorf("GetPeeApply, peerPubkey format error: %v", err)
+		return nil, fmt.Errorf("GetPeerApply, peerPubkey format error: %v", err)
 	}
 	peerBytes, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(PEER_APPLY), peerPubkeyPrefix))
 	if err != nil {
-		return nil, fmt.Errorf("GetPeeApply, get peer error: %v", err)
+		return nil, fmt.Errorf("GetPeerApply, get peer error: %v", err)
 	}
 	if peerBytes == nil {
 		return nil, nil
 	}
 	peerStore, err := cstates.GetValueFromRawStorageItem(peerBytes)
 	if err != nil {
-		return nil, fmt.Errorf("GetPeeApply, deserialize from raw storage item err:%v", err)
+		return nil, fmt.Errorf("GetPeerApply, deserialize from raw storage item err:%v", err)
 	}
 	peer := new(RegisterPeerParam)
 	if err := peer.Deserialization(common.NewZeroCopySource(peerStore)); err != nil {
-		return nil, fmt.Errorf("GetPeeApply, deserialize peer error: %v", err)
+		return nil, fmt.Errorf("GetPeerApply, deserialize peer error: %v", err)
 	}
 	return peer, nil
 }
@@ -206,10 +206,8 @@ func GetGovernanceView(native *native.NativeService) (*GovernanceView, error) {
 	if err != nil {
 		return nil, fmt.Errorf("getGovernanceView, get governanceViewBytes error: %v", err)
 	}
-	governanceView := new(GovernanceView)
-	if governanceViewBytes == nil {
-		return nil, fmt.Errorf("getGovernanceView, get nil governanceViewBytes")
-	} else {
+	if governanceViewBytes != nil {
+		governanceView := new(GovernanceView)
 		value, err := cstates.GetValueFromRawStorageItem(governanceViewBytes)
 		if err != nil {
 			return nil, fmt.Errorf("getGovernanceView, deserialize from raw storage item err:%v", err)
@@ -217,8 +215,9 @@ func GetGovernanceView(native *native.NativeService) (*GovernanceView, error) {
 		if err := governanceView.Deserialization(common.NewZeroCopySource(value)); err != nil {
 			return nil, fmt.Errorf("getGovernanceView, deserialize governanceView error: %v", err)
 		}
+		return governanceView, nil
 	}
-	return governanceView, nil
+	return nil, fmt.Errorf("getGovernanceView, get nil governanceViewBytes")
 }
 
 func putGovernanceView(native *native.NativeService, governanceView *GovernanceView) {
@@ -319,4 +318,39 @@ func CheckConsensusSigns(native *native.NativeService, method string, input []by
 		putConsensusSigns(native, key, consensusSigns)
 		return false, nil
 	}
+}
+
+// Get current epoch operator derived from current epoch consensus book keepers' public keys
+func GetCurConOperator(native *native.NativeService) (common.Address, error) {
+	view, err := GetView(native)
+	if err != nil {
+		return common.ADDRESS_EMPTY, fmt.Errorf("GetCurConOperator, GetView error: %v", err)
+	}
+	//get consensus peer
+	peerPoolMap, err := GetPeerPoolMap(native, view)
+	if err != nil {
+		return common.ADDRESS_EMPTY, fmt.Errorf("GetCurConOperator, GetPeerPoolMap error: %v", err)
+	}
+	if peerPoolMap == nil {
+		return common.ADDRESS_EMPTY, fmt.Errorf("GetCurConOperator, GetPeerPoolMap empty peerPoolMap")
+	}
+	publicKeys := make([]keypair.PublicKey, 0)
+	for key, v := range peerPoolMap.PeerPoolMap {
+		if v.Status == ConsensusStatus {
+			k, err := hex.DecodeString(key)
+			if err != nil {
+				return common.ADDRESS_EMPTY, fmt.Errorf("GetCurConOperator, hex.DecodeString public key error: %v", err)
+			}
+			publicKey, err := keypair.DeserializePublicKey(k)
+			if err != nil {
+				return common.ADDRESS_EMPTY, fmt.Errorf("GetCurConOperator, keypair.DeserializePublicKey error: %v", err)
+			}
+			publicKeys = append(publicKeys, publicKey)
+		}
+	}
+	operator, err := types.AddressFromBookkeepers(publicKeys)
+	if err != nil {
+		return common.ADDRESS_EMPTY, fmt.Errorf("GetCurConOperator, AddressFromBookkeepers error: %v", err)
+	}
+	return operator, nil
 }
