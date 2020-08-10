@@ -442,7 +442,7 @@ func waitToExit() {
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
 	go func() {
 		for sig := range sc {
-			log.Infof("Ontology received exit signal:%v.", sig.String())
+			log.Infof("Poly received exit signal:%v.", sig.String())
 			close(exit)
 			break
 		}
