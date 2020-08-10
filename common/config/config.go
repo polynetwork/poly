@@ -214,8 +214,8 @@ var MainNetConfig = &GenesisConfig{
 			},
 			{
 				Index:      4,
-				PeerPubkey: "120502e500d4ca6385cc64ecb10fa748cbda758090a687a61a179ef2a2e49b96a8b081",
-				Address:    "AGBuAd3ApxCQ5jtgNrLimGV9Lz2dyPBKj2",
+				PeerPubkey: "12050229e0d1c5b2ae838930ae1ad861ddd3d0745d1c7f142492cabd02b291d2c95c1d",
+				Address:    "AZc4tbS4Q2p74jxMYqFGXB6Ky4Ap7gxE7Z",
 			},
 		},
 	},
