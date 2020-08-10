@@ -184,11 +184,10 @@ var PolarisConfig = &GenesisConfig{
 
 var MainNetConfig = &GenesisConfig{
 	SeedList: []string{
-		"seed1.poly.network:20338",
-		"seed2.poly.network:20338",
-		"seed3.poly.network:20338",
-		"seed4.poly.network:20338",
-		"seed5.poly.network:20338"},
+		"seed.poly.network:20338",
+		"poly.ont.io:20338",
+		"poly.ngd.network:20338",
+		"poly-1.switcheo.network:20338"},
 	ConsensusType: CONSENSUS_TYPE_VBFT,
 	VBFT: &VBFTConfig{
 		BlockMsgDelay:        10000,
@@ -200,38 +199,23 @@ var MainNetConfig = &GenesisConfig{
 		Peers: []*VBFTPeerInfo{
 			{
 				Index:      1,
-				PeerPubkey: "03348c8fe64e1defb408676b6e320038bd2e592c802e27c3d7e88e68270076c2f7",
-				Address:    "AZavFr7sQ4em2NmqWDjLMY34tHMQzATWgx",
+				PeerPubkey: "12050309c6475ce07577ab72a1f96c263e5030cb53a843b00ca1238a093d9dcb183e2f",
+				Address:    "ARJrYgcF36uhE2RwDrxucXMrCWuTWWd77x",
 			},
 			{
 				Index:      2,
-				PeerPubkey: "03afd920a3b4ce2e7175a32c0d092153d1a11ef5e0dcc14e71c85101b95518d5d7",
-				Address:    "AM9jHMV7xY4HWH2dWmzyxrtnbi6ErNt7oL",
+				PeerPubkey: "1205032bed55e8c4d9cbc50657ff5909ee51dc394a92aad911c36bace83c4d63540794",
+				Address:    "AeMwacPLLSSuUyDcwiqFMLRhbmmWmYQxn1",
 			},
 			{
 				Index:      3,
-				PeerPubkey: "03e818b65a66d983a99497e06c6552ee5067229e85ba1cec60c5477dc3d568ed43",
-				Address:    "ATECwFPNRZFydFR1yUjb6RTLfVcKGKWRmp",
+				PeerPubkey: "120502e68a6e54bdfa0af47bd18465f4352f5151dc729c61a7399909f1cd1c6d816c02",
+				Address:    "APDrR6TBQ6bN6AL9QVdXadNo9inqhoy3sp",
 			},
 			{
 				Index:      4,
-				PeerPubkey: "02375e44e500f9cfe8bd2f4afa4a016a8a902567996c919b9d1ce4f5d4f930f145",
-				Address:    "AKMxTuHQtt5YspXNPwkQNP5ZY66c4LY5BR",
-			},
-			{
-				Index:      5,
-				PeerPubkey: "03af040c09af5e06cf966f73fc99e8f4372f1510fe6e4376824452a99b85695a9c",
-				Address:    "AT4fXp36Ui22Lbh5ZJUCRBFDJ7axkLyUFM",
-			},
-			{
-				Index:      6,
-				PeerPubkey: "034ee2a4368e999fc7c04e7e3a9073162d47712382f1690d6a67e7e1c475cd0ff3",
-				Address:    "ANLRokqieUtrUMave66FcNy2cxV7Whf4UN",
-			},
-			{
-				Index:      7,
-				PeerPubkey: "0327f9e0fb3b894027c52caf3d31d9ac5f676d3cf892c933ac107ed7447fb6e65b",
-				Address:    "AVRD9QmkYNq8n8DXc9AqpZnUEYhjg1aq5L",
+				PeerPubkey: "120502e500d4ca6385cc64ecb10fa748cbda758090a687a61a179ef2a2e49b96a8b081",
+				Address:    "AGBuAd3ApxCQ5jtgNrLimGV9Lz2dyPBKj2",
 			},
 		},
 	},
