@@ -202,7 +202,7 @@ func MerkleProve(path []byte, root []byte) ([]byte, error) {
 		return nil, errors.New("read bytes error")
 	}
 	hash := HashLeaf(value)
-	size := int((source.Size() - source.Pos()) / common.UINT256_SIZE)
+	size := int((source.Size() - source.Pos()) / (common.UINT256_SIZE + 1))
 	for i := 0; i < size; i++ {
 		f, eof := source.NextByte()
 		if eof {
