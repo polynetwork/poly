@@ -18,12 +18,15 @@
 package common
 
 import (
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/event"
 	"github.com/polynetwork/poly/native/service/utils"
+	"github.com/tjfoc/gmsm/sm2"
 )
 
 const (
@@ -38,10 +41,14 @@ const (
 	KEY_HEIGHTS                 = "keyHeights"
 	ETH_CACHE                   = "ethCaches"
 	GENESIS_HEADER              = "genesisHeader"
+	ROOT_CERT                   = "rootCert"
+	MULTI_ROOT_CERT             = "rootCerts"
 	MAIN_CHAIN                  = "mainChain"
 	EPOCH_SWITCH                = "epochSwitch"
 	SYNC_HEADER_NAME            = "syncHeader"
 	SYNC_CROSSCHAIN_MSG         = "syncCrossChainMsg"
+	SYNC_CERT                   = "syncCertificate"
+	LATEST_HEIGHT_IN_PROCESSING = "latestHeightInProcessing"
 )
 
 type HeaderSyncHandler interface {
@@ -180,4 +187,148 @@ func NotifyPutCrossChainMsg(native *native.NativeService, chainID uint64, height
 			ContractAddress: utils.HeaderSyncContractAddress,
 			States:          []interface{}{SYNC_CROSSCHAIN_MSG, chainID, height, native.GetHeight()},
 		})
+}
+
+func NotifyPutCertificate(native *native.NativeService, chainID uint64, rawCert []byte) {
+	if !config.DefConfig.Common.EnableEventLog {
+		return
+	}
+	native.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.HeaderSyncContractAddress,
+			States:          []interface{}{SYNC_CERT, chainID, hex.EncodeToString(rawCert)},
+		})
+}
+
+type MultiCertTrustChain []*CertTrustChain
+
+func (multi MultiCertTrustChain) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteUint16(uint16(len(multi)))
+	for _, v := range multi {
+		v.Serialization(sink)
+	}
+}
+
+func (multi MultiCertTrustChain) Deserialization(source *common.ZeroCopySource) (err error) {
+	l, eof := source.NextUint16()
+	if eof {
+		return fmt.Errorf("failed to deserialize length")
+	}
+
+	for cnt := uint16(0); cnt < l; cnt++ {
+		set := &CertTrustChain{}
+		if err := set.Deserialization(source); err != nil {
+			return fmt.Errorf("failed to deserialize No.%d cert trust chain: %v", cnt, err)
+		}
+		multi = append(multi, set)
+	}
+
+	return nil
+}
+
+func (multi MultiCertTrustChain) ValidateAll(ns *native.NativeService) error {
+	for i, v := range multi {
+		if err := v.Validate(ns); err != nil {
+			return fmt.Errorf("No.%d cert trust chain validate failed: %v", i, err)
+		}
+	}
+	return nil
+}
+
+type CertTrustChain struct {
+	Certs []*sm2.Certificate
+}
+
+func (set *CertTrustChain) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteUint16(uint16(len(set.Certs)))
+	for _, v := range set.Certs {
+		sink.WriteVarBytes(v.Raw)
+	}
+}
+
+func (set *CertTrustChain) Deserialization(source *common.ZeroCopySource) (err error) {
+	l, eof := source.NextUint16()
+	if eof {
+		return fmt.Errorf("failed to deserialize length")
+	}
+	set.Certs = make([]*sm2.Certificate, l)
+	for i := uint16(0); i < l; i++ {
+		raw, eof := source.NextVarBytes()
+		if eof {
+			return fmt.Errorf("failed to get raw bytes for No.%d cert", i)
+		}
+		set.Certs[i], err = sm2.ParseCertificate(raw)
+		if err != nil {
+			return fmt.Errorf("failed to parse cert for No.%d: %v", i, err)
+		}
+	}
+	return nil
+}
+
+func (set *CertTrustChain) Validate(ns *native.NativeService) error {
+	now := ns.GetBlockTime()
+	for i, c := range set.Certs {
+		//if c.BasicConstraintsValid {
+		//	if !c.IsCA {
+		//		return fmt.Errorf("No.%d cert is not CA", i)
+		//	}
+		//}
+		if now.Before(c.NotBefore) || now.After(c.NotAfter) {
+			return fmt.Errorf("wrong time for no.%d CA: "+
+				"(start: %d, end: %d, block_time: %d)",
+				i, c.NotBefore.Unix(), c.NotAfter.Unix(), now.Unix())
+		}
+	}
+
+	return nil
+}
+
+func (set *CertTrustChain) ValidCAs(ns *native.NativeService) *CertTrustChain {
+	newSet := &CertTrustChain{
+		Certs: make([]*sm2.Certificate, 0),
+	}
+	now := ns.GetBlockTime()
+	for _, c := range set.Certs {
+		//if c.BasicConstraintsValid {
+		//	if !c.IsCA {
+		//		continue
+		//	}
+		//}
+		if now.Before(c.NotBefore) || now.After(c.NotAfter) {
+			continue
+		}
+		newSet.Certs = append(newSet.Certs, c)
+	}
+
+	return newSet
+}
+
+func (set *CertTrustChain) CheckSigWithRootCert(root *sm2.Certificate, signed, sig []byte) error {
+	for i, c := range set.Certs {
+		if err := c.CheckSignatureFrom(root); err != nil {
+			return fmt.Errorf("failed to check sig for No.%d cert from parent: %v", i, err)
+		}
+		root = c
+	}
+	if err := root.CheckSignature(root.SignatureAlgorithm, signed, sig); err != nil {
+		return fmt.Errorf("failed to check the signature: %v", err)
+	}
+	return nil
+}
+
+func (set *CertTrustChain) CheckSig(signed, sig []byte) error {
+	if len(set.Certs) < 1 {
+		return errors.New("no cert in chain")
+	}
+	root := set.Certs[0]
+	for i, c := range set.Certs[1:] {
+		if err := c.CheckSignatureFrom(root); err != nil {
+			return fmt.Errorf("failed to check sig for No.%d cert from parent: %v", i, err)
+		}
+		root = c
+	}
+	if err := root.CheckSignature(root.SignatureAlgorithm, signed, sig); err != nil {
+		return fmt.Errorf("failed to check the signature: %v", err)
+	}
+	return nil
 }

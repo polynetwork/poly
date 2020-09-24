@@ -91,7 +91,8 @@ func NewNative(args []byte, tx *types.Transaction, db *storage.CacheDB) *native.
 		store, _ := leveldbstore.NewMemLevelDBStore()
 		db = storage.NewCacheDB(overlaydb.NewOverlayDB(store))
 	}
-	return native.NewNativeService(db, tx, 0, 0, common.Uint256{0}, 0, args, false)
+	ns, _ := native.NewNativeService(db, tx, 0, 0, common.Uint256{0}, 0, args, false)
+	return ns
 }
 
 func getLatestHeight(native *native.NativeService) uint64 {

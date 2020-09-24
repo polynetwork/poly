@@ -19,6 +19,8 @@ package header_sync
 
 import (
 	"fmt"
+	"github.com/polynetwork/poly/native/service/header_sync/fabric"
+	"github.com/polynetwork/poly/native/service/header_sync/fisco"
 
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
@@ -57,8 +59,12 @@ func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
 		return neo.NewNEOHandler(), nil
 	case utils.COSMOS_ROUTER:
 		return cosmos.NewCosmosHandler(), nil
+	case utils.FISCO_ROUTER:
+		return fisco.NewFiscoHandler(), nil
+	case utils.FABRIC_ROUTER:
+		return fabric.NewFabricHandler(), nil
 	default:
-		return nil, fmt.Errorf("not a supported router:%d", router)
+		return nil, fmt.Errorf("not a supported router: %d", router)
 	}
 }
 
