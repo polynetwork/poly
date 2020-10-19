@@ -43,4 +43,6 @@ var (
 	ONT_ROUTER    = uint64(3)
 	NEO_ROUTER    = uint64(4)
 	COSMOS_ROUTER = uint64(5)
+	FISCO_ROUTER  = uint64(6)
+	FABRIC_ROUTER = uint64(7)
 )
