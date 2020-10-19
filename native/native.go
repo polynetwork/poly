@@ -26,6 +26,7 @@ import (
 	"github.com/polynetwork/poly/native/event"
 	"github.com/polynetwork/poly/native/states"
 	"github.com/polynetwork/poly/native/storage"
+	"time"
 )
 
 type (
@@ -220,4 +221,8 @@ func (this *NativeService) GetNotify() []*event.NotifyEventInfo {
 
 func (this *NativeService) GetCrossHashes() []common.Uint256 {
 	return this.crossHashes
+}
+
+func (this *NativeService) GetBlockTime() time.Time {
+	return time.Unix(int64(this.time), 0)
 }

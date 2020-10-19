@@ -1,0 +1,129 @@
+package fisco
+
+import (
+	"encoding/pem"
+	"github.com/ontio/ontology-crypto/keypair"
+	"github.com/polynetwork/poly/account"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/consensus/vbft/config"
+	"github.com/polynetwork/poly/core/states"
+	"github.com/polynetwork/poly/core/store/leveldbstore"
+	"github.com/polynetwork/poly/core/store/overlaydb"
+	"github.com/polynetwork/poly/core/types"
+	"github.com/polynetwork/poly/native"
+	"github.com/polynetwork/poly/native/service/governance/node_manager"
+	common2 "github.com/polynetwork/poly/native/service/header_sync/common"
+	"github.com/polynetwork/poly/native/service/utils"
+	"github.com/polynetwork/poly/native/storage"
+	"github.com/stretchr/testify/assert"
+	"testing"
+)
+
+var (
+	acct = account.NewAccount("")
+
+	getNativeFunc = func(args []byte, db *storage.CacheDB) *native.NativeService {
+		if db == nil {
+			store, _ := leveldbstore.NewMemLevelDBStore()
+			db = storage.NewCacheDB(overlaydb.NewOverlayDB(store))
+			sink := common.NewZeroCopySink(nil)
+			view := &node_manager.GovernanceView{
+				TxHash: common.UINT256_EMPTY,
+				Height: 0,
+				View:   0,
+			}
+			view.Serialization(sink)
+			db.Put(utils.ConcatKey(utils.NodeManagerContractAddress, []byte(node_manager.GOVERNANCE_VIEW)), states.GenRawStorageItem(sink.Bytes()))
+
+			peerPoolMap := &node_manager.PeerPoolMap{
+				PeerPoolMap: map[string]*node_manager.PeerPoolItem{
+					vconfig.PubkeyID(acct.PublicKey): {
+						Address:    acct.Address,
+						Status:     node_manager.ConsensusStatus,
+						PeerPubkey: vconfig.PubkeyID(acct.PublicKey),
+						Index:      0,
+					},
+				},
+			}
+			sink.Reset()
+			peerPoolMap.Serialization(sink)
+			db.Put(utils.ConcatKey(utils.NodeManagerContractAddress,
+				[]byte(node_manager.PEER_POOL), utils.GetUint32Bytes(0)), states.GenRawStorageItem(sink.Bytes()))
+		}
+		signAddr, _ := types.AddressFromBookkeepers([]keypair.PublicKey{acct.PublicKey})
+		ns, _ := native.NewNativeService(db, &types.Transaction{SignedAddr: []common.Address{signAddr}}, 1600945402, 0, common.Uint256{0}, 0, args, false)
+		return ns
+	}
+
+	rootCA = `-----BEGIN CERTIFICATE-----
+MIIBxDCCAWqgAwIBAgIJAL0TiHo7dsqWMAoGCCqBHM9VAYN1MDcxEDAOBgNVBAMM
+B2dtY2hhaW4xEzARBgNVBAoMCmZpc2NvLWJjb3MxDjAMBgNVBAsMBWNoYWluMCAX
+DTIwMDkyNDExMDMyMVoYDzIxMjAwODMxMTEwMzIxWjA3MRAwDgYDVQQDDAdnbWNo
+YWluMRMwEQYDVQQKDApmaXNjby1iY29zMQ4wDAYDVQQLDAVjaGFpbjBZMBMGByqG
+SM49AgEGCCqBHM9VAYItA0IABEIf/hJjT6DAGYWCyP99sBoTF2cCqpbLsrOf+NwY
+KY0zdXUA9BwYCs+HyoSLRtZBlfa5hO5S6wDbU1l9472aYFijXTBbMB0GA1UdDgQW
+BBQILjttksRAgGbi4KMNrLHlwPhxkTAfBgNVHSMEGDAWgBQILjttksRAgGbi4KMN
+rLHlwPhxkTAMBgNVHRMEBTADAQH/MAsGA1UdDwQEAwIBBjAKBggqgRzPVQGDdQNI
+ADBFAiBKFFaclfd0IKplJgLXDdAxS1Cvwhl/ZOFwPq28V2wi8gIhAPaAT8qf1hUv
+9FGgtdQbPr/lerRDGOETv5Zi5GEJBOpA
+-----END CERTIFICATE-----`
+
+	agencyCA = `-----BEGIN CERTIFICATE-----
+MIIBxzCCAWygAwIBAgIJAO8DhowWt61HMAoGCCqBHM9VAYN1MDcxEDAOBgNVBAMM
+B2dtY2hhaW4xEzARBgNVBAoMCmZpc2NvLWJjb3MxDjAMBgNVBAsMBWNoYWluMB4X
+DTIwMDkyNDExMDMyMVoXDTMwMDkyMjExMDMyMVowOzETMBEGA1UEAwwKYWdlbmN5
+X3NvbjETMBEGA1UECgwKZmlzY28tYmNvczEPMA0GA1UECwwGYWdlbmN5MFkwEwYH
+KoZIzj0CAQYIKoEcz1UBgi0DQgAEarbXUsMrNZVDCW9YWi97loR90feAicoqjcUf
+cq29nX23NkHJcrqOjgICh+fzqeLVkGAINGYTO3+/1+YOdlCYQKNdMFswHQYDVR0O
+BBYEFIGAa2Jn/7VsqH6aUBa3ocwsr8lsMB8GA1UdIwQYMBaAFAguO22SxECAZuLg
+ow2sseXA+HGRMAwGA1UdEwQFMAMBAf8wCwYDVR0PBAQDAgEGMAoGCCqBHM9VAYN1
+A0kAMEYCIQDA7GrLnT3niEEXssdS3Rs9CsJtBFeN3+w2EwRdtrlSmAIhANB6vYFh
+lmqEk3yuAWUNoB87Ci39wmLd4bzwhxHYROdx
+-----END CERTIFICATE-----`
+)
+
+func TestFiscoHandler_SyncGenesisHeader(t *testing.T) {
+	params := new(common2.SyncGenesisHeaderParam)
+	params.ChainID = 6
+
+	params.GenesisHeader = []byte(rootCA)
+	sink := common.NewZeroCopySink(nil)
+	params.Serialization(sink)
+	ns := getNativeFunc(sink.Bytes(), nil)
+
+	h := NewFiscoHandler()
+
+	// first to sync
+	if err := h.SyncGenesisHeader(ns); err != nil {
+		t.Fatal(err)
+	}
+
+	root, err := GetFiscoRoot(ns, 6)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	blk, _ := pem.Decode([]byte(rootCA))
+	if blk == nil {
+		t.Fatal("failed to decode pem")
+	}
+	assert.Equal(t, blk.Bytes, root.RootCA.Raw, "wrong base64-encoded bytes")
+
+	// second to sync: failed to sync wrong pubkey
+	params.GenesisHeader = []byte(agencyCA)
+	sink.Reset()
+	params.Serialization(sink)
+	ns = getNativeFunc(sink.Bytes(), ns.GetCacheDB())
+	err = h.SyncGenesisHeader(ns)
+	assert.Error(t, err, "should be error")
+
+	// next successful to update
+	params.GenesisHeader = []byte(rootCA)
+	sink.Reset()
+	params.Serialization(sink)
+	ns = getNativeFunc(sink.Bytes(), ns.GetCacheDB())
+	err = h.SyncGenesisHeader(ns)
+	if err != nil {
+		t.Fatal(err)
+	}
+}
