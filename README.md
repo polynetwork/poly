@@ -40,6 +40,16 @@ make all
 
 After building the source code successfully, you should see the executable program `poly`. 
 
+### Build Docker Image
+
+You can build a poly docker image pre-installed the ploy executable program.
+
+```
+make docker
+```
+
+You would find the image `polynetwork/poly` and you can run a container from it.
+
 ## Run Poly
 
 The Poly CLI can run nodes for the MainNet, TestNet and local PrivateNet. 
