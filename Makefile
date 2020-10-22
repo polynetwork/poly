@@ -63,30 +63,32 @@ all-cross: poly-cross tools-cross abi
 format:
 	$(GOFMT) -w main.go
 
-docker/payload: docker/build/bin/poly docker/Dockerfile
-	@echo "Building poly payload"
-	@mkdir -p $@
-	@cp docker/Dockerfile $@
-	@cp docker/build/bin/poly $@
-	@touch $@
+#docker/payload: docker/build/bin/poly docker/DockerfileWithConfig
+#	@echo "Building poly payload"
+#	@mkdir -p $@
+#	@cp docker/Dockerfile $@
+#	@cp docker/build/bin/poly $@
+#	@touch $@
+#
+#docker/build/bin/%: Makefile
+#	@echo "Building poly in docker"
+#	@mkdir -p docker/build/bin docker/build/pkg
+#	@$(DRUN) --rm \
+#		-v $(abspath docker/build/bin):/go/bin \
+#		-v $(abspath docker/build/pkg):/go/pkg \
+#		-v $(GOPATH)/src:/go/src \
+#		-w /go/src/github.com/polynetwork/poly \
+#		golang:1.9.5-stretch \
+#		$(GC)  $(BUILD_NODE_PAR) -o docker/build/bin/poly main.go
+#	@touch $@
 
-docker/build/bin/%: Makefile
-	@echo "Building poly in docker"
-	@mkdir -p docker/build/bin docker/build/pkg
-	@$(DRUN) --rm \
-		-v $(abspath docker/build/bin):/go/bin \
-		-v $(abspath docker/build/pkg):/go/pkg \
-		-v $(GOPATH)/src:/go/src \
-		-w /go/src/github.com/polynetwork/poly \
-		golang:1.9.5-stretch \
-		$(GC)  $(BUILD_NODE_PAR) -o docker/build/bin/poly main.go
-	@touch $@
+docker/withConfig: Makefile
+	@echo "Building poly docker image with configuration"
+	@$(DBUILD) --no-cache -t $(DOCKER_NS)/poly:$(DOCKER_TAG) -f docker/DockerfileWithConfig ./
 
-docker: Makefile docker/payload docker/Dockerfile 
-	@echo "Building poly docker"
-	@$(DBUILD) -t $(DOCKER_NS)/poly docker/payload
-	@docker tag $(DOCKER_NS)/poly $(DOCKER_NS)/poly:$(DOCKER_TAG)
-	@touch $@
+docker: Makefile
+	@echo "Building poly docker image"
+	@$(DBUILD) --no-cache -t $(DOCKER_NS)/poly:$(DOCKER_TAG) - < docker/Dockerfile
 
 clean:
 	rm -rf *.8 *.o *.out *.6 *exe
