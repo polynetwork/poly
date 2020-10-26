@@ -45,7 +45,7 @@ After building the source code successfully, you should see the executable progr
 You can build a poly docker image pre-installed the ploy executable program.
 
 ```
-make docker
+make dockerImg
 ```
 
 You would find the image `polynetwork/poly` and you can run a container from it.

@@ -86,7 +86,7 @@ docker/withConfig: Makefile
 	@echo "Building poly docker image with configuration"
 	@$(DBUILD) --no-cache -t $(DOCKER_NS)/poly:$(DOCKER_TAG) -f docker/DockerfileWithConfig ./
 
-docker: Makefile
+dockerImg: Makefile
 	@echo "Building poly docker image"
 	@$(DBUILD) --no-cache -t $(DOCKER_NS)/poly:$(DOCKER_TAG) - < docker/Dockerfile
 
