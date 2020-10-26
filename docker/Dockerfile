@@ -3,6 +3,7 @@ FROM golang:1.15 AS build
 WORKDIR /app
 RUN git clone https://github.com/polynetwork/poly.git  && \
     cd poly && \
+    git checkout enterprise && \
     make
 
 # 2. Stage two: copy compiled binary from prev builded container(referenced by name build)
