@@ -23,6 +23,14 @@ import (
 	"sort"
 )
 
+type FabricVerifyStrategy uint64
+
+const (
+	AllNeeded FabricVerifyStrategy = iota
+	JustOne
+	OverTwoThirds
+)
+
 type SideChain struct {
 	Address      common.Address
 	ChainId      uint64
