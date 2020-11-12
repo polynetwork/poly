@@ -209,21 +209,21 @@ func (multi MultiCertTrustChain) Serialization(sink *common.ZeroCopySink) {
 	}
 }
 
-func (multi MultiCertTrustChain) Deserialization(source *common.ZeroCopySource) (err error) {
+func (multi MultiCertTrustChain) Deserialization(source *common.ZeroCopySource) (MultiCertTrustChain, error) {
 	l, eof := source.NextUint16()
 	if eof {
-		return fmt.Errorf("failed to deserialize length")
+		return nil, fmt.Errorf("failed to deserialize length")
 	}
 
 	for cnt := uint16(0); cnt < l; cnt++ {
 		set := &CertTrustChain{}
 		if err := set.Deserialization(source); err != nil {
-			return fmt.Errorf("failed to deserialize No.%d cert trust chain: %v", cnt, err)
+			return nil, fmt.Errorf("failed to deserialize No.%d cert trust chain: %v", cnt, err)
 		}
 		multi = append(multi, set)
 	}
 
-	return nil
+	return multi, nil
 }
 
 func (multi MultiCertTrustChain) ValidateAll(ns *native.NativeService) error {
