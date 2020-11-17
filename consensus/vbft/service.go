@@ -1225,7 +1225,7 @@ func (self *Server) processMsgEvent() error {
 			msgBlkNum := pMsg.GetBlockNum()
 
 			if msgBlkNum == self.GetCurrentBlockNo() {
-				if len(self.msgPool.GetProposalMsgs(msgBlkNum)) == 0 {
+				if pMsg.EndorsedProposer != self.Index && len(self.msgPool.GetProposalMsgs(msgBlkNum)) == 0 {
 					self.fetchProposal(msgBlkNum, pMsg.EndorsedProposer)
 				}
 
