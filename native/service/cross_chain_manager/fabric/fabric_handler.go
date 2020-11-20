@@ -102,16 +102,10 @@ func (this *FabricHandler) MakeDepositProposal(ns *native.NativeService) (*commo
 		if !isExist {
 			continue
 		}
-		// TODO: need the signed raw info and the sig
-		//lastElem := trustChain.Certs[len(trustChain.Certs)-1]
-		//for _, ou := range lastElem.Subject.OrganizationalUnit {
-		//	if strings.Contains(strings.ToLower(ou), "peer") {
-		//		isExist = false
-		//	}
-		//}
-		//if isExist {
-		//	continue
-		//}
+		attrs, err := getAttributesFromCert(trustChain.Certs[len(trustChain.Certs) - 1])
+		if err != nil || attrs == nil || len(attrs.Attrs) == 0 || attrs.Attrs["poly_relayer"] != "true" {
+			continue
+		}
 		if err := trustChain.CheckSig(params.Extra, sigs[i]); err != nil {
 			return nil, fmt.Errorf("Fabric MakeDepositProposal, failed to check signature for No.%d chain: %v", i, err)
 		}

@@ -16,7 +16,14 @@
  */
 package fabric
 
-import "github.com/polynetwork/poly/common"
+import (
+	"encoding/asn1"
+	"encoding/json"
+	"fmt"
+	"github.com/hyperledger/fabric/common/attrmgr"
+	"github.com/polynetwork/poly/common"
+	"github.com/tjfoc/gmsm/sm2"
+)
 
 func GetSigArr(raw []byte) [][]byte {
 	src := common.NewZeroCopySource(raw)
@@ -37,4 +44,30 @@ func SigArrSerialize(arr [][]byte) []byte {
 		sink.WriteVarBytes(v)
 	}
 	return sink.Bytes()
+}
+
+func getAttributesFromCert(cert *sm2.Certificate) (*attrmgr.Attributes, error) {
+	for _, ext := range cert.Extensions {
+		if isAttrOID(ext.Id) {
+			attrs := &attrmgr.Attributes{}
+			err := json.Unmarshal(ext.Value, attrs)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to unmarshal attributes from certificate: %v", err)
+			}
+			return attrs, nil
+		}
+	}
+	return nil, nil
+}
+
+func isAttrOID(oid asn1.ObjectIdentifier) bool {
+	if len(oid) != len(attrmgr.AttrOID) {
+		return false
+	}
+	for idx, val := range oid {
+		if val != attrmgr.AttrOID[idx] {
+			return false
+		}
+	}
+	return true
 }
