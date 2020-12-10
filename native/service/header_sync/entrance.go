@@ -23,6 +23,7 @@ import (
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
+	"github.com/polynetwork/poly/native/service/header_sync/bsc"
 	"github.com/polynetwork/poly/native/service/header_sync/btc"
 	hscommon "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/header_sync/cosmos"
@@ -57,6 +58,8 @@ func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
 		return neo.NewNEOHandler(), nil
 	case utils.COSMOS_ROUTER:
 		return cosmos.NewCosmosHandler(), nil
+	case utils.BSC_ROUTER:
+		return bsc.NewHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported router:%d", router)
 	}

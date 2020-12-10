@@ -19,8 +19,9 @@ package side_chain_manager
 
 import (
 	"fmt"
-	"github.com/polynetwork/poly/common"
 	"sort"
+
+	"github.com/polynetwork/poly/common"
 )
 
 type SideChain struct {
@@ -30,6 +31,7 @@ type SideChain struct {
 	Name         string
 	BlocksToWait uint64
 	CCMCAddress  []byte
+	ExtraInfo    []byte
 }
 
 func (this *SideChain) Serialization(sink *common.ZeroCopySink) error {
@@ -39,6 +41,7 @@ func (this *SideChain) Serialization(sink *common.ZeroCopySink) error {
 	sink.WriteVarBytes([]byte(this.Name))
 	sink.WriteVarUint(this.BlocksToWait)
 	sink.WriteVarBytes(this.CCMCAddress)
+	sink.WriteVarBytes(this.ExtraInfo)
 	return nil
 }
 
@@ -71,12 +74,15 @@ func (this *SideChain) Deserialization(source *common.ZeroCopySource) error {
 	if eof {
 		return fmt.Errorf("source.NextVarBytes, deserialize CCMCAddress error")
 	}
+	ExtraInfo, _ := source.NextVarBytes()
+
 	this.Address = addr
 	this.ChainId = chainId
 	this.Router = router
 	this.Name = name
 	this.BlocksToWait = blocksToWait
 	this.CCMCAddress = CCMCAddress
+	this.ExtraInfo = ExtraInfo
 	return nil
 }
 
