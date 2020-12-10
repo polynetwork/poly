@@ -89,7 +89,7 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 	if len(genesis.PrevValidators) != 2 {
 		return fmt.Errorf("invalid PrevValidators")
 	}
-	validators, err := ParseValidators(genesis.Header.Extra[extraVanity : extraVanity+signersBytes])
+	validators, err := parseValidators(genesis.Header.Extra[extraVanity : extraVanity+signersBytes])
 	if err != nil {
 		return
 	}
@@ -536,7 +536,7 @@ func (h *Handler) getPrevHeightAndValidators(native *native.NativeService, heade
 		}
 
 		if len(prevHeaderWithSum.Header.Extra) > extraVanity+extraSeal {
-			validators, err = ParseValidators(prevHeaderWithSum.Header.Extra[extraVanity : len(prevHeaderWithSum.Header.Extra)-extraSeal])
+			validators, err = parseValidators(prevHeaderWithSum.Header.Extra[extraVanity : len(prevHeaderWithSum.Header.Extra)-extraSeal])
 			if err != nil {
 				err = fmt.Errorf("bsc Handler ParseValidators error: %v", err)
 				return
@@ -763,6 +763,20 @@ func encodeSigHeader(w io.Writer, header *types.Header, chainID *big.Int) {
 	if err != nil {
 		panic("can't encode: " + err.Error())
 	}
+}
+
+func parseValidators(validatorsBytes []byte) ([]ecommon.Address, error) {
+	if len(validatorsBytes)%ecommon.AddressLength != 0 {
+		return nil, errors.New("invalid validators bytes")
+	}
+	n := len(validatorsBytes) / ecommon.AddressLength
+	result := make([]ecommon.Address, n)
+	for i := 0; i < n; i++ {
+		address := make([]byte, ecommon.AddressLength)
+		copy(address, validatorsBytes[i*ecommon.AddressLength:(i+1)*ecommon.AddressLength])
+		result[i] = ecommon.BytesToAddress(address)
+	}
+	return result, nil
 }
 
 // SyncCrossChainMsg ...
