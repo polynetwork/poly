@@ -18,6 +18,7 @@ package side_chain_manager
 
 import (
 	"fmt"
+
 	"github.com/polynetwork/poly/common"
 )
 
@@ -64,6 +65,9 @@ func (this *RegisterSideChainParam) Deserialization(source *common.ZeroCopySourc
 	blocksToWait, eof := source.NextVarUint()
 	if eof {
 		return fmt.Errorf("source.NextVarUint, deserialize blocksToWait error")
+	}
+	if blocksToWait == 0 {
+		return fmt.Errorf("minimal value of BlocksToWait is 1")
 	}
 	CCMCAddress, eof := source.NextVarBytes()
 	if eof {

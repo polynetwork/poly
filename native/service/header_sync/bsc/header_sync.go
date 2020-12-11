@@ -25,21 +25,30 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-// Handler ...
-type Handler struct {
+var (
 	recentHeaders *lru.ARCCache
 	genesis       *lru.ARCCache
+)
+
+func init() {
+	var err error
+	recentHeaders, err = lru.NewARC(inMemoryHeaders)
+	if err != nil {
+		panic(err)
+	}
+	genesis, err = lru.NewARC(inMemoryGenesis)
+	if err != nil {
+		panic(err)
+	}
+}
+
+// Handler ...
+type Handler struct {
 }
 
 // NewHandler ...
 func NewHandler() *Handler {
-	recentHeaders, err := lru.NewARC(inMemoryHeaders)
-	if err != nil {
-		panic(err)
-	}
-	genesis, err := lru.NewARC(inMemoryGenesis)
-
-	return &Handler{recentHeaders: recentHeaders, genesis: genesis}
+	return &Handler{}
 }
 
 // GenesisHeader ...
@@ -67,7 +76,7 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 	}
 
 	// can only store once
-	stored, err := h.isGenesisStored(native, params)
+	stored, err := isGenesisStored(native, params)
 	if err != nil {
 		return fmt.Errorf("bsc Handler SyncGenesisHeader, isGenesisStored error: %v", err)
 	}
@@ -97,7 +106,7 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 		{Height: genesis.Header.Number, Validators: validators},
 	}, genesis.PrevValidators...)
 
-	err = h.storeGenesis(native, params, &genesis)
+	err = storeGenesis(native, params, &genesis)
 	if err != nil {
 		return fmt.Errorf("bsc Handler SyncGenesisHeader, storeGenesis error: %v", err)
 	}
@@ -105,8 +114,8 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 	return
 }
 
-func (h *Handler) isGenesisStored(native *native.NativeService, params *scom.SyncGenesisHeaderParam) (stored bool, err error) {
-	genesis, err := h.getGenesis(native, params.ChainID)
+func isGenesisStored(native *native.NativeService, params *scom.SyncGenesisHeaderParam) (stored bool, err error) {
+	genesis, err := getGenesis(native, params.ChainID)
 	if err != nil {
 		return
 	}
@@ -115,11 +124,11 @@ func (h *Handler) isGenesisStored(native *native.NativeService, params *scom.Syn
 	return
 }
 
-func (h *Handler) getGenesis(native *native.NativeService, chainID uint64) (genesis *GenesisHeader, err error) {
-	cache, ok := h.genesis.Get(chainID)
+func getGenesis(native *native.NativeService, chainID uint64) (genesisHeader *GenesisHeader, err error) {
+	cache, ok := genesis.Get(chainID)
 	if ok {
-		genesis = cache.(*GenesisHeader)
-		if genesis != nil {
+		genesisHeader = cache.(*GenesisHeader)
+		if genesisHeader != nil {
 			return
 		}
 	}
@@ -141,21 +150,21 @@ func (h *Handler) getGenesis(native *native.NativeService, chainID uint64) (gene
 	}
 
 	{
-		genesis = &GenesisHeader{}
-		err = json.Unmarshal(genesisBytes, &genesis)
+		genesisHeader = &GenesisHeader{}
+		err = json.Unmarshal(genesisBytes, &genesisHeader)
 		if err != nil {
 			err = fmt.Errorf("getGenesis, json.Unmarshal err:%v", err)
 			return
 		}
 	}
 
-	h.genesis.Add(chainID, genesis)
+	genesis.Add(chainID, genesisHeader)
 	return
 }
 
-func (h *Handler) storeGenesis(native *native.NativeService, params *scom.SyncGenesisHeaderParam, genesis *GenesisHeader) (err error) {
+func storeGenesis(native *native.NativeService, params *scom.SyncGenesisHeaderParam, genesisHeader *GenesisHeader) (err error) {
 
-	genesisBytes, err := json.Marshal(genesis)
+	genesisBytes, err := json.Marshal(genesisHeader)
 	if err != nil {
 		return
 	}
@@ -164,17 +173,17 @@ func (h *Handler) storeGenesis(native *native.NativeService, params *scom.SyncGe
 		utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.GENESIS_HEADER), utils.GetUint64Bytes(params.ChainID)),
 		cstates.GenRawStorageItem(genesisBytes))
 
-	headerWithSum := &HeaderWithDifficultySum{Header: genesis.Header, DifficultySum: genesis.Header.Difficulty}
+	headerWithSum := &HeaderWithDifficultySum{Header: &genesisHeader.Header, DifficultySum: genesisHeader.Header.Difficulty}
 
-	err = h.putHeaderWithSum(native, params.ChainID, headerWithSum)
+	err = putHeaderWithSum(native, params.ChainID, headerWithSum)
 	if err != nil {
 		return
 	}
 
-	h.putCanonicalHeight(native, params.ChainID, genesis.Header.Number.Uint64())
-	h.putCanonicalHash(native, params.ChainID, genesis.Header.Number.Uint64(), genesis.Header.Hash())
+	putCanonicalHeight(native, params.ChainID, genesisHeader.Header.Number.Uint64())
+	putCanonicalHash(native, params.ChainID, genesisHeader.Header.Number.Uint64(), genesisHeader.Header.Hash())
 
-	h.genesis.Add(params.ChainID, genesis)
+	genesis.Add(params.ChainID, genesisHeader)
 	return
 }
 
@@ -197,8 +206,8 @@ type HeaderWithChainID struct {
 
 // HeaderWithDifficultySum ...
 type HeaderWithDifficultySum struct {
-	Header        types.Header `json:"header"`
-	DifficultySum *big.Int     `json:"difficultySum"`
+	Header        *types.Header `json:"header"`
+	DifficultySum *big.Int      `json:"difficultySum"`
 }
 
 // SyncBlockHeader ...
@@ -227,7 +236,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		}
 		headerHash := header.Hash()
 
-		exist, err := h.isHeaderExist(native, headerHash, ctx)
+		exist, err := isHeaderExist(native, headerHash, ctx)
 		if err != nil {
 			return fmt.Errorf("bsc Handler SyncBlockHeader, isHeaderExist headerHash err: %v", err)
 		}
@@ -236,7 +245,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			continue
 		}
 
-		parentExist, err := h.isHeaderExist(native, header.ParentHash, ctx)
+		parentExist, err := isHeaderExist(native, header.ParentHash, ctx)
 		if err != nil {
 			return fmt.Errorf("bsc Handler SyncBlockHeader, isHeaderExist ParentHash err: %v", err)
 		}
@@ -245,13 +254,13 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			continue
 		}
 
-		signer, err := h.verifySignature(native, &header, ctx)
+		signer, err := verifySignature(native, &header, ctx)
 		if err != nil {
 			return fmt.Errorf("bsc Handler SyncBlockHeader, verifySignature err: %v", err)
 		}
 
 		// get prev epochs, also checking recent limit
-		phv, pphv, ppphv, err := h.getPrevHeightAndValidators(native, &header, ctx)
+		phv, pphv, ppphv, err := getPrevHeightAndValidators(native, &header, ctx)
 		if err != nil {
 			return fmt.Errorf("bsc Handler SyncBlockHeader, getPrevHeightAndValidators err: %v", err)
 		}
@@ -295,7 +304,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			return fmt.Errorf("bsc Handler SyncBlockHeader, invalid signer")
 		}
 
-		err = h.addHeader(native, &header, ctx)
+		err = addHeader(native, &header, ctx)
 		if err != nil {
 			return fmt.Errorf("bsc Handler SyncBlockHeader, addHeader err: %v", err)
 		}
@@ -304,7 +313,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 	return nil
 }
 
-func (h *Handler) isHeaderExist(native *native.NativeService, headerHash ecommon.Hash, ctx *Context) (bool, error) {
+func isHeaderExist(native *native.NativeService, headerHash ecommon.Hash, ctx *Context) (bool, error) {
 	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress,
 		[]byte(scom.HEADER_INDEX), utils.GetUint64Bytes(ctx.ChainID), headerHash.Bytes()))
 	if err != nil {
@@ -314,21 +323,22 @@ func (h *Handler) isHeaderExist(native *native.NativeService, headerHash ecommon
 	return headerStore != nil, nil
 }
 
-func (h *Handler) verifySignature(native *native.NativeService, header *types.Header, ctx *Context) (signer ecommon.Address, err error) {
-	return h.verifyHeader(native, header, ctx)
+func verifySignature(native *native.NativeService, header *types.Header, ctx *Context) (signer ecommon.Address, err error) {
+	return verifyHeader(native, header, ctx)
 }
 
-func (h *Handler) getCanonicalHeight(native *native.NativeService, chainID uint64) (height uint64, err error) {
+// GetCanonicalHeight ...
+func GetCanonicalHeight(native *native.NativeService, chainID uint64) (height uint64, err error) {
 	heightStore, err := native.GetCacheDB().Get(
 		utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.CURRENT_HEADER_HEIGHT), utils.GetUint64Bytes(chainID)))
 	if err != nil {
-		err = fmt.Errorf("bsc Handler getCanonicalHeight err:%v", err)
+		err = fmt.Errorf("bsc Handler GetCanonicalHeight err:%v", err)
 		return
 	}
 
 	storeBytes, err := cstates.GetValueFromRawStorageItem(heightStore)
 	if err != nil {
-		err = fmt.Errorf("bsc Handler getCanonicalHeight, GetValueFromRawStorageItem err:%v", err)
+		err = fmt.Errorf("bsc Handler GetCanonicalHeight, GetValueFromRawStorageItem err:%v", err)
 		return
 	}
 
@@ -336,8 +346,9 @@ func (h *Handler) getCanonicalHeight(native *native.NativeService, chainID uint6
 	return
 }
 
-func (h *Handler) getCanonicalHeader(native *native.NativeService, chainID uint64, height uint64) (headerWithSum *HeaderWithDifficultySum, err error) {
-	hash, err := h.getCanonicalHash(native, chainID, height)
+// GetCanonicalHeader ...
+func GetCanonicalHeader(native *native.NativeService, chainID uint64, height uint64) (headerWithSum *HeaderWithDifficultySum, err error) {
+	hash, err := getCanonicalHash(native, chainID, height)
 	if err != nil {
 		return
 	}
@@ -346,15 +357,15 @@ func (h *Handler) getCanonicalHeader(native *native.NativeService, chainID uint6
 		return
 	}
 
-	headerWithSum, err = h.getHeader(native, hash, chainID)
+	headerWithSum, err = getHeader(native, hash, chainID)
 	return
 }
 
-func (h *Handler) deleteCanonicalHash(native *native.NativeService, chainID uint64, height uint64) {
+func deleteCanonicalHash(native *native.NativeService, chainID uint64, height uint64) {
 	native.GetCacheDB().Delete(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.MAIN_CHAIN), utils.GetUint64Bytes(chainID), utils.GetUint64Bytes(height)))
 }
 
-func (h *Handler) getCanonicalHash(native *native.NativeService, chainID uint64, height uint64) (hash ecommon.Hash, err error) {
+func getCanonicalHash(native *native.NativeService, chainID uint64, height uint64) (hash ecommon.Hash, err error) {
 	hashBytesStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.MAIN_CHAIN), utils.GetUint64Bytes(chainID), utils.GetUint64Bytes(height)))
 	if err != nil {
 		return
@@ -374,12 +385,12 @@ func (h *Handler) getCanonicalHash(native *native.NativeService, chainID uint64,
 	return
 }
 
-func (h *Handler) putCanonicalHash(native *native.NativeService, chainID uint64, height uint64, hash ecommon.Hash) {
+func putCanonicalHash(native *native.NativeService, chainID uint64, height uint64, hash ecommon.Hash) {
 	native.GetCacheDB().Put(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.MAIN_CHAIN), utils.GetUint64Bytes(chainID), utils.GetUint64Bytes(height)),
 		cstates.GenRawStorageItem(hash.Bytes()))
 }
 
-func (h *Handler) putHeaderWithSum(native *native.NativeService, chainID uint64, headerWithSum *HeaderWithDifficultySum) (err error) {
+func putHeaderWithSum(native *native.NativeService, chainID uint64, headerWithSum *HeaderWithDifficultySum) (err error) {
 
 	headerBytes, err := json.Marshal(headerWithSum)
 	if err != nil {
@@ -392,24 +403,24 @@ func (h *Handler) putHeaderWithSum(native *native.NativeService, chainID uint64,
 	return
 }
 
-func (h *Handler) putCanonicalHeight(native *native.NativeService, chainID uint64, height uint64) {
+func putCanonicalHeight(native *native.NativeService, chainID uint64, height uint64) {
 	native.GetCacheDB().Put(
 		utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.CURRENT_HEADER_HEIGHT), utils.GetUint64Bytes(chainID)),
 		cstates.GenRawStorageItem(utils.GetUint64Bytes(uint64(height))))
 }
 
-func (h *Handler) addHeader(native *native.NativeService, header *types.Header, ctx *Context) (err error) {
+func addHeader(native *native.NativeService, header *types.Header, ctx *Context) (err error) {
 
-	parentHeader, err := h.getHeader(native, header.ParentHash, ctx.ChainID)
+	parentHeader, err := getHeader(native, header.ParentHash, ctx.ChainID)
 	if err != nil {
 		return
 	}
 
-	cheight, err := h.getCanonicalHeight(native, ctx.ChainID)
+	cheight, err := GetCanonicalHeight(native, ctx.ChainID)
 	if err != nil {
 		return
 	}
-	cheader, err := h.getCanonicalHeader(native, ctx.ChainID, cheight)
+	cheader, err := GetCanonicalHeader(native, ctx.ChainID, cheight)
 	if err != nil {
 		return
 	}
@@ -421,8 +432,8 @@ func (h *Handler) addHeader(native *native.NativeService, header *types.Header, 
 	localTd := cheader.DifficultySum
 	externTd := new(big.Int).Add(header.Difficulty, parentHeader.DifficultySum)
 
-	headerWithSum := &HeaderWithDifficultySum{Header: *header, DifficultySum: externTd}
-	err = h.putHeaderWithSum(native, ctx.ChainID, headerWithSum)
+	headerWithSum := &HeaderWithDifficultySum{Header: header, DifficultySum: externTd}
+	err = putHeaderWithSum(native, ctx.ChainID, headerWithSum)
 	if err != nil {
 		return
 	}
@@ -431,7 +442,7 @@ func (h *Handler) addHeader(native *native.NativeService, header *types.Header, 
 		// Delete any canonical number assignments above the new head
 		var headerWithSum *HeaderWithDifficultySum
 		for i := header.Number.Uint64() + 1; ; i++ {
-			headerWithSum, err = h.getCanonicalHeader(native, ctx.ChainID, i)
+			headerWithSum, err = GetCanonicalHeader(native, ctx.ChainID, i)
 			if err != nil {
 				return
 			}
@@ -439,7 +450,7 @@ func (h *Handler) addHeader(native *native.NativeService, header *types.Header, 
 				break
 			}
 
-			h.deleteCanonicalHash(native, ctx.ChainID, i)
+			deleteCanonicalHash(native, ctx.ChainID, i)
 		}
 
 		// Overwrite any stale canonical number assignments
@@ -450,12 +461,12 @@ func (h *Handler) addHeader(native *native.NativeService, header *types.Header, 
 		cheight := header.Number.Uint64() - 1
 		headHash := header.ParentHash
 
-		headHeader, err = h.getHeader(native, headHash, ctx.ChainID)
+		headHeader, err = getHeader(native, headHash, ctx.ChainID)
 		if err != nil {
 			return
 		}
 		for {
-			hash, err = h.getCanonicalHash(native, ctx.ChainID, cheight)
+			hash, err = getCanonicalHash(native, ctx.ChainID, cheight)
 			if err != nil {
 				return
 			}
@@ -463,21 +474,21 @@ func (h *Handler) addHeader(native *native.NativeService, header *types.Header, 
 				break
 			}
 
-			h.putCanonicalHash(native, ctx.ChainID, cheight, hash)
+			putCanonicalHash(native, ctx.ChainID, cheight, hash)
 			headHash = headHeader.Header.ParentHash
 			cheight--
-			headHeader, err = h.getHeader(native, headHash, ctx.ChainID)
+			headHeader, err = getHeader(native, headHash, ctx.ChainID)
 			if err != nil {
 				return
 			}
 		}
 
 		// Extend the canonical chain with the new header
-		h.putCanonicalHash(native, ctx.ChainID, header.Number.Uint64(), header.Hash())
-		h.putCanonicalHeight(native, ctx.ChainID, header.Number.Uint64())
+		putCanonicalHash(native, ctx.ChainID, header.Number.Uint64(), header.Hash())
+		putCanonicalHeight(native, ctx.ChainID, header.Number.Uint64())
 	}
 
-	h.recentHeaders.Add(header.Hash(), &HeaderWithChainID{Header: headerWithSum, ChainID: ctx.ChainID})
+	recentHeaders.Add(header.Hash(), &HeaderWithChainID{Header: headerWithSum, ChainID: ctx.ChainID})
 
 	return nil
 }
@@ -488,9 +499,9 @@ type HeightAndValidators struct {
 	Validators []ecommon.Address
 }
 
-func (h *Handler) getPrevHeightAndValidators(native *native.NativeService, header *types.Header, ctx *Context) (phv *HeightAndValidators, pphv *HeightAndValidators, ppphv *HeightAndValidators, err error) {
+func getPrevHeightAndValidators(native *native.NativeService, header *types.Header, ctx *Context) (phv *HeightAndValidators, pphv *HeightAndValidators, ppphv *HeightAndValidators, err error) {
 
-	genesis, err := h.getGenesis(native, ctx.ChainID)
+	genesis, err := getGenesis(native, ctx.ChainID)
 	if err != nil {
 		err = fmt.Errorf("bsc Handler getGenesis error: %v", err)
 		return
@@ -529,7 +540,7 @@ func (h *Handler) getPrevHeightAndValidators(native *native.NativeService, heade
 				return
 			}
 		}
-		prevHeaderWithSum, err = h.getHeader(native, header.ParentHash, ctx.ChainID)
+		prevHeaderWithSum, err = getHeader(native, header.ParentHash, ctx.ChainID)
 		if err != nil {
 			err = fmt.Errorf("bsc Handler getHeader error: %v", err)
 			return
@@ -558,12 +569,12 @@ func (h *Handler) getPrevHeightAndValidators(native *native.NativeService, heade
 			}
 		}
 
-		header = &prevHeaderWithSum.Header
+		header = prevHeaderWithSum.Header
 	}
 }
 
-func (h *Handler) getHeader(native *native.NativeService, hash ecommon.Hash, chainID uint64) (headerWithSum *HeaderWithDifficultySum, err error) {
-	cache, ok := h.recentHeaders.Get(hash)
+func getHeader(native *native.NativeService, hash ecommon.Hash, chainID uint64) (headerWithSum *HeaderWithDifficultySum, err error) {
+	cache, ok := recentHeaders.Get(hash)
 	if ok {
 		headerWithChainID := cache.(*HeaderWithChainID)
 		if headerWithChainID != nil && headerWithChainID.ChainID == chainID {
@@ -589,7 +600,7 @@ func (h *Handler) getHeader(native *native.NativeService, hash ecommon.Hash, cha
 		return nil, fmt.Errorf("bsc Handler getHeader, deserialize header error: %v", err)
 	}
 
-	h.recentHeaders.Add(hash, &HeaderWithChainID{Header: headerWithSum, ChainID: chainID})
+	recentHeaders.Add(hash, &HeaderWithChainID{Header: headerWithSum, ChainID: chainID})
 	return
 }
 
@@ -603,7 +614,7 @@ var (
 	diffNoTurn      = big.NewInt(1)            // Block difficulty for out-of-turn signatures
 )
 
-func (h *Handler) verifyHeader(native *native.NativeService, header *types.Header, ctx *Context) (signer ecommon.Address, err error) {
+func verifyHeader(native *native.NativeService, header *types.Header, ctx *Context) (signer ecommon.Address, err error) {
 
 	// Don't waste time checking blocks from the future
 	if header.Time > uint64(time.Now().Unix()) {
@@ -648,14 +659,14 @@ func (h *Handler) verifyHeader(native *native.NativeService, header *types.Heade
 	}
 
 	// All basic checks passed, verify cascading fields
-	return h.verifyCascadingFields(native, header, ctx)
+	return verifyCascadingFields(native, header, ctx)
 }
 
-func (h *Handler) verifyCascadingFields(native *native.NativeService, header *types.Header, ctx *Context) (signer ecommon.Address, err error) {
+func verifyCascadingFields(native *native.NativeService, header *types.Header, ctx *Context) (signer ecommon.Address, err error) {
 
 	number := header.Number.Uint64()
 
-	parent, err := h.getHeader(native, header.ParentHash, ctx.ChainID)
+	parent, err := getHeader(native, header.ParentHash, ctx.ChainID)
 	if err != nil {
 		return
 	}
@@ -689,10 +700,10 @@ func (h *Handler) verifyCascadingFields(native *native.NativeService, header *ty
 		return
 	}
 
-	return h.verifySeal(native, header, ctx)
+	return verifySeal(native, header, ctx)
 }
 
-func (h *Handler) verifySeal(native *native.NativeService, header *types.Header, ctx *Context) (signer ecommon.Address, err error) {
+func verifySeal(native *native.NativeService, header *types.Header, ctx *Context) (signer ecommon.Address, err error) {
 	// Verifying the genesis block is not supported
 	number := header.Number.Uint64()
 	if number == 0 {
