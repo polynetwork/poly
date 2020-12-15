@@ -22,13 +22,14 @@ package rpc
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/polynetwork/poly/common/log"
-	berr "github.com/polynetwork/poly/http/base/error"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strings"
 	"sync"
+
+	"github.com/polynetwork/poly/common/log"
+	berr "github.com/polynetwork/poly/http/base/error"
 )
 
 func init() {
@@ -93,6 +94,7 @@ func Handle(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//read the body of the request
+	r.Body = http.MaxBytesReader(w, r.Body, 1*1024*1024)
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		log.Error("HTTP JSON RPC Handle - ioutil.ReadAll: ", err)
