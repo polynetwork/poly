@@ -114,7 +114,10 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 	if len(genesis.PrevValidators) != 2 {
 		return fmt.Errorf("invalid PrevValidators")
 	}
-	validators, err := parseValidators(genesis.Header.Extra[extraVanity : extraVanity+signersBytes])
+	if !(genesis.Header.Number.Cmp(genesis.PrevValidators[0].Height) > 0 && genesis.PrevValidators[0].Height.Cmp(genesis.PrevValidators[1].Height) > 0) {
+		return fmt.Errorf("invalid height orders")
+	}
+	validators, err := ParseValidators(genesis.Header.Extra[extraVanity : extraVanity+signersBytes])
 	if err != nil {
 		return
 	}
@@ -563,7 +566,7 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 		}
 
 		if len(prevHeaderWithSum.Header.Extra) > extraVanity+extraSeal {
-			validators, err = parseValidators(prevHeaderWithSum.Header.Extra[extraVanity : len(prevHeaderWithSum.Header.Extra)-extraSeal])
+			validators, err = ParseValidators(prevHeaderWithSum.Header.Extra[extraVanity : len(prevHeaderWithSum.Header.Extra)-extraSeal])
 			if err != nil {
 				err = fmt.Errorf("bsc Handler ParseValidators error: %v", err)
 				return
@@ -792,7 +795,8 @@ func encodeSigHeader(w io.Writer, header *types.Header, chainID *big.Int) {
 	}
 }
 
-func parseValidators(validatorsBytes []byte) ([]ecommon.Address, error) {
+// ParseValidators ...
+func ParseValidators(validatorsBytes []byte) ([]ecommon.Address, error) {
 	if len(validatorsBytes)%ecommon.AddressLength != 0 {
 		return nil, errors.New("invalid validators bytes")
 	}
