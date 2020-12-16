@@ -305,6 +305,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			return fmt.Errorf("indexInTurn is negative:%d inTurnHV.Height:%d prevHV.Validators:%d inTurnEpochStartHeight:%d header.Number:%d", indexInTurn, inTurnHV.Height.Int64(), len(prevHV.Validators), inTurnEpochStartHeight, header.Number.Int64())
 		}
 		valid := false
+		fmt.Println("signer", signer)
 		for idx, v := range inTurnHV.Validators {
 			if v == signer {
 				valid = true
@@ -526,6 +527,7 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 		return
 	}
 
+	fmt.Println("height", header.Number.Uint64(), header.ParentHash, genesis.Header.Hash())
 	if genesis == nil {
 		err = fmt.Errorf("bsc Handler genesis not set")
 		return
@@ -548,16 +550,17 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 				phv = &genesis.PrevValidators[0]
 				pphv = &genesis.PrevValidators[1]
 				ppphv = &genesis.PrevValidators[2]
+				fmt.Println("xxxxxxx", phv.Height.Uint64(), pphv.Height.Uint64(), ppphv.Height.Uint64(), "pphv.Validators", len(pphv.Validators), pphv.Validators)
 			case pphv:
 				pphv = &genesis.PrevValidators[0]
 				ppphv = &genesis.PrevValidators[1]
 			case ppphv:
 				ppphv = &genesis.PrevValidators[0]
-				return
 			default:
 				err = fmt.Errorf("bug in bsc Handler")
 				return
 			}
+			return
 		}
 		prevHeaderWithSum, err = getHeader(native, header.ParentHash, ctx.ChainID)
 		if err != nil {

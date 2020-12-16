@@ -19,10 +19,15 @@ package bsc
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"math/big"
+	"strings"
 	"testing"
+	"time"
 
 	ethcommon "github.com/ethereum/go-ethereum/common"
+	etypes "github.com/ethereum/go-ethereum/core/types"
+	lru "github.com/hashicorp/golang-lru"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly-io-test/chains/eth"
 	"github.com/polynetwork/poly/account"
@@ -35,6 +40,7 @@ import (
 	"github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
+	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	scom "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/utils"
 	"github.com/polynetwork/poly/native/storage"
@@ -79,6 +85,7 @@ func NewNative(args []byte, tx *types.Transaction, db *storage.CacheDB) (*native
 		peerPoolMap.Serialization(sink)
 		db.Put(utils.ConcatKey(utils.NodeManagerContractAddress,
 			[]byte(node_manager.PEER_POOL), utils.GetUint32Bytes(0)), states.GenRawStorageItem(sink.Bytes()))
+
 	}
 	return native.NewNativeService(db, tx, 0, 0, common.Uint256{0}, 0, args, false)
 }
@@ -99,22 +106,22 @@ func typeOfError(e error) int {
 	if e == nil {
 		return SUCCESS
 	}
-	// errDesc := e.Error()
-	// if strings.Contains(errDesc, "ETHHandler GetHeaderByHeight, genesis header had been initialized") {
-	// 	return GENESIS_INITIALIZED
-	// } else if strings.Contains(errDesc, "ETHHandler SyncGenesisHeader: getGenesisHeader, deserialize header err:") {
-	// 	return GENESIS_PARAM_ERROR
-	// } else if strings.Contains(errDesc, "SyncBlockHeader, deserialize header err:") {
-	// 	return SYNCBLOCK_PARAM_ERROR
-	// } else if strings.Contains(errDesc, "SyncBlockHeader, get the parent block failed. Error:") {
-	// 	return SYNCBLOCK_ORPHAN
-	// } else if strings.Contains(errDesc, "SyncBlockHeader, invalid difficulty:") {
-	// 	return DIFFICULTY_ERROR
-	// } else if strings.Contains(errDesc, "SyncBlockHeader, verify header error:") {
-	// 	return NONCE_ERROR
-	// } else if strings.Contains(errDesc, "SyncGenesisHeader, checkWitness error:") {
-	// 	return OPERATOR_ERROR
-	// }
+	errDesc := e.Error()
+	if strings.Contains(errDesc, "genesis had been initialized") {
+		return GENESIS_INITIALIZED
+	} else if strings.Contains(errDesc, "deserialize GenesisHeader err") {
+		return GENESIS_PARAM_ERROR
+		// } else if strings.Contains(errDesc, "SyncBlockHeader, deserialize header err:") {
+		// 	return SYNCBLOCK_PARAM_ERROR
+		// } else if strings.Contains(errDesc, "SyncBlockHeader, get the parent block failed. Error:") {
+		// 	return SYNCBLOCK_ORPHAN
+		// } else if strings.Contains(errDesc, "SyncBlockHeader, invalid difficulty:") {
+		// 	return DIFFICULTY_ERROR
+		// } else if strings.Contains(errDesc, "SyncBlockHeader, verify header error:") {
+		// 	return NONCE_ERROR
+	} else if strings.Contains(errDesc, "SyncGenesisHeader, checkWitness error:") {
+		return OPERATOR_ERROR
+	}
 	return UNKNOWN
 }
 
@@ -148,8 +155,20 @@ func getHeaderByHash(native *native.NativeService, hash ethcommon.Hash) []byte {
 
 const BSCChainID = 2
 
-func getGenesisHeader(t *testing.T) *GenesisHeader {
+func getTool() *eth.ETHTools {
 	tool := eth.NewEthTools("https://data-seed-prebsc-1-s1.binance.org:8545/")
+	return tool
+}
+
+func getBlockHeader(t *testing.T, height uint64) *etypes.Header {
+	tool := getTool()
+	hdr, err := tool.GetBlockHeader(height)
+	assert.NilError(t, err)
+	return hdr
+}
+
+func getGenesisHeader(t *testing.T) *GenesisHeader {
+	tool := getTool()
 	height, err := tool.GetNodeHeight()
 	if err != nil {
 		panic(err)
@@ -160,25 +179,15 @@ func getGenesisHeader(t *testing.T) *GenesisHeader {
 	ppEpochHeight := pEpochHeight - 200
 
 	hdr, err := tool.GetBlockHeader(epochHeight)
-	if err != nil {
-		assert.NilError(t, err)
-	}
+	assert.NilError(t, err)
 	phdr, err := tool.GetBlockHeader(pEpochHeight)
-	if err != nil {
-		assert.NilError(t, err)
-	}
+	assert.NilError(t, err)
 	pvalidators, err := ParseValidators(phdr.Extra[32 : len(phdr.Extra)-65])
-	if err != nil {
-		assert.NilError(t, err)
-	}
+	assert.NilError(t, err)
 	pphdr, err := tool.GetBlockHeader(ppEpochHeight)
-	if err != nil {
-		assert.NilError(t, err)
-	}
+	assert.NilError(t, err)
 	ppvalidators, err := ParseValidators(pphdr.Extra[32 : len(pphdr.Extra)-65])
-	if err != nil {
-		assert.NilError(t, err)
-	}
+	assert.NilError(t, err)
 
 	genesisHeader := GenesisHeader{Header: *hdr, PrevValidators: []HeightAndValidators{
 		{Height: big.NewInt(int64(pEpochHeight)), Validators: pvalidators},
@@ -189,6 +198,8 @@ func getGenesisHeader(t *testing.T) *GenesisHeader {
 }
 
 func TestSyncGenesisHeader(t *testing.T) {
+	defer clearCache(t)
+
 	genesisHeader := getGenesisHeader(t)
 	headerOnlyBytes, _ := json.Marshal(genesisHeader.Header)
 	genesisHeaderBytes, _ := json.Marshal(genesisHeader)
@@ -205,14 +216,243 @@ func TestSyncGenesisHeader(t *testing.T) {
 
 	native, err := NewNative(sink.Bytes(), tx, nil)
 	assert.NilError(t, err)
-	ethHandler := NewHandler()
-	err = ethHandler.SyncGenesisHeader(native)
+	handler := NewHandler()
+	err = handler.SyncGenesisHeader(native)
 
 	assert.Equal(t, SUCCESS, typeOfError(err), err)
 	height := getLatestHeight(native)
 	assert.Equal(t, genesisHeader.Header.Number.Uint64(), height)
 	headerHash := getHeaderHashByHeight(native, height)
-	assert.Equal(t, true, bytes.Equal(genesisHeader.Header.Hash().Bytes(), headerHash.Bytes()))
+	assert.Equal(t, true, genesisHeader.Header.Hash() == headerHash)
 	headerFromStore := getHeaderByHash(native, headerHash)
 	assert.Equal(t, true, bytes.Equal(headerFromStore, headerOnlyBytes))
+
+}
+
+func TestSyncGenesisHeaderNoOperator(t *testing.T) {
+	defer clearCache(t)
+
+	genesisHeader := getGenesisHeader(t)
+	genesisHeaderBytes, _ := json.Marshal(genesisHeader)
+
+	param := new(scom.SyncGenesisHeaderParam)
+	param.ChainID = BSCChainID
+	param.GenesisHeader = genesisHeaderBytes
+	sink := common.NewZeroCopySink(nil)
+	param.Serialization(sink)
+
+	tx := &types.Transaction{}
+
+	native, err := NewNative(sink.Bytes(), tx, nil)
+	assert.NilError(t, err)
+	handler := NewHandler()
+	err = handler.SyncGenesisHeader(native)
+
+	assert.Equal(t, OPERATOR_ERROR, typeOfError(err), err)
+	height := getLatestHeight(native)
+	assert.Equal(t, uint64(0), height)
+
+}
+
+// called by test
+func clearCache(t *testing.T) {
+	var err error
+	recentHeadersCache, err = lru.NewARC(inMemoryHeaders)
+	assert.NilError(t, err)
+	genesisCache, err = lru.NewARC(inMemoryGenesis)
+	assert.NilError(t, err)
+}
+
+func TestSyncGenesisHeaderTwice(t *testing.T) {
+	defer clearCache(t)
+
+	var (
+		native *native.NativeService
+		height uint64
+		err    error
+	)
+
+	{
+		genesisHeader := getGenesisHeader(t)
+		headerOnlyBytes, _ := json.Marshal(genesisHeader.Header)
+		genesisHeaderBytes, _ := json.Marshal(genesisHeader)
+
+		param := new(scom.SyncGenesisHeaderParam)
+		param.ChainID = BSCChainID
+		param.GenesisHeader = genesisHeaderBytes
+		sink := common.NewZeroCopySink(nil)
+		param.Serialization(sink)
+
+		tx := &types.Transaction{
+			SignedAddr: []common.Address{acct.Address},
+		}
+
+		native, err = NewNative(sink.Bytes(), tx, nil)
+		assert.NilError(t, err)
+		handler := NewHandler()
+		err = handler.SyncGenesisHeader(native)
+
+		assert.Equal(t, SUCCESS, typeOfError(err), err)
+		height = getLatestHeight(native)
+		assert.Equal(t, genesisHeader.Header.Number.Uint64(), height)
+		headerHash := getHeaderHashByHeight(native, height)
+		assert.Equal(t, true, genesisHeader.Header.Hash() == headerHash)
+		headerFromStore := getHeaderByHash(native, headerHash)
+		assert.Equal(t, true, bytes.Equal(headerFromStore, headerOnlyBytes))
+	}
+
+	{
+		genesisHeader := getGenesisHeader(t)
+		genesisHeaderBytes, _ := json.Marshal(genesisHeader)
+
+		param := new(scom.SyncGenesisHeaderParam)
+		param.ChainID = BSCChainID
+		param.GenesisHeader = genesisHeaderBytes
+		sink := common.NewZeroCopySink(nil)
+		param.Serialization(sink)
+
+		tx := &types.Transaction{
+			SignedAddr: []common.Address{acct.Address},
+		}
+
+		native, err = NewNative(sink.Bytes(), tx, native.GetCacheDB())
+		assert.NilError(t, err)
+		handler := NewHandler()
+		err = handler.SyncGenesisHeader(native)
+
+		assert.Equal(t, GENESIS_INITIALIZED, typeOfError(err), err)
+		assert.Equal(t, getLatestHeight(native), height)
+	}
+
+}
+
+func TestSyncGenesisHeader_ParamError(t *testing.T) {
+	defer clearCache(t)
+
+	param := new(scom.SyncGenesisHeaderParam)
+	param.ChainID = BSCChainID
+	param.GenesisHeader = nil
+	sink := common.NewZeroCopySink(nil)
+	param.Serialization(sink)
+
+	tx := &types.Transaction{
+		SignedAddr: []common.Address{acct.Address},
+	}
+
+	native, _ := NewNative(sink.Bytes(), tx, nil)
+	handler := NewHandler()
+	err := handler.SyncGenesisHeader(native)
+	assert.Equal(t, GENESIS_PARAM_ERROR, typeOfError(err), err)
+
+}
+
+func untilGetBlockHeader(t *testing.T, height uint64) *etypes.Header {
+	tool := getTool()
+	for {
+		hdr, err := tool.GetBlockHeader(height)
+		if err == nil {
+			return hdr
+		}
+		time.Sleep(time.Second)
+		fmt.Println("GetBlockHeader", height, err)
+	}
+}
+
+func TestSyncBlockHeader(t *testing.T) {
+	defer clearCache(t)
+
+	var (
+		native *native.NativeService
+		height uint64
+		err    error
+	)
+
+	handler := NewHandler()
+
+	{
+		genesisHeader := getGenesisHeader(t)
+		headerOnlyBytes, _ := json.Marshal(genesisHeader.Header)
+		genesisHeaderBytes, _ := json.Marshal(genesisHeader)
+
+		param := new(scom.SyncGenesisHeaderParam)
+		param.ChainID = BSCChainID
+		param.GenesisHeader = genesisHeaderBytes
+		sink := common.NewZeroCopySink(nil)
+		param.Serialization(sink)
+
+		tx := &types.Transaction{
+			SignedAddr: []common.Address{acct.Address},
+		}
+
+		native, err = NewNative(sink.Bytes(), tx, nil)
+		assert.NilError(t, err)
+		err = handler.SyncGenesisHeader(native)
+
+		assert.Equal(t, SUCCESS, typeOfError(err), err)
+		height = getLatestHeight(native)
+		assert.Equal(t, genesisHeader.Header.Number.Uint64(), height)
+		headerHash := getHeaderHashByHeight(native, height)
+		assert.Equal(t, true, genesisHeader.Header.Hash() == headerHash)
+		headerFromStore := getHeaderByHash(native, headerHash)
+		assert.Equal(t, true, bytes.Equal(headerFromStore, headerOnlyBytes))
+	}
+
+	{
+
+		n1 := untilGetBlockHeader(t, height+1)
+		n1Bytes, _ := json.Marshal(n1)
+		n2 := untilGetBlockHeader(t, height+2)
+		n2Bytes, _ := json.Marshal(n2)
+		n3 := untilGetBlockHeader(t, height+3)
+		n3Bytes, _ := json.Marshal(n3)
+		n4 := untilGetBlockHeader(t, height+4)
+		n4Bytes, _ := json.Marshal(n4)
+		h2h := map[uint64]*etypes.Header{
+			height + 1: n1,
+			height + 2: n2,
+			height + 3: n3,
+			height + 4: n4,
+		}
+
+		param := new(scom.SyncBlockHeaderParam)
+		param.ChainID = BSCChainID
+		param.Address = acct.Address
+		param.Headers = append(param.Headers, n1Bytes)
+		param.Headers = append(param.Headers, n2Bytes)
+		param.Headers = append(param.Headers, n3Bytes)
+		param.Headers = append(param.Headers, n4Bytes)
+		sink := common.NewZeroCopySink(nil)
+		param.Serialization(sink)
+
+		tx := &types.Transaction{
+			SignedAddr: []common.Address{acct.Address},
+		}
+		native, _ = NewNative(sink.Bytes(), tx, native.GetCacheDB())
+		{
+			// add sidechain info
+			extra := ExtraInfo{
+				// test id 97
+				ChainID: big.NewInt(97),
+			}
+			extraBytes, _ := json.Marshal(extra)
+			side_chain_manager.PutSideChain(native, &side_chain_manager.SideChain{
+				ExtraInfo: extraBytes,
+				ChainId:   BSCChainID,
+			})
+		}
+
+		fmt.Println("gHeight", height)
+		err := handler.SyncBlockHeader(native)
+		assert.Equal(t, SUCCESS, typeOfError(err), err)
+		latestHeight := getLatestHeight(native)
+		assert.Equal(t, latestHeight, height+4)
+
+		for h := height + 1; h <= height+4; h++ {
+			headerHash := getHeaderHashByHeight(native, h)
+			assert.Equal(t, true, headerHash == h2h[h].Hash())
+			headerBytesFromStore := getHeaderByHash(native, headerHash)
+			headerBytes, _ := json.Marshal(h2h[h])
+			assert.Equal(t, true, bytes.Equal(headerBytesFromStore, headerBytes))
+		}
+	}
 }
