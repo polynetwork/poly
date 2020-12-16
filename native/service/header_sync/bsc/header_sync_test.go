@@ -176,7 +176,6 @@ func getGenesisHeader(t *testing.T) *GenesisHeader {
 
 	epochHeight := height - height%200
 	pEpochHeight := epochHeight - 200
-	ppEpochHeight := pEpochHeight - 200
 
 	hdr, err := tool.GetBlockHeader(epochHeight)
 	assert.NilError(t, err)
@@ -184,14 +183,9 @@ func getGenesisHeader(t *testing.T) *GenesisHeader {
 	assert.NilError(t, err)
 	pvalidators, err := ParseValidators(phdr.Extra[32 : len(phdr.Extra)-65])
 	assert.NilError(t, err)
-	pphdr, err := tool.GetBlockHeader(ppEpochHeight)
-	assert.NilError(t, err)
-	ppvalidators, err := ParseValidators(pphdr.Extra[32 : len(pphdr.Extra)-65])
-	assert.NilError(t, err)
 
 	genesisHeader := GenesisHeader{Header: *hdr, PrevValidators: []HeightAndValidators{
 		{Height: big.NewInt(int64(pEpochHeight)), Validators: pvalidators},
-		{Height: big.NewInt(int64(ppEpochHeight)), Validators: ppvalidators},
 	}}
 
 	return &genesisHeader

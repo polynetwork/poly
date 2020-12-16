@@ -111,10 +111,10 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 		return fmt.Errorf("invalid signer list, signersBytes:%d", signersBytes)
 	}
 
-	if len(genesis.PrevValidators) != 2 {
+	if len(genesis.PrevValidators) != 1 {
 		return fmt.Errorf("invalid PrevValidators")
 	}
-	if !(genesis.Header.Number.Cmp(genesis.PrevValidators[0].Height) > 0 && genesis.PrevValidators[0].Height.Cmp(genesis.PrevValidators[1].Height) > 0) {
+	if genesis.Header.Number.Cmp(genesis.PrevValidators[0].Height) <= 0 {
 		return fmt.Errorf("invalid height orders")
 	}
 	validators, err := ParseValidators(genesis.Header.Extra[extraVanity : extraVanity+signersBytes])
@@ -279,43 +279,40 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		}
 
 		// get prev epochs, also checking recent limit
-		phv, pphv, ppphv, err := getPrevHeightAndValidators(native, &header, ctx)
+		phv, pphv, err := getPrevHeightAndValidators(native, &header, ctx)
 		if err != nil {
 			return fmt.Errorf("bsc Handler SyncBlockHeader, getPrevHeightAndValidators err: %v", err)
 		}
 
 		var (
-			inTurnHV, prevHV *HeightAndValidators
+			inTurnHV *HeightAndValidators
 		)
 
 		diffWithLastEpoch := big.NewInt(0).Sub(header.Number, phv.Height).Int64()
 		if diffWithLastEpoch <= int64(len(pphv.Validators)/2) {
 			// pphv is in effect
 			inTurnHV = pphv
-			prevHV = ppphv
 		} else {
 			// phv is in effect
 			inTurnHV = phv
-			prevHV = pphv
 		}
 
-		inTurnEpochStartHeight := big.NewInt(0).Add(inTurnHV.Height, big.NewInt(int64(len(prevHV.Validators)/2)))
-		indexInTurn := big.NewInt(0).Sub(header.Number, inTurnEpochStartHeight).Int64() - 1
+		indexInTurn := int(header.Number.Uint64()) % len(inTurnHV.Validators)
 		if indexInTurn < 0 {
-			return fmt.Errorf("indexInTurn is negative:%d inTurnHV.Height:%d prevHV.Validators:%d inTurnEpochStartHeight:%d header.Number:%d", indexInTurn, inTurnHV.Height.Int64(), len(prevHV.Validators), inTurnEpochStartHeight, header.Number.Int64())
+			return fmt.Errorf("indexInTurn is negative:%d inTurnHV.Height:%d header.Number:%d", indexInTurn, inTurnHV.Height.Int64(), header.Number.Int64())
 		}
 		valid := false
 		fmt.Println("signer", signer)
 		for idx, v := range inTurnHV.Validators {
 			if v == signer {
 				valid = true
-				if int(indexInTurn)%len(inTurnHV.Validators) == idx {
+				if indexInTurn == idx {
 					if header.Difficulty.Cmp(diffInTurn) != 0 {
-						return fmt.Errorf("invalid difficulty, got %v expect %v", header.Difficulty.Int64(), diffInTurn.Int64())
+						return fmt.Errorf("invalid difficulty, got %v expect %v index:%v", header.Difficulty.Int64(), diffInTurn.Int64(), int(indexInTurn)%len(inTurnHV.Validators))
 					}
 				} else {
 					if header.Difficulty.Cmp(diffNoTurn) != 0 {
-						return fmt.Errorf("invalid difficulty, got %v expect %v", header.Difficulty.Int64(), diffNoTurn.Int64())
+						return fmt.Errorf("invalid difficulty, got %v expect %v index:%v", header.Difficulty.Int64(), diffNoTurn.Int64(), int(indexInTurn)%len(inTurnHV.Validators))
 					}
 				}
 			}
@@ -519,7 +516,7 @@ type HeightAndValidators struct {
 	Validators []ecommon.Address
 }
 
-func getPrevHeightAndValidators(native *native.NativeService, header *types.Header, ctx *Context) (phv *HeightAndValidators, pphv *HeightAndValidators, ppphv *HeightAndValidators, err error) {
+func getPrevHeightAndValidators(native *native.NativeService, header *types.Header, ctx *Context) (phv *HeightAndValidators, pphv *HeightAndValidators, err error) {
 
 	genesis, err := getGenesis(native, ctx.ChainID)
 	if err != nil {
@@ -527,7 +524,6 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 		return
 	}
 
-	fmt.Println("height", header.Number.Uint64(), header.ParentHash, genesis.Header.Hash())
 	if genesis == nil {
 		err = fmt.Errorf("bsc Handler genesis not set")
 		return
@@ -549,13 +545,8 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 			case phv:
 				phv = &genesis.PrevValidators[0]
 				pphv = &genesis.PrevValidators[1]
-				ppphv = &genesis.PrevValidators[2]
-				fmt.Println("xxxxxxx", phv.Height.Uint64(), pphv.Height.Uint64(), ppphv.Height.Uint64(), "pphv.Validators", len(pphv.Validators), pphv.Validators)
 			case pphv:
 				pphv = &genesis.PrevValidators[0]
-				ppphv = &genesis.PrevValidators[1]
-			case ppphv:
-				ppphv = &genesis.PrevValidators[0]
 			default:
 				err = fmt.Errorf("bug in bsc Handler")
 				return
@@ -582,8 +573,6 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 			case phv:
 				currentPV = &pphv
 			case pphv:
-				currentPV = &ppphv
-			case ppphv:
 				return
 			default:
 				err = fmt.Errorf("bug in bsc Handler")
