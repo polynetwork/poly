@@ -42,17 +42,17 @@ import (
 )
 
 var (
-	recentHeaders *lru.ARCCache
-	genesis       *lru.ARCCache
+	recentHeadersCache *lru.ARCCache
+	genesisCache       *lru.ARCCache
 )
 
 func init() {
 	var err error
-	recentHeaders, err = lru.NewARC(inMemoryHeaders)
+	recentHeadersCache, err = lru.NewARC(inMemoryHeaders)
 	if err != nil {
 		panic(err)
 	}
-	genesis, err = lru.NewARC(inMemoryGenesis)
+	genesisCache, err = lru.NewARC(inMemoryGenesis)
 	if err != nil {
 		panic(err)
 	}
@@ -144,7 +144,7 @@ func isGenesisStored(native *native.NativeService, params *scom.SyncGenesisHeade
 }
 
 func getGenesis(native *native.NativeService, chainID uint64) (genesisHeader *GenesisHeader, err error) {
-	cache, ok := genesis.Get(chainID)
+	cache, ok := genesisCache.Get(chainID)
 	if ok {
 		genesisHeader = cache.(*GenesisHeader)
 		if genesisHeader != nil {
@@ -177,7 +177,7 @@ func getGenesis(native *native.NativeService, chainID uint64) (genesisHeader *Ge
 		}
 	}
 
-	genesis.Add(chainID, genesisHeader)
+	genesisCache.Add(chainID, genesisHeader)
 	return
 }
 
@@ -202,7 +202,7 @@ func storeGenesis(native *native.NativeService, params *scom.SyncGenesisHeaderPa
 	putCanonicalHeight(native, params.ChainID, genesisHeader.Header.Number.Uint64())
 	putCanonicalHash(native, params.ChainID, genesisHeader.Header.Number.Uint64(), genesisHeader.Header.Hash())
 
-	genesis.Add(params.ChainID, genesisHeader)
+	genesisCache.Add(params.ChainID, genesisHeader)
 	return
 }
 
@@ -507,7 +507,7 @@ func addHeader(native *native.NativeService, header *types.Header, ctx *Context)
 		putCanonicalHeight(native, ctx.ChainID, header.Number.Uint64())
 	}
 
-	recentHeaders.Add(header.Hash(), &HeaderWithChainID{Header: headerWithSum, ChainID: ctx.ChainID})
+	recentHeadersCache.Add(header.Hash(), &HeaderWithChainID{Header: headerWithSum, ChainID: ctx.ChainID})
 
 	return nil
 }
@@ -593,7 +593,7 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 }
 
 func getHeader(native *native.NativeService, hash ecommon.Hash, chainID uint64) (headerWithSum *HeaderWithDifficultySum, err error) {
-	cache, ok := recentHeaders.Get(hash)
+	cache, ok := recentHeadersCache.Get(hash)
 	if ok {
 		headerWithChainID := cache.(*HeaderWithChainID)
 		if headerWithChainID != nil && headerWithChainID.ChainID == chainID {
@@ -619,7 +619,7 @@ func getHeader(native *native.NativeService, hash ecommon.Hash, chainID uint64) 
 		return nil, fmt.Errorf("bsc Handler getHeader, deserialize header error: %v", err)
 	}
 
-	recentHeaders.Add(hash, &HeaderWithChainID{Header: headerWithSum, ChainID: chainID})
+	recentHeadersCache.Add(hash, &HeaderWithChainID{Header: headerWithSum, ChainID: chainID})
 	return
 }
 
