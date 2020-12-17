@@ -29,7 +29,6 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
-	lru "github.com/hashicorp/golang-lru"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
 	cstates "github.com/polynetwork/poly/core/states"
@@ -40,23 +39,6 @@ import (
 	"github.com/polynetwork/poly/native/service/utils"
 	"golang.org/x/crypto/sha3"
 )
-
-var (
-	recentHeadersCache *lru.ARCCache
-	genesisCache       *lru.ARCCache
-)
-
-func init() {
-	var err error
-	recentHeadersCache, err = lru.NewARC(inMemoryHeaders)
-	if err != nil {
-		panic(err)
-	}
-	genesisCache, err = lru.NewARC(inMemoryGenesis)
-	if err != nil {
-		panic(err)
-	}
-}
 
 // Handler ...
 type Handler struct {
@@ -144,13 +126,6 @@ func isGenesisStored(native *native.NativeService, params *scom.SyncGenesisHeade
 }
 
 func getGenesis(native *native.NativeService, chainID uint64) (genesisHeader *GenesisHeader, err error) {
-	cache, ok := genesisCache.Get(chainID)
-	if ok {
-		genesisHeader = cache.(*GenesisHeader)
-		if genesisHeader != nil {
-			return
-		}
-	}
 
 	genesisBytes, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.GENESIS_HEADER), utils.GetUint64Bytes(chainID)))
 	if err != nil {
@@ -177,7 +152,6 @@ func getGenesis(native *native.NativeService, chainID uint64) (genesisHeader *Ge
 		}
 	}
 
-	genesisCache.Add(chainID, genesisHeader)
 	return
 }
 
@@ -202,7 +176,6 @@ func storeGenesis(native *native.NativeService, params *scom.SyncGenesisHeaderPa
 	putCanonicalHeight(native, params.ChainID, genesisHeader.Header.Number.Uint64())
 	putCanonicalHash(native, params.ChainID, genesisHeader.Header.Number.Uint64(), genesisHeader.Header.Hash())
 
-	genesisCache.Add(params.ChainID, genesisHeader)
 	return
 }
 
@@ -505,8 +478,6 @@ func addHeader(native *native.NativeService, header *types.Header, ctx *Context)
 		putCanonicalHeight(native, ctx.ChainID, header.Number.Uint64())
 	}
 
-	recentHeadersCache.Add(header.Hash(), &HeaderWithChainID{Header: headerWithSum, ChainID: ctx.ChainID})
-
 	return nil
 }
 
@@ -585,14 +556,6 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 }
 
 func getHeader(native *native.NativeService, hash ecommon.Hash, chainID uint64) (headerWithSum *HeaderWithDifficultySum, err error) {
-	cache, ok := recentHeadersCache.Get(hash)
-	if ok {
-		headerWithChainID := cache.(*HeaderWithChainID)
-		if headerWithChainID != nil && headerWithChainID.ChainID == chainID {
-			headerWithSum = headerWithChainID.Header
-			return
-		}
-	}
 
 	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress,
 		[]byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), hash.Bytes()))
@@ -611,7 +574,6 @@ func getHeader(native *native.NativeService, hash ecommon.Hash, chainID uint64) 
 		return nil, fmt.Errorf("bsc Handler getHeader, deserialize header error: %v", err)
 	}
 
-	recentHeadersCache.Add(hash, &HeaderWithChainID{Header: headerWithSum, ChainID: chainID})
 	return
 }
 

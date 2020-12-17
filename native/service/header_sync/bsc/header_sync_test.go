@@ -27,7 +27,6 @@ import (
 
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	etypes "github.com/ethereum/go-ethereum/core/types"
-	lru "github.com/hashicorp/golang-lru"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly-io-test/chains/eth"
 	"github.com/polynetwork/poly/account"
@@ -192,7 +191,6 @@ func getGenesisHeader(t *testing.T) *GenesisHeader {
 }
 
 func TestSyncGenesisHeader(t *testing.T) {
-	defer clearCache(t)
 
 	genesisHeader := getGenesisHeader(t)
 	headerOnlyBytes, _ := json.Marshal(genesisHeader.Header)
@@ -224,7 +222,6 @@ func TestSyncGenesisHeader(t *testing.T) {
 }
 
 func TestSyncGenesisHeaderNoOperator(t *testing.T) {
-	defer clearCache(t)
 
 	genesisHeader := getGenesisHeader(t)
 	genesisHeaderBytes, _ := json.Marshal(genesisHeader)
@@ -248,17 +245,7 @@ func TestSyncGenesisHeaderNoOperator(t *testing.T) {
 
 }
 
-// called by test
-func clearCache(t *testing.T) {
-	var err error
-	recentHeadersCache, err = lru.NewARC(inMemoryHeaders)
-	assert.NilError(t, err)
-	genesisCache, err = lru.NewARC(inMemoryGenesis)
-	assert.NilError(t, err)
-}
-
 func TestSyncGenesisHeaderTwice(t *testing.T) {
-	defer clearCache(t)
 
 	var (
 		native *native.NativeService
@@ -321,7 +308,6 @@ func TestSyncGenesisHeaderTwice(t *testing.T) {
 }
 
 func TestSyncGenesisHeader_ParamError(t *testing.T) {
-	defer clearCache(t)
 
 	param := new(scom.SyncGenesisHeaderParam)
 	param.ChainID = BSCChainID
@@ -353,7 +339,6 @@ func untilGetBlockHeader(t *testing.T, height uint64) *etypes.Header {
 }
 
 func TestSyncBlockHeader(t *testing.T) {
-	defer clearCache(t)
 
 	var (
 		native *native.NativeService
