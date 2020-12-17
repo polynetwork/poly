@@ -98,6 +98,7 @@ func RegisterSideChain(native *native.NativeService) ([]byte, error) {
 		Name:         params.Name,
 		BlocksToWait: params.BlocksToWait,
 		CCMCAddress:  params.CCMCAddress,
+		ExtraInfo:    params.ExtraInfo,
 	}
 	err = putSideChainApply(native, sideChain)
 	if err != nil {
@@ -183,6 +184,7 @@ func UpdateSideChain(native *native.NativeService) ([]byte, error) {
 		Name:         params.Name,
 		BlocksToWait: params.BlocksToWait,
 		CCMCAddress:  params.CCMCAddress,
+		ExtraInfo:    params.ExtraInfo,
 	}
 	err = putUpdateSideChain(native, updateSideChain)
 	if err != nil {
