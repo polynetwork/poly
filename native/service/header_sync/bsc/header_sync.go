@@ -176,6 +176,7 @@ func storeGenesis(native *native.NativeService, params *scom.SyncGenesisHeaderPa
 	putCanonicalHeight(native, params.ChainID, genesisHeader.Header.Number.Uint64())
 	putCanonicalHash(native, params.ChainID, genesisHeader.Header.Number.Uint64(), genesisHeader.Header.Hash())
 
+	scom.NotifyPutHeader(native, params.ChainID, genesisHeader.Header.Number.Uint64(), genesisHeader.Header.Hash().Hex())
 	return
 }
 
@@ -299,6 +300,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			return fmt.Errorf("bsc Handler SyncBlockHeader, addHeader err: %v", err)
 		}
 
+		scom.NotifyPutHeader(native, headerParams.ChainID, header.Number.Uint64(), header.Hash().Hex())
 	}
 	return nil
 }
