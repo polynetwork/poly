@@ -65,7 +65,7 @@ func verifyFromEthTx(native *native.NativeService, proof, extra []byte, fromChai
 
 	//todo 1. verify the proof with header
 	//determine where the k and v from
-	proofResult, err := verifyMerkleProof(ethProof, blockData, sideChain.CCMCAddress)
+	proofResult, err := VerifyMerkleProof(ethProof, blockData, sideChain.CCMCAddress)
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromEthProof, verifyMerkleProof error:%v", err)
 	}
@@ -73,7 +73,7 @@ func verifyFromEthTx(native *native.NativeService, proof, extra []byte, fromChai
 		return nil, fmt.Errorf("VerifyFromEthProof, verifyMerkleProof failed!")
 	}
 
-	if !checkProofResult(proofResult, extra) {
+	if !CheckProofResult(proofResult, extra) {
 		return nil, fmt.Errorf("VerifyFromEthProof, verify proof value hash failed, proof result:%x, extra:%x", proofResult, extra)
 	}
 
@@ -85,7 +85,7 @@ func verifyFromEthTx(native *native.NativeService, proof, extra []byte, fromChai
 	return txParam, nil
 }
 
-func verifyMerkleProof(ethProof *ETHProof, blockData *types.Header, contractAddr []byte) ([]byte, error) {
+func VerifyMerkleProof(ethProof *ETHProof, blockData *types.Header, contractAddr []byte) ([]byte, error) {
 	//1. prepare verify account
 	nodeList := new(light.NodeList)
 
@@ -101,7 +101,7 @@ func verifyMerkleProof(ethProof *ETHProof, blockData *types.Header, contractAddr
 	}
 	acctKey := crypto.Keccak256(addr)
 
-	//2. verify account proof
+	// 2. verify account proof
 	acctVal, err := trie.VerifyProof(blockData.Root, acctKey, ns)
 	if err != nil {
 		return nil, fmt.Errorf("verifyMerkleProof, verify account proof error:%s\n", err)
@@ -160,7 +160,7 @@ func verifyMerkleProof(ethProof *ETHProof, blockData *types.Header, contractAddr
 	return val, nil
 }
 
-func checkProofResult(result, value []byte) bool {
+func CheckProofResult(result, value []byte) bool {
 	var s_temp []byte
 	err := rlp.DecodeBytes(result, &s_temp)
 	if err != nil {
