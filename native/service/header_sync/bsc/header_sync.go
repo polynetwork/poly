@@ -27,7 +27,6 @@ import (
 	ecommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
@@ -664,16 +663,16 @@ func verifyCascadingFields(native *native.NativeService, header *types.Header, c
 	}
 
 	// Verify that the gas limit remains within allowed bounds
-	diff := int64(parent.Header.GasLimit) - int64(header.GasLimit)
-	if diff < 0 {
-		diff *= -1
-	}
-	limit := parent.Header.GasLimit / params.GasLimitBoundDivisor
+	// diff := int64(parent.Header.GasLimit) - int64(header.GasLimit)
+	// if diff < 0 {
+	// 	diff *= -1
+	// }
+	// limit := parent.Header.GasLimit / params.GasLimitBoundDivisor
 
-	if uint64(diff) >= limit || header.GasLimit < params.MinGasLimit {
-		err = fmt.Errorf("invalid gas limit: have %d, want %d += %d", header.GasLimit, parent.Header.GasLimit, limit)
-		return
-	}
+	// if uint64(diff) >= limit || header.GasLimit < params.MinGasLimit {
+	// 	err = fmt.Errorf("invalid gas limit: have %d, want %d += %d", header.GasLimit, parent.Header.GasLimit, limit)
+	// 	return
+	// }
 
 	return verifySeal(native, header, ctx)
 }
