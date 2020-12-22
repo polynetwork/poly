@@ -276,7 +276,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			return fmt.Errorf("indexInTurn is negative:%d inTurnHV.Height:%d header.Number:%d", indexInTurn, inTurnHV.Height.Int64(), header.Number.Int64())
 		}
 		valid := false
-		fmt.Println("signer", signer)
+		// fmt.Println("signer", signer)
 		for idx, v := range inTurnHV.Validators {
 			if v == signer {
 				valid = true

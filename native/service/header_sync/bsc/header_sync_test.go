@@ -420,7 +420,7 @@ func TestSyncBlockHeader(t *testing.T) {
 			})
 		}
 
-		fmt.Println("gHeight", height)
+		// fmt.Println("gHeight", height)
 		err := handler.SyncBlockHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err), err)
 		latestHeight := getLatestHeight(native)
