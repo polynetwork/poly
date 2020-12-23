@@ -253,7 +253,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		}
 
 		// get prev epochs, also checking recent limit
-		phv, pphv, err := getPrevHeightAndValidators(native, &header, ctx)
+		phv, pphv, lastSeenHeight, err := getPrevHeightAndValidators(native, &header, ctx)
 		if err != nil {
 			return fmt.Errorf("bsc Handler SyncBlockHeader, getPrevHeightAndValidators err: %v", err)
 		}
@@ -269,6 +269,13 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		} else {
 			// phv is in effect
 			inTurnHV = phv
+		}
+
+		if lastSeenHeight > 0 {
+			limit := int64(len(inTurnHV.Validators) / 2)
+			if header.Number.Int64() <= lastSeenHeight+limit {
+				return fmt.Errorf("bsc Handler SyncBlockHeader, RecentlySigned")
+			}
 		}
 
 		indexInTurn := int(header.Number.Uint64()) % len(inTurnHV.Validators)
@@ -489,7 +496,7 @@ type HeightAndValidators struct {
 	Validators []ecommon.Address
 }
 
-func getPrevHeightAndValidators(native *native.NativeService, header *types.Header, ctx *Context) (phv *HeightAndValidators, pphv *HeightAndValidators, err error) {
+func getPrevHeightAndValidators(native *native.NativeService, header *types.Header, ctx *Context) (phv *HeightAndValidators, pphv *HeightAndValidators, lastSeenHeight int64, err error) {
 
 	genesis, err := getGenesis(native, ctx.ChainID)
 	if err != nil {
@@ -511,6 +518,9 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 		prevHeaderWithSum *HeaderWithDifficultySum
 		validators        []ecommon.Address
 	)
+
+	lastSeenHeight = -1
+	coinbase := header.Coinbase
 	currentPV := &phv
 	for {
 		if header.ParentHash == genesis.Header.Hash() {
@@ -530,6 +540,9 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 		if err != nil {
 			err = fmt.Errorf("bsc Handler getHeader error: %v", err)
 			return
+		}
+		if lastSeenHeight == -1 && prevHeaderWithSum.Header.Coinbase == coinbase {
+			lastSeenHeight = prevHeaderWithSum.Header.Number.Int64()
 		}
 
 		if len(prevHeaderWithSum.Header.Extra) > extraVanity+extraSeal {
