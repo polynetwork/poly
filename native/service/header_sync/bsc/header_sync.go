@@ -274,7 +274,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		if lastSeenHeight > 0 {
 			limit := int64(len(inTurnHV.Validators) / 2)
 			if header.Number.Int64() <= lastSeenHeight+limit {
-				return fmt.Errorf("bsc Handler SyncBlockHeader, RecentlySigned")
+				return fmt.Errorf("bsc Handler SyncBlockHeader, RecentlySigned, lastSeenHeight:%d currentHeight:%d #V:%d", lastSeenHeight, header.Number.Int64(), len(inTurnHV.Validators))
 			}
 		}
 
