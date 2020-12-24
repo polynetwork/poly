@@ -99,8 +99,6 @@ func verifyFromTx(native *native.NativeService, proof, extra []byte, fromChainID
 		return nil, fmt.Errorf("verifyFromTx, incorrect proof format")
 	}
 
-	//todo 1. verify the proof with header
-	//determine where the k and v from
 	proofResult, err := verifyMerkleProof(bscProof, headerWithSum.Header, sideChain.CCMCAddress)
 	if err != nil {
 		return nil, fmt.Errorf("verifyFromTx, verifyMerkleProof error:%v", err)
