@@ -661,7 +661,7 @@ func verifyCascadingFields(native *native.NativeService, header *types.Header, c
 		return
 	}
 
-	if parent.Header.Number.Uint64() != number-1 || parent.Header.Hash() != header.ParentHash {
+	if parent.Header.Number.Uint64() != number-1 {
 		err = errors.New("unknown ancestor")
 		return
 	}
