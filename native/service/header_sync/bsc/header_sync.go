@@ -473,7 +473,7 @@ func addHeader(native *native.NativeService, header *types.Header, ctx *Context)
 				break
 			}
 
-			putCanonicalHash(native, ctx.ChainID, cheight, hash)
+			putCanonicalHash(native, ctx.ChainID, cheight, headHash)
 			headHash = headHeader.Header.ParentHash
 			cheight--
 			headHeader, err = getHeader(native, headHash, ctx.ChainID)
