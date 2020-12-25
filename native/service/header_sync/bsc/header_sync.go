@@ -199,8 +199,9 @@ type HeaderWithChainID struct {
 
 // HeaderWithDifficultySum ...
 type HeaderWithDifficultySum struct {
-	Header        *types.Header `json:"header"`
-	DifficultySum *big.Int      `json:"difficultySum"`
+	Header          *types.Header `json:"header"`
+	DifficultySum   *big.Int      `json:"difficultySum"`
+	EpochParentHash *ecommon.Hash `json:"epochParentHash"`
 }
 
 // SyncBlockHeader ...
@@ -222,10 +223,6 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 
 	ctx := &Context{ExtraInfo: extraInfo, ChainID: headerParams.ChainID}
 
-	var (
-		phv, pphv      *HeightAndValidators
-		lastHeaderHash ecommon.Hash
-	)
 	for _, v := range headerParams.Headers {
 		var header types.Header
 		err := json.Unmarshal(v, &header)
@@ -258,8 +255,11 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		}
 
 		// get prev epochs, also checking recent limit
-		var lastSeenHeight int64
-		phv, pphv, lastSeenHeight, err = getPrevHeightAndValidators(native, &header, ctx, phv, pphv, lastHeaderHash)
+		var (
+			lastSeenHeight int64
+			phv, pphv      *HeightAndValidators
+		)
+		phv, pphv, lastSeenHeight, err = getPrevHeightAndValidators(native, &header, ctx)
 		if err != nil {
 			return fmt.Errorf("bsc Handler SyncBlockHeader, getPrevHeightAndValidators err: %v", err)
 		}
@@ -313,7 +313,6 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			return fmt.Errorf("bsc Handler SyncBlockHeader, addHeader err: %v", err)
 		}
 
-		lastHeaderHash = headerHash
 		scom.NotifyPutHeader(native, headerParams.ChainID, header.Number.Uint64(), header.Hash().Hex())
 	}
 	return nil
@@ -499,7 +498,7 @@ type HeightAndValidators struct {
 	Validators []ecommon.Address
 }
 
-func getPrevHeightAndValidators(native *native.NativeService, header *types.Header, ctx *Context, phvLast, pphvLast *HeightAndValidators, lastHeaderHash ecommon.Hash) (phv *HeightAndValidators, pphv *HeightAndValidators, lastSeenHeight int64, err error) {
+func getPrevHeightAndValidators(native *native.NativeService, header *types.Header, ctx *Context) (phv *HeightAndValidators, pphv *HeightAndValidators, lastSeenHeight int64, err error) {
 
 	genesis, err := getGenesis(native, ctx.ChainID)
 	if err != nil {
@@ -518,82 +517,62 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 		return
 	}
 
-	var (
-		prevHeaderWithSum *HeaderWithDifficultySum
-		validators        []ecommon.Address
-	)
-
 	lastSeenHeight = -1
-	coinbase := header.Coinbase
-
-	// fast path
-	if header.ParentHash == lastHeaderHash {
-		prevHeaderWithSum, err = getHeader(native, lastHeaderHash, ctx.ChainID)
-		if err != nil {
-			err = fmt.Errorf("bsc Handler fast path getHeader error: %v", err)
-			return
+	targetCoinbase := header.Coinbase
+	if header.ParentHash == genesisHeaderHash {
+		if genesis.Header.Coinbase == targetCoinbase {
+			lastSeenHeight = genesis.Header.Number.Int64()
 		}
-
-		if len(prevHeaderWithSum.Header.Extra) > extraVanity+extraSeal {
-			validators, err = ParseValidators(prevHeaderWithSum.Header.Extra[extraVanity : len(prevHeaderWithSum.Header.Extra)-extraSeal])
-			if err != nil {
-				err = fmt.Errorf("bsc Handler fast path ParseValidators error: %v", err)
-				return
-			}
-			pphv = phvLast
-			phv = &HeightAndValidators{
-				Height:     prevHeaderWithSum.Header.Number,
-				Validators: validators,
-			}
-		} else {
-			phv, pphv = phvLast, pphvLast
-		}
-
-		limit := len(phv.Validators) / 2
-		if len(phv.Validators) < len(pphv.Validators) {
-			limit = len(pphv.Validators) / 2
-		}
-		for i := 0; i < limit; i++ {
-			if prevHeaderWithSum.Header.Coinbase == coinbase {
-				lastSeenHeight = prevHeaderWithSum.Header.Number.Int64()
-				return
-			}
-			prevHeaderWithSum, err = getHeader(native, prevHeaderWithSum.Header.ParentHash, ctx.ChainID)
-			if err != nil {
-				err = fmt.Errorf("bsc Handler fast path getHeader error: %v", err)
-				return
-			}
-
-		}
-
+		phv = &genesis.PrevValidators[0]
+		pphv = &genesis.PrevValidators[1]
 		return
 	}
 
-	// slow path
+	prevHeaderWithSum, err := getHeader(native, header.ParentHash, ctx.ChainID)
+	if err != nil {
+		err = fmt.Errorf("bsc Handler getHeader error: %v", err)
+		return
+	}
+
+	if prevHeaderWithSum.Header.Coinbase == targetCoinbase {
+		lastSeenHeight = prevHeaderWithSum.Header.Number.Int64()
+	} else {
+		nextRecentParentHash := prevHeaderWithSum.Header.ParentHash
+		defer func() {
+			if err == nil {
+				maxV := len(phv.Validators)
+				if maxV < len(pphv.Validators) {
+					maxV = len(pphv.Validators)
+				}
+				maxLimit := maxV / 2
+				for i := 0; i < maxLimit-1; i++ {
+					prevHeaderWithSum, err := getHeader(native, nextRecentParentHash, ctx.ChainID)
+					if err != nil {
+						err = fmt.Errorf("bsc Handler getHeader error: %v", err)
+						return
+					}
+					if prevHeaderWithSum.Header.Coinbase == targetCoinbase {
+						lastSeenHeight = prevHeaderWithSum.Header.Number.Int64()
+						return
+					}
+
+					if nextRecentParentHash == genesisHeaderHash {
+						return
+					}
+					nextRecentParentHash = prevHeaderWithSum.Header.ParentHash
+				}
+			}
+		}()
+	}
+
+	var (
+		validators     []ecommon.Address
+		nextParentHash ecommon.Hash
+	)
 
 	currentPV := &phv
+
 	for {
-		if header.ParentHash == genesisHeaderHash {
-			switch *currentPV {
-			case phv:
-				phv = &genesis.PrevValidators[0]
-				pphv = &genesis.PrevValidators[1]
-			case pphv:
-				pphv = &genesis.PrevValidators[0]
-			default:
-				err = fmt.Errorf("bug in bsc Handler")
-				return
-			}
-			return
-		}
-		prevHeaderWithSum, err = getHeader(native, header.ParentHash, ctx.ChainID)
-		if err != nil {
-			err = fmt.Errorf("bsc Handler getHeader error: %v", err)
-			return
-		}
-		if lastSeenHeight == -1 && prevHeaderWithSum.Header.Coinbase == coinbase {
-			lastSeenHeight = prevHeaderWithSum.Header.Number.Int64()
-		}
 
 		if len(prevHeaderWithSum.Header.Extra) > extraVanity+extraSeal {
 			validators, err = ParseValidators(prevHeaderWithSum.Header.Extra[extraVanity : len(prevHeaderWithSum.Header.Extra)-extraSeal])
@@ -616,7 +595,31 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 			}
 		}
 
-		header = prevHeaderWithSum.Header
+		nextParentHash = prevHeaderWithSum.Header.ParentHash
+		if prevHeaderWithSum.EpochParentHash != nil {
+			nextParentHash = *prevHeaderWithSum.EpochParentHash
+		}
+
+		if nextParentHash == genesisHeaderHash {
+			switch *currentPV {
+			case phv:
+				phv = &genesis.PrevValidators[0]
+				pphv = &genesis.PrevValidators[1]
+			case pphv:
+				pphv = &genesis.PrevValidators[0]
+			default:
+				err = fmt.Errorf("bug in bsc Handler")
+				return
+			}
+			return
+		}
+
+		prevHeaderWithSum, err = getHeader(native, nextParentHash, ctx.ChainID)
+		if err != nil {
+			err = fmt.Errorf("bsc Handler getHeader error: %v", err)
+			return
+		}
+
 	}
 }
 
