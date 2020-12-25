@@ -255,11 +255,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		}
 
 		// get prev epochs, also checking recent limit
-		var (
-			lastSeenHeight int64
-			phv, pphv      *HeightAndValidators
-		)
-		phv, pphv, lastSeenHeight, err = getPrevHeightAndValidators(native, &header, ctx)
+		phv, pphv, lastSeenHeight, err := getPrevHeightAndValidators(native, &header, ctx)
 		if err != nil {
 			return fmt.Errorf("bsc Handler SyncBlockHeader, getPrevHeightAndValidators err: %v", err)
 		}
@@ -308,7 +304,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			return fmt.Errorf("bsc Handler SyncBlockHeader, invalid signer")
 		}
 
-		err = addHeader(native, &header, ctx)
+		err = addHeader(native, &header, phv, ctx)
 		if err != nil {
 			return fmt.Errorf("bsc Handler SyncBlockHeader, addHeader err: %v", err)
 		}
@@ -414,7 +410,7 @@ func putCanonicalHeight(native *native.NativeService, chainID uint64, height uin
 		cstates.GenRawStorageItem(utils.GetUint64Bytes(uint64(height))))
 }
 
-func addHeader(native *native.NativeService, header *types.Header, ctx *Context) (err error) {
+func addHeader(native *native.NativeService, header *types.Header, phv *HeightAndValidators, ctx *Context) (err error) {
 
 	parentHeader, err := getHeader(native, header.ParentHash, ctx.ChainID)
 	if err != nil {
@@ -437,7 +433,7 @@ func addHeader(native *native.NativeService, header *types.Header, ctx *Context)
 	localTd := cheader.DifficultySum
 	externTd := new(big.Int).Add(header.Difficulty, parentHeader.DifficultySum)
 
-	headerWithSum := &HeaderWithDifficultySum{Header: header, DifficultySum: externTd}
+	headerWithSum := &HeaderWithDifficultySum{Header: header, DifficultySum: externTd, EpochParentHash: phv.Hash}
 	err = putHeaderWithSum(native, ctx.ChainID, headerWithSum)
 	if err != nil {
 		return
@@ -496,9 +492,10 @@ func addHeader(native *native.NativeService, header *types.Header, ctx *Context)
 type HeightAndValidators struct {
 	Height     *big.Int
 	Validators []ecommon.Address
+	Hash       *ecommon.Hash
 }
 
-func getPrevHeightAndValidators(native *native.NativeService, header *types.Header, ctx *Context) (phv *HeightAndValidators, pphv *HeightAndValidators, lastSeenHeight int64, err error) {
+func getPrevHeightAndValidators(native *native.NativeService, header *types.Header, ctx *Context) (phv, pphv *HeightAndValidators, lastSeenHeight int64, err error) {
 
 	genesis, err := getGenesis(native, ctx.ChainID)
 	if err != nil {
@@ -523,7 +520,9 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 		if genesis.Header.Coinbase == targetCoinbase {
 			lastSeenHeight = genesis.Header.Number.Int64()
 		}
+
 		phv = &genesis.PrevValidators[0]
+		phv.Hash = &genesisHeaderHash
 		pphv = &genesis.PrevValidators[1]
 		return
 	}
@@ -586,6 +585,8 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 			}
 			switch *currentPV {
 			case phv:
+				hash := prevHeaderWithSum.Header.Hash()
+				phv.Hash = &hash
 				currentPV = &pphv
 			case pphv:
 				return
@@ -604,6 +605,7 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 			switch *currentPV {
 			case phv:
 				phv = &genesis.PrevValidators[0]
+				phv.Hash = &genesisHeaderHash
 				pphv = &genesis.PrevValidators[1]
 			case pphv:
 				pphv = &genesis.PrevValidators[0]
