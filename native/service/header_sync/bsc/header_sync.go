@@ -748,6 +748,9 @@ func verifyCascadingFields(native *native.NativeService, header *types.Header, c
 	return verifySeal(native, header, ctx)
 }
 
+// for test
+var mockSigner ecommon.Address
+
 func verifySeal(native *native.NativeService, header *types.Header, ctx *Context) (signer ecommon.Address, err error) {
 	// Verifying the genesis block is not supported
 	number := header.Number.Uint64()
@@ -756,6 +759,9 @@ func verifySeal(native *native.NativeService, header *types.Header, ctx *Context
 		return
 	}
 
+	if mockSigner != (ecommon.Address{}) {
+		return mockSigner, nil
+	}
 	// Resolve the authorization key and check against validators
 	signer, err = ecrecover(header, ctx.ExtraInfo.ChainID)
 	if err != nil {

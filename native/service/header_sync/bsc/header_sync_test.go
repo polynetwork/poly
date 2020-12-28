@@ -155,8 +155,15 @@ func getHeaderByHash(native *native.NativeService, hash ethcommon.Hash) []byte {
 const BSCChainID = 2
 
 func getTool() *eth.ETHTools {
-	tool := eth.NewEthTools("https://data-seed-prebsc-1-s1.binance.org:8545/")
+	tool := eth.NewEthTools("https://data-seed-prebsc-2-s3.binance.org:8545/")
 	return tool
+}
+
+func getBlockHeaderByHash(t *testing.T, hash ethcommon.Hash) *etypes.Header {
+	tool := getTool()
+	hdr, err := tool.GetBlockHeaderByHash(hash)
+	assert.NilError(t, err)
+	return hdr
 }
 
 func getBlockHeader(t *testing.T, height uint64) *etypes.Header {
@@ -166,16 +173,10 @@ func getBlockHeader(t *testing.T, height uint64) *etypes.Header {
 	return hdr
 }
 
-func getGenesisHeader(t *testing.T) *GenesisHeader {
-	tool := getTool()
-	height, err := tool.GetNodeHeight()
-	if err != nil {
-		panic(err)
-	}
-
-	epochHeight := height - height%200
+func getGenesisHeaderByHeight(t *testing.T, epochHeight uint64) *GenesisHeader {
 	pEpochHeight := epochHeight - 200
 
+	tool := getTool()
 	hdr, err := tool.GetBlockHeader(epochHeight)
 	assert.NilError(t, err)
 	phdr, err := tool.GetBlockHeader(pEpochHeight)
@@ -188,6 +189,17 @@ func getGenesisHeader(t *testing.T) *GenesisHeader {
 	}}
 
 	return &genesisHeader
+}
+
+func getGenesisHeader(t *testing.T) *GenesisHeader {
+	tool := getTool()
+	height, err := tool.GetNodeHeight()
+	if err != nil {
+		panic(err)
+	}
+
+	epochHeight := height - height%200
+	return getGenesisHeaderByHeight(t, epochHeight)
 }
 
 func TestSyncGenesisHeader(t *testing.T) {
@@ -434,4 +446,171 @@ func TestSyncBlockHeader(t *testing.T) {
 			assert.Equal(t, true, bytes.Equal(headerBytesFromStore, headerBytes))
 		}
 	}
+}
+
+func TestSyncBlockHeaderForked(t *testing.T) {
+	var (
+		native *native.NativeService
+		height uint64
+		err    error
+	)
+
+	handler := NewHandler()
+
+	{
+		genesisHeader := getGenesisHeaderByHeight(t, 3487200)
+		headerOnlyBytes, _ := json.Marshal(genesisHeader.Header)
+		genesisHeaderBytes, _ := json.Marshal(genesisHeader)
+
+		param := new(scom.SyncGenesisHeaderParam)
+		param.ChainID = BSCChainID
+		param.GenesisHeader = genesisHeaderBytes
+		sink := common.NewZeroCopySink(nil)
+		param.Serialization(sink)
+
+		tx := &types.Transaction{
+			SignedAddr: []common.Address{acct.Address},
+		}
+
+		native, err = NewNative(sink.Bytes(), tx, nil)
+		assert.NilError(t, err)
+		err = handler.SyncGenesisHeader(native)
+
+		assert.Equal(t, SUCCESS, typeOfError(err), err)
+		height = getLatestHeight(native)
+		assert.Equal(t, genesisHeader.Header.Number.Uint64(), height)
+		headerHash := getHeaderHashByHeight(native, height)
+		assert.Equal(t, true, genesisHeader.Header.Hash() == headerHash)
+		headerFromStore := getHeaderByHash(native, headerHash)
+		assert.Equal(t, true, bytes.Equal(headerFromStore, headerOnlyBytes))
+	}
+
+	// test id 97
+	testnetChainID := big.NewInt(97)
+	{
+		param := new(scom.SyncBlockHeaderParam)
+		param.ChainID = BSCChainID
+		param.Address = acct.Address
+		for i := 1; i < 10; i++ {
+			header := untilGetBlockHeader(t, height+uint64(i))
+			headerBytes, _ := json.Marshal(header)
+			param.Headers = append(param.Headers, headerBytes)
+		}
+		sink := common.NewZeroCopySink(nil)
+		param.Serialization(sink)
+
+		tx := &types.Transaction{
+			SignedAddr: []common.Address{acct.Address},
+		}
+		native, _ = NewNative(sink.Bytes(), tx, native.GetCacheDB())
+		{
+			// add sidechain info
+			extra := ExtraInfo{
+				ChainID: testnetChainID,
+			}
+			extraBytes, _ := json.Marshal(extra)
+			side_chain_manager.PutSideChain(native, &side_chain_manager.SideChain{
+				ExtraInfo: extraBytes,
+				ChainId:   BSCChainID,
+			})
+		}
+
+		// fmt.Println("gHeight", height)
+		err := handler.SyncBlockHeader(native)
+		assert.Equal(t, SUCCESS, typeOfError(err), err)
+		latestHeight := getLatestHeight(native)
+		assert.Equal(t, latestHeight, height+9)
+	}
+
+	interestedHeight := height + 10
+
+	{
+		param := new(scom.SyncBlockHeaderParam)
+		param.ChainID = BSCChainID
+		param.Address = acct.Address
+
+		header := getBlockHeader(t, interestedHeight)
+		signer, err := ecrecover(header, testnetChainID)
+		assert.Equal(t, SUCCESS, typeOfError(err), err)
+		mockSigner = signer
+		oldHash := header.Hash()
+		header.ReceiptHash = ethcommon.Hash{}
+		assert.Equal(t, true, oldHash != header.Hash())
+		headerBytes, _ := json.Marshal(header)
+		param.Headers = append(param.Headers, headerBytes)
+
+		sink := common.NewZeroCopySink(nil)
+		param.Serialization(sink)
+
+		tx := &types.Transaction{
+			SignedAddr: []common.Address{acct.Address},
+		}
+		native, _ = NewNative(sink.Bytes(), tx, native.GetCacheDB())
+
+		err = handler.SyncBlockHeader(native)
+		assert.Equal(t, SUCCESS, typeOfError(err), err)
+		latestHeight := getLatestHeight(native)
+		assert.Equal(t, latestHeight, interestedHeight)
+		headerHash := getHeaderHashByHeight(native, interestedHeight)
+		assert.Equal(t, true, header.Hash() == headerHash)
+		headerFromStore := getHeaderByHash(native, headerHash)
+		assert.Equal(t, true, bytes.Equal(headerFromStore, headerBytes))
+
+		mockSigner = ethcommon.Address{}
+
+		// add real header
+		param = new(scom.SyncBlockHeaderParam)
+		param.ChainID = BSCChainID
+		param.Address = acct.Address
+
+		realHeader := getBlockHeader(t, interestedHeight)
+		realHeaderBytes, _ := json.Marshal(realHeader)
+		param.Headers = append(param.Headers, realHeaderBytes)
+
+		sink = common.NewZeroCopySink(nil)
+		param.Serialization(sink)
+
+		tx = &types.Transaction{
+			SignedAddr: []common.Address{acct.Address},
+		}
+		native, _ = NewNative(sink.Bytes(), tx, native.GetCacheDB())
+
+		err = handler.SyncBlockHeader(native)
+		assert.Equal(t, SUCCESS, typeOfError(err), err)
+		latestHeight = getLatestHeight(native)
+		assert.Equal(t, latestHeight, interestedHeight)
+		headerHash = getHeaderHashByHeight(native, interestedHeight)
+		// still the old header
+		assert.Equal(t, true, header.Hash() == headerHash)
+		headerFromStore = getHeaderByHash(native, headerHash)
+		assert.Equal(t, true, bytes.Equal(headerFromStore, headerBytes))
+
+		// add next header
+		param = new(scom.SyncBlockHeaderParam)
+		param.ChainID = BSCChainID
+		param.Address = acct.Address
+
+		nextHeader := getBlockHeader(t, interestedHeight+1)
+		nextHeaderBytes, _ := json.Marshal(nextHeader)
+		param.Headers = append(param.Headers, nextHeaderBytes)
+
+		sink = common.NewZeroCopySink(nil)
+		param.Serialization(sink)
+
+		tx = &types.Transaction{
+			SignedAddr: []common.Address{acct.Address},
+		}
+		native, _ = NewNative(sink.Bytes(), tx, native.GetCacheDB())
+
+		err = handler.SyncBlockHeader(native)
+		assert.Equal(t, SUCCESS, typeOfError(err), err)
+		latestHeight = getLatestHeight(native)
+		assert.Equal(t, latestHeight, interestedHeight+1)
+		headerHash = getHeaderHashByHeight(native, interestedHeight)
+		// change to the new header
+		assert.Equal(t, true, realHeader.Hash() == headerHash)
+		headerFromStore = getHeaderByHash(native, headerHash)
+		assert.Equal(t, true, bytes.Equal(headerFromStore, realHeaderBytes))
+	}
+
 }
