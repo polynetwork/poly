@@ -19,10 +19,12 @@ package cross_chain_manager
 import (
 	"encoding/hex"
 	"fmt"
+
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/bsc"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/btc"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/cosmos"
@@ -62,6 +64,8 @@ func GetChainHandler(router uint64) (scom.ChainHandler, error) {
 		return neo.NewNEOHandler(), nil
 	case utils.COSMOS_ROUTER:
 		return cosmos.NewCosmosHandler(), nil
+	case utils.BSC_ROUTER:
+		return bsc.NewHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported router:%d", router)
 	}

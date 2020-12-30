@@ -20,6 +20,7 @@ package side_chain_manager
 import (
 	"encoding/hex"
 	"fmt"
+
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
 	"github.com/polynetwork/poly/common"
@@ -97,6 +98,7 @@ func RegisterSideChain(native *native.NativeService) ([]byte, error) {
 		Name:         params.Name,
 		BlocksToWait: params.BlocksToWait,
 		CCMCAddress:  params.CCMCAddress,
+		ExtraInfo:    params.ExtraInfo,
 	}
 	err = putSideChainApply(native, sideChain)
 	if err != nil {
@@ -140,7 +142,7 @@ func ApproveRegisterSideChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_TRUE, nil
 	}
 
-	err = putSideChain(native, registerSideChain)
+	err = PutSideChain(native, registerSideChain)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterSideChain, putSideChain error: %v", err)
 	}
@@ -182,6 +184,7 @@ func UpdateSideChain(native *native.NativeService) ([]byte, error) {
 		Name:         params.Name,
 		BlocksToWait: params.BlocksToWait,
 		CCMCAddress:  params.CCMCAddress,
+		ExtraInfo:    params.ExtraInfo,
 	}
 	err = putUpdateSideChain(native, updateSideChain)
 	if err != nil {
@@ -225,7 +228,7 @@ func ApproveUpdateSideChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_TRUE, nil
 	}
 
-	err = putSideChain(native, sideChain)
+	err = PutSideChain(native, sideChain)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveUpdateSideChain, putSideChain error: %v", err)
 	}

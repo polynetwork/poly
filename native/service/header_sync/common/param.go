@@ -19,6 +19,7 @@ package common
 
 import (
 	"fmt"
+
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/native"

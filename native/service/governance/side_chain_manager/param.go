@@ -18,6 +18,7 @@ package side_chain_manager
 
 import (
 	"fmt"
+
 	"github.com/polynetwork/poly/common"
 )
 
@@ -28,6 +29,7 @@ type RegisterSideChainParam struct {
 	Name         string
 	BlocksToWait uint64
 	CCMCAddress  []byte
+	ExtraInfo    []byte
 }
 
 func (this *RegisterSideChainParam) Serialization(sink *common.ZeroCopySink) error {
@@ -37,6 +39,7 @@ func (this *RegisterSideChainParam) Serialization(sink *common.ZeroCopySink) err
 	sink.WriteVarBytes([]byte(this.Name))
 	sink.WriteVarUint(this.BlocksToWait)
 	sink.WriteVarBytes(this.CCMCAddress)
+	sink.WriteVarBytes(this.ExtraInfo)
 	return nil
 }
 
@@ -65,16 +68,21 @@ func (this *RegisterSideChainParam) Deserialization(source *common.ZeroCopySourc
 	if eof {
 		return fmt.Errorf("source.NextVarUint, deserialize blocksToWait error")
 	}
+	if blocksToWait == 0 {
+		return fmt.Errorf("minimal value of BlocksToWait is 1")
+	}
 	CCMCAddress, eof := source.NextVarBytes()
 	if eof {
 		return fmt.Errorf("source.NextVarBytes, deserialize CCMCAddress error")
 	}
+	ExtraInfo, _ := source.NextVarBytes()
 	this.Address = addr
 	this.ChainId = chainId
 	this.Router = router
 	this.Name = name
 	this.BlocksToWait = blocksToWait
 	this.CCMCAddress = CCMCAddress
+	this.ExtraInfo = ExtraInfo
 	return nil
 }
 

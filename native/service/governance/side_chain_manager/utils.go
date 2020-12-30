@@ -19,6 +19,7 @@ package side_chain_manager
 
 import (
 	"fmt"
+
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
 	"github.com/btcsuite/btcd/txscript"
@@ -94,7 +95,7 @@ func GetSideChain(native *native.NativeService, chainID uint64) (*SideChain, err
 
 }
 
-func putSideChain(native *native.NativeService, sideChain *SideChain) error {
+func PutSideChain(native *native.NativeService, sideChain *SideChain) error {
 	contract := utils.SideChainManagerContractAddress
 	chainidByte := utils.GetUint64Bytes(sideChain.ChainId)
 
