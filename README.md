@@ -16,7 +16,7 @@ Poly is a blockchain system providing cross-chain interactive services. Your tra
 - Quick block generation time 1s
 - Support for heterogeneous and homogeneous chains
 - Supports cross chain transaction consistency and finality
-- Supports variety of heterogeneous chain protocol (Bitcoin/Ethereum/Neo/Ontology/Cosmos-SDK)
+- Supports variety of heterogeneous chain protocol (Bitcoin/Ethereum/Neo/Ontology/Cosmos-SDK/BSC)
 
 ## Install from Binaries
 
