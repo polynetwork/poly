@@ -51,6 +51,11 @@ func CurrentBlockHash() common.Uint256 {
 	return ledger.DefLedger.GetCurrentBlockHash()
 }
 
+// GetStateMerkleRoot from ledger
+func GetStateMerkleRoot(height uint32) (common.Uint256, error) {
+	return ledger.DefLedger.GetStateMerkleRoot(height)
+}
+
 //GetBlockFromStore from ledger
 func GetBlockFromStore(hash common.Uint256) (*types.Block, error) {
 	return ledger.DefLedger.GetBlockByHash(hash)
