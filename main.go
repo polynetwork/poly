@@ -32,6 +32,7 @@ import (
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/ontology-eventbus/actor"
 	alog "github.com/ontio/ontology-eventbus/log"
+	sdk "github.com/polynetwork/poly-go-sdk"
 	"github.com/polynetwork/poly/account"
 	"github.com/polynetwork/poly/cmd"
 	cmdcom "github.com/polynetwork/poly/cmd/common"
@@ -122,6 +123,8 @@ func setupAPP() *cli.App {
 		//ws setting
 		utils.WsEnabledFlag,
 		utils.WsPortFlag,
+		//checkpoint setting
+		utils.CheckpointPeerFlag,
 	}
 	app.Before = func(context *cli.Context) error {
 		runtime.GOMAXPROCS(runtime.NumCPU())
@@ -190,6 +193,7 @@ func startOntology(ctx *cli.Context) {
 	initWs(ctx)
 	initNodeInfo(ctx, p2pSvr)
 
+	go initCheckpoint(ctx)
 	go logCurrBlockHeight()
 	waitToExit()
 }
@@ -354,6 +358,66 @@ func initRpc(ctx *cli.Context) error {
 	}
 	log.Infof("Rpc init success")
 	return nil
+}
+
+func initCheckpoint(ctx *cli.Context) {
+	rpcPeer := ctx.GlobalString(utils.GetFlagName(utils.CheckpointPeerFlag))
+	if rpcPeer == "" {
+		return
+	}
+
+	polySdk := sdk.NewPolySdk()
+	polySdk.NewRpcClient().SetAddress(rpcPeer)
+
+	localHeight := ledger.DefLedger.GetCurrentBlockHeight()
+	checkedLocalHeight := uint32(0)
+	for checkedLocalHeight+1 < localHeight {
+		rootHex, err := polySdk.GetStateMerkleRoot(checkedLocalHeight)
+		if err != nil {
+			log.Errorf("polySdk.GetStateMerkleRoot error:%v", err)
+			continue
+		}
+		localRoot, err := ledger.DefLedger.GetStateMerkleRoot(checkedLocalHeight)
+		if err != nil {
+			log.Errorf("ledger.DefLedger.GetStateMerkleRoot error:%v", err)
+			continue
+		}
+		if rootHex != localRoot.ToHexString() {
+			log.Log.Fatalf("state root mismatch at %d, local root:%s, peer root:%s", checkedLocalHeight, localRoot.ToHexString(), rootHex)
+			os.Exit(1)
+		}
+		checkedLocalHeight++
+	}
+
+	ticker := time.NewTicker(config.DEFAULT_GEN_BLOCK_TIME * time.Second)
+	for {
+		select {
+		case <-ticker.C:
+			localHeight = ledger.DefLedger.GetCurrentBlockHeight()
+			for checkedLocalHeight+1 < localHeight {
+				rootHex, err := polySdk.GetStateMerkleRoot(checkedLocalHeight)
+				if err != nil {
+					log.Errorf("polySdk.GetStateMerkleRoot error:%v", err)
+					continue
+				}
+				localRoot, err := ledger.DefLedger.GetStateMerkleRoot(checkedLocalHeight)
+				if err != nil {
+					log.Errorf("ledger.DefLedger.GetStateMerkleRoot error:%v", err)
+					continue
+				}
+				if rootHex != localRoot.ToHexString() {
+					log.Log.Fatalf("state root mismatch at %d, local root:%s, peer root:%s", checkedLocalHeight, localRoot.ToHexString(), rootHex)
+				}
+				checkedLocalHeight++
+			}
+			isNeedNewFile := log.CheckIfNeedNewFile()
+			if isNeedNewFile {
+				log.ClosePrintLog()
+				log.InitLog(int(config.DefConfig.Common.LogLevel), log.PATH, log.Stdout)
+			}
+		}
+	}
+	return
 }
 
 func initLocalRpc(ctx *cli.Context) error {
