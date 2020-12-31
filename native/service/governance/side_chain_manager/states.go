@@ -22,6 +22,8 @@ import (
 	"sort"
 
 	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/config"
+	"github.com/polynetwork/poly/core/ledger"
 )
 
 type SideChain struct {
@@ -41,7 +43,10 @@ func (this *SideChain) Serialization(sink *common.ZeroCopySink) error {
 	sink.WriteVarBytes([]byte(this.Name))
 	sink.WriteVarUint(this.BlocksToWait)
 	sink.WriteVarBytes(this.CCMCAddress)
-	sink.WriteVarBytes(this.ExtraInfo)
+	height := config.GetExtraInfoHeight(config.DefConfig.P2PNode.NetworkId)
+	if ledger.DefLedger.GetCurrentBlockHeight() >= height {
+		sink.WriteVarBytes(this.ExtraInfo)
+	}
 	return nil
 }
 
