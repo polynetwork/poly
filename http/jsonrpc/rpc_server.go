@@ -24,6 +24,7 @@ import (
 	"strconv"
 
 	"fmt"
+
 	cfg "github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/common/log"
 	"github.com/polynetwork/poly/http/base/rpc"
@@ -55,6 +56,7 @@ func StartRPCServer() error {
 	rpc.HandleFunc("getcrossstatesproof", rpc.GetCrossStatesProof)
 	rpc.HandleFunc("getheaderbyheight", rpc.GetHeaderByHeight)
 	rpc.HandleFunc("getblocktxsbyheight", rpc.GetBlockTxsByHeight)
+	rpc.HandleFunc("getstatemerkleroot", rpc.GetStateMerkleRoot)
 
 	err := http.ListenAndServe(":"+strconv.Itoa(int(cfg.DefConfig.Rpc.HttpJsonPort)), nil)
 	if err != nil {

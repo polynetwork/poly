@@ -21,6 +21,7 @@ package rpc
 import (
 	"encoding/hex"
 	"fmt"
+
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/common/log"
@@ -465,4 +466,26 @@ func GetBlockTxsByHeight(params []interface{}) map[string]interface{} {
 	default:
 		return responsePack(berr.INVALID_PARAMS, "")
 	}
+}
+
+// get state merkle root by block height
+func GetStateMerkleRoot(params []interface{}) map[string]interface{} {
+
+	if len(params) != 1 {
+		return responsePack(berr.INVALID_PARAMS, nil)
+	}
+	switch params[0].(type) {
+	// block height
+	case float64:
+		index := uint32(params[0].(float64))
+		root, err := bactor.GetStateMerkleRoot(index)
+		if err != nil {
+			return responsePack(berr.INTERNAL_ERROR, err.Error())
+		}
+
+		return responseSuccess(root.ToHexString())
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
 }
