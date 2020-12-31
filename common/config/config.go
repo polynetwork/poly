@@ -99,12 +99,21 @@ var CHAIN_ID = map[uint32]uint64{
 	NETWORK_ID_TEST_NET: TESTNET_CHAIN_ID,
 }
 
+var EXTRA_INFO_HEIGHT = map[uint32]uint32{
+	NETWORK_ID_MAIN_NET: constants.EXTRA_INFO_HEIGHT_MAINNET,
+	NETWORK_ID_TEST_NET: constants.EXTRA_INFO_HEIGHT_TESTNET,
+}
+
 func GetNetworkMagic(id uint32) uint32 {
 	nid, ok := NETWORK_MAGIC[id]
 	if ok {
 		return nid
 	}
 	return id
+}
+
+func GetExtraInfoHeight(id uint32) uint32 {
+	return EXTRA_INFO_HEIGHT[id]
 }
 
 func GetNetworkName(id uint32) string {
