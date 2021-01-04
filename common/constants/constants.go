@@ -42,4 +42,4 @@ const (
 
 // extra info change height
 const EXTRA_INFO_HEIGHT_MAINNET = 2917744
-const EXTRA_INFO_HEIGHT_TESTNET = 1664799
+const EXTRA_INFO_HEIGHT_TESTNET = 1664798
