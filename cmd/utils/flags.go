@@ -153,10 +153,6 @@ var (
 		Name:  "localrpc",
 		Usage: "Enable local rpc server",
 	}
-	CheckpointPeerFlag = cli.StringFlag{
-		Name:  "ckptpeer",
-		Usage: "Checkpoint with specified peer",
-	}
 	RPCLocalProtFlag = cli.UintFlag{
 		Name:  "localrpcport",
 		Usage: "Json rpc local server listening port `<number>`",

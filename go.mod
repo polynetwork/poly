@@ -19,7 +19,6 @@ require (
 	github.com/ontio/ontology-crypto v1.0.9
 	github.com/ontio/ontology-eventbus v0.9.1
 	github.com/pborman/uuid v1.2.0
-	github.com/polynetwork/poly-go-sdk v0.0.0-00010101000000-000000000000 // indirect
 	github.com/stretchr/testify v1.6.1
 	github.com/syndtr/goleveldb v1.0.1-0.20190923125748-758128399b1d
 	github.com/tendermint/tendermint v0.33.6
@@ -28,5 +27,3 @@ require (
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381
 )
-
-replace github.com/polynetwork/poly-go-sdk => github.com/zhiqiangxu/poly-go-sdk v0.0.0-20201231082711-47a5b3e0da09

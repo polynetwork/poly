@@ -36,6 +36,8 @@ type SideChain struct {
 	ExtraInfo    []byte
 }
 
+var Test bool
+
 func (this *SideChain) Serialization(sink *common.ZeroCopySink) error {
 	sink.WriteVarBytes(this.Address[:])
 	sink.WriteVarUint(this.ChainId)
@@ -43,8 +45,9 @@ func (this *SideChain) Serialization(sink *common.ZeroCopySink) error {
 	sink.WriteVarBytes([]byte(this.Name))
 	sink.WriteVarUint(this.BlocksToWait)
 	sink.WriteVarBytes(this.CCMCAddress)
+
 	height := config.GetExtraInfoHeight(config.DefConfig.P2PNode.NetworkId)
-	if ledger.DefLedger.GetCurrentBlockHeight() >= height {
+	if Test || ledger.DefLedger.GetCurrentBlockHeight() >= height {
 		sink.WriteVarBytes(this.ExtraInfo)
 	}
 	return nil

@@ -55,6 +55,7 @@ var (
 
 func init() {
 	setBKers()
+	side_chain_manager.Test = true
 }
 
 func NewNative(args []byte, tx *types.Transaction, db *storage.CacheDB) (*native.NativeService, error) {
@@ -142,14 +143,25 @@ func getHeaderHashByHeight(native *native.NativeService, height uint64) ethcommo
 	return hws.Header.Hash()
 }
 
-func getHeaderByHash(native *native.NativeService, hash ethcommon.Hash) []byte {
+func getHeaderByHashWithCheck(native *native.NativeService, hash ethcommon.Hash, check bool, exist bool) []byte {
 	hws, err := getHeader(native, hash, BSCChainID)
 	if err != nil {
 		return nil
 	}
 
+	if check {
+		if exist && hws.EpochParentHash == nil {
+			panic("EpochParentHash empty")
+		} else if !exist && hws.EpochParentHash != nil {
+			panic("EpochParentHash not empty")
+		}
+	}
 	headerOnly, _ := json.Marshal(hws.Header)
 	return headerOnly
+}
+
+func getHeaderByHash(native *native.NativeService, hash ethcommon.Hash) []byte {
+	return getHeaderByHashWithCheck(native, hash, false, false)
 }
 
 const BSCChainID = 2
@@ -228,7 +240,7 @@ func TestSyncGenesisHeader(t *testing.T) {
 	assert.Equal(t, genesisHeader.Header.Number.Uint64(), height)
 	headerHash := getHeaderHashByHeight(native, height)
 	assert.Equal(t, true, genesisHeader.Header.Hash() == headerHash)
-	headerFromStore := getHeaderByHash(native, headerHash)
+	headerFromStore := getHeaderByHashWithCheck(native, headerHash, true, false)
 	assert.Equal(t, true, bytes.Equal(headerFromStore, headerOnlyBytes))
 
 }
@@ -441,7 +453,7 @@ func TestSyncBlockHeader(t *testing.T) {
 		for h := height + 1; h <= height+4; h++ {
 			headerHash := getHeaderHashByHeight(native, h)
 			assert.Equal(t, true, headerHash == h2h[h].Hash())
-			headerBytesFromStore := getHeaderByHash(native, headerHash)
+			headerBytesFromStore := getHeaderByHashWithCheck(native, headerHash, true, true)
 			headerBytes, _ := json.Marshal(h2h[h])
 			assert.Equal(t, true, bytes.Equal(headerBytesFromStore, headerBytes))
 		}
