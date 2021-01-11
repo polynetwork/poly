@@ -58,6 +58,7 @@ var (
 
 func init() {
 	setBKers()
+	side_chain_manager.Test = true
 }
 
 func NewNative(args []byte, tx *types.Transaction, db *storage.CacheDB) (*native.NativeService, error) {
@@ -560,7 +561,7 @@ func TestSyncBlockHeader(t *testing.T) {
 			assert.Equal(t, true, bytes.Equal(headerBytesFromStore, headerBytes))
 		}
 	}
-
+	// check find previous validators and verify header process
 	{
 		param := new(scom.SyncBlockHeaderParam)
 		param.ChainID = hecoChainID
@@ -581,7 +582,6 @@ func TestSyncBlockHeader(t *testing.T) {
 		}
 		native, _ = NewNative(sink.Bytes(), tx, native.GetCacheDB())
 
-		// fmt.Println("gHeight", height)
 		err := handler.SyncBlockHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err), err)
 		latestHeight := getLatestHeight(native)
@@ -597,4 +597,191 @@ func TestSyncBlockHeader(t *testing.T) {
 			assert.Equal(t, true, bytes.Equal(headerBytesFromStore, headerBs))
 		}
 	}
+}
+
+func TestSyncForkBlockHeader(t *testing.T) {
+
+	var (
+		native *native.NativeService
+		height uint64
+		err    error
+	)
+
+	handler := NewHecoHandler()
+
+	{
+		native, err = NewNative(nil, &types.Transaction{}, nil)
+		// add sidechain info
+		extra := ExtraInfo{
+			// test id 256, main id 128
+			ChainID: big.NewInt(128),
+			Period:  3,
+		}
+		extraBytes, _ := json.Marshal(extra)
+		err = side_chain_manager.PutSideChain(native, &side_chain_manager.SideChain{
+			ExtraInfo: extraBytes,
+			ChainId:   hecoChainID,
+		})
+		assert.NilError(t, err)
+
+		sideInfo, err := side_chain_manager.GetSideChain(native, hecoChainID)
+		assert.NilError(t, err)
+		assert.Equal(t, true, bytes.Equal(sideInfo.ExtraInfo, extraBytes))
+		assert.Equal(t, sideInfo.ChainId, hecoChainID)
+	}
+
+	{
+		genesisHeader := getGenesisHeader(t)
+		headerOnlyBytes, _ := json.Marshal(genesisHeader.Header)
+		genesisHeaderBytes, _ := json.Marshal(genesisHeader)
+
+		param := new(scom.SyncGenesisHeaderParam)
+		param.ChainID = hecoChainID
+		param.GenesisHeader = genesisHeaderBytes
+		sink := common.NewZeroCopySink(nil)
+		param.Serialization(sink)
+
+		tx := &types.Transaction{
+			SignedAddr: []common.Address{acct.Address},
+		}
+
+		native, err = NewNative(sink.Bytes(), tx, native.GetCacheDB())
+		assert.NilError(t, err)
+		err = handler.SyncGenesisHeader(native)
+
+		assert.Equal(t, SUCCESS, typeOfError(err), err)
+		height = getLatestHeight(native)
+		assert.Equal(t, genesisHeader.Header.Number.Uint64(), height)
+		headerHash := getHeaderHashByHeight(native, height)
+		assert.Equal(t, true, genesisHeader.Header.Hash() == headerHash)
+		headerFromStore := getHeaderByHash(native, headerHash)
+		assert.Equal(t, true, bytes.Equal(headerFromStore, headerOnlyBytes))
+	}
+
+	// check find previous validators and verify header process
+	{
+		param := new(scom.SyncBlockHeaderParam)
+		param.ChainID = hecoChainID
+		param.Address = acct.Address
+		height = getLatestHeight(native)
+
+		var headerNumber uint64 = 250
+		for i := 1; i <= int(headerNumber); i++ {
+			headerBs, _ := json.Marshal(untilGetBlockHeader(t, height+uint64(i)))
+			param.Headers = append(param.Headers, headerBs)
+		}
+
+		sink := common.NewZeroCopySink(nil)
+		param.Serialization(sink)
+
+		tx := &types.Transaction{
+			SignedAddr: []common.Address{acct.Address},
+		}
+		native, _ = NewNative(sink.Bytes(), tx, native.GetCacheDB())
+
+		err := handler.SyncBlockHeader(native)
+		assert.Equal(t, SUCCESS, typeOfError(err), err)
+		latestHeight := getLatestHeight(native)
+		assert.Equal(t, latestHeight, height+headerNumber)
+
+		for h := height + 1; h <= height+headerNumber; h++ {
+			headerHash := getHeaderHashByHeight(native, h)
+			headerBs := param.Headers[h-height-1]
+			var oheader etypes.Header
+			json.Unmarshal(headerBs, &oheader)
+			assert.Equal(t, true, headerHash == oheader.Hash())
+			headerBytesFromStore := getHeaderByHash(native, headerHash)
+			assert.Equal(t, true, bytes.Equal(headerBytesFromStore, headerBs))
+		}
+	}
+	// check forked chain can come back to normal
+	TestFlagNoCheckHecoHeaderSig = true
+
+	{
+		// first sync forked headers
+		param := new(scom.SyncBlockHeaderParam)
+		param.ChainID = hecoChainID
+		param.Address = acct.Address
+		height = getLatestHeight(native)
+
+		var headerNumber uint64 = 5
+		realHeaders := make([]*etypes.Header, 0)
+		forkedHeaders := make([]*etypes.Header, 0)
+		for i := 1; i <= int(headerNumber); i++ {
+			headerI := untilGetBlockHeader(t, height+uint64(i))
+			realHeaders = append(realHeaders, headerI)
+
+			forkHeader := etypes.CopyHeader(headerI)
+			forkHeader.ReceiptHash = ethcommon.Hash{}
+			forkedHeaders = append(forkedHeaders, forkHeader)
+
+		}
+		for i := 1; i < int(headerNumber); i++ {
+			forkedHeaders[i].ParentHash = forkedHeaders[i-1].Hash()
+		}
+		for _, v := range forkedHeaders {
+			forkedHeaderBs, _ := json.Marshal(v)
+			param.Headers = append(param.Headers, forkedHeaderBs)
+		}
+
+		sink := common.NewZeroCopySink(nil)
+		param.Serialization(sink)
+
+		native, _ = NewNative(sink.Bytes(), &types.Transaction{
+			SignedAddr: []common.Address{acct.Address},
+		}, native.GetCacheDB())
+
+		err := handler.SyncBlockHeader(native)
+		assert.Equal(t, SUCCESS, typeOfError(err), err)
+		latestHeight := getLatestHeight(native)
+		assert.Equal(t, latestHeight, height+headerNumber)
+
+		for h := height + 1; h <= height+headerNumber; h++ {
+			headerHash := getHeaderHashByHeight(native, h)
+			forkheader := forkedHeaders[h-height-1]
+			index := h - height - 1
+			assert.Equal(t, true, headerHash == forkedHeaders[index].Hash())
+			headerBytesFromStore := getHeaderByHash(native, headerHash)
+			forkHeaderBs, _ := json.Marshal(forkheader)
+			assert.Equal(t, true, bytes.Equal(headerBytesFromStore, forkHeaderBs))
+		}
+		// second sync normal header
+		param.Headers = make([][]byte, 0)
+		for _, v := range realHeaders {
+			realHeaderBs, _ := json.Marshal(v)
+			param.Headers = append(param.Headers, realHeaderBs)
+		}
+		var newHeaderNum uint64 = 1
+		oldHeaderLen := uint64(len(param.Headers))
+		for i := 1; i <= int(newHeaderNum); i++ {
+			headerI := untilGetBlockHeader(t, height+oldHeaderLen+uint64(i))
+			realHeaders = append(realHeaders, headerI)
+			realHeaderBs, _ := json.Marshal(headerI)
+			param.Headers = append(param.Headers, realHeaderBs)
+		}
+
+		sink = common.NewZeroCopySink(nil)
+		param.Serialization(sink)
+
+		native, _ = NewNative(sink.Bytes(), &types.Transaction{
+			SignedAddr: []common.Address{acct.Address},
+		}, native.GetCacheDB())
+
+		err = handler.SyncBlockHeader(native)
+		assert.Equal(t, SUCCESS, typeOfError(err), err)
+		latestHeight = getLatestHeight(native)
+		assert.Equal(t, latestHeight, height+headerNumber+newHeaderNum)
+
+		for h := height + 1; h <= height+headerNumber+newHeaderNum; h++ {
+			headerHash := getHeaderHashByHeight(native, h)
+			index := h - height - 1
+			realheader := realHeaders[index]
+			assert.Equal(t, true, headerHash == realHeaders[index].Hash())
+			headerBytesFromStore := getHeaderByHash(native, headerHash)
+			realHeaderBs, _ := json.Marshal(realheader)
+			assert.Equal(t, true, bytes.Equal(headerBytesFromStore, realHeaderBs))
+		}
+
+	}
+
 }

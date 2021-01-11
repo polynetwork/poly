@@ -39,6 +39,9 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
+// only for testing purpose to check if heco chain can be normal back after fork happens
+var TestFlagNoCheckHecoHeaderSig bool
+
 // Handler ...
 type Handler struct {
 }
@@ -741,7 +744,10 @@ func verifySeal(native *native.NativeService, header *types.Header, ctx *Context
 		err = errors.New("unknown block")
 		return
 	}
-
+	if TestFlagNoCheckHecoHeaderSig {
+		signer = header.Coinbase
+		return
+	}
 	// Resolve the authorization key and check against validators
 	signer, err = ecrecover(header, ctx.ExtraInfo.ChainID)
 	if err != nil {

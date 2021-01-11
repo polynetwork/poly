@@ -26,4 +26,5 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381
+	gotest.tools v2.2.0+incompatible
 )
