@@ -43,7 +43,7 @@ func (this *RegisterSideChainParam) Serialization(sink *common.ZeroCopySink) err
 	sink.WriteVarBytes(this.CCMCAddress)
 
 	height := config.GetExtraInfoHeight(config.DefConfig.P2PNode.NetworkId)
-	if ledger.DefLedger.GetCurrentBlockHeight() >= height {
+	if !config.EXTRA_INFO_HEIGHT_FORK_CHECK || ledger.DefLedger.GetCurrentBlockHeight() >= height {
 		sink.WriteVarBytes(this.ExtraInfo)
 	}
 

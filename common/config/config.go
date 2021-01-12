@@ -104,6 +104,8 @@ var EXTRA_INFO_HEIGHT = map[uint32]uint32{
 	NETWORK_ID_TEST_NET: constants.EXTRA_INFO_HEIGHT_TESTNET,
 }
 
+var EXTRA_INFO_HEIGHT_FORK_CHECK bool
+
 func GetNetworkMagic(id uint32) uint32 {
 	nid, ok := NETWORK_MAGIC[id]
 	if ok {

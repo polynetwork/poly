@@ -18,6 +18,7 @@
 package service
 
 import (
+	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
@@ -33,4 +34,6 @@ func init() {
 	native.Contracts[utils.CrossChainManagerContractAddress] = cross_chain_manager.RegisterCrossChainManagerContract
 	native.Contracts[utils.NodeManagerContractAddress] = node_manager.RegisterNodeManagerContract
 	native.Contracts[utils.RelayerManagerContractAddress] = relayer_manager.RegisterRelayerManagerContract
+
+	config.EXTRA_INFO_HEIGHT_FORK_CHECK = true
 }

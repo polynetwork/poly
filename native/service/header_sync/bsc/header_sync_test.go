@@ -55,7 +55,6 @@ var (
 
 func init() {
 	setBKers()
-	side_chain_manager.Test = true
 }
 
 func NewNative(args []byte, tx *types.Transaction, db *storage.CacheDB) (*native.NativeService, error) {
