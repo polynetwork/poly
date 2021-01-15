@@ -20,6 +20,7 @@ package header_sync
 import (
 	"crypto/ecdsa"
 	"fmt"
+	"github.com/polynetwork/poly/native/service/header_sync/heco"
 
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/polynetwork/poly/common"
@@ -65,6 +66,8 @@ func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
 		return quorum.NewQuorumHandler(), nil
 	case utils.BSC_ROUTER:
 		return bsc.NewHandler(), nil
+	case utils.HECO_ROUTER:
+		return heco.NewHecoHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported router:%d", router)
 	}
