@@ -19,7 +19,7 @@ package cross_chain_manager
 import (
 	"encoding/hex"
 	"fmt"
-
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/quorum"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 
 	"github.com/polynetwork/poly/common"
@@ -64,6 +64,8 @@ func GetChainHandler(router uint64) (scom.ChainHandler, error) {
 		return neo.NewNEOHandler(), nil
 	case utils.COSMOS_ROUTER:
 		return cosmos.NewCosmosHandler(), nil
+	case utils.QUORUM_ROUTER:
+		return quorum.NewQuorumHandler(), nil
 	case utils.BSC_ROUTER:
 		return bsc.NewHandler(), nil
 	default:

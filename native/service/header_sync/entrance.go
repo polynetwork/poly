@@ -18,8 +18,10 @@
 package header_sync
 
 import (
+	"crypto/ecdsa"
 	"fmt"
 
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
@@ -30,6 +32,7 @@ import (
 	"github.com/polynetwork/poly/native/service/header_sync/eth"
 	"github.com/polynetwork/poly/native/service/header_sync/neo"
 	"github.com/polynetwork/poly/native/service/header_sync/ont"
+	"github.com/polynetwork/poly/native/service/header_sync/quorum"
 	"github.com/polynetwork/poly/native/service/utils"
 )
 
@@ -58,6 +61,8 @@ func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
 		return neo.NewNEOHandler(), nil
 	case utils.COSMOS_ROUTER:
 		return cosmos.NewCosmosHandler(), nil
+	case utils.QUORUM_ROUTER:
+		return quorum.NewQuorumHandler(), nil
 	case utils.BSC_ROUTER:
 		return bsc.NewHandler(), nil
 	default:
@@ -90,6 +95,7 @@ func SyncGenesisHeader(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
+	crypto.PubkeyToAddress(ecdsa.PrivateKey{}.PublicKey)
 	return utils.BYTE_TRUE, nil
 }
 

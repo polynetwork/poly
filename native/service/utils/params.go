@@ -44,4 +44,5 @@ var (
 	NEO_ROUTER    = uint64(4)
 	COSMOS_ROUTER = uint64(5)
 	BSC_ROUTER    = uint64(6)
+	QUORUM_ROUTER = uint64(8)
 )
