@@ -18,11 +18,9 @@
 package header_sync
 
 import (
-	"crypto/ecdsa"
 	"fmt"
 	"github.com/polynetwork/poly/native/service/header_sync/heco"
 
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
@@ -98,7 +96,6 @@ func SyncGenesisHeader(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
-	crypto.PubkeyToAddress(ecdsa.PrivateKey{}.PublicKey)
 	return utils.BYTE_TRUE, nil
 }
 
