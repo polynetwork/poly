@@ -1154,8 +1154,8 @@ func (self *Server) processConsensusMsg(msg ConsensusMsg) {
 
 type latestBlockMsgs struct {
 	sync.RWMutex
-	block uint32
-	msgs  []ConsensusMsg
+	block  uint32
+	briefs []ConsensusMsgBrief
 }
 
 type ConsensusMsgBrief struct {
@@ -1181,24 +1181,12 @@ func (m *latestBlockMsgs) addMsg(block uint32, msg ConsensusMsg) {
 		m.block = block
 	} else if m.block < block {
 		m.block = block
-		m.msgs = nil
+		m.briefs = nil
 	}
 
-	if len(m.msgs) < 100 {
-		m.msgs = append(m.msgs, msg)
-	}
-
-}
-
-func (m *latestBlockMsgs) snapshot() LatestBlockMsgsSnap {
-	var msgsSnap []ConsensusMsgBrief
-
-	m.RLock()
-	defer m.RUnlock()
-
-	for _, msg := range m.msgs {
+	if len(m.briefs) < 100 {
 		brief := ConsensusMsgBrief{Type: msg.Type()}
-		switch brief.Type {
+		switch msg.Type() {
 		case BlockProposalMessage:
 			rawMsg := msg.(*blockProposalMsg)
 			brief.PeerID = rawMsg.Block.getProposer()
@@ -1211,7 +1199,19 @@ func (m *latestBlockMsgs) snapshot() LatestBlockMsgsSnap {
 			brief.PeerID = rawMsg.Committer
 			brief.Proposer = rawMsg.BlockProposer
 		}
-		msgsSnap = append(msgsSnap, brief)
+		m.briefs = append(m.briefs, brief)
+	}
+
+}
+
+func (m *latestBlockMsgs) snapshot() LatestBlockMsgsSnap {
+	var msgsSnap []ConsensusMsgBrief
+
+	m.RLock()
+	defer m.RUnlock()
+
+	for _, msg := range m.briefs {
+		msgsSnap = append(msgsSnap, msg)
 	}
 
 	return LatestBlockMsgsSnap{block: m.block, msgs: msgsSnap}
