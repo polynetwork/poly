@@ -25,6 +25,7 @@ import (
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/consensus/vbft"
 	scom "github.com/polynetwork/poly/core/store/common"
 	"github.com/polynetwork/poly/core/types"
 	ontErrors "github.com/polynetwork/poly/errors"
@@ -89,6 +90,12 @@ func GetBlock(params []interface{}) map[string]interface{} {
 func GetBlockCount(params []interface{}) map[string]interface{} {
 	height := bactor.GetCurrentBlockHeight()
 	return responseSuccess(height + 1)
+}
+
+// get latest block msg snapshot
+func GetLatestBlockMsgsSnap(params []interface{}) map[string]interface{} {
+	result := vbft.GetLatestBlockMsgsSnap()
+	return responseSuccess(result)
 }
 
 //get block hash
