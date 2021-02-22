@@ -27,6 +27,33 @@ func IsHeaderExist(native *native.NativeService, hash []byte, chainID uint64) (b
 	}
 }
 
+func GetTxHeaderByHeight(native *native.NativeService, height, chainID uint64) (*core.TxBlock, error) {
+	latestHeight, err := GetCurrentTxHeaderHeight(native, chainID)
+	if err != nil {
+		return nil, err
+	}
+
+	if height > latestHeight {
+		return nil, fmt.Errorf("GetTxHeaderByHeight, height is too big")
+	}
+
+	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress,
+		[]byte(scom.MAIN_CHAIN), utils.GetUint64Bytes(chainID), utils.GetUint64Bytes(height)))
+
+	if err != nil {
+		return nil, fmt.Errorf("GetTxHeaderByHeight, get blockHashStore error: %v", err)
+	}
+
+	if headerStore == nil {
+		return nil, fmt.Errorf("GetTxHeaderByHeight, can not find any header records")
+	}
+	hashBytes, err := cstates.GetValueFromRawStorageItem(headerStore)
+	if err != nil {
+		return nil, fmt.Errorf("GetHeaderByHeight, deserialize headerBytes from raw storage item err:%v", err)
+	}
+	return GetTxHeaderByHash(native, hashBytes, chainID)
+}
+
 func GetTxHeaderByHash(native *native.NativeService, hash []byte, chainID uint64) (*core.TxBlock, error) {
 	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress,
 		[]byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), hash))
@@ -45,6 +72,49 @@ func GetTxHeaderByHash(native *native.NativeService, hash []byte, chainID uint64
 		return nil, fmt.Errorf("GetTxHeaderByHash, deserialize header error: %v", err)
 	}
 	return &txBlock, nil
+}
+
+func GetCurrentTxHeader(native *native.NativeService, chainId uint64) (*core.TxBlock, error) {
+	height, err := GetCurrentTxHeaderHeight(native, chainId)
+	if err != nil {
+		return nil, err
+	}
+
+	txBlock, err := GetTxHeaderByHeight(native, height, chainId)
+	if err != nil {
+		return nil, err
+	}
+
+	return txBlock, nil
+}
+
+func AppendHeader2Main(native *native.NativeService, height uint64, txHash []byte, chainID uint64) error {
+	contract := utils.HeaderSyncContractAddress
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.MAIN_CHAIN), utils.GetUint64Bytes(chainID), utils.GetUint64Bytes(height)),
+		cstates.GenRawStorageItem(txHash))
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.CURRENT_HEADER_HEIGHT),
+		utils.GetUint64Bytes(chainID)), cstates.GenRawStorageItem(utils.GetUint64Bytes(height)))
+	scom.NotifyPutHeader(native, chainID, height, util.EncodeHex(txHash))
+	return nil
+}
+
+func GetCurrentTxHeaderHeight(native *native.NativeService, chainID uint64) (uint64, error) {
+	heightStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress,
+		[]byte(scom.CURRENT_HEADER_HEIGHT), utils.GetUint64Bytes(chainID)))
+
+	if err != nil {
+		return 0, fmt.Errorf("GetCurrentTxBlockHeight error: %v", err)
+	}
+
+	if heightStore == nil {
+		return 0, fmt.Errorf("GetCurrentTxBlockHeight, heightStore is nil")
+	}
+
+	heightBytes, err := cstates.GetValueFromRawStorageItem(heightStore)
+	if err != nil {
+		return 0, fmt.Errorf("GetCurrentTxBlockHeight, deserialize headerBytes from raw storage item err:%v", err)
+	}
+	return utils.GetBytesUint64(heightBytes), nil
 }
 
 func putTxBlockHeader(native *native.NativeService, txBlock *core.TxBlock, chainID uint64) error {

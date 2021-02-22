@@ -167,7 +167,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 				return fmt.Errorf("SyncTxBlockHeader, get dscomm for tx block err: %s", err.Error())
 			}
 
-			// 4. verify tx block
+			// 4. verify tx block and store it
 			err = verifier.VerifyTxBlock(txBlock, dsCommListFromArray(dscomm))
 			if err != nil {
 				return fmt.Errorf("SyncTxBlockHeader, verify block failed. Error:%s, header: %s", err, string(v))
@@ -177,6 +177,9 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			if err != nil {
 				return fmt.Errorf("SyncTxBlockHeader, put blockHeader failed. Error:%s, header: %s", err, string(v))
 			}
+
+			// 5. update header of main
+			AppendHeader2Main(native, txBlock.BlockHeader.BlockNum, txBlock.BlockHash[:], headerParams.ChainID)
 		}
 	}
 
