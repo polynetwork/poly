@@ -23,7 +23,9 @@ import (
 	"github.com/Zilliqa/gozilliqa-sdk/core"
 	"github.com/Zilliqa/gozilliqa-sdk/mpt"
 	"github.com/Zilliqa/gozilliqa-sdk/util"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/polynetwork/poly/native/service/header_sync/zilliqa"
+	"strings"
 
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
@@ -68,11 +70,6 @@ func (h *Handler) MakeDepositProposal(service *native.NativeService) (*scom.Make
 
 // should be the same as relayer side
 type ZILProof struct {
-	Address       string         `json:"address"`
-	Balance       string         `json:"balance"`
-	CodeHash      string         `json:"codeHash"`
-	Nonce         string         `json:"nonce"`
-	StorageHash   string         `json:"storageHash"`
 	AccountProof  []string       `json:"accountProof"`
 	StorageProofs []StorageProof `json:"storageProof"`
 }
@@ -136,19 +133,35 @@ func verifyFromTx(native *native.NativeService, proof, extra []byte, fromChainID
 	}
 
 	db2 := mpt.NewFromProof(proof2)
-	value, err := mpt.Verify(zilProof.StorageProofs[0].Key, db2, accountBase.StorageRoot)
+	proofResult, err := mpt.Verify(zilProof.StorageProofs[0].Key, db2, accountBase.StorageRoot)
 	if err != nil {
 		return nil, fmt.Errorf("verifyMerkleProof, varify state info error:%s\n", err)
 	}
 
-	if value == nil {
+	if proofResult == nil {
 		return nil, fmt.Errorf("VerifyFromZilProof, verifyMerkleProof failed!")
 	}
 
-	data := common.NewZeroCopySource(value)
+	if !checkProofResult(proofResult, extra) {
+		return nil, fmt.Errorf("verifyFromTx, verify proof value hash failed, proof result:%x, extra:%x", proofResult, extra)
+	}
+
+	data := common.NewZeroCopySource(extra)
 	txParam := new(scom.MakeTxParam)
 	if err := txParam.Deserialization(data); err != nil {
 		return nil, fmt.Errorf("VerifyFromZilProof, deserialize merkleValue error:%s", err)
 	}
 	return txParam, nil
+}
+
+func checkProofResult(result, value []byte) bool {
+	origin := strings.ToLower(string(result))
+	origin = strings.Trim(origin, "0x")
+
+	hash := crypto.Keccak256(value)
+	target := util.EncodeHex(hash)
+	target = strings.ToLower(target)
+	target = strings.Trim(target, "0x")
+
+	return origin == target
 }
