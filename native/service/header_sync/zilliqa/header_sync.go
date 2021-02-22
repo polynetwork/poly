@@ -20,6 +20,7 @@ package zilliqa
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/Zilliqa/gozilliqa-sdk/core"
 	verifier2 "github.com/Zilliqa/gozilliqa-sdk/verifier"
 	"github.com/polynetwork/poly/common"
@@ -179,6 +180,11 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		}
 	}
 
+	return nil
+}
+
+// SyncCrossChainMsg ...
+func (h *Handler) SyncCrossChainMsg(native *native.NativeService) error {
 	return nil
 }
 

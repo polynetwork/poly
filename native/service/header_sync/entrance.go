@@ -19,6 +19,7 @@ package header_sync
 
 import (
 	"fmt"
+
 	"github.com/polynetwork/poly/native/service/header_sync/heco"
 
 	"github.com/polynetwork/poly/common"
@@ -32,6 +33,7 @@ import (
 	"github.com/polynetwork/poly/native/service/header_sync/neo"
 	"github.com/polynetwork/poly/native/service/header_sync/ont"
 	"github.com/polynetwork/poly/native/service/header_sync/quorum"
+	"github.com/polynetwork/poly/native/service/header_sync/zilliqa"
 	"github.com/polynetwork/poly/native/service/utils"
 )
 
@@ -66,6 +68,8 @@ func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
 		return bsc.NewHandler(), nil
 	case utils.HECO_ROUTER:
 		return heco.NewHecoHandler(), nil
+	case utils.ZILLIQA_ROUTER:
+		return zilliqa.NewHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported router:%d", router)
 	}
