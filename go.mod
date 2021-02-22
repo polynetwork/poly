@@ -3,7 +3,7 @@ module github.com/polynetwork/poly
 go 1.14
 
 require (
-	github.com/Zilliqa/gozilliqa-sdk v1.2.1-0.20210221224655-4a190da9743c // indirect
+	github.com/Zilliqa/gozilliqa-sdk v1.2.1-0.20210222044512-f9f981909bf0 // indirect
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/cosmos/cosmos-sdk v0.39.0

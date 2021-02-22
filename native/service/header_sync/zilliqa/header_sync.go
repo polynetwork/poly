@@ -45,6 +45,7 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return fmt.Errorf("ZILHandler SyncGenesisHeader, contract params deserialize error: %v", err)
 	}
+
 	// Get current epoch operator
 	operatorAddress, err := node_manager.GetCurConOperator(native)
 	if err != nil {
@@ -84,54 +85,117 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		return fmt.Errorf("SyncBlockHeader, contract params deserialize error: %v", err)
 	}
 
+	verifier := &verifier2.Verifier{}
+
+	// ...txblock1-1,txblock1-2...dsblock2,txblock2-1,txblock2-2...
 	for _, v := range headerParams.Headers {
-		var txBlockAndDsComm core.TxBlockAndDsComm
+		var txBlockAndDsComm core.TxBlockOrDsBlock
 		err := json.Unmarshal(v, &txBlockAndDsComm)
 		if err != nil {
 			return fmt.Errorf("SyncBlockHeader, deserialize header err: %v", err)
 		}
 
-		txBlock := txBlockAndDsComm.Block
-		dsComm := txBlockAndDsComm.DsComm
-		blockHash := txBlock.BlockHash
-		exist, err := IsHeaderExist(native, blockHash[:], headerParams.ChainID)
-		if err != nil {
-			return fmt.Errorf("SyncBlockHeader, check header exist err: %v", err)
-		}
-		if exist == true {
-			log.Warnf("SyncBlockHeader, header has exist. Header: %s", string(v))
-			continue
-		}
-		preHash := txBlock.BlockHeader.BlockHeaderBase.PrevHash
-		_, err2 := GetHeaderByHash(native, preHash[:], headerParams.ChainID)
-		if err2 != nil {
-			return fmt.Errorf("SyncBlockHeader, get the parent block failed. Error:%s, header: %s", err2, string(v))
+		txBlock := txBlockAndDsComm.TxBlock
+		dsBlock := txBlockAndDsComm.DsBlock
+
+		if dsBlock != nil {
+			// if ds block is not nil, we need to verify itself, then update DsComm list
+
+			// 1. if ds block exist already
+			blockHash := dsBlock.BlockHash
+			exist, err := IsHeaderExist(native, blockHash[:], headerParams.ChainID)
+			if err != nil {
+				return fmt.Errorf("SyncDsBlockHeader, check header exist err: %v", err)
+			}
+			if exist == true {
+				log.Warnf("SyncDsBlockHeader, header has exist. Header: %s", string(v))
+				continue
+			}
+
+			// 2. check parent block
+			preHash := dsBlock.BlockHeader.BlockHeaderBase.PrevHash
+			_, err = GetDsHeaderByHash(native, preHash[:], headerParams.ChainID)
+			if err != nil {
+				return fmt.Errorf("SyncDsBlockHeader, get the parent block failed. Error:%s, header: %s", err, string(v))
+			}
+
+			// 3. get old ds comm list
+			dsBlockNum := dsBlock.BlockHeader.BlockNum
+			dscomm, err := getDsComm(native, dsBlockNum-1, headerParams.ChainID)
+			if err != nil {
+				return fmt.Errorf("SyncDsBlockHeader, get dscomm err: %v", err)
+			}
+			dsList := dsCommListFromArray(dscomm)
+
+			// 4. verify ds block, generate new ds comm list
+			newDsList, err2 := verifier.VerifyDsBlock(dsBlock, dsList)
+			if err2 != nil {
+				return fmt.Errorf("SyncDsBlockHeader, verify ds block err: %v", err2)
+			}
+
+			// 5. update ds comm list, put ds block
+			putDsComm(native, dsBlockNum, dsCommArrayFromList(newDsList), headerParams.ChainID)
+			err = putDsBlockHeader(native, dsBlock, headerParams.ChainID)
+			if err != nil {
+				return fmt.Errorf("SyncDsBlockHeader, put blockHeader failed. Error:%s, header: %s", err, string(v))
+			}
 		}
 
-		verifier := &verifier2.Verifier{}
-		err3 := verifier.VerifyTxBlock(txBlock, dsComm)
-		if err3 != nil {
-			return fmt.Errorf("SyncBlockHeader, verify block failed. Error:%s, header: %s", err3, string(v))
-		}
+		if txBlock != nil {
+			// 1. if tx block exist
+			blockHash := txBlock.BlockHash
+			exist, err := IsHeaderExist(native, blockHash[:], headerParams.ChainID)
+			if err != nil {
+				return fmt.Errorf("SyncTxBlockHeader, check header exist err: %v", err)
+			}
+			if exist == true {
+				log.Warnf("SyncTxBlockHeader, header has exist. Header: %s", string(v))
+				continue
+			}
 
-		err4 := putBlockHeader(native, &txBlockAndDsComm, headerParams.ChainID)
-		if err4 != nil {
-			return fmt.Errorf("SyncBlockHeader, put blockHeader failed. Error:%s, header: %s", err3, string(v))
+			// 2. check parent tx block
+			preHash := txBlock.BlockHeader.BlockHeaderBase.PrevHash
+			_, err = GetTxHeaderByHash(native, preHash[:], headerParams.ChainID)
+			if err != nil {
+				return fmt.Errorf("SyncTxBlockHeader, get the parent block failed. Error:%s, header: %s", err, string(v))
+			}
+
+			// 3. get comm list
+			dscomm, err := getDsComm(native, txBlock.BlockHeader.DSBlockNum, headerParams.ChainID)
+			if err != nil {
+				return fmt.Errorf("SyncTxBlockHeader, get dscomm for tx block err: %s", err.Error())
+			}
+
+			// 4. verify tx block
+			err = verifier.VerifyTxBlock(txBlock, dsCommListFromArray(dscomm))
+			if err != nil {
+				return fmt.Errorf("SyncTxBlockHeader, verify block failed. Error:%s, header: %s", err, string(v))
+			}
+
+			err = putTxBlockHeader(native, txBlock, headerParams.ChainID)
+			if err != nil {
+				return fmt.Errorf("SyncTxBlockHeader, put blockHeader failed. Error:%s, header: %s", err, string(v))
+			}
 		}
 	}
 
 	return nil
 }
 
-func getGenesisHeader(input []byte) (core.TxBlockAndDsComm, error) {
+type TxBlockAndDsComm struct {
+	TxBlock *core.TxBlock
+	DsComm  []string
+}
+
+func getGenesisHeader(input []byte) (TxBlockAndDsComm, error) {
 	params := new(scom.SyncGenesisHeaderParam)
 	if err := params.Deserialization(common.NewZeroCopySource(input)); err != nil {
-		return core.TxBlockAndDsComm{}, fmt.Errorf("getGenesisHeader, contract params deserialize error: %v", err)
+		return TxBlockAndDsComm{}, fmt.Errorf("getGenesisHeader, contract params deserialize error: %v", err)
 	}
-	var txBlockAndDsComm core.TxBlockAndDsComm
+	var txBlockAndDsComm TxBlockAndDsComm
 	err := json.Unmarshal(params.GenesisHeader, &txBlockAndDsComm)
 	if err != nil {
-		return core.TxBlockAndDsComm{}, fmt.Errorf("getGenesisHeader, deserialize header err: %v", err)
+		return TxBlockAndDsComm{}, fmt.Errorf("getGenesisHeader, deserialize header err: %v", err)
 	}
 	return txBlockAndDsComm, nil
 }
