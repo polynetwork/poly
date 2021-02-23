@@ -26,6 +26,7 @@ import (
 	"github.com/polynetwork/poly/common/log"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
+	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	scom "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/utils"
 )
@@ -85,9 +86,19 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		return fmt.Errorf("SyncBlockHeader, contract params deserialize error: %v", err)
 	}
 
-	numOfDs, _ := getNumOfDsCuard(native, headerParams.ChainID)
+	side, err := side_chain_manager.GetSideChain(native, headerParams.ChainID)
+	if err != nil {
+		return fmt.Errorf("zil Handler SyncBlockHeader, GetSideChain error: %v", err)
+	}
+
+	var extraInfo ExtraInfo
+	err = json.Unmarshal(side.ExtraInfo, &extraInfo)
+	if err != nil {
+		return fmt.Errorf("zil Handler SyncBlockHeader, ExtraInfo Unmarshal error: %v", err)
+	}
+
 	verifier := &verifier2.Verifier{
-		NumOfDsGuard: int(numOfDs),
+		NumOfDsGuard: extraInfo.NumOfGuardList,
 	}
 
 	// ...txblock1-1,txblock1-2...dsblock2,txblock2-1,txblock2-2...
@@ -197,7 +208,6 @@ type TxBlockAndDsComm struct {
 	TxBlock      *core.TxBlock
 	DsBlock      *core.DsBlock
 	DsComm       []core.PairOfNode
-	NumOfDsGuard uint64
 }
 
 func getGenesisHeader(input []byte) (TxBlockAndDsComm, error) {
@@ -211,4 +221,9 @@ func getGenesisHeader(input []byte) (TxBlockAndDsComm, error) {
 		return TxBlockAndDsComm{}, fmt.Errorf("getGenesisHeader, deserialize header err: %v", err)
 	}
 	return txBlockAndDsComm, nil
+}
+
+// ExtraInfo ...
+type ExtraInfo struct {
+	NumOfGuardList int // for zilliqa
 }

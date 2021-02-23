@@ -15,6 +15,7 @@ import (
 	"github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
+	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	scom "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/utils"
 	"github.com/polynetwork/poly/native/storage"
@@ -101,7 +102,19 @@ func NewNative(args []byte, tx *types.Transaction, db *storage.CacheDB) (*native
 			[]byte(node_manager.PEER_POOL), utils.GetUint32Bytes(0)), states.GenRawStorageItem(sink.Bytes()))
 
 	}
-	return native.NewNativeService(db, tx, 0, 0, common.Uint256{0}, 0, args, false)
+	n, _ := native.NewNativeService(db, tx, 0, 0, common.Uint256{0}, 0, args, false)
+	// add sidechain info
+	extra := ExtraInfo{
+		NumOfGuardList: 9,
+	}
+	extraBytes, _ := json.Marshal(extra)
+	side_chain_manager.PutSideChain(n, &side_chain_manager.SideChain{
+		ExtraInfo: extraBytes,
+		ChainId: ZILChainID,
+
+	})
+
+	return n, nil
 }
 
 func getLatestHeight(native *native.NativeService) uint64 {
@@ -159,10 +172,9 @@ func TestSyncGenesisHeader(t *testing.T) {
 		},
 	}
 	txBlockAndDsComm := &TxBlockAndDsComm{
-		TxBlock:      &txblock,
-		DsBlock:      &dsblock,
-		DsComm:       initComm,
-		NumOfDsGuard: 9,
+		TxBlock: &txblock,
+		DsBlock: &dsblock,
+		DsComm:  initComm,
 	}
 	txBlockAndDsCommRaw, _ := json.Marshal(txBlockAndDsComm)
 	param := new(scom.SyncGenesisHeaderParam)
@@ -234,10 +246,9 @@ func TestSyncGenesisHeaderNoOperator(t *testing.T) {
 		},
 	}
 	txBlockAndDsComm := &TxBlockAndDsComm{
-		TxBlock:      &txblock,
-		DsBlock:      &dsblock,
-		DsComm:       initComm,
-		NumOfDsGuard: 9,
+		TxBlock: &txblock,
+		DsBlock: &dsblock,
+		DsComm:  initComm,
 	}
 	txBlockAndDsCommRaw, _ := json.Marshal(txBlockAndDsComm)
 	param := new(scom.SyncGenesisHeaderParam)
@@ -300,10 +311,9 @@ func TestSyncGenesisHeaderTwice(t *testing.T) {
 		},
 	}
 	txBlockAndDsComm := &TxBlockAndDsComm{
-		TxBlock:      &txblock,
-		DsBlock:      &dsblock,
-		DsComm:       initComm,
-		NumOfDsGuard: 9,
+		TxBlock: &txblock,
+		DsBlock: &dsblock,
+		DsComm:  initComm,
 	}
 	txBlockAndDsCommRaw, _ := json.Marshal(txBlockAndDsComm)
 	param := new(scom.SyncGenesisHeaderParam)
@@ -388,10 +398,9 @@ func TestSyncBlockHeader(t *testing.T) {
 		},
 	}
 	txBlockAndDsComm := &TxBlockAndDsComm{
-		TxBlock:      &txblock,
-		DsBlock:      &dsblock,
-		DsComm:       initComm,
-		NumOfDsGuard: 9,
+		TxBlock: &txblock,
+		DsBlock: &dsblock,
+		DsComm:  initComm,
 	}
 	txBlockAndDsCommRaw, _ := json.Marshal(txBlockAndDsComm)
 	param := new(scom.SyncGenesisHeaderParam)
@@ -452,6 +461,7 @@ func TestSyncBlockHeader(t *testing.T) {
 			SignedAddr: []common.Address{acct.Address},
 		}
 		native, _ := NewNative(sink.Bytes(), tx, n.GetCacheDB())
+
 		err := zilHeader.SyncBlockHeader(native)
 		assert.Equal(t, SUCCESS, typeOfError(err), err)
 

@@ -158,27 +158,6 @@ func putDsBlockHeader(native *native.NativeService, dsBlock *core.DsBlock, chain
 	return nil
 }
 
-func putNumOfDsCuard(native *native.NativeService, numOfDsGuard uint64, chainID uint64) error {
-	contract := utils.HeaderSyncContractAddress
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(dsnum),
-		utils.GetUint64Bytes(chainID)), cstates.GenRawStorageItem(utils.GetUint64Bytes(numOfDsGuard)))
-	return nil
-}
-
-func getNumOfDsCuard(native *native.NativeService, chainID uint64) (uint64, error) {
-	contract := utils.HeaderSyncContractAddress
-	numstore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(dsnum),
-		utils.GetUint64Bytes(chainID)))
-	if err != nil {
-		return 0, err
-	}
-	num, err := cstates.GetValueFromRawStorageItem(numstore)
-	if err != nil {
-		return 0, err
-	}
-	return utils.GetBytesUint64(num), nil
-}
-
 func putGenesisBlockHeader(native *native.NativeService, txBlockAndDsComm TxBlockAndDsComm, chainID uint64) error {
 	blockHash := txBlockAndDsComm.TxBlock.BlockHash[:]
 	blockNum := txBlockAndDsComm.TxBlock.BlockHeader.BlockNum
@@ -195,7 +174,6 @@ func putGenesisBlockHeader(native *native.NativeService, txBlockAndDsComm TxBloc
 		utils.GetUint64Bytes(chainID)), cstates.GenRawStorageItem(utils.GetUint64Bytes(blockNum)))
 	putDsComm(native, dsBlockNum, txBlockAndDsComm.DsComm, chainID)
 	putDsBlockHeader(native, txBlockAndDsComm.DsBlock, chainID)
-	putNumOfDsCuard(native, txBlockAndDsComm.NumOfDsGuard, chainID)
 	scom.NotifyPutHeader(native, chainID, blockNum, util.EncodeHex(blockHash))
 	return nil
 }
