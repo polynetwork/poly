@@ -20,7 +20,6 @@ package zilliqa
 import (
 	"encoding/json"
 	"fmt"
-
 	"github.com/Zilliqa/gozilliqa-sdk/core"
 	verifier2 "github.com/Zilliqa/gozilliqa-sdk/verifier"
 	"github.com/polynetwork/poly/common"
@@ -86,7 +85,10 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		return fmt.Errorf("SyncBlockHeader, contract params deserialize error: %v", err)
 	}
 
-	verifier := &verifier2.Verifier{}
+	numOfDs, _ := getNumOfDsCuard(native, headerParams.ChainID)
+	verifier := &verifier2.Verifier{
+		NumOfDsGuard: int(numOfDs),
+	}
 
 	// ...txblock1-1,txblock1-2...dsblock2,txblock2-1,txblock2-2...
 	for _, v := range headerParams.Headers {
@@ -192,8 +194,10 @@ func (h *Handler) SyncCrossChainMsg(native *native.NativeService) error {
 }
 
 type TxBlockAndDsComm struct {
-	TxBlock *core.TxBlock
-	DsComm  []string
+	TxBlock      *core.TxBlock
+	DsBlock      *core.DsBlock
+	DsComm       []core.PairOfNode
+	NumOfDsGuard uint64
 }
 
 func getGenesisHeader(input []byte) (TxBlockAndDsComm, error) {

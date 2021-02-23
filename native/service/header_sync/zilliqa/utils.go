@@ -13,6 +13,7 @@ import (
 )
 
 const dsCommKey = "dsComm"
+const dsnum = "dsnum"
 
 func IsHeaderExist(native *native.NativeService, hash []byte, chainID uint64) (bool, error) {
 	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress,
@@ -157,6 +158,27 @@ func putDsBlockHeader(native *native.NativeService, dsBlock *core.DsBlock, chain
 	return nil
 }
 
+func putNumOfDsCuard(native *native.NativeService, numOfDsGuard uint64, chainID uint64) error {
+	contract := utils.HeaderSyncContractAddress
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(dsnum),
+		utils.GetUint64Bytes(chainID)), cstates.GenRawStorageItem(utils.GetUint64Bytes(numOfDsGuard)))
+	return nil
+}
+
+func getNumOfDsCuard(native *native.NativeService, chainID uint64) (uint64, error) {
+	contract := utils.HeaderSyncContractAddress
+	numstore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(dsnum),
+		utils.GetUint64Bytes(chainID)))
+	if err != nil {
+		return 0, err
+	}
+	num, err := cstates.GetValueFromRawStorageItem(numstore)
+	if err != nil {
+		return 0, err
+	}
+	return utils.GetBytesUint64(num), nil
+}
+
 func putGenesisBlockHeader(native *native.NativeService, txBlockAndDsComm TxBlockAndDsComm, chainID uint64) error {
 	blockHash := txBlockAndDsComm.TxBlock.BlockHash[:]
 	blockNum := txBlockAndDsComm.TxBlock.BlockHeader.BlockNum
@@ -172,24 +194,30 @@ func putGenesisBlockHeader(native *native.NativeService, txBlockAndDsComm TxBloc
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.CURRENT_HEADER_HEIGHT),
 		utils.GetUint64Bytes(chainID)), cstates.GenRawStorageItem(utils.GetUint64Bytes(blockNum)))
 	putDsComm(native, dsBlockNum, txBlockAndDsComm.DsComm, chainID)
+	putDsBlockHeader(native, txBlockAndDsComm.DsBlock, chainID)
+	putNumOfDsCuard(native, txBlockAndDsComm.NumOfDsGuard, chainID)
 	scom.NotifyPutHeader(native, chainID, blockNum, util.EncodeHex(blockHash))
 	return nil
 }
 
-func putDsComm(native *native.NativeService, blockNum uint64, dsComm []string, chainID uint64) {
+func putDsComm(native *native.NativeService, blockNum uint64, dsComm []core.PairOfNode, chainID uint64) {
 	contract := utils.HeaderSyncContractAddress
 	dsbytes, _ := json.Marshal(dsComm)
 	native.GetCacheDB().Put(utils.ConcatKey(contract, utils.GetUint64Bytes(chainID), []byte(dsCommKey), utils.GetUint64Bytes(blockNum)), cstates.GenRawStorageItem(dsbytes))
 	native.GetCacheDB().Delete(utils.ConcatKey(contract, utils.GetUint64Bytes(chainID), []byte(dsCommKey), utils.GetUint64Bytes(blockNum-1)))
 }
 
-func getDsComm(native *native.NativeService, blockNum uint64, chainID uint64) ([]string, error) {
+func getDsComm(native *native.NativeService, blockNum uint64, chainID uint64) ([]core.PairOfNode, error) {
 	contract := utils.HeaderSyncContractAddress
-	dsbytes, err := native.GetCacheDB().Get(utils.ConcatKey(contract, utils.GetUint64Bytes(chainID), []byte(dsCommKey), utils.GetUint64Bytes(blockNum)))
+	dsbytesStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, utils.GetUint64Bytes(chainID), []byte(dsCommKey), utils.GetUint64Bytes(blockNum)))
 	if err != nil {
 		return nil, err
 	}
-	var dsComm []string
+	dsbytes, err := cstates.GetValueFromRawStorageItem(dsbytesStore)
+	if err != nil {
+		return nil, err
+	}
+	var dsComm []core.PairOfNode
 	err = json.Unmarshal(dsbytes, &dsComm)
 	if err != nil {
 		return nil, err
@@ -198,22 +226,20 @@ func getDsComm(native *native.NativeService, blockNum uint64, chainID uint64) ([
 	return dsComm, nil
 }
 
-func dsCommListFromArray(dscomm []string) *list.List {
+func dsCommListFromArray(dscomm []core.PairOfNode) *list.List {
 	dsComm := list.New()
 	for _, ds := range dscomm {
-		dsComm.PushBack(core.PairOfNode{
-			PubKey: ds,
-		})
+		dsComm.PushBack(ds)
 	}
 	return dsComm
 }
 
-func dsCommArrayFromList(dscomm *list.List) []string {
-	var dsArray []string
+func dsCommArrayFromList(dscomm *list.List) []core.PairOfNode {
+	var dsArray []core.PairOfNode
 	head := dscomm.Front()
 	for head != nil {
 		pairOfNode := head.Value.(core.PairOfNode)
-		dsArray = append(dsArray, pairOfNode.PubKey)
+		dsArray = append(dsArray, pairOfNode)
 		head = head.Next()
 	}
 	return dsArray
