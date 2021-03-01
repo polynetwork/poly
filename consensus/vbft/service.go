@@ -1152,7 +1152,77 @@ func (self *Server) processConsensusMsg(msg ConsensusMsg) {
 	}
 }
 
+type latestBlockMsgs struct {
+	sync.RWMutex
+	block  uint32
+	briefs []ConsensusMsgBrief
+}
+
+type ConsensusMsgBrief struct {
+	Type     MsgType
+	PeerID   uint32
+	Proposer uint32
+}
+
+type LatestBlockMsgsSnap struct {
+	block uint32
+	msgs  []ConsensusMsgBrief
+}
+
+var lbm latestBlockMsgs
+
+func (m *latestBlockMsgs) addMsg(block uint32, msg ConsensusMsg) {
+	m.Lock()
+	defer m.Unlock()
+
+	if block < m.block {
+		return
+	} else if m.block == 0 {
+		m.block = block
+	} else if m.block < block {
+		m.block = block
+		m.briefs = nil
+	}
+
+	if len(m.briefs) < 100 {
+		brief := ConsensusMsgBrief{Type: msg.Type()}
+		switch msg.Type() {
+		case BlockProposalMessage:
+			rawMsg := msg.(*blockProposalMsg)
+			brief.PeerID = rawMsg.Block.getProposer()
+		case BlockEndorseMessage:
+			rawMsg := msg.(*blockEndorseMsg)
+			brief.PeerID = rawMsg.Endorser
+			brief.Proposer = rawMsg.EndorsedProposer
+		case BlockCommitMessage:
+			rawMsg := msg.(*blockCommitMsg)
+			brief.PeerID = rawMsg.Committer
+			brief.Proposer = rawMsg.BlockProposer
+		}
+		m.briefs = append(m.briefs, brief)
+	}
+
+}
+
+func (m *latestBlockMsgs) snapshot() LatestBlockMsgsSnap {
+	var msgsSnap []ConsensusMsgBrief
+
+	m.RLock()
+	defer m.RUnlock()
+
+	for _, msg := range m.briefs {
+		msgsSnap = append(msgsSnap, msg)
+	}
+
+	return LatestBlockMsgsSnap{block: m.block, msgs: msgsSnap}
+}
+
+func GetLatestBlockMsgsSnap() LatestBlockMsgsSnap {
+	return lbm.snapshot()
+}
+
 func (self *Server) processMsgEvent() error {
+
 	select {
 	case msg := <-self.msgC:
 
@@ -1170,6 +1240,7 @@ func (self *Server) processMsgEvent() error {
 
 			msgBlkNum := pMsg.GetBlockNum()
 			if msgBlkNum == self.GetCurrentBlockNo() {
+				lbm.addMsg(msgBlkNum, msg)
 				// add proposal to block-pool
 				if err := self.blockPool.newBlockProposal(pMsg); err != nil {
 					if err == errDupProposal {
@@ -1225,6 +1296,8 @@ func (self *Server) processMsgEvent() error {
 			msgBlkNum := pMsg.GetBlockNum()
 
 			if msgBlkNum == self.GetCurrentBlockNo() {
+				lbm.addMsg(msgBlkNum, msg)
+
 				if pMsg.EndorsedProposer != self.Index && len(self.msgPool.GetProposalMsgs(msgBlkNum)) == 0 {
 					self.fetchProposal(msgBlkNum, pMsg.EndorsedProposer)
 				}
@@ -1299,6 +1372,7 @@ func (self *Server) processMsgEvent() error {
 			msgBlkNum := pMsg.GetBlockNum()
 
 			if msgBlkNum == self.GetCurrentBlockNo() {
+				lbm.addMsg(msgBlkNum, msg)
 				//              if countOfCommitment(msg.proposal) >= 2C + 1:
 				//                      stop WaitCommitsTimer
 				//                      sealProposal(msg.BlockHash)
