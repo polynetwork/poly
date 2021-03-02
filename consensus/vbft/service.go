@@ -1158,15 +1158,17 @@ type latestBlockMsgs struct {
 	briefs []ConsensusMsgBrief
 }
 
+// ConsensusMsgBrief ...
 type ConsensusMsgBrief struct {
 	Type     MsgType
 	PeerID   uint32
 	Proposer uint32
 }
 
+// LatestBlockMsgsSnap ...
 type LatestBlockMsgsSnap struct {
-	block uint32
-	msgs  []ConsensusMsgBrief
+	Height uint32
+	Msgs   []ConsensusMsgBrief
 }
 
 var lbm latestBlockMsgs
@@ -1214,7 +1216,7 @@ func (m *latestBlockMsgs) snapshot() LatestBlockMsgsSnap {
 		msgsSnap = append(msgsSnap, msg)
 	}
 
-	return LatestBlockMsgsSnap{block: m.block, msgs: msgsSnap}
+	return LatestBlockMsgsSnap{Height: m.block, Msgs: msgsSnap}
 }
 
 func GetLatestBlockMsgsSnap() LatestBlockMsgsSnap {
