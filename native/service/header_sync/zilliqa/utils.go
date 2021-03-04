@@ -13,7 +13,6 @@ import (
 )
 
 const dsCommKey = "dsComm"
-const dsnum = "dsnum"
 
 func IsHeaderExist(native *native.NativeService, hash []byte, chainID uint64) (bool, error) {
 	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress,

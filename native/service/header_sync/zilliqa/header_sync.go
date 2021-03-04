@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Zilliqa/gozilliqa-sdk/core"
+	"github.com/Zilliqa/gozilliqa-sdk/util"
 	verifier2 "github.com/Zilliqa/gozilliqa-sdk/verifier"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
@@ -127,7 +128,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			}
 
 			// 2. check parent block
-			preHash := dsBlock.BlockHeader.BlockHeaderBase.PrevHash
+			preHash := util.DecodeHex(dsBlock.PrevDSHash)
 			_, err = GetDsHeaderByHash(native, preHash[:], headerParams.ChainID)
 			if err != nil {
 				return fmt.Errorf("SyncDsBlockHeader, get the parent block failed. Error:%s, header: %s", err, string(v))
@@ -205,9 +206,9 @@ func (h *Handler) SyncCrossChainMsg(native *native.NativeService) error {
 }
 
 type TxBlockAndDsComm struct {
-	TxBlock      *core.TxBlock
-	DsBlock      *core.DsBlock
-	DsComm       []core.PairOfNode
+	TxBlock *core.TxBlock
+	DsBlock *core.DsBlock
+	DsComm  []core.PairOfNode
 }
 
 func getGenesisHeader(input []byte) (TxBlockAndDsComm, error) {
