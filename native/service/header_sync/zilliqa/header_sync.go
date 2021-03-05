@@ -131,7 +131,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			preHash := util.DecodeHex(dsBlock.PrevDSHash)
 			_, err = GetDsHeaderByHash(native, preHash[:], headerParams.ChainID)
 			if err != nil {
-				return fmt.Errorf("SyncDsBlockHeader, get the parent block failed. Error:%s, header: %s", err, string(v))
+				return fmt.Errorf("SyncDsBlockHeader, get the parent block failed. parent hash is: %s, Error:%s, header: %s", dsBlock.PrevDSHash, err, string(v))
 			}
 
 			// 3. get old ds comm list

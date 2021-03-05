@@ -56,14 +56,14 @@ func (h *Handler) MakeDepositProposal(service *native.NativeService) (*scom.Make
 
 	value, err := verifyFromTx(service, params.Proof, params.Extra, params.SourceChainID, params.Height, sideChain)
 	if err != nil {
-		return nil, fmt.Errorf("eth MakeDepositProposal, verifyFromEthTx error: %s", err)
+		return nil, fmt.Errorf("zil MakeDepositProposal, verifyFromEthTx error: %s", err)
 	}
 
 	if err := scom.CheckDoneTx(service, value.CrossChainID, params.SourceChainID); err != nil {
-		return nil, fmt.Errorf("eth MakeDepositProposal, check done transaction error:%s", err)
+		return nil, fmt.Errorf("zil MakeDepositProposal, check done transaction error:%s", err)
 	}
 	if err := scom.PutDoneTx(service, value.CrossChainID, params.SourceChainID); err != nil {
-		return nil, fmt.Errorf("eth MakeDepositProposal, PutDoneTx error:%s", err)
+		return nil, fmt.Errorf("zil MakeDepositProposal, PutDoneTx error:%s", err)
 	}
 	return value, nil
 }
@@ -106,19 +106,18 @@ func verifyFromTx(native *native.NativeService, proof, extra []byte, fromChainID
 		return nil, fmt.Errorf("VerifyFromZilProof, incorrect proof format")
 	}
 
-	// key is contract
-	key := sideChain.CCMCAddress
-
 	var pf [][]byte
 	for _, p := range zilProof.AccountProof {
 		bytes := util.DecodeHex(p)
 		pf = append(pf, bytes)
 	}
+
 	db := mpt.NewFromProof(pf)
 	root := blockData.BlockHeader.HashSet.StateRootHash[:]
-	accountBaseBytes, err := mpt.Verify(key, db, root)
+	key := strings.TrimPrefix(util.EncodeHex(sideChain.CCMCAddress), "0x")
+	accountBaseBytes, err := mpt.Verify([]byte(key), db, root)
 	if err != nil {
-		return nil, fmt.Errorf("verifyMerkleProof, verify account proof error:%s\n", err)
+		return nil, fmt.Errorf("verifyMerkleProof, verify account proof error:%s, key is %s proof is: %+v, root is %s\n", err, key, zilProof.AccountProof, util.EncodeHex(root))
 	}
 
 	accountBase, err := core.AccountBaseFromBytes(accountBaseBytes)
@@ -135,7 +134,7 @@ func verifyFromTx(native *native.NativeService, proof, extra []byte, fromChainID
 	db2 := mpt.NewFromProof(proof2)
 	proofResult, err := mpt.Verify(zilProof.StorageProofs[0].Key, db2, accountBase.StorageRoot)
 	if err != nil {
-		return nil, fmt.Errorf("verifyMerkleProof, varify state info error:%s\n", err)
+		return nil, fmt.Errorf("verifyMerkleProof, verify state proof error:%s, key is %s proof is: %+v, root is %s\n", err, zilProof.StorageProofs[0].Key, zilProof.StorageProofs[0].Proof, util.EncodeHex(accountBase.StorageRoot))
 	}
 
 	if proofResult == nil {
@@ -143,7 +142,7 @@ func verifyFromTx(native *native.NativeService, proof, extra []byte, fromChainID
 	}
 
 	if !checkProofResult(proofResult, extra) {
-		return nil, fmt.Errorf("verifyFromTx, verify proof value hash failed, proof result:%x, extra:%x", proofResult, extra)
+		return nil, fmt.Errorf("verifyMerkleProof, check state proof result failed proof result: %s, extra: %s\n", util.EncodeHex(proofResult), util.EncodeHex(extra))
 	}
 
 	data := common.NewZeroCopySource(extra)
