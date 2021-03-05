@@ -157,12 +157,12 @@ func verifyFromTx(native *native.NativeService, proof, extra []byte, fromChainID
 
 func checkProofResult(result, value []byte) bool {
 	origin := strings.ToLower(string(result))
-	origin = strings.Trim(origin, "0x")
+	origin = strings.TrimPrefix(strings.ReplaceAll(origin, "\"", ""), "0x")
 
 	hash := crypto.Keccak256(value)
 	target := util.EncodeHex(hash)
 	target = strings.ToLower(target)
-	target = strings.Trim(target, "0x")
+	target = strings.TrimPrefix(target, "0x")
 
 	return origin == target
 }
