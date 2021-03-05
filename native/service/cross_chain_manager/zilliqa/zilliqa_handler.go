@@ -117,7 +117,7 @@ func verifyFromTx(native *native.NativeService, proof, extra []byte, fromChainID
 	key := strings.TrimPrefix(util.EncodeHex(sideChain.CCMCAddress), "0x")
 	accountBaseBytes, err := mpt.Verify([]byte(key), db, root)
 	if err != nil {
-		return nil, fmt.Errorf("verifyMerkleProof, verify account proof error:%s, key is %s proof is: %+v, root is %s\n", err, key, zilProof.AccountProof, util.EncodeHex(root))
+		return nil, fmt.Errorf("verifyMerkleProof, verify account proof error:%s, key is %s proof is: %+v, root is %s", err, key, zilProof.AccountProof, util.EncodeHex(root))
 	}
 
 	accountBase, err := core.AccountBaseFromBytes(accountBaseBytes)
@@ -132,9 +132,10 @@ func verifyFromTx(native *native.NativeService, proof, extra []byte, fromChainID
 	}
 
 	db2 := mpt.NewFromProof(proof2)
-	proofResult, err := mpt.Verify(zilProof.StorageProofs[0].Key, db2, accountBase.StorageRoot)
+	storageKey := util.DecodeHex(string(zilProof.StorageProofs[0].Key))
+	proofResult, err := mpt.Verify(storageKey, db2, accountBase.StorageRoot)
 	if err != nil {
-		return nil, fmt.Errorf("verifyMerkleProof, verify state proof error:%s, key is %s proof is: %+v, root is %s\n", err, zilProof.StorageProofs[0].Key, zilProof.StorageProofs[0].Proof, util.EncodeHex(accountBase.StorageRoot))
+		return nil, fmt.Errorf("verifyMerkleProof, verify state proof error:%s, key is %s proof is: %+v, root is %s", err, storageKey, zilProof.StorageProofs[0].Proof, util.EncodeHex(accountBase.StorageRoot))
 	}
 
 	if proofResult == nil {
@@ -142,7 +143,7 @@ func verifyFromTx(native *native.NativeService, proof, extra []byte, fromChainID
 	}
 
 	if !checkProofResult(proofResult, extra) {
-		return nil, fmt.Errorf("verifyMerkleProof, check state proof result failed proof result: %s, extra: %s\n", util.EncodeHex(proofResult), util.EncodeHex(extra))
+		return nil, fmt.Errorf("verifyMerkleProof, check state proof result failed proof result: %s, extra: %s", util.EncodeHex(proofResult), util.EncodeHex(extra))
 	}
 
 	data := common.NewZeroCopySource(extra)
