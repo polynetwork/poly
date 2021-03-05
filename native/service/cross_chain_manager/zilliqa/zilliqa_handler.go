@@ -135,7 +135,8 @@ func verifyFromTx(native *native.NativeService, proof, extra []byte, fromChainID
 	storageKey := util.DecodeHex(string(zilProof.StorageProofs[0].Key))
 	proofResult, err := mpt.Verify(storageKey, db2, accountBase.StorageRoot)
 	if err != nil {
-		return nil, fmt.Errorf("verifyMerkleProof, verify state proof error:%s, key is %s proof is: %+v, root is %s", err, storageKey, zilProof.StorageProofs[0].Proof, util.EncodeHex(accountBase.StorageRoot))
+		return nil, fmt.Errorf("verifyMerkleProof, verify state proof error:%s, key is %s account proof is: %+v, state proof is: %+v, account bytes is: %s, root is %s", err,
+			util.EncodeHex(storageKey), zilProof.AccountProof, zilProof.StorageProofs[0].Proof, util.EncodeHex(accountBaseBytes), util.EncodeHex(accountBase.StorageRoot))
 	}
 
 	if proofResult == nil {
