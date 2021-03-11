@@ -46,4 +46,5 @@ var (
 	BSC_ROUTER    = uint64(6)
 	HECO_ROUTER   = uint64(7)
 	QUORUM_ROUTER = uint64(8)
+	MSC_ROUTER    = uint64(10)
 )
