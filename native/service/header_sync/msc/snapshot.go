@@ -115,17 +115,6 @@ func (s *Snapshot) apply(headers []*HeaderWithDifficultySum, targetSigner common
 	if len(headers) == 0 {
 		return
 	}
-	// Sanity check that the headers can be applied
-	for i := 0; i < len(headers)-1; i++ {
-		if headers[i+1].Header.Number.Uint64() != headers[i].Header.Number.Uint64()+1 {
-			err = errInvalidVotingChain
-			return
-		}
-	}
-	if headers[0].Header.Number.Uint64() != s.Number+1 {
-		err = errInvalidVotingChain
-		return
-	}
 
 	var signer common.Address
 	for _, headerWS := range headers {

@@ -592,10 +592,6 @@ var (
 	// has a vote nonce set to non-zeroes.
 	errInvalidCheckpointVote = errors.New("vote nonce in checkpoint block non-zero")
 
-	// errInvalidVotingChain is returned if an authorization list is attempted to
-	// be modified via out-of-range or non-contiguous headers.
-	errInvalidVotingChain = errors.New("invalid voting chain")
-
 	// errMissingVanity is returned if a block's extra-data section is shorter than
 	// 32 bytes, which is required to store the signer vanity.
 	errMissingVanity = errors.New("extra-data 32 byte vanity prefix missing")
