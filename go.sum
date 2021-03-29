@@ -69,6 +69,8 @@ github.com/Zilliqa/gozilliqa-sdk v1.2.1-0.20210304105042-c4327211a4ba h1:o5WzAWq
 github.com/Zilliqa/gozilliqa-sdk v1.2.1-0.20210304105042-c4327211a4ba/go.mod h1:XLd05IRvH+nQt2lLvW6I2pfWBtRYE4i8Tpx45xBrlUE=
 github.com/Zilliqa/gozilliqa-sdk v1.2.1-0.20210322040052-2d1a2d35fded h1:FqdR17dbnKxTKA/9Vxbvoe4tvSwADBj3Mg1gbsPo9Bs=
 github.com/Zilliqa/gozilliqa-sdk v1.2.1-0.20210322040052-2d1a2d35fded/go.mod h1:XLd05IRvH+nQt2lLvW6I2pfWBtRYE4i8Tpx45xBrlUE=
+github.com/Zilliqa/gozilliqa-sdk v1.2.1-0.20210329093354-1b8e0a7a2e25 h1:DFzNXEpvnU8Wdo2+51OptoHY/WJQenrhJFslbQydRR0=
+github.com/Zilliqa/gozilliqa-sdk v1.2.1-0.20210329093354-1b8e0a7a2e25/go.mod h1:XLd05IRvH+nQt2lLvW6I2pfWBtRYE4i8Tpx45xBrlUE=
 github.com/aead/siphash v1.0.1/go.mod h1:Nywa3cDsYNNK3gaciGTWPwHt0wlpNV15vwmswBAUSII=
 github.com/afex/hystrix-go v0.0.0-20180502004556-fa1af6a1f4f5/go.mod h1:SkGFH1ia65gfNATL8TAiHDNxPzPdmEL5uirI2Uyuz6c=
 github.com/alecthomas/template v0.0.0-20160405071501-a0175ee3bccc/go.mod h1:LOuyumcjzFXgccqObfd/Ljyb9UuFJ6TxHnclSeseNhc=
