@@ -56,7 +56,7 @@ func (h *Handler) MakeDepositProposal(service *native.NativeService) (*scom.Make
 
 	value, err := verifyFromTx(service, params.Proof, params.Extra, params.SourceChainID, params.Height, sideChain)
 	if err != nil {
-		return nil, fmt.Errorf("zil MakeDepositProposal, verifyFromEthTx error: %s", err)
+		return nil, fmt.Errorf("zil MakeDepositProposal, verifyFromZILTx error: %s", err)
 	}
 
 	if err := scom.CheckDoneTx(service, value.CrossChainID, params.SourceChainID); err != nil {
@@ -134,7 +134,7 @@ func verifyFromTx(native *native.NativeService, proof, extra []byte, fromChainID
 	db2 := mpt.NewFromProof(proof2)
 	storageKey := util.DecodeHex(string(zilProof.StorageProofs[0].Key))
 	hashedStorageKey := util.Sha256(storageKey)
-	proofResult, err := mpt.Verify(hashedStorageKey, db2, accountBase.StorageRoot)
+	proofResult, err := mpt.Verify([]byte((util.EncodeHex(hashedStorageKey))), db2, accountBase.StorageRoot)
 	if err != nil {
 		return nil, fmt.Errorf("verifyMerkleProof, verify state proof error:%s, key is %s account proof is: %+v, state proof is: %+v, account bytes is: %s, root is %s", err,
 			util.EncodeHex(storageKey), zilProof.AccountProof, zilProof.StorageProofs[0].Proof, util.EncodeHex(accountBaseBytes), util.EncodeHex(accountBase.StorageRoot))
