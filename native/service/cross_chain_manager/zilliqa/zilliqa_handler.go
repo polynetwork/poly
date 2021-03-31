@@ -141,7 +141,8 @@ func verifyFromTx(native *native.NativeService, proof, extra []byte, fromChainID
 	}
 
 	if proofResult == nil {
-		return nil, fmt.Errorf("VerifyFromZilProof, verifyMerkleProof failed!")
+		return nil, fmt.Errorf("verifyMerkleProof, verify state proof error:%s, key is %s account proof is: %+v, state proof is: %+v, account bytes is: %s, root is %s", "result is nil",
+			util.EncodeHex(storageKey), zilProof.AccountProof, zilProof.StorageProofs[0].Proof, util.EncodeHex(accountBaseBytes), util.EncodeHex(accountBase.StorageRoot))
 	}
 
 	if !checkProofResult(proofResult, extra) {
