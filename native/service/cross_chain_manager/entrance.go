@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/quorum"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/heco"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/msc"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
@@ -70,6 +71,8 @@ func GetChainHandler(router uint64) (scom.ChainHandler, error) {
 		return bsc.NewHandler(), nil
 	case utils.HECO_ROUTER:
 		return heco.NewHecoHandler(), nil
+	case utils.MSC_ROUTER:
+		return msc.NewHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported router:%d", router)
 	}
