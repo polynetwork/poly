@@ -20,10 +20,6 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/polynetwork/poly/native/service/cross_chain_manager/quorum"
-	"github.com/polynetwork/poly/native/service/cross_chain_manager/heco"
-	"github.com/polynetwork/poly/native/service/cross_chain_manager/msc"
-	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/bsc"
@@ -32,6 +28,7 @@ import (
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/cosmos"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/eth"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/heco"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/msc"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/neo"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/ont"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/quorum"

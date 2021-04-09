@@ -28,7 +28,7 @@ import (
 
 var (
 	IstanbulExtraVanity = 32 // Fixed number of extra-data bytes reserved for validator vanity
-	IstanbulDigest = ecom.HexToHash("0x63746963616c2062797a616e74696e65206661756c7420746f6c6572616e6365")
+	IstanbulDigest      = ecom.HexToHash("0x63746963616c2062797a616e74696e65206661756c7420746f6c6572616e6365")
 )
 
 func putValSet(ns *native.NativeService, chainID, height uint64, vals []ecom.Address) {
