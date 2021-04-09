@@ -263,23 +263,12 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		}
 
 		// get prev epochs, also checking recent limit
-		phv, pphv, lastSeenHeight, err := getPrevHeightAndValidators(native, &header, ctx)
+		phv, _, lastSeenHeight, err := getPrevHeightAndValidators(native, &header, ctx)
 		if err != nil {
 			return fmt.Errorf("heco Handler SyncBlockHeader, getPrevHeightAndValidators err: %v", err)
 		}
 
-		var (
-			inTurnHV *HeightAndValidators
-		)
-
-		diffWithLastEpoch := big.NewInt(0).Sub(header.Number, phv.Height).Int64()
-		if diffWithLastEpoch <= int64(len(pphv.Validators)/2) {
-			// pphv is in effect
-			inTurnHV = pphv
-		} else {
-			// phv is in effect
-			inTurnHV = phv
-		}
+		inTurnHV := phv
 
 		if lastSeenHeight > 0 {
 			limit := int64(len(inTurnHV.Validators) / 2)

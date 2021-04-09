@@ -20,6 +20,10 @@ import (
 	"encoding/hex"
 	"fmt"
 
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/quorum"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/heco"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/msc"
+	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/bsc"
@@ -74,6 +78,8 @@ func GetChainHandler(router uint64) (scom.ChainHandler, error) {
 		return heco.NewHecoHandler(), nil
 	case utils.ZILLIQA_ROUTER:
 		return zilliqa.NewHandler(), nil
+	case utils.MSC_ROUTER:
+		return msc.NewHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported router:%d", router)
 	}

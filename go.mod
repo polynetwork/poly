@@ -22,7 +22,7 @@ require (
 	github.com/pborman/uuid v1.2.0
 	github.com/polynetwork/poly-io-test v0.0.0-20200819093740-8cf514b07750
 	github.com/stretchr/testify v1.6.1
-	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca
+	github.com/syndtr/goleveldb v1.0.1-0.20190923125748-758128399b1d
 	github.com/tendermint/tendermint v0.33.7
 	github.com/urfave/cli v1.22.4
 	github.com/valyala/bytebufferpool v1.0.0
