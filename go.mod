@@ -3,6 +3,7 @@ module github.com/polynetwork/poly
 go 1.14
 
 require (
+	github.com/Zilliqa/gozilliqa-sdk v1.2.1-0.20210329093354-1b8e0a7a2e25
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/cosmos/cosmos-sdk v0.39.1
@@ -26,6 +27,6 @@ require (
 	github.com/urfave/cli v1.22.4
 	github.com/valyala/bytebufferpool v1.0.0
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
-	golang.org/x/net v0.0.0-20200707034311-ab3426394381
+	golang.org/x/net v0.0.0-20200822124328-c89045814202
 	gotest.tools v2.2.0+incompatible
 )

@@ -163,9 +163,9 @@ func (vs QuorumValSet) JustOneChanged(another QuorumValSet) error {
 		return fmt.Errorf("length of new validitors is %d but original one is %d", len(another), len(vs))
 	}
 
-	for i, j := 0, 0; i < len(less); i, j = i + 1, j + 1 {
+	for i, j := 0, 0; i < len(less); i, j = i+1, j+1 {
 		if !bytes.Equal(less[i].Bytes(), more[j].Bytes()) {
-			if j++; j - i > 1 {
+			if j++; j-i > 1 {
 				return errors.New("more than one validator changed")
 			}
 		}

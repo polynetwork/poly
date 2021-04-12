@@ -34,6 +34,7 @@ import (
 	"github.com/polynetwork/poly/native/service/header_sync/neo"
 	"github.com/polynetwork/poly/native/service/header_sync/ont"
 	"github.com/polynetwork/poly/native/service/header_sync/quorum"
+	"github.com/polynetwork/poly/native/service/header_sync/zilliqa"
 	"github.com/polynetwork/poly/native/service/utils"
 )
 
@@ -68,6 +69,8 @@ func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
 		return bsc.NewHandler(), nil
 	case utils.HECO_ROUTER:
 		return heco.NewHecoHandler(), nil
+	case utils.ZILLIQA_ROUTER:
+		return zilliqa.NewHandler(), nil
 	case utils.MSC_ROUTER:
 		return msc.NewHandler(), nil
 	default:
