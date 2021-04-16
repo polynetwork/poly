@@ -18,14 +18,10 @@
 package neo
 
 import (
-	"encoding/hex"
-	"testing"
-
-	"encoding/binary"
-	"github.com/joeqian10/neo-gogogo/block"
-	"github.com/joeqian10/neo-gogogo/helper"
-	tx2 "github.com/joeqian10/neo-gogogo/tx"
-	"github.com/joeqian10/neo-gogogo/wallet"
+	"github.com/joeqian10/neo3-gogogo/block"
+	"github.com/joeqian10/neo3-gogogo/crypto"
+	"github.com/joeqian10/neo3-gogogo/helper"
+	tx2 "github.com/joeqian10/neo3-gogogo/tx"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/account"
 	"github.com/polynetwork/poly/common"
@@ -37,13 +33,14 @@ import (
 	scom "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/storage"
 	"github.com/stretchr/testify/assert"
+	"testing"
 )
 
 var (
-	neoAcct = func() *wallet.Account {
-		acct, _ := wallet.NewAccount()
-		return acct
-	}()
+	//neoAcct = func() *wallet.Account {
+	//	acct, _ := wallet.NewAccount()
+	//	return acct
+	//}()
 	acct          *account.Account = account.NewAccount("")
 	getNativeFunc                  = func() *native.NativeService {
 		store, _ := leveldbstore.NewMemLevelDBStore()
@@ -74,24 +71,23 @@ func NewNative(args []byte, tx *types.Transaction, db *storage.CacheDB) *native.
 
 func TestSyncGenesisHeader(t *testing.T) {
 	prevHash, _ := helper.UInt256FromString("0x0000000000000000000000000000000000000000000000000000000000000000")
-	merKleRoot, _ := helper.UInt256FromString("0x803ff4abe3ea6533bcc0be574efa02f83ae8fdc651c879056b0d9be336c01bf4")
-	nextConsensus, _ := helper.AddressToScriptHash("APyEx5f4Zm4oCHwFWiSTaph1fPBxZacYVR")
-	consensusData := binary.BigEndian.Uint64(helper.HexToBytes("000000007c2bac1d"))
-	genesisHeader := &NeoBlockHeader{
-		&block.BlockHeader{
-			Version:       0,
-			PrevHash:      prevHash,
-			MerkleRoot:    merKleRoot,
-			Timestamp:     1468595301,
-			Index:         0,
-			NextConsensus: nextConsensus,
-			ConsensusData: consensusData,
-			Witness: &tx2.Witness{
-				InvocationScript:   []byte{0},
-				VerificationScript: []byte{81},
-			},
-		},
+	merkleRoot, _ := helper.UInt256FromString("0x0000000000000000000000000000000000000000000000000000000000000000")
+	nextConsensus, _ := crypto.AddressToScriptHash("NVg7LjGcUSrgxgjX3zEgqaksfMaiS8Z6e1", helper.DefaultAddressVersion)
+	vs, _ := crypto.Base64Decode("EQ==")
+	witness := tx2.Witness{
+		InvocationScript: []byte{},
+		VerificationScript: vs,
 	}
+	genesisHeader := &NeoBlockHeader{Header:new(block.Header)}
+	genesisHeader.SetVersion(0)
+	genesisHeader.SetPrevHash(prevHash)
+	genesisHeader.SetMerkleRoot(merkleRoot)
+	genesisHeader.SetTimeStamp(1468595301000)
+	genesisHeader.SetIndex(0)
+	genesisHeader.SetPrimaryIndex(0x00)
+	genesisHeader.SetNextConsensus(nextConsensus)
+	genesisHeader.SetWitnesses([]tx2.Witness{witness})
+
 	param := new(scom.SyncGenesisHeaderParam)
 	param.ChainID = 4
 	sink := common.NewZeroCopySink(nil)
@@ -105,7 +101,8 @@ func TestSyncGenesisHeader(t *testing.T) {
 	tx := &types.Transaction{
 		SignedAddr: []common.Address{acct.Address},
 	}
-
+	//cdb := new(storage.CacheDB)
+	//cdb.Put()
 	native := NewNative(sink.Bytes(), tx, nil)
 	neoHandler := NewNEOHandler()
 	err = neoHandler.SyncGenesisHeader(native)
@@ -113,80 +110,73 @@ func TestSyncGenesisHeader(t *testing.T) {
 }
 
 func TestSyncBlockHeader(t *testing.T) {
-
 	prevHash, _ := helper.UInt256FromString("0x0000000000000000000000000000000000000000000000000000000000000000")
-	merKleRoot, _ := helper.UInt256FromString("0x803ff4abe3ea6533bcc0be574efa02f83ae8fdc651c879056b0d9be336c01bf4")
-	nextConsensus, _ := helper.AddressToScriptHash("APyEx5f4Zm4oCHwFWiSTaph1fPBxZacYVR")
-	consensusData := binary.BigEndian.Uint64(helper.HexToBytes("000000007c2bac1d"))
-	genesisHeader := &NeoBlockHeader{
-		&block.BlockHeader{
-			Version:       0,
-			PrevHash:      prevHash,
-			MerkleRoot:    merKleRoot,
-			Timestamp:     1468595301,
-			Index:         0,
-			NextConsensus: nextConsensus,
-			ConsensusData: consensusData,
-			Witness: &tx2.Witness{
-				InvocationScript:   []byte{0},
-				VerificationScript: []byte{81},
-			},
-		},
+	merkleRoot, _ := helper.UInt256FromString("0x0000000000000000000000000000000000000000000000000000000000000000")
+	nextConsensus, _ := crypto.AddressToScriptHash("NVg7LjGcUSrgxgjX3zEgqaksfMaiS8Z6e1", helper.DefaultAddressVersion)
+	is := []byte{}
+	vs, _ := crypto.Base64Decode("EQ==")
+	witness := tx2.Witness{
+		InvocationScript: is,
+		VerificationScript: vs,
 	}
+	genesisHeader := &NeoBlockHeader{Header:new(block.Header)}
+	genesisHeader.SetVersion(0)
+	genesisHeader.SetPrevHash(prevHash)
+	genesisHeader.SetMerkleRoot(merkleRoot)
+	genesisHeader.SetTimeStamp(1468595301000)
+	genesisHeader.SetIndex(0)
+	genesisHeader.SetPrimaryIndex(0x00)
+	genesisHeader.SetNextConsensus(nextConsensus)
+	genesisHeader.SetWitnesses([]tx2.Witness{witness})
 	sink := common.NewZeroCopySink(nil)
 	if err := genesisHeader.Serialization(sink); err != nil {
 		t.Errorf("NeoBlockHeaderToBytes error:%v", err)
 	}
 	neoGenesisHeaderbs := sink.Bytes()
-
-	prevHash, _ = helper.UInt256FromString("0x07e53bcbe93de88784e01401f8dae061934d34747e76b6a18b63e4213f3de220")
-	merKleRoot, _ = helper.UInt256FromString("0xbf6a0b78bede3ad758e09479b8712f60cb225a4047265847169b3864e23a3bc8")
-	nextConsensus, _ = helper.AddressToScriptHash("APyEx5f4Zm4oCHwFWiSTaph1fPBxZacYVR")
-	consensusData = binary.BigEndian.Uint64(helper.HexToBytes("d9d3b5ccf2eedde1"))
-	is100, _ := hex.DecodeString("40424db765bc1e92e530292ec04ff8ddffb79bec13f04fd9f85c00163328aa9d64f0b40b74ca8c4b56445c9048c50e6a67df57ab221593612c6165251d9770f7e140465f1d1d3b532fcaa8a98633316e24a07358c857a3565f7cc9a1b87dd3e6dcbb191a7c78c1b57889924e813a0daacea5281884ce814d10469560f43c9d567cf440fd7252d9607389e9b61c577a8705b1d74165979dd9440c4a71d47443fc1014e46957b0a537e1244fd9b4363aefb2df5971749daf9073cfd014aecb7dba2b13ab40c141f6c63267ad12ebadb154a83a3444eccff046de534cda6f29059e531de58bfce6287ca68a62b45766df5522dfed449b3d1bdc0a319ab07d21cf8839f5b59240fee381887b2dc82447fbe9e6db6c1aa9adff8f7a7d2998cea4f901c002098115d7ba7e6218275c8690f86b92e8b641d59152243f2253ff86fa9c2b6413a52256")
-	vs100, _ := hex.DecodeString("552102486fd15702c4490a26703112a5cc1d0923fd697a33406bd5a1c00e0013b09a7021024c7b7fb6c310fccf1ba33b082519d82964ea93868d676662d4a59ad548df0e7d2102aaec38470f6aad0042c6e877cfd8087d2676b0f516fddd362801b9bd3936399e2103b209fd4f53a7170ea4444e0cb0a6bb6a53c2bd016926989cf85f9b0fba17a70c2103b8d9d5771d8f513aa0869b9cc8d50986403b78c6da36890638c3d46a5adce04a2102ca0e27697b9c248f6f16e085fd0061e26f44da85b58ee835c110caa5ec3ba5542102df48f60e8f3e01c48ff40b9b7f1310d7a8b2a193188befe1c2e3df740e89509357ae")
-	neoHeader100 := &NeoBlockHeader{
-		&block.BlockHeader{
-			Version:       0,
-			PrevHash:      prevHash,
-			MerkleRoot:    merKleRoot,
-			Timestamp:     1476649243,
-			Index:         100,
-			NextConsensus: nextConsensus,
-			ConsensusData: consensusData,
-			Witness: &tx2.Witness{
-				InvocationScript:   is100,
-				VerificationScript: vs100,
-			},
-		},
+	// block 100
+	prevHash, _ = helper.UInt256FromString("0xcee650e843a8f8cf78f7c62a2bc2108375df93bfa9a912de64bea2d8948fec31")
+	merkleRoot, _ = helper.UInt256FromString("0x0000000000000000000000000000000000000000000000000000000000000000")
+	nextConsensus, _ = crypto.AddressToScriptHash("NYmMriQPYAiNxHC7tziV4ABJku5Yqe79N4", helper.DefaultAddressVersion)
+	is, _ = crypto.Base64Decode("DEAF2siXzBq5rCzpaNvAxTPuebSgsn3XX7bKMvuf1RzQx1QqJDLBn/XxMyCzAOnsolp67X8eLZ8xuc4bovqSMf4lDECxfs8iV5/5yLs2hVW0tB1d1n7R1J3HEoJ8vNCJr/xrqt3bJRoOFL+eObBmjyo+ZSk5M6GrGH+UqpglZqr0upu8DEAX9lh0LKdbFTOg5GfZ8gP9UdGURu/xbM288BKFUBXhTH1p/2Y4hqZzJoXes+DdlRCwWzhToCMa468OnmTHkxDoDEB4etR6RX+B69qB5cv7QjihqnTowYWzU3Zhec+yz+2wgETkD0aD4uUafiSGpCK7xNB7aknDbFgMJXWSK7cM+c3NDEDw4z4PxskKUfJ1cmXKXxhtdzo/05iEi6c/n2rfZHPLd/YA0aBPQuWf3QSWizQYsmsYyA2uriKR2PA7asqYYB60")
+	vs, _ = crypto.Base64Decode("FQwhAwCbdUDhDyVi5f2PrJ6uwlFmpYsm5BI0j/WoaSe/rCKiDCEDAgXpzvrqWh38WAryDI1aokaLsBSPGl5GBfxiLIDmBLoMIQIUuvDO6jpm8X5+HoOeol/YvtbNgua7bmglAYkGX0T/AQwhAj6bMuqJuU0GbmSbEk/VDjlu6RNp6OKmrhsRwXDQIiVtDCEDQI3NQWOW9keDrFh+oeFZPFfZ/qiAyKahkg6SollHeAYMIQKng0vpsy4pgdFXy1u9OstCz9EepcOxAiTXpE6YxZEPGwwhAroscPWZbzV6QxmHBYWfriz+oT4RcpYoAHcrPViKnUq9F0F7zmyl")
+	witness = tx2.Witness{
+		InvocationScript: is,
+		VerificationScript: vs,
 	}
+	neoHeader100 := &NeoBlockHeader{Header:new(block.Header)}
+	neoHeader100.SetVersion(0)
+	neoHeader100.SetPrevHash(prevHash)
+	neoHeader100.SetMerkleRoot(merkleRoot)
+	neoHeader100.SetTimeStamp(1616577294488)
+	neoHeader100.SetIndex(100)
+	neoHeader100.SetPrimaryIndex(0x00)
+	neoHeader100.SetNextConsensus(nextConsensus)
+	neoHeader100.SetWitnesses([]tx2.Witness{witness})
 	sink = common.NewZeroCopySink(nil)
 	if err := neoHeader100.Serialization(sink); err != nil {
 		t.Errorf("NeoBlockHeaderToBytes error:%v", err)
 	}
 	neoHeader100bs := sink.Bytes()
 
-	prevHash, _ = helper.UInt256FromString("0xb4cabbcde5e5d5ecf0429cb4726f7a4d857e195e12bdc568cb1df2097c2d918d")
-	merKleRoot, _ = helper.UInt256FromString("0xb230e8bc2e0f35eff5279de5d6f9a6b1c26c5757247c4f33d744676919bfb3d1")
-	nextConsensus, _ = helper.AddressToScriptHash("APyEx5f4Zm4oCHwFWiSTaph1fPBxZacYVR")
-	consensusData = binary.BigEndian.Uint64(helper.HexToBytes("ab01a2420960665a"))
-	is200, _ := hex.DecodeString("409de7102817ffda29e13e96e3ff541ea1c7498805504d39d2145990c9862f2aacdb748b631233c14a63cc1483f730843eced2abab80a9c5bbe4c7b5a552569cac40d3fde603e228e2ca3ee25ebf7651692be1bfa50cbc0230242719cd2d045d21c2fe44dc80e48dd8fd8ab741be0ce527b8aeada80f8c09f86af83ae6ed4f5e1e3940382bd5b00bf1778c09d402165b36756d6cbc8e7970fed080ba9805b96cc7ba5ff0606b7824585e6d4f318cb7b69dd1d7b5dbd82644aa9d329e73828225521f7e401d568aaef9d790358fc8475154d0c541ac7cef4f4fb51a18ddc5c1fab4f49bb138d4a7dad2f259579e7686819e668c28f024be117cc3aaa7a2dcad77336a0427404ab053cae9db932d988884f9e5c9026e18f762aad9d0bb143edc9e6c808f1f5585ed951103c251dcc331a6db3865faf22b778ce05e68e351608528c8fb1b172b")
-	vs200, _ := hex.DecodeString("552102486fd15702c4490a26703112a5cc1d0923fd697a33406bd5a1c00e0013b09a7021024c7b7fb6c310fccf1ba33b082519d82964ea93868d676662d4a59ad548df0e7d2102aaec38470f6aad0042c6e877cfd8087d2676b0f516fddd362801b9bd3936399e2103b209fd4f53a7170ea4444e0cb0a6bb6a53c2bd016926989cf85f9b0fba17a70c2103b8d9d5771d8f513aa0869b9cc8d50986403b78c6da36890638c3d46a5adce04a2102ca0e27697b9c248f6f16e085fd0061e26f44da85b58ee835c110caa5ec3ba5542102df48f60e8f3e01c48ff40b9b7f1310d7a8b2a193188befe1c2e3df740e89509357ae")
-	neoHeader200 := &NeoBlockHeader{
-		&block.BlockHeader{
-			Version:       0,
-			PrevHash:      prevHash,
-			MerkleRoot:    merKleRoot,
-			Timestamp:     1476651132,
-			Index:         200,
-			NextConsensus: nextConsensus,
-			ConsensusData: consensusData,
-			Witness: &tx2.Witness{
-				InvocationScript:   is200,
-				VerificationScript: vs200,
-			},
-		},
+	// block 200
+	prevHash, _ = helper.UInt256FromString("0xe22cd5bb35d832e59554dc2d4165a48bed56b2d7f9df379639078cca35ecc770")
+	merkleRoot, _ = helper.UInt256FromString("0x0000000000000000000000000000000000000000000000000000000000000000")
+	nextConsensus, _ = crypto.AddressToScriptHash("NYmMriQPYAiNxHC7tziV4ABJku5Yqe79N4", helper.DefaultAddressVersion)
+	is, _ = crypto.Base64Decode("DEBGAk7oudrv67j+GFWetgK8W0Hu6m/15ceMxaq3sl6aKfjTQckmQfqzzGgzJ/rrdWMCyCsjYkgc14MdFvI/GnopDEBj9dRQtcKyu9K2qOyvqqkUoqK/9A32kdj0LbXpYPw+WDrz0DlvjNQF8dc2EuvmwTrYuQ5fUTrHvaPXKTmOPl3IDEAKtZf8AaZmY+onQejV8jqkEN5DGKKWthYGpVza5jueTvx4Hi1B5Uh7k6jW5Z6Y7mUVGuIUAGLbeULsp/MAQiyjDEBibp/Gy0rg5h1Hm3TokJi12KfYSMizn973+rkMDjKiWW1ySq6Sif3BEqlHi1prbuFPYSQf7xiJgs3+P0aFXfPzDEBdqKNocAkjWPBbxrHCHq0DRJoXBgmrXA9BSmytymp/pdU4xt2Y/Gxb/GBBXOAorOumjZ46DxWwnqfVpJ9adHMj")
+	vs, _ = crypto.Base64Decode("FQwhAwCbdUDhDyVi5f2PrJ6uwlFmpYsm5BI0j/WoaSe/rCKiDCEDAgXpzvrqWh38WAryDI1aokaLsBSPGl5GBfxiLIDmBLoMIQIUuvDO6jpm8X5+HoOeol/YvtbNgua7bmglAYkGX0T/AQwhAj6bMuqJuU0GbmSbEk/VDjlu6RNp6OKmrhsRwXDQIiVtDCEDQI3NQWOW9keDrFh+oeFZPFfZ/qiAyKahkg6SollHeAYMIQKng0vpsy4pgdFXy1u9OstCz9EepcOxAiTXpE6YxZEPGwwhAroscPWZbzV6QxmHBYWfriz+oT4RcpYoAHcrPViKnUq9F0F7zmyl")
+	witness = tx2.Witness{
+		InvocationScript: is,
+		VerificationScript: vs,
 	}
+	neoHeader200 := &NeoBlockHeader{Header:new(block.Header)}
+	neoHeader200.SetVersion(0)
+	neoHeader200.SetPrevHash(prevHash)
+	neoHeader200.SetMerkleRoot(merkleRoot)
+	neoHeader200.SetTimeStamp(1616578903762)
+	neoHeader200.SetIndex(200)
+	neoHeader200.SetPrimaryIndex(0x00)
+	neoHeader200.SetNextConsensus(nextConsensus)
+	neoHeader200.SetWitnesses([]tx2.Witness{witness})
 	sink = common.NewZeroCopySink(nil)
 	if err := neoHeader200.Serialization(sink); err != nil {
 		t.Errorf("NeoBlockHeaderToBytes error:%v", err)
@@ -228,5 +218,4 @@ func TestSyncBlockHeader(t *testing.T) {
 		err := neoHandler.SyncBlockHeader(native)
 		assert.NoError(t, err)
 	}
-
 }

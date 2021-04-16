@@ -19,6 +19,7 @@ package neo
 
 import (
 	"fmt"
+	"github.com/joeqian10/neo3-gogogo/helper"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
@@ -27,6 +28,7 @@ import (
 )
 
 type NEOHandler struct {
+	ccmcId *int
 }
 
 func NewNEOHandler() *NEOHandler {
@@ -51,7 +53,14 @@ func (this *NEOHandler) MakeDepositProposal(service *native.NativeService) (*sco
 	if err != nil {
 		return nil, fmt.Errorf("neo MakeDepositProposal, side_chain_manager.GetSideChain error: %v", err)
 	}
-	value, err := verifyFromNeoTx(params.Proof, crossChainMsg, sideChain.CCMCAddress)
+
+	// convert neo contract address bytes to id, it is different from other chains, it stores int in a []byte, contract id can be get from "getcontractstate" api
+	// todo, when register neo N3, convert ccmc id to []byte; native contracts have negative ids, while custom contracts have positive ones
+	if this.ccmcId == nil {
+		this.SetCcmcId(sideChain.CCMCAddress)
+	}
+
+	value, err := verifyFromNeoTx(params.Proof, crossChainMsg, *this.ccmcId)
 	if err != nil {
 		return nil, fmt.Errorf("neo MakeDepositProposal, VerifyFromNeoTx error: %v", err)
 	}
@@ -63,4 +72,9 @@ func (this *NEOHandler) MakeDepositProposal(service *native.NativeService) (*sco
 		return nil, fmt.Errorf("neo MakeDepositProposal, putDoneTx error:%s", err)
 	}
 	return value, nil
+}
+
+func (this *NEOHandler) SetCcmcId(idBytes []byte) {
+	id := int(int32(helper.BytesToUInt32(idBytes)))
+	this.ccmcId = &id
 }

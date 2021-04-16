@@ -20,7 +20,7 @@ package neo
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/joeqian10/neo-gogogo/tx"
+	"github.com/joeqian10/neo3-gogogo/tx"
 	"github.com/polynetwork/poly/common"
 	cstates "github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/native"
@@ -33,10 +33,10 @@ import (
 func verifyHeader(native *native.NativeService, chainID uint64, header *NeoBlockHeader) error {
 	neoConsensus, err := getConsensusValByChainId(native, chainID)
 	if err != nil {
-		return fmt.Errorf("verifyHeader, get Consensus error:%s", err)
+		return fmt.Errorf("verifyHeader, get Consensus error: %s", err)
 	}
 	if neoConsensus.NextConsensus != header.Witness.GetScriptHash() {
-		return fmt.Errorf("verifyHeader, invalid script hash in header error, expected:%s, got:%s", neoConsensus.NextConsensus.String(), header.Witness.GetScriptHash().String())
+		return fmt.Errorf("verifyHeader, invalid script hash in header error, expected: %s, got: %s", neoConsensus.NextConsensus.String(), header.Witness.GetScriptHash().String())
 	}
 
 	msg, err := header.GetMessage()
@@ -44,7 +44,7 @@ func verifyHeader(native *native.NativeService, chainID uint64, header *NeoBlock
 		return fmt.Errorf("verifyHeader, unable to get hash data of header")
 	}
 	if verified := tx.VerifyMultiSignatureWitness(msg, header.Witness); !verified {
-		return fmt.Errorf("verifyHeader, VerifyMultiSignatureWitness error:%s, height:%d", err, header.Index)
+		return fmt.Errorf("verifyHeader, VerifyMultiSignatureWitness error: %s, height: %d", err, header.GetIndex())
 	}
 	return nil
 }
@@ -52,27 +52,27 @@ func verifyHeader(native *native.NativeService, chainID uint64, header *NeoBlock
 func VerifyCrossChainMsgSig(native *native.NativeService, chainID uint64, crossChainMsg *NeoCrossChainMsg) error {
 	neoConsensus, err := getConsensusValByChainId(native, chainID)
 	if err != nil {
-		return fmt.Errorf("verifyCrossChainMsg, get ConsensusPeer error:%v", err)
+		return fmt.Errorf("verifyCrossChainMsg, get ConsensusPeer error: %v", err)
 	}
 	crossChainMsgConsensus, err := crossChainMsg.GetScriptHash()
 	if err != nil {
-		return fmt.Errorf("verifyCrossChainMsg, getScripthash error:%v", err)
+		return fmt.Errorf("verifyCrossChainMsg, getScripthash error: %v", err)
 	}
 	if neoConsensus.NextConsensus != crossChainMsgConsensus {
-		return fmt.Errorf("verifyCrossChainMsg, invalid script hash in NeoCrossChainMsg error, expected:%s, got:%s", neoConsensus.NextConsensus.String(), crossChainMsgConsensus.String())
+		return fmt.Errorf("verifyCrossChainMsg, invalid script hash in NeoCrossChainMsg error, expected: %s, got: %s", neoConsensus.NextConsensus.String(), crossChainMsgConsensus.String())
 	}
 	msg, err := crossChainMsg.GetMessage()
 	if err != nil {
 		return fmt.Errorf("verifyCrossChainMsg, unable to get unsigned message of neo crossChainMsg")
 	}
-	invScript, _ := hex.DecodeString(crossChainMsg.Witness.InvocationScript)
-	verScript, _ := hex.DecodeString(crossChainMsg.Witness.VerificationScript)
+	invScript, _ := hex.DecodeString(crossChainMsg.Witness.Invocation)
+	verScript, _ := hex.DecodeString(crossChainMsg.Witness.Verification)
 	witness := &tx.Witness{
 		InvocationScript:   invScript,
 		VerificationScript: verScript,
 	}
 	if verified := tx.VerifyMultiSignatureWitness(msg, witness); !verified {
-		return fmt.Errorf("verifyCrossChainMsg, VerifyMultiSignatureWitness error:%s, height:%d", "verified failed", crossChainMsg.Index)
+		return fmt.Errorf("verifyCrossChainMsg, VerifyMultiSignatureWitness error: %s, height: %d", "verification failed", crossChainMsg.Index)
 	}
 	return nil
 }
@@ -89,7 +89,7 @@ func getConsensusValByChainId(native *native.NativeService, chainID uint64) (*Ne
 	}
 	neoConsensusBytes, err := cstates.GetValueFromRawStorageItem(neoConsensusStore)
 	if err != nil {
-		return nil, fmt.Errorf("getConsensusPeerByHeight, deserialize from raw storage item err:%v", err)
+		return nil, fmt.Errorf("getConsensusPeerByHeight, deserialize from raw storage item err: %v", err)
 	}
 	neoConsensus := new(NeoConsensus)
 	if err := neoConsensus.Deserialization(common.NewZeroCopySource(neoConsensusBytes)); err != nil {

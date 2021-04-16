@@ -18,11 +18,10 @@
 package neo
 
 import (
-	"encoding/binary"
 	"encoding/hex"
-	"github.com/joeqian10/neo-gogogo/block"
-	"github.com/joeqian10/neo-gogogo/helper"
-	tx2 "github.com/joeqian10/neo-gogogo/tx"
+	"github.com/joeqian10/neo3-gogogo/crypto"
+	"github.com/joeqian10/neo3-gogogo/helper"
+	tx2 "github.com/joeqian10/neo3-gogogo/tx"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/account"
 	"github.com/polynetwork/poly/common"
@@ -40,6 +39,7 @@ import (
 	"github.com/polynetwork/poly/native/service/utils"
 	"github.com/polynetwork/poly/native/storage"
 	"github.com/stretchr/testify/assert"
+	"log"
 	"testing"
 )
 
@@ -88,29 +88,28 @@ func Test_Neo_MakeDepositProposal(t *testing.T) {
 	var native *native.NativeService
 	{
 		prevHash, _ := helper.UInt256FromString("0x0000000000000000000000000000000000000000000000000000000000000000")
-		merKleRoot, _ := helper.UInt256FromString("0xee3ba4cd680d1acd06b067a7d57fd20e47f79203a23e99f28915e57b4e6c1058")
-		nextConsensus, _ := helper.AddressToScriptHash("AdP4zfgVEgn8nhRN5s76aVNEcDaftkqbyW")
-		consensusData := binary.BigEndian.Uint64(helper.HexToBytes("000000007c2bac1d"))
-		genesisHeader := &neo.NeoBlockHeader{
-			&block.BlockHeader{
-				Version:       0,
-				PrevHash:      prevHash,
-				MerkleRoot:    merKleRoot,
-				Timestamp:     1468595301,
-				Index:         0,
-				NextConsensus: nextConsensus,
-				ConsensusData: consensusData,
-				Witness: &tx2.Witness{
-					InvocationScript:   []byte{0},
-					VerificationScript: []byte{81},
-				},
-			},
+		merkleRoot, _ := helper.UInt256FromString("0x0000000000000000000000000000000000000000000000000000000000000000")
+		nextConsensus, _ := crypto.AddressToScriptHash("NVg7LjGcUSrgxgjX3zEgqaksfMaiS8Z6e1", helper.DefaultAddressVersion)
+		vs, _ := crypto.Base64Decode("EQ==")
+		witness := tx2.Witness{
+			InvocationScript: []byte{},
+			VerificationScript: vs,
 		}
+		genesisHeader := &neo.NeoBlockHeader{}
+		genesisHeader.SetVersion(0)
+		genesisHeader.SetPrevHash(prevHash)
+		genesisHeader.SetMerkleRoot(merkleRoot)
+		genesisHeader.SetTimeStamp(1468595301000)
+		genesisHeader.SetIndex(0)
+		genesisHeader.SetPrimaryIndex(0x00)
+		genesisHeader.SetNextConsensus(nextConsensus)
+		genesisHeader.SetWitnesses([]tx2.Witness{witness})
+
 		param := new(hscom.SyncGenesisHeaderParam)
 		param.ChainID = 4
 		var err error
 		sink := common.NewZeroCopySink(nil)
-		genesisHeader.Serialization(sink)
+		err = genesisHeader.Serialization(sink)
 		param.GenesisHeader = sink.Bytes()
 		if err != nil {
 			t.Errorf("NeoBlockHeaderToBytes error:%v", err)
@@ -158,5 +157,22 @@ func Test_Neo_MakeDepositProposal(t *testing.T) {
 		_, err = neoHandler.MakeDepositProposal(native)
 		assert.Nil(t, err)
 	}
+}
 
+func TestNEOHandler_SetCcmcId(t *testing.T) {
+	// test positive int
+	idp := 5
+	idpBytes := helper.IntToBytes(idp)
+	log.Println(helper.BytesToHex(idpBytes))
+
+	idp2 := int(helper.BytesToUInt32(idpBytes))
+	assert.Equal(t, idp, idp2)
+
+	// test negative int
+	idn := -5
+	idnBytes := helper.IntToBytes(idn)
+	log.Println(helper.BytesToHex(idnBytes))
+
+	idn2 := int(int32(helper.BytesToUInt32(idnBytes)))
+	assert.Equal(t, idn, idn2)
 }
