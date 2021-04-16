@@ -15,12 +15,12 @@
  * along with The poly network .  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package neo
+package neo3
 
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/joeqian10/neo-gogogo/tx"
+	"github.com/joeqian10/neo3-gogogo/tx"
 	"github.com/polynetwork/poly/common"
 	cstates "github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/native"
@@ -44,7 +44,7 @@ func verifyHeader(native *native.NativeService, chainID uint64, header *NeoBlock
 		return fmt.Errorf("verifyHeader, unable to get hash data of header")
 	}
 	if verified := tx.VerifyMultiSignatureWitness(msg, header.Witness); !verified {
-		return fmt.Errorf("verifyHeader, VerifyMultiSignatureWitness error: %s, height: %d", err, header.Index)
+		return fmt.Errorf("verifyHeader, VerifyMultiSignatureWitness error: %s, height: %d", err, header.GetIndex())
 	}
 	return nil
 }
@@ -65,8 +65,8 @@ func VerifyCrossChainMsgSig(native *native.NativeService, chainID uint64, crossC
 	if err != nil {
 		return fmt.Errorf("verifyCrossChainMsg, unable to get unsigned message of neo crossChainMsg")
 	}
-	invScript, _ := hex.DecodeString(crossChainMsg.Witness.InvocationScript)
-	verScript, _ := hex.DecodeString(crossChainMsg.Witness.VerificationScript)
+	invScript, _ := hex.DecodeString(crossChainMsg.Witness.Invocation)
+	verScript, _ := hex.DecodeString(crossChainMsg.Witness.Verification)
 	witness := &tx.Witness{
 		InvocationScript:   invScript,
 		VerificationScript: verScript,

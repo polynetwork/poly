@@ -14,25 +14,23 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with The poly network .  If not, see <http://www.gnu.org/licenses/>.
  */
-package neo
+package neo3
 
 import (
-	"bytes"
-	"encoding/hex"
 	"fmt"
-	"github.com/joeqian10/neo-gogogo/helper"
-	"github.com/joeqian10/neo-gogogo/mpt"
+	"github.com/joeqian10/neo3-gogogo/helper"
+	"github.com/joeqian10/neo3-gogogo/mpt"
 	"github.com/polynetwork/poly/common"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
-	"github.com/polynetwork/poly/native/service/header_sync/neo"
+	"github.com/polynetwork/poly/native/service/header_sync/neo3"
 )
 
-func verifyFromNeoTx(proof []byte, crosschainMsg *neo.NeoCrossChainMsg, contractAddr []byte) (*scom.MakeTxParam, error) {
-	crossStateProofRoot, err := helper.UInt256FromString(crosschainMsg.StateRoot.StateRoot)
+func verifyFromNeoTx(proof []byte, crossChainMsg *neo3.NeoCrossChainMsg, contractId int) (*scom.MakeTxParam, error) {
+	crossStateProofRoot, err := helper.UInt256FromString(crossChainMsg.StateRoot.RootHash)
 	if err != nil {
 		return nil, fmt.Errorf("verifyFromNeoTx, decode cross state proof root from string error: %s", err)
 	}
-	value, err := VerifyNeoCrossChainProof(proof, crossStateProofRoot.Bytes(), contractAddr)
+	value, err := VerifyNeoCrossChainProof(proof, crossStateProofRoot.ToByteArray(), contractId)
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromNeoTx, Verify Neo cross chain proof error: %v", err)
 	}
@@ -44,19 +42,18 @@ func verifyFromNeoTx(proof []byte, crosschainMsg *neo.NeoCrossChainMsg, contract
 	return txParam, nil
 }
 
-func VerifyNeoCrossChainProof(proof []byte, stateRoot []byte, contractAddr []byte) ([]byte, error) {
-	scriptHash, key, proofs, err := mpt.ResolveProof(proof)
+func VerifyNeoCrossChainProof(proof []byte, stateRoot []byte, contractId int) ([]byte, error) {
+	id, key, proofs, err := mpt.ResolveProof(proof)
 	if err != nil {
-		return nil, fmt.Errorf("VerifyNeoCrossChainProof, neo-gogogo mpt.ResolveProof error: %v", err)
+		return nil, fmt.Errorf("VerifyNeoCrossChainProof, neo3-gogogo mpt.ResolveProof error: %v", err)
 	}
-	if !bytes.Equal(scriptHash.Bytes(), contractAddr) {
-		return nil, fmt.Errorf("VerifyNeoCrossChainProof, error:scriptHash is not CCMC contract address, expected: %s, but got: %s", hex.EncodeToString(common.ToArrayReverse(contractAddr)), scriptHash.String())
+	if id != contractId {
+		return nil, fmt.Errorf("VerifyNeoCrossChainProof, error: id is not CCMC contract id, expected: %d, but got: %d", contractId, id)
 	}
-	value, err := mpt.VerifyProof(stateRoot, scriptHash, key, proofs)
+	root := helper.UInt256FromBytes(stateRoot)
+	value, err := mpt.VerifyProof(root, contractId, key, proofs)
 	if err != nil {
-		return nil, fmt.Errorf("VerifyNeoCrossChainProof, neo-gogogo mpt.VerifyProof error: %v", err)
+		return nil, fmt.Errorf("VerifyNeoCrossChainProof, neo3-gogogo mpt.VerifyProof error: %v", err)
 	}
-
 	return value, nil
-
 }

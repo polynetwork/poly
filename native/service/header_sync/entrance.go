@@ -19,6 +19,8 @@ package header_sync
 
 import (
 	"fmt"
+	"github.com/polynetwork/poly/native/service/header_sync/neo"
+	"github.com/polynetwork/poly/native/service/header_sync/neo3"
 
 	"github.com/polynetwork/poly/native/service/header_sync/heco"
 	"github.com/polynetwork/poly/native/service/header_sync/msc"
@@ -31,7 +33,6 @@ import (
 	hscommon "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/header_sync/cosmos"
 	"github.com/polynetwork/poly/native/service/header_sync/eth"
-	"github.com/polynetwork/poly/native/service/header_sync/neo"
 	"github.com/polynetwork/poly/native/service/header_sync/ont"
 	"github.com/polynetwork/poly/native/service/header_sync/quorum"
 	"github.com/polynetwork/poly/native/service/header_sync/zilliqa"
@@ -61,6 +62,8 @@ func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
 		return ont.NewONTHandler(), nil
 	case utils.NEO_ROUTER:
 		return neo.NewNEOHandler(), nil
+	case utils.NEO3_ROUTER:
+		return neo3.NewNEOHandler(), nil
 	case utils.COSMOS_ROUTER:
 		return cosmos.NewCosmosHandler(), nil
 	case utils.QUORUM_ROUTER:

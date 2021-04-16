@@ -306,6 +306,8 @@ github.com/jmhodges/levigo v1.0.0 h1:q5EC36kV79HWeTBWsod3mG11EgStG3qArTKcvlksN1U
 github.com/jmhodges/levigo v1.0.0/go.mod h1:Q6Qx+uH3RAqyK4rFQroq9RL7mdkABMcfhEI+nNuzMJQ=
 github.com/joeqian10/neo-gogogo v0.0.0-20200716075409-923bd4879b43 h1:KkErIktuwCqqZYWV8iBbD7NEsgIbyGw6xxtuylqdyu0=
 github.com/joeqian10/neo-gogogo v0.0.0-20200716075409-923bd4879b43/go.mod h1:1fVDp4U1ROZQBRIooecbGNHHJpfs3bG9528sqlZ096g=
+github.com/joeqian10/neo-gogogo v1.1.0 h1:TjqBwFQnNCtw6LK3QMog3yHa9sTZaZmqP+zqGOZ3SZ0=
+github.com/joeqian10/neo-gogogo v1.1.0/go.mod h1:1fVDp4U1ROZQBRIooecbGNHHJpfs3bG9528sqlZ096g=
 github.com/joeqian10/neo3-gogogo v0.2.2 h1:SEZdGZqn44pIQeUTb/+mOWZj/JX+QNG+xaTRIzbfchk=
 github.com/joeqian10/neo3-gogogo v0.2.2/go.mod h1:yvYQyEha3An0uYFhzR9asMU/O9HyeYy6RApRnLGPEtM=
 github.com/joeqian10/neo3-gogogo v0.2.3 h1:Ucg28066O2Q/G7jGFMWuyiAxhzWWv9+A2RDEWitbkjQ=
@@ -510,6 +512,7 @@ github.com/streadway/amqp v0.0.0-20190827072141-edfb9018d271/go.mod h1:AZpEONHx3
 github.com/streadway/handy v0.0.0-20190108123426-d5acb3125c2a/go.mod h1:qNTQ5P5JnDBl6z3cMAg/SywNDC5ABu5ApDIw6lUbRmI=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/objx v0.1.1/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
+github.com/stretchr/objx v0.2.0 h1:Hbg2NidpLE8veEBkEZTL3CvlkUIVzuU9jDplZO54c48=
 github.com/stretchr/objx v0.2.0/go.mod h1:qt09Ya8vawLte6SNmTgCsAVtYtaKzEcn8ATUoHMkEqE=
 github.com/stretchr/testify v1.2.2/go.mod h1:a8OnRcib4nhh0OaRAV+Yts87kKdq0PP7pXfy6kDkUVs=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=

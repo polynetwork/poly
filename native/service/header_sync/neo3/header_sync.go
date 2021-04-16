@@ -15,7 +15,7 @@
  * along with The poly network .  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package neo
+package neo3
 
 import (
 	"fmt"
@@ -58,8 +58,8 @@ func (this *NEOHandler) SyncGenesisHeader(native *native.NativeService) error {
 		// Put NeoConsensus.NextConsensus into storage
 		if err = putConsensusValByChainId(native, &NeoConsensus{
 			ChainID:       params.ChainID,
-			Height:        header.Index,
-			NextConsensus: header.NextConsensus,
+			Height:        header.GetIndex(),
+			NextConsensus: header.GetNextConsensus(),
 		}); err != nil {
 			return fmt.Errorf("NeoHandler SyncGenesisHeader, update ConsensusPeer error: %v", err)
 		}
@@ -82,14 +82,14 @@ func (this *NEOHandler) SyncBlockHeader(native *native.NativeService) error {
 		if err := header.Deserialization(common.NewZeroCopySource(v)); err != nil {
 			return fmt.Errorf("SyncBlockHeader, NeoBlockHeaderFromBytes error: %v", err)
 		}
-		if !header.NextConsensus.Equals(neoConsensus.NextConsensus) && header.Index > neoConsensus.Height {
+		if !header.GetNextConsensus().Equals(neoConsensus.NextConsensus) && header.GetIndex() > neoConsensus.Height {
 			if err = verifyHeader(native, params.ChainID, header); err != nil {
 				return fmt.Errorf("SyncBlockHeader, verifyHeader error: %v", err)
 			}
 			newNeoConsensus = &NeoConsensus{
 				ChainID:       neoConsensus.ChainID,
-				Height:        header.Index,
-				NextConsensus: header.NextConsensus,
+				Height:        header.GetIndex(),
+				NextConsensus: header.GetNextConsensus(),
 			}
 		}
 	}
