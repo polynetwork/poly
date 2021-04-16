@@ -119,8 +119,8 @@ func (this *NeoCrossChainMsg) GetScriptHash() (*helper.UInt160, error) {
 	if err != nil {
 		return nil, fmt.Errorf("NeoCrossChainMsg.Witness.Verification decode error: %s", err)
 	}
-	if len(verificationScriptBs) != 20 {
-		return nil, fmt.Errorf("NeoCrossChainMsg.Witness.VerificationScript wrong length")
+	if len(verificationScriptBs) == 0 {
+		return nil, fmt.Errorf("NeoCrossChainMsg.Witness.VerificationScript is empty")
 	}
 	scriptHash := helper.UInt160FromBytes(crypto.Hash160(verificationScriptBs))
 	return scriptHash, nil
