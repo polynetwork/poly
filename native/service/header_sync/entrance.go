@@ -63,7 +63,7 @@ func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
 	case utils.NEO_ROUTER:
 		return neo.NewNEOHandler(), nil
 	case utils.NEO3_ROUTER:
-		return neo3.NewNEOHandler(), nil
+		return neo3.NewNeo3Handler(), nil
 	case utils.COSMOS_ROUTER:
 		return cosmos.NewCosmosHandler(), nil
 	case utils.QUORUM_ROUTER:
