@@ -48,8 +48,8 @@ var (
 		service, _ := native.NewNativeService(cacheDB, new(types.Transaction), 0, 200, common.Uint256{}, 0, nil, false)
 		return service
 	}
-	getNeoHanderFunc = func() *NEOHandler {
-		return NewNEOHandler()
+	getNeoHanderFunc = func() *Neo3Handler {
+		return NewNeo3Handler()
 	}
 	setBKers = func() {
 		genesis.GenesisBookkeepers = []keypair.PublicKey{acct.PublicKey}
@@ -78,7 +78,7 @@ func TestSyncGenesisHeader(t *testing.T) {
 		InvocationScript: []byte{},
 		VerificationScript: vs,
 	}
-	genesisHeader := &NeoBlockHeader{Header: new(block.Header)}
+	genesisHeader := &NeoBlockHeader{Header: block.NewBlockHeader()}
 	genesisHeader.SetVersion(0)
 	genesisHeader.SetPrevHash(prevHash)
 	genesisHeader.SetMerkleRoot(merkleRoot)
@@ -104,7 +104,7 @@ func TestSyncGenesisHeader(t *testing.T) {
 	//cdb := new(storage.CacheDB)
 	//cdb.Put()
 	native := NewNative(sink.Bytes(), tx, nil)
-	neoHandler := NewNEOHandler()
+	neoHandler := NewNeo3Handler()
 	err = neoHandler.SyncGenesisHeader(native)
 	assert.NoError(t, err)
 }
@@ -119,7 +119,7 @@ func TestSyncBlockHeader(t *testing.T) {
 		InvocationScript: is,
 		VerificationScript: vs,
 	}
-	genesisHeader := &NeoBlockHeader{Header: new(block.Header)}
+	genesisHeader := &NeoBlockHeader{Header: block.NewBlockHeader()}
 	genesisHeader.SetVersion(0)
 	genesisHeader.SetPrevHash(prevHash)
 	genesisHeader.SetMerkleRoot(merkleRoot)
@@ -143,7 +143,7 @@ func TestSyncBlockHeader(t *testing.T) {
 		InvocationScript: is,
 		VerificationScript: vs,
 	}
-	neoHeader100 := &NeoBlockHeader{Header: new(block.Header)}
+	neoHeader100 := &NeoBlockHeader{Header: block.NewBlockHeader()}
 	neoHeader100.SetVersion(0)
 	neoHeader100.SetPrevHash(prevHash)
 	neoHeader100.SetMerkleRoot(merkleRoot)
@@ -168,7 +168,7 @@ func TestSyncBlockHeader(t *testing.T) {
 		InvocationScript: is,
 		VerificationScript: vs,
 	}
-	neoHeader200 := &NeoBlockHeader{Header: new(block.Header)}
+	neoHeader200 := &NeoBlockHeader{Header: block.NewBlockHeader()}
 	neoHeader200.SetVersion(0)
 	neoHeader200.SetPrevHash(prevHash)
 	neoHeader200.SetMerkleRoot(merkleRoot)
@@ -183,7 +183,7 @@ func TestSyncBlockHeader(t *testing.T) {
 	}
 	neoHeader200bs := sink.Bytes()
 
-	neoHandler := NewNEOHandler()
+	neoHandler := NewNeo3Handler()
 	var native *native.NativeService
 	{
 		param := new(scom.SyncGenesisHeaderParam)

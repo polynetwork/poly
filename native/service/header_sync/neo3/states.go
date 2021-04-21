@@ -62,7 +62,7 @@ type NeoBlockHeader struct {
 }
 
 func (this *NeoBlockHeader) Deserialization(source *common.ZeroCopySource) error {
-	this.Header = new(block.Header)
+	this.Header = block.NewBlockHeader()
 	br := io.NewBinaryReaderFromBuf(source.Bytes())
 	this.Header.Deserialize(br)
 	if br.Err != nil {

@@ -27,15 +27,15 @@ import (
 	"github.com/polynetwork/poly/native/service/header_sync/neo3"
 )
 
-type NEOHandler struct {
+type Neo3Handler struct {
 	ccmcId *int
 }
 
-func NewNEOHandler() *NEOHandler {
-	return &NEOHandler{}
+func NewNeo3Handler() *Neo3Handler {
+	return &Neo3Handler{}
 }
 
-func (this *NEOHandler) MakeDepositProposal(service *native.NativeService) (*scom.MakeTxParam, error) {
+func (this *Neo3Handler) MakeDepositProposal(service *native.NativeService) (*scom.MakeTxParam, error) {
 	params := new(scom.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
 		return nil, fmt.Errorf("neo3 MakeDepositProposal, contract params deserialize error: %v", err)
@@ -74,7 +74,7 @@ func (this *NEOHandler) MakeDepositProposal(service *native.NativeService) (*sco
 	return value, nil
 }
 
-func (this *NEOHandler) SetCcmcId(idBytes []byte) {
+func (this *Neo3Handler) SetCcmcId(idBytes []byte) {
 	id := int(int32(helper.BytesToUInt32(idBytes)))
 	this.ccmcId = &id
 }

@@ -50,8 +50,8 @@ var (
 		service, _ := native.NewNativeService(cacheDB, new(types.Transaction), 0, 200, common.Uint256{}, 0, nil, false)
 		return service
 	}
-	getNeoHanderFunc = func() *NEOHandler {
-		return NewNEOHandler()
+	getNeoHanderFunc = func() *Neo3Handler {
+		return NewNeo3Handler()
 	}
 	setBKers = func() {
 		genesis.GenesisBookkeepers = []keypair.PublicKey{acct.PublicKey}
@@ -122,7 +122,7 @@ func Test_Neo_MakeDepositProposal(t *testing.T) {
 		}
 
 		native = NewNative(sink.Bytes(), tx, nil)
-		neoHandler := neo3.NewNEOHandler()
+		neoHandler := neo3.NewNeo3Handler()
 		err = neoHandler.SyncGenesisHeader(native)
 		assert.NoError(t, err)
 	}
@@ -151,7 +151,7 @@ func Test_Neo_MakeDepositProposal(t *testing.T) {
 		}
 
 		native = NewNative(sink.Bytes(), tx, native.GetCacheDB())
-		neoHandler := NewNEOHandler()
+		neoHandler := NewNeo3Handler()
 		SetContract(native, "b0d4f20da68a6007d4fb7eac374b5566a5b0e229")
 		_, err = neoHandler.MakeDepositProposal(native)
 		assert.Nil(t, err)

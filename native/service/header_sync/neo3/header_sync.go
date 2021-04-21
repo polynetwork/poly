@@ -27,33 +27,35 @@ import (
 	"github.com/polynetwork/poly/native/service/utils"
 )
 
-type NEOHandler struct {
+type Neo3Handler struct {
 }
 
-func NewNEOHandler() *NEOHandler {
-	return &NEOHandler{}
+func NewNeo3Handler() *Neo3Handler {
+	return &Neo3Handler{}
 }
 
-func (this *NEOHandler) SyncGenesisHeader(native *native.NativeService) error {
+func (this *Neo3Handler) SyncGenesisHeader(native *native.NativeService) error {
 	params := new(hscommon.SyncGenesisHeaderParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
-		return fmt.Errorf("NeoHandler SyncGenesisHeader, contract params deserialize error: %v", err)
+		return fmt.Errorf("Neo3Handler SyncGenesisHeader, contract params deserialize error: %v", err)
 	}
 	// Get current epoch operator
 	operatorAddress, err := node_manager.GetCurConOperator(native)
 	if err != nil {
-		return fmt.Errorf("NeoHandler SyncGenesisHeader, get current consensus operator address error: %v", err)
+		return fmt.Errorf("Neo3Handler SyncGenesisHeader, get current consensus operator address error: %v", err)
 	}
 	//check witness
 	err = utils.ValidateOwner(native, operatorAddress)
 	if err != nil {
-		return fmt.Errorf("NeoHandler SyncGenesisHeader, checkWitness error: %v", err)
+		return fmt.Errorf("Neo3Handler SyncGenesisHeader, checkWitness error: %v", err)
 	}
 	// Deserialize neo block header
+
 	header := new(NeoBlockHeader)
 	if err := header.Deserialization(common.NewZeroCopySource(params.GenesisHeader)); err != nil {
-		return fmt.Errorf("NeoHandler SyncGenesisHeader, deserialize header err: %v", err)
+		return fmt.Errorf("Neo3Handler SyncGenesisHeader, deserialize header err: %v", err)
 	}
+
 	if neoConsensus, _ := getConsensusValByChainId(native, params.ChainID); neoConsensus == nil {
 		// Put NeoConsensus.NextConsensus into storage
 		if err = putConsensusValByChainId(native, &NeoConsensus{
@@ -61,30 +63,30 @@ func (this *NEOHandler) SyncGenesisHeader(native *native.NativeService) error {
 			Height:        header.GetIndex(),
 			NextConsensus: header.GetNextConsensus(),
 		}); err != nil {
-			return fmt.Errorf("NeoHandler SyncGenesisHeader, update ConsensusPeer error: %v", err)
+			return fmt.Errorf("Neo3Handler SyncGenesisHeader, update ConsensusPeer error: %v", err)
 		}
 	}
 	return nil
 }
 
-func (this *NEOHandler) SyncBlockHeader(native *native.NativeService) error {
+func (this *Neo3Handler) SyncBlockHeader(native *native.NativeService) error {
 	params := new(hscommon.SyncBlockHeaderParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
-		return fmt.Errorf("SyncBlockHeader, contract params deserialize error: %v", err)
+		return fmt.Errorf("Neo3Handler SyncBlockHeader, contract params deserialize error: %v", err)
 	}
 	neoConsensus, err := getConsensusValByChainId(native, params.ChainID)
 	if err != nil {
-		return fmt.Errorf("SyncBlockHeader, the consensus validator has not been initialized, chainId: %d", params.ChainID)
+		return fmt.Errorf("Neo3Handler SyncBlockHeader, the consensus validator has not been initialized, chainId: %d", params.ChainID)
 	}
 	var newNeoConsensus *NeoConsensus
 	for _, v := range params.Headers {
 		header := new(NeoBlockHeader)
 		if err := header.Deserialization(common.NewZeroCopySource(v)); err != nil {
-			return fmt.Errorf("SyncBlockHeader, NeoBlockHeaderFromBytes error: %v", err)
+			return fmt.Errorf("Neo3Handler SyncBlockHeader, NeoBlockHeaderFromBytes error: %v", err)
 		}
 		if !header.GetNextConsensus().Equals(neoConsensus.NextConsensus) && header.GetIndex() > neoConsensus.Height {
 			if err = verifyHeader(native, params.ChainID, header); err != nil {
-				return fmt.Errorf("SyncBlockHeader, verifyHeader error: %v", err)
+				return fmt.Errorf("Neo3Handler SyncBlockHeader, verifyHeader error: %v", err)
 			}
 			newNeoConsensus = &NeoConsensus{
 				ChainID:       neoConsensus.ChainID,
@@ -95,12 +97,12 @@ func (this *NEOHandler) SyncBlockHeader(native *native.NativeService) error {
 	}
 	if newNeoConsensus != nil {
 		if err = putConsensusValByChainId(native, newNeoConsensus); err != nil {
-			return fmt.Errorf("SyncBlockHeader, update ConsensusPeer error: %v", err)
+			return fmt.Errorf("Neo3Handler SyncBlockHeader, update ConsensusPeer error: %v", err)
 		}
 	}
 	return nil
 }
 
-func (this *NEOHandler) SyncCrossChainMsg(native *native.NativeService) error {
+func (this *Neo3Handler) SyncCrossChainMsg(native *native.NativeService) error {
 	return nil
 }

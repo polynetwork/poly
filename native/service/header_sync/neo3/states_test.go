@@ -18,8 +18,10 @@
 package neo3
 
 import (
+	"github.com/joeqian10/neo3-gogogo/block"
 	"github.com/joeqian10/neo3-gogogo/crypto"
 	"github.com/joeqian10/neo3-gogogo/rpc/models"
+	"log"
 	"testing"
 
 	"github.com/joeqian10/neo3-gogogo/helper"
@@ -49,12 +51,12 @@ func Test_NeoBlockHeader_Serialization(t *testing.T) {
 	prevHash, _ := helper.UInt256FromString("0x0000000000000000000000000000000000000000000000000000000000000000")
 	merkleRoot, _ := helper.UInt256FromString("0x0000000000000000000000000000000000000000000000000000000000000000")
 	nextConsensus, _ := crypto.AddressToScriptHash("NVg7LjGcUSrgxgjX3zEgqaksfMaiS8Z6e1", helper.DefaultAddressVersion)
-	vs, _ := crypto.Base64Decode("EQ==")
+	//vs, _ := crypto.Base64Decode("EQ==")
 	witness := tx2.Witness{
 		InvocationScript: []byte{},
-		VerificationScript: vs,
+		VerificationScript: []byte{},
 	}
-	genesisHeader := &NeoBlockHeader{}
+	genesisHeader := block.NewBlockHeader()
 	genesisHeader.SetVersion(0)
 	genesisHeader.SetPrevHash(prevHash)
 	genesisHeader.SetMerkleRoot(merkleRoot)
@@ -64,10 +66,12 @@ func Test_NeoBlockHeader_Serialization(t *testing.T) {
 	genesisHeader.SetNextConsensus(nextConsensus)
 	genesisHeader.SetWitnesses([]tx2.Witness{witness})
 	paramSerialize := new(NeoBlockHeader)
-	paramSerialize.Header = genesisHeader.Header
+	paramSerialize.Header = genesisHeader
 	sink := common.NewZeroCopySink(nil)
 	err := paramSerialize.Serialization(sink)
 	assert.Nil(t, err)
+
+	log.Println(helper.BytesToHex(sink.Bytes()))
 
 	paramDeserialize := new(NeoBlockHeader)
 	err = paramDeserialize.Deserialization(common.NewZeroCopySource(sink.Bytes()))
