@@ -115,7 +115,10 @@ func (this *NeoCrossChainMsg) Serialization(sink *common.ZeroCopySink) error {
 }
 
 func (this *NeoCrossChainMsg) GetScriptHash() (*helper.UInt160, error) {
-	verificationScriptBs, err := crypto.Base64Decode(this.Witness.Verification) // base64
+	if len(this.Witnesses) == 0 {
+		return nil, fmt.Errorf("NeoCrossChainMsg.Witness incorrect length")
+	}
+		verificationScriptBs, err := crypto.Base64Decode(this.Witnesses[0].Verification) // base64
 	if err != nil {
 		return nil, fmt.Errorf("NeoCrossChainMsg.Witness.Verification decode error: %s", err)
 	}

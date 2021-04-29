@@ -65,14 +65,19 @@ func VerifyCrossChainMsgSig(native *native.NativeService, chainID uint64, crossC
 	if err != nil {
 		return fmt.Errorf("verifyCrossChainMsg, unable to get unsigned message of neo crossChainMsg")
 	}
-	invScript, _ := hex.DecodeString(crossChainMsg.Witness.Invocation)
-	verScript, _ := hex.DecodeString(crossChainMsg.Witness.Verification)
+	if len(crossChainMsg.Witnesses) == 0 {
+		return fmt.Errorf("verifyCrossChainMsg, incorrect witness length")
+	}
+	invScript, _ := hex.DecodeString(crossChainMsg.Witnesses[0].Invocation)
+	verScript, _ := hex.DecodeString(crossChainMsg.Witnesses[0].Verification)
 	witness := &tx.Witness{
 		InvocationScript:   invScript,
 		VerificationScript: verScript,
 	}
-	if verified := tx.VerifyMultiSignatureWitness(msg, witness); !verified {
-		return fmt.Errorf("verifyCrossChainMsg, VerifyMultiSignatureWitness error: %s, height: %d", "verification failed", crossChainMsg.Index)
+	v1 := tx.VerifyMultiSignatureWitness(msg, witness)
+	v2 := tx.VerifySignatureWitness(msg, witness)
+	if !v1 && !v2 {
+		return fmt.Errorf("verifyCrossChainMsg, verify witness failed, height: %d", crossChainMsg.Index)
 	}
 	return nil
 }
