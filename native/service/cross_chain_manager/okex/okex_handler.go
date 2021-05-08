@@ -22,6 +22,7 @@ import (
 
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/rootmulti"
+	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
@@ -105,18 +106,14 @@ func (this *CosmosHandler) MakeDepositProposal(service *native.NativeService) (*
 	if err != nil {
 		return nil, fmt.Errorf("Cosmos MakeDepositProposal, unmarshal proof err: %v", err)
 	}
-	if len(proofValue.Kp) != 0 {
-		prt := rootmulti.DefaultProofRuntime()
-		err = prt.VerifyValue(&proof, myHeader.Header.AppHash, proofValue.Kp, proofValue.Value)
-		if err != nil {
-			return nil, fmt.Errorf("Cosmos MakeDepositProposal, proof error: %s", err)
-		}
-	} else {
-		prt := rootmulti.DefaultProofRuntime()
-		err = prt.VerifyAbsence(&proof, myHeader.Header.AppHash, string(proofValue.Value))
-		if err != nil {
-			return nil, fmt.Errorf("Cosmos MakeDepositProposal, proof error: %s", err)
-		}
+	if len(proofValue.Kp) == 0 {
+		return nil, fmt.Errorf("Cosmos MakeDepositProposal, Kp is nil")
+	}
+
+	prt := rootmulti.DefaultProofRuntime()
+	err = prt.VerifyValue(&proof, myHeader.Header.AppHash, proofValue.Kp, ethcrypto.Keccak256(proofValue.Value))
+	if err != nil {
+		return nil, fmt.Errorf("Cosmos MakeDepositProposal, proof error: %s", err)
 	}
 	data := common.NewZeroCopySource(proofValue.Value)
 	txParam := new(scom.MakeTxParam)
