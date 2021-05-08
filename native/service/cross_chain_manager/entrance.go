@@ -30,6 +30,7 @@ import (
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/heco"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/msc"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/neo"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/okex"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/ont"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/quorum"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/zilliqa"
@@ -77,6 +78,8 @@ func GetChainHandler(router uint64) (scom.ChainHandler, error) {
 		return zilliqa.NewHandler(), nil
 	case utils.MSC_ROUTER:
 		return msc.NewHandler(), nil
+	case utils.OKEX_ROUTER:
+		return okex.NewHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported router:%d", router)
 	}
