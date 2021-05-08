@@ -20,18 +20,13 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/rootmulti"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
-	"github.com/polynetwork/poly/native/service/header_sync/cosmos"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
+	"github.com/polynetwork/poly/native/service/header_sync/okex"
 	"github.com/tendermint/tendermint/crypto/merkle"
-	"github.com/tendermint/tendermint/crypto/multisig"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
 )
 
 type CosmosHandler struct{}
@@ -45,25 +40,12 @@ type CosmosProofValue struct {
 	Value []byte
 }
 
-func newCDC() *codec.Codec {
-	cdc := codec.New()
-	cdc.RegisterInterface((*crypto.PubKey)(nil), nil)
-	cdc.RegisterConcrete(ed25519.PubKeyEd25519{}, ed25519.PubKeyAminoName, nil)
-	cdc.RegisterConcrete(secp256k1.PubKeySecp256k1{}, secp256k1.PubKeyAminoName, nil)
-	cdc.RegisterConcrete(multisig.PubKeyMultisigThreshold{}, multisig.PubKeyMultisigThresholdAminoRoute, nil)
-
-	cdc.RegisterInterface((*crypto.PrivKey)(nil), nil)
-	cdc.RegisterConcrete(ed25519.PrivKeyEd25519{}, ed25519.PrivKeyAminoName, nil)
-	cdc.RegisterConcrete(secp256k1.PrivKeySecp256k1{}, secp256k1.PrivKeyAminoName, nil)
-	return cdc
-}
-
 func (this *CosmosHandler) MakeDepositProposal(service *native.NativeService) (*scom.MakeTxParam, error) {
 	params := new(scom.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
 		return nil, fmt.Errorf("Cosmos MakeDepositProposal, contract params deserialize error: %s", err)
 	}
-	info, err := cosmos.GetEpochSwitchInfo(service, params.SourceChainID)
+	info, err := okex.GetEpochSwitchInfo(service, params.SourceChainID)
 	if err != nil {
 		return nil, fmt.Errorf("Cosmos MakeDepositProposal, failed to get epoch switching height: %v", err)
 	}
@@ -75,8 +57,8 @@ func (this *CosmosHandler) MakeDepositProposal(service *native.NativeService) (*
 	if len(params.HeaderOrCrossChainMsg) == 0 {
 		return nil, fmt.Errorf("you must commit the header used to verify transaction's proof and get none")
 	}
-	cdc := newCDC()
-	var myHeader cosmos.CosmosHeader
+	cdc := okex.NewCDC()
+	var myHeader okex.CosmosHeader
 	if err := cdc.UnmarshalBinaryBare(params.HeaderOrCrossChainMsg, &myHeader); err != nil {
 		return nil, fmt.Errorf("Cosmos MakeDepositProposal, unmarshal cosmos header failed: %v", err)
 	}
@@ -84,12 +66,12 @@ func (this *CosmosHandler) MakeDepositProposal(service *native.NativeService) (*
 		return nil, fmt.Errorf("Cosmos MakeDepositProposal, "+
 			"height of your header is %d not equal to %d in parameter", myHeader.Header.Height, params.Height)
 	}
-	if err = cosmos.VerifyCosmosHeader(&myHeader, info); err != nil {
+	if err = okex.VerifyCosmosHeader(&myHeader, info); err != nil {
 		return nil, fmt.Errorf("Cosmos MakeDepositProposal, failed to verify cosmos header: %v", err)
 	}
 	if !bytes.Equal(myHeader.Header.ValidatorsHash, myHeader.Header.NextValidatorsHash) &&
 		myHeader.Header.Height > info.Height {
-		cosmos.PutEpochSwitchInfo(service, params.SourceChainID, &cosmos.CosmosEpochSwitchInfo{
+		okex.PutEpochSwitchInfo(service, params.SourceChainID, &okex.CosmosEpochSwitchInfo{
 			Height:             myHeader.Header.Height,
 			BlockHash:          myHeader.Header.Hash(),
 			NextValidatorsHash: myHeader.Header.NextValidatorsHash,

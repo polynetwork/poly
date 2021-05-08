@@ -33,11 +33,9 @@ import (
 	"github.com/polynetwork/poly/native/event"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	hscommon "github.com/polynetwork/poly/native/service/header_sync/common"
+	"github.com/polynetwork/poly/native/service/header_sync/okex/ethsecp256k1"
 	"github.com/polynetwork/poly/native/service/utils"
 	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/crypto/multisig"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
 	"github.com/tendermint/tendermint/types"
 )
 
@@ -50,17 +48,15 @@ func NewHandler() *Handler {
 	return &Handler{}
 }
 
-func newCDC() *codec.Codec {
+// NewCDC ...
+func NewCDC() *codec.Codec {
 	cdc := codec.New()
 
 	cdc.RegisterInterface((*crypto.PubKey)(nil), nil)
-	cdc.RegisterConcrete(ed25519.PubKeyEd25519{}, ed25519.PubKeyAminoName, nil)
-	cdc.RegisterConcrete(secp256k1.PubKeySecp256k1{}, secp256k1.PubKeyAminoName, nil)
-	cdc.RegisterConcrete(multisig.PubKeyMultisigThreshold{}, multisig.PubKeyMultisigThresholdAminoRoute, nil)
 
 	cdc.RegisterInterface((*crypto.PrivKey)(nil), nil)
-	cdc.RegisterConcrete(ed25519.PrivKeyEd25519{}, ed25519.PrivKeyAminoName, nil)
-	cdc.RegisterConcrete(secp256k1.PrivKeySecp256k1{}, secp256k1.PrivKeyAminoName, nil)
+
+	ethsecp256k1.RegisterCodec(cdc)
 	return cdc
 }
 
@@ -87,7 +83,7 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 		return fmt.Errorf("CosmosHandler SyncGenesisHeader, checkWitness error: %v", err)
 	}
 	// get genesis header from input parameters
-	cdc := newCDC()
+	cdc := NewCDC()
 	var header CosmosHeader
 	err = cdc.UnmarshalBinaryBare(param.GenesisHeader, &header)
 	if err != nil {
@@ -112,7 +108,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return fmt.Errorf("SyncBlockHeader, contract params deserialize error: %v", err)
 	}
-	cdc := newCDC()
+	cdc := NewCDC()
 	cnt := 0
 	info, err := GetEpochSwitchInfo(native, params.ChainID)
 	if err != nil {
