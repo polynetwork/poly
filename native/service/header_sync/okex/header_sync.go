@@ -35,7 +35,6 @@ import (
 	hscommon "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/header_sync/okex/ethsecp256k1"
 	"github.com/polynetwork/poly/native/service/utils"
-	"github.com/tendermint/tendermint/crypto"
 	"github.com/tendermint/tendermint/types"
 )
 
@@ -51,10 +50,6 @@ func NewHandler() *Handler {
 // NewCDC ...
 func NewCDC() *codec.Codec {
 	cdc := codec.New()
-
-	cdc.RegisterInterface((*crypto.PubKey)(nil), nil)
-
-	cdc.RegisterInterface((*crypto.PrivKey)(nil), nil)
 
 	ethsecp256k1.RegisterCodec(cdc)
 	return cdc
