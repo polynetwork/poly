@@ -22,6 +22,7 @@ import (
 
 	"github.com/polynetwork/poly/native/service/header_sync/heco"
 	"github.com/polynetwork/poly/native/service/header_sync/msc"
+	"github.com/polynetwork/poly/native/service/header_sync/okex"
 
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
@@ -73,6 +74,8 @@ func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
 		return zilliqa.NewHandler(), nil
 	case utils.MSC_ROUTER:
 		return msc.NewHandler(), nil
+	case utils.OKEX_ROUTER:
+		return okex.NewHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported router:%d", router)
 	}
