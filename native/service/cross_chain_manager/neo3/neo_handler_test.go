@@ -160,9 +160,11 @@ func Test_Neo_MakeDepositProposal(t *testing.T) {
 
 func TestNEOHandler_SetCcmcId(t *testing.T) {
 	// test positive int
-	idp := 5
+	idp := 215
 	idpBytes := helper.IntToBytes(idp)
-	log.Println(helper.BytesToHex(idpBytes))
+	ss := helper.BytesToHex(idpBytes)
+	log.Println(ss)
+	assert.Equal(t, "d7000000", ss)
 
 	idp2 := int(helper.BytesToUInt32(idpBytes))
 	assert.Equal(t, idp, idp2)

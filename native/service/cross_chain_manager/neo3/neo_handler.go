@@ -45,6 +45,7 @@ func (this *Neo3Handler) MakeDepositProposal(service *native.NativeService) (*sc
 	if err := crossChainMsg.Deserialization(common.NewZeroCopySource(params.HeaderOrCrossChainMsg)); err != nil {
 		return nil, fmt.Errorf("neo3 MakeDepositProposal, deserialize crossChainMsg error: %v", err)
 	}
+
 	if err := neo3.VerifyCrossChainMsgSig(service, params.SourceChainID, crossChainMsg); err != nil {
 		return nil, fmt.Errorf("neo3 MakeDepositProposal, VerifyCrossChainMsg error: %v", err)
 	}
@@ -54,8 +55,10 @@ func (this *Neo3Handler) MakeDepositProposal(service *native.NativeService) (*sc
 		return nil, fmt.Errorf("neo3 MakeDepositProposal, side_chain_manager.GetSideChain error: %v", err)
 	}
 
-	// convert neo contract address bytes to id, it is different from other chains, it stores int in a []byte, contract id can be get from "getcontractstate" api
-	// todo, when register neo N3, convert ccmc id to []byte; native contracts have negative ids, while custom contracts have positive ones
+	// todo, review code, when register neo N3, convert ccmc id to []byte
+	// convert neo3 contract address bytes to id, it is different from other chains
+	// need to store int in a []byte, contract id can be get from "getcontractstate" api
+	// neo3 native contracts have negative ids, while custom contracts have positive ones
 	if this.ccmcId == nil {
 		this.SetCcmcId(sideChain.CCMCAddress)
 	}

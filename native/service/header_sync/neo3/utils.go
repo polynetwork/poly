@@ -20,10 +20,13 @@ package neo3
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/joeqian10/neo3-gogogo/crypto"
+	"github.com/joeqian10/neo3-gogogo/sc"
 	"github.com/joeqian10/neo3-gogogo/tx"
 	"github.com/polynetwork/poly/common"
 	cstates "github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/native"
+	"github.com/polynetwork/poly/native/service/governance/neo3_state_manager"
 	hscommon "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/utils"
 )
@@ -50,16 +53,37 @@ func verifyHeader(native *native.NativeService, chainID uint64, header *NeoBlock
 }
 
 func VerifyCrossChainMsgSig(native *native.NativeService, chainID uint64, crossChainMsg *NeoCrossChainMsg) error {
-	neoConsensus, err := getConsensusValByChainId(native, chainID)
+	// todo, review code, get neo3 state validator from native contract
+	svListBytes, err := neo3_state_manager.GetCurrentStateValidator(native)
 	if err != nil {
-		return fmt.Errorf("verifyCrossChainMsg, get ConsensusPeer error: %v", err)
+		return fmt.Errorf("verifyCrossChainMsg, neo3_state_manager.GetCurrentStateValidator error: %v", err)
 	}
-	crossChainMsgConsensus, err := crossChainMsg.GetScriptHash()
+	svStrings, err := neo3_state_manager.DeserializeStringArray(svListBytes)
+	if err != nil {
+		return fmt.Errorf("verifyCrossChainMsg, neo3_state_manager.DeserializeStringArray error: %v", err)
+	}
+	pubKeys := make([]crypto.ECPoint, len(svStrings))
+	for i, v := range svStrings {
+		pubKey, err := crypto.NewECPointFromString(v)
+		if err != nil {
+			return fmt.Errorf("verifyCrossChainMsg, crypto.NewECPointFromString error: %v", err)
+		}
+		pubKeys[i] = *pubKey
+	}
+	n := len(pubKeys)
+	m := n - (n-1)/3
+	msc, err := sc.CreateMultiSigContract(m, pubKeys)
+	if err != nil {
+		return fmt.Errorf("verifyCrossChainMsg, sc.CreateMultiSigContract error: %v", err)
+	}
+	expected := msc.GetScriptHash()
+	got, err := crossChainMsg.GetScriptHash()
 	if err != nil {
 		return fmt.Errorf("verifyCrossChainMsg, getScripthash error: %v", err)
 	}
-	if neoConsensus.NextConsensus != crossChainMsgConsensus {
-		return fmt.Errorf("verifyCrossChainMsg, invalid script hash in NeoCrossChainMsg error, expected: %s, got: %s", neoConsensus.NextConsensus.String(), crossChainMsgConsensus.String())
+	// compare state validator
+	if !expected.Equals(got) {
+		return fmt.Errorf("verifyCrossChainMsg, invalid script hash in NeoCrossChainMsg error, expected: %s, got: %s", expected.String(), got.String())
 	}
 	msg, err := crossChainMsg.GetMessage()
 	if err != nil {
