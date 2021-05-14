@@ -21,18 +21,20 @@ import (
 	"fmt"
 
 	"github.com/cosmos/cosmos-sdk/store/rootmulti"
+	ethcommon "github.com/ethereum/go-ethereum/common"
 	ethcrypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
+	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	"github.com/polynetwork/poly/native/service/header_sync/okex"
 	"github.com/tendermint/tendermint/crypto/merkle"
 )
 
-type CosmosHandler struct{}
+type OKHandler struct{}
 
-func NewHandler() *CosmosHandler {
-	return &CosmosHandler{}
+func NewHandler() *OKHandler {
+	return &OKHandler{}
 }
 
 type CosmosProofValue struct {
@@ -40,17 +42,21 @@ type CosmosProofValue struct {
 	Value []byte
 }
 
-func (this *CosmosHandler) MakeDepositProposal(service *native.NativeService) (*scom.MakeTxParam, error) {
+var (
+	KeyPrefixStorage = []byte{0x05}
+)
+
+func (this *OKHandler) MakeDepositProposal(service *native.NativeService) (*scom.MakeTxParam, error) {
 	params := new(scom.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
-		return nil, fmt.Errorf("Cosmos MakeDepositProposal, contract params deserialize error: %s", err)
+		return nil, fmt.Errorf("okex MakeDepositProposal, contract params deserialize error: %s", err)
 	}
 	info, err := okex.GetEpochSwitchInfo(service, params.SourceChainID)
 	if err != nil {
-		return nil, fmt.Errorf("Cosmos MakeDepositProposal, failed to get epoch switching height: %v", err)
+		return nil, fmt.Errorf("okex MakeDepositProposal, failed to get epoch switching height: %v", err)
 	}
 	if info.Height > int64(params.Height) {
-		return nil, fmt.Errorf("Cosmos MakeDepositProposal, the height %d of header is lower than epoch "+
+		return nil, fmt.Errorf("okex MakeDepositProposal, the height %d of header is lower than epoch "+
 			"switching height %d", params.Height, info.Height)
 	}
 
@@ -60,14 +66,14 @@ func (this *CosmosHandler) MakeDepositProposal(service *native.NativeService) (*
 	cdc := okex.NewCDC()
 	var myHeader okex.CosmosHeader
 	if err := cdc.UnmarshalBinaryBare(params.HeaderOrCrossChainMsg, &myHeader); err != nil {
-		return nil, fmt.Errorf("Cosmos MakeDepositProposal, unmarshal cosmos header failed: %v", err)
+		return nil, fmt.Errorf("okex MakeDepositProposal, unmarshal okex header failed: %v", err)
 	}
 	if myHeader.Header.Height != int64(params.Height) {
-		return nil, fmt.Errorf("Cosmos MakeDepositProposal, "+
+		return nil, fmt.Errorf("okex MakeDepositProposal, "+
 			"height of your header is %d not equal to %d in parameter", myHeader.Header.Height, params.Height)
 	}
 	if err = okex.VerifyCosmosHeader(&myHeader, info); err != nil {
-		return nil, fmt.Errorf("Cosmos MakeDepositProposal, failed to verify cosmos header: %v", err)
+		return nil, fmt.Errorf("okex MakeDepositProposal, failed to verify okex header: %v", err)
 	}
 	if !bytes.Equal(myHeader.Header.ValidatorsHash, myHeader.Header.NextValidatorsHash) &&
 		myHeader.Header.Height > info.Height {
@@ -81,12 +87,28 @@ func (this *CosmosHandler) MakeDepositProposal(service *native.NativeService) (*
 
 	var proofValue CosmosProofValue
 	if err = cdc.UnmarshalBinaryBare(params.Extra, &proofValue); err != nil {
-		return nil, fmt.Errorf("Cosmos MakeDepositProposal, unmarshal proof value err: %v", err)
+		return nil, fmt.Errorf("okex MakeDepositProposal, unmarshal proof value err: %v", err)
 	}
 	var proof merkle.Proof
 	err = cdc.UnmarshalBinaryBare(params.Proof, &proof)
 	if err != nil {
-		return nil, fmt.Errorf("Cosmos MakeDepositProposal, unmarshal proof err: %v", err)
+		return nil, fmt.Errorf("okex MakeDepositProposal, unmarshal proof err: %v", err)
+	}
+	sideChain, err := side_chain_manager.GetSideChain(service, params.SourceChainID)
+	if err != nil {
+		return nil, fmt.Errorf("okex MakeDepositProposal, side_chain_manager.GetSideChain error: %v", err)
+	}
+	if len(proof.Ops) != 2 {
+		return nil, fmt.Errorf("proof size wrong")
+	}
+	if len(proof.Ops[0].Key) != 1+ethcommon.HashLength+ethcommon.AddressLength {
+		return nil, fmt.Errorf("storage key length not correct")
+	}
+	if !bytes.HasPrefix(proof.Ops[0].Key, append(KeyPrefixStorage, sideChain.CCMCAddress...)) {
+		return nil, fmt.Errorf("storage key not from ccmc")
+	}
+	if !bytes.Equal(proof.Ops[1].Key, []byte("evm")) {
+		return nil, fmt.Errorf("wrong module for proof")
 	}
 	if len(proofValue.Kp) == 0 {
 		return nil, fmt.Errorf("Cosmos MakeDepositProposal, Kp is nil")
