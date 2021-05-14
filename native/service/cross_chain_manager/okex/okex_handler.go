@@ -31,10 +31,10 @@ import (
 	"github.com/tendermint/tendermint/crypto/merkle"
 )
 
-type CosmosHandler struct{}
+type OKHandler struct{}
 
-func NewHandler() *CosmosHandler {
-	return &CosmosHandler{}
+func NewHandler() *OKHandler {
+	return &OKHandler{}
 }
 
 type CosmosProofValue struct {
@@ -46,7 +46,7 @@ var (
 	KeyPrefixStorage = []byte{0x05}
 )
 
-func (this *CosmosHandler) MakeDepositProposal(service *native.NativeService) (*scom.MakeTxParam, error) {
+func (this *OKHandler) MakeDepositProposal(service *native.NativeService) (*scom.MakeTxParam, error) {
 	params := new(scom.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
 		return nil, fmt.Errorf("okex MakeDepositProposal, contract params deserialize error: %s", err)
