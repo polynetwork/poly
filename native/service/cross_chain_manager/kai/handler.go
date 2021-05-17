@@ -39,16 +39,16 @@ import (
 )
 
 // Handler ...
-type HecoHandler struct {
+type Handler struct {
 }
 
 // NewHandler ...
-func NewHecoHandler() *HecoHandler {
-	return &HecoHandler{}
+func NewHandler() *Handler {
+	return &Handler{}
 }
 
 // MakeDepositProposal ...
-func (h *HecoHandler) MakeDepositProposal(service *native.NativeService) (*scom.MakeTxParam, error) {
+func (h *Handler) MakeDepositProposal(service *native.NativeService) (*scom.MakeTxParam, error) {
 	params := new(scom.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
 		return nil, fmt.Errorf("KAI MakeDepositProposal, contract params deserialize error: %s", err)

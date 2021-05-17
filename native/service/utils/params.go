@@ -49,4 +49,5 @@ var (
 	ZILLIQA_ROUTER = uint64(9)
 	MSC_ROUTER     = uint64(10)
 	OKEX_ROUTER    = uint64(12)
+	KAI_ROUTER     = uint64(13)
 )
