@@ -4,10 +4,10 @@ go 1.14
 
 require (
 	github.com/Zilliqa/gozilliqa-sdk v1.2.1-0.20210329093354-1b8e0a7a2e25
-	github.com/btcsuite/btcd v0.20.1-beta
+	github.com/btcsuite/btcd v0.21.0-beta
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/cosmos/cosmos-sdk v0.39.1
-	github.com/ethereum/go-ethereum v1.9.15
+	github.com/ethereum/go-ethereum v1.9.18
 	github.com/gcash/bchd v0.16.5
 	github.com/gcash/bchutil v0.0.0-20200506001747-c2894cd54b33
 	github.com/gorilla/websocket v1.4.2
@@ -16,17 +16,19 @@ require (
 	github.com/howeyc/gopass v0.0.0-20190910152052-7cb4b85ec19c
 	github.com/itchyny/base58-go v0.1.0
 	github.com/joeqian10/neo-gogogo v0.0.0-20200716075409-923bd4879b43
+	github.com/kardiachain/go-kardia v1.1.1-0.20210514114009-042c640f55d4 // indirect
 	github.com/ontio/ontology v1.11.1-0.20200812075204-26cf1fa5dd47
 	github.com/ontio/ontology-crypto v1.0.9
 	github.com/ontio/ontology-eventbus v0.9.1
 	github.com/pborman/uuid v1.2.0
 	github.com/polynetwork/poly-io-test v0.0.0-20200819093740-8cf514b07750
-	github.com/stretchr/testify v1.6.1
-	github.com/syndtr/goleveldb v1.0.1-0.20190923125748-758128399b1d
+	github.com/stretchr/testify v1.7.0
+	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca
 	github.com/tendermint/tendermint v0.33.7
 	github.com/urfave/cli v1.22.4
 	github.com/valyala/bytebufferpool v1.0.0
-	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
-	golang.org/x/net v0.0.0-20200822124328-c89045814202
+	golang.org/x/crypto v0.0.0-20201117144127-c1f2f97bffc9
+	golang.org/x/net v0.0.0-20201021035429-f5854403a974
+	google.golang.org/grpc v1.30.0 // indirect
 	gotest.tools v2.2.0+incompatible
 )

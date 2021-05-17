@@ -1,0 +1,6 @@
+=============== May 17, 2021 (+07) ===============
+11:10:16.986154 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+11:10:16.993916 db@open opening
+11:10:16.995678 version@stat F·[] S·0B[] Sc·[]
+11:10:17.000560 db@janitor F·2 G·0
+11:10:17.000607 db@open done T·6.660819ms
