@@ -50,4 +50,5 @@ var (
 	ZILLIQA_ROUTER = uint64(9)
 	MSC_ROUTER     = uint64(10)
 	NEO3_ROUTER    = uint64(11)
+	OKEX_ROUTER    = uint64(12)
 )
