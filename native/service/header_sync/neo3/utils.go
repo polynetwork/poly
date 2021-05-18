@@ -51,7 +51,7 @@ func verifyHeader(native *native.NativeService, chainID uint64, header *NeoBlock
 	return nil
 }
 
-func VerifyCrossChainMsgSig(native *native.NativeService, chainID uint64, crossChainMsg *NeoCrossChainMsg) error {
+func VerifyCrossChainMsgSig(native *native.NativeService, magic uint32, crossChainMsg *NeoCrossChainMsg) error {
 	// todo, review code, get neo3 state validator from native contract
 	svListBytes, err := neo3_state_manager.GetCurrentStateValidator(native)
 	if err != nil {
@@ -84,7 +84,7 @@ func VerifyCrossChainMsgSig(native *native.NativeService, chainID uint64, crossC
 	if !expected.Equals(got) {
 		return fmt.Errorf("verifyCrossChainMsg, invalid script hash in NeoCrossChainMsg error, expected: %s, got: %s", expected.String(), got.String())
 	}
-	msg, err := crossChainMsg.GetMessage()
+	msg, err := crossChainMsg.GetMessage(magic)
 	if err != nil {
 		return fmt.Errorf("verifyCrossChainMsg, unable to get unsigned message of neo crossChainMsg")
 	}

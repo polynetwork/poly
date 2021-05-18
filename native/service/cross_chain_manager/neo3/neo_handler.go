@@ -45,14 +45,13 @@ func (this *Neo3Handler) MakeDepositProposal(service *native.NativeService) (*sc
 	if err := crossChainMsg.Deserialization(common.NewZeroCopySource(params.HeaderOrCrossChainMsg)); err != nil {
 		return nil, fmt.Errorf("neo3 MakeDepositProposal, deserialize crossChainMsg error: %v", err)
 	}
-
-	if err := neo3.VerifyCrossChainMsgSig(service, params.SourceChainID, crossChainMsg); err != nil {
-		return nil, fmt.Errorf("neo3 MakeDepositProposal, VerifyCrossChainMsg error: %v", err)
-	}
 	// Verify the validity of proof with the help of state root in verified neo cross chain msg
 	sideChain, err := side_chain_manager.GetSideChain(service, params.SourceChainID)
 	if err != nil {
 		return nil, fmt.Errorf("neo3 MakeDepositProposal, side_chain_manager.GetSideChain error: %v", err)
+	}
+	if err := neo3.VerifyCrossChainMsgSig(service, helper.BytesToUInt32(sideChain.ExtraInfo), crossChainMsg); err != nil {
+		return nil, fmt.Errorf("neo3 MakeDepositProposal, VerifyCrossChainMsg error: %v", err)
 	}
 
 	// todo, review code, when register neo N3, convert ccmc id to []byte

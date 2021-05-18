@@ -129,7 +129,7 @@ func (this *NeoCrossChainMsg) GetScriptHash() (*helper.UInt160, error) {
 	return scriptHash, nil
 }
 
-func (this *NeoCrossChainMsg) GetMessage() ([]byte, error) {
+func (this *NeoCrossChainMsg) GetMessage(magic uint32) ([]byte, error) {
 	buff2 := io.NewBufBinaryWriter()
 	this.SerializeUnsigned(buff2.BinaryWriter)
 	if buff2.Err != nil {
@@ -138,7 +138,7 @@ func (this *NeoCrossChainMsg) GetMessage() ([]byte, error) {
 	hash := helper.UInt256FromBytes(crypto.Sha256(buff2.Bytes()))
 
 	buf := io.NewBufBinaryWriter()
-	buf.BinaryWriter.WriteLE(uint32(5195066))
+	buf.BinaryWriter.WriteLE(magic)
 	buf.BinaryWriter.WriteLE(hash)
 	if buf.Err != nil {
 		return nil, fmt.Errorf("write hash error: %s", buf.Err)
