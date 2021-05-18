@@ -118,7 +118,7 @@ func (this *NeoCrossChainMsg) GetScriptHash() (*helper.UInt160, error) {
 	if len(this.Witnesses) == 0 {
 		return nil, fmt.Errorf("NeoCrossChainMsg.Witness incorrect length")
 	}
-		verificationScriptBs, err := crypto.Base64Decode(this.Witnesses[0].Verification) // base64
+	verificationScriptBs, err := crypto.Base64Decode(this.Witnesses[0].Verification) // base64
 	if err != nil {
 		return nil, fmt.Errorf("NeoCrossChainMsg.Witness.Verification decode error: %s", err)
 	}
@@ -130,10 +130,18 @@ func (this *NeoCrossChainMsg) GetScriptHash() (*helper.UInt160, error) {
 }
 
 func (this *NeoCrossChainMsg) GetMessage() ([]byte, error) {
+	buff2 := io.NewBufBinaryWriter()
+	this.SerializeUnsigned(buff2.BinaryWriter)
+	if buff2.Err != nil {
+		return nil, fmt.Errorf("neo3-gogogo mpt.StateRoot SerializeUnsigned error: %s", buff2.Err)
+	}
+	hash := helper.UInt256FromBytes(crypto.Sha256(buff2.Bytes()))
+
 	buf := io.NewBufBinaryWriter()
-	this.SerializeUnsigned(buf.BinaryWriter)
+	buf.BinaryWriter.WriteLE(uint32(5195066))
+	buf.BinaryWriter.WriteLE(hash)
 	if buf.Err != nil {
-		return nil, fmt.Errorf("neo3-gogogo mpt.StateRoot SerializeUnsigned error: %s", buf.Err)
+		return nil, fmt.Errorf("write hash error: %s", buf.Err)
 	}
 	return buf.Bytes(), nil
 }

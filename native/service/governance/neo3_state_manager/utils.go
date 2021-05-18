@@ -92,7 +92,7 @@ func putStateValidators(native *native.NativeService, stateValidators []string) 
 		}
 		mm[v] = v
 	}
-	// convert map back to UInt160 array
+	// convert map back to string array
 	newSVs := make([]string, 0)
 	for _, v := range mm {
 		newSVs = append(newSVs, v)

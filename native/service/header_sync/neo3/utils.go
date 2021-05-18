@@ -18,7 +18,6 @@
 package neo3
 
 import (
-	"encoding/hex"
 	"fmt"
 	"github.com/joeqian10/neo3-gogogo/crypto"
 	"github.com/joeqian10/neo3-gogogo/sc"
@@ -92,8 +91,14 @@ func VerifyCrossChainMsgSig(native *native.NativeService, chainID uint64, crossC
 	if len(crossChainMsg.Witnesses) == 0 {
 		return fmt.Errorf("verifyCrossChainMsg, incorrect witness length")
 	}
-	invScript, _ := hex.DecodeString(crossChainMsg.Witnesses[0].Invocation)
-	verScript, _ := hex.DecodeString(crossChainMsg.Witnesses[0].Verification)
+	invScript, err := crypto.Base64Decode(crossChainMsg.Witnesses[0].Invocation)
+	if err != nil {
+		return fmt.Errorf("crypto.Base64Decode, decode invocation script error: %v", err)
+	}
+	verScript, err := crypto.Base64Decode(crossChainMsg.Witnesses[0].Verification)
+	if err != nil {
+		return fmt.Errorf("crypto.Base64Decode, decode verification script error: %v", err)
+	}
 	witness := &tx.Witness{
 		InvocationScript:   invScript,
 		VerificationScript: verScript,
