@@ -35,7 +35,7 @@ import (
 	"github.com/polynetwork/poly/native"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
-	"github.com/polynetwork/poly/native/service/header_sync/kai"
+	hskai "github.com/polynetwork/poly/native/service/header_sync/kai"
 )
 
 // Handler ...
@@ -53,7 +53,7 @@ func (h *Handler) MakeDepositProposal(service *native.NativeService) (*scom.Make
 	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
 		return nil, fmt.Errorf("KAI MakeDepositProposal, contract params deserialize error: %s", err)
 	}
-	info, err := kai.GetEpochSwitchInfo(service, params.SourceChainID)
+	info, err := hskai.GetEpochSwitchInfo(service, params.SourceChainID)
 	if err != nil {
 		return nil, fmt.Errorf("KAI MakeDepositProposal, failed to get epoch switching height: %v", err)
 	}
@@ -66,7 +66,7 @@ func (h *Handler) MakeDepositProposal(service *native.NativeService) (*scom.Make
 		return nil, fmt.Errorf("you must commit the header used to verify transaction's proof and get none")
 	}
 
-	var myHeader kai.Header
+	var myHeader hskai.Header
 	if err := json.Unmarshal(params.HeaderOrCrossChainMsg, &myHeader); err != nil {
 		return nil, fmt.Errorf("KAI MakeDepositProposal, unmarshal cosmos header failed: %v", err)
 	}
@@ -75,7 +75,7 @@ func (h *Handler) MakeDepositProposal(service *native.NativeService) (*scom.Make
 			"height of your header is %d not equal to %d in parameter", myHeader.Header.Height, params.Height)
 	}
 
-	if err = kai.VerifyHeader(&myHeader, info); err != nil {
+	if err = hskai.VerifyHeader(&myHeader, info); err != nil {
 		return nil, fmt.Errorf("KAI MakeDepositProposal, failed to verify KAI header: %v", err)
 	}
 
@@ -86,7 +86,7 @@ func (h *Handler) MakeDepositProposal(service *native.NativeService) (*scom.Make
 
 	if !myHeader.Header.ValidatorsHash.Equal(myHeader.Header.NextValidatorsHash) &&
 		int64(myHeader.Header.Height) > info.Height {
-		kai.PutEpochSwitchInfo(service, params.SourceChainID, &kai.EpochSwitchInfo{
+		hskai.PutEpochSwitchInfo(service, params.SourceChainID, &hskai.EpochSwitchInfo{
 			Height:             int64(myHeader.Header.Height),
 			BlockHash:          myHeader.Header.Hash().Bytes(),
 			NextValidatorsHash: myHeader.Header.NextValidatorsHash.Bytes(),

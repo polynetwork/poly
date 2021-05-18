@@ -7,7 +7,7 @@ require (
 	github.com/btcsuite/btcd v0.21.0-beta
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/cosmos/cosmos-sdk v0.39.1
-	github.com/ethereum/go-ethereum v1.9.18
+	github.com/ethereum/go-ethereum v1.9.15
 	github.com/gcash/bchd v0.16.5
 	github.com/gcash/bchutil v0.0.0-20200506001747-c2894cd54b33
 	github.com/gorilla/websocket v1.4.2
@@ -16,7 +16,7 @@ require (
 	github.com/howeyc/gopass v0.0.0-20190910152052-7cb4b85ec19c
 	github.com/itchyny/base58-go v0.1.0
 	github.com/joeqian10/neo-gogogo v0.0.0-20200716075409-923bd4879b43
-	github.com/kardiachain/go-kardia v1.1.1-0.20210514114009-042c640f55d4 // indirect
+	github.com/kardiachain/go-kardia v1.1.1-0.20210518073513-843096e91762 // indirect
 	github.com/ontio/ontology v1.11.1-0.20200812075204-26cf1fa5dd47
 	github.com/ontio/ontology-crypto v1.0.9
 	github.com/ontio/ontology-eventbus v0.9.1
