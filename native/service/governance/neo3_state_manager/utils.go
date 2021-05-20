@@ -9,20 +9,6 @@ import (
 	"github.com/polynetwork/poly/native/service/utils"
 )
 
-//// putStateValidator put state validator in the contract storage using the STATE_VALIDATOR key
-//func putStateValidator(native *native.NativeService, stateValidator helper.UInt160) error {
-//	contract := utils.Neo3StateManagerContractAddress
-//	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(STATE_VALIDATOR), stateValidator.ToByteArray()), cstates.GenRawStorageItem(stateValidator.ToByteArray()))
-//	return nil
-//}
-
-//func getStateValidator(native *native.NativeService, stateValidator helper.UInt160) error {
-//	contract := utils.Neo3StateManagerContractAddress
-//	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(STATE_VALIDATOR), stateValidator.ToByteArray()), cstates.GenRawStorageItem(stateValidator.ToByteArray()))
-//	return nil
-//}
-
-//
 func SerializeStringArray(data []string) []byte {
 	sink := common.NewZeroCopySink(nil)
 	// serialize
@@ -39,7 +25,7 @@ func DeserializeStringArray(data []byte) ([]string, error) {
 	if eof {
 		return nil, fmt.Errorf("source.NextVarUint error")
 	}
-	result := make([]string, 0)
+	result := make([]string, 0, n)
 	for i := 0; uint64(i) < n; i++ {
 		ss, eof := source.NextString()
 		if eof {

@@ -30,7 +30,7 @@ import (
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/heco"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/msc"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/neo"
-  "github.com/polynetwork/poly/native/service/cross_chain_manager/neo3"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/neo3"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/okex"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/ont"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/quorum"
