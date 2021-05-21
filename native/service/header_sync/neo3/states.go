@@ -15,29 +15,28 @@
  * along with The poly network .  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package neo
+package neo3
 
 import (
-	"encoding/hex"
 	"fmt"
-	"github.com/joeqian10/neo-gogogo/block"
-	"github.com/joeqian10/neo-gogogo/crypto"
-	"github.com/joeqian10/neo-gogogo/helper"
-	"github.com/joeqian10/neo-gogogo/helper/io"
-	"github.com/joeqian10/neo-gogogo/mpt"
+	"github.com/joeqian10/neo3-gogogo/block"
+	"github.com/joeqian10/neo3-gogogo/crypto"
+	"github.com/joeqian10/neo3-gogogo/helper"
+	"github.com/joeqian10/neo3-gogogo/io"
+	"github.com/joeqian10/neo3-gogogo/mpt"
 	"github.com/polynetwork/poly/common"
 )
 
 type NeoConsensus struct {
 	ChainID       uint64
 	Height        uint32
-	NextConsensus helper.UInt160
+	NextConsensus *helper.UInt160
 }
 
 func (this *NeoConsensus) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteUint64(this.ChainID)
 	sink.WriteUint32(this.Height)
-	sink.WriteVarBytes(this.NextConsensus.Bytes())
+	sink.WriteVarBytes(this.NextConsensus.ToByteArray())
 }
 
 func (this *NeoConsensus) Deserialization(source *common.ZeroCopySource) error {
@@ -54,23 +53,20 @@ func (this *NeoConsensus) Deserialization(source *common.ZeroCopySource) error {
 		return fmt.Errorf("NeoConsensus.Deserialization, NextConsensus NextVarBytes error")
 	}
 
-	var err error
-	if this.NextConsensus, err = helper.UInt160FromBytes(nextConsensusBs); err != nil {
-		return fmt.Errorf("NeoConsensus.Deserialization, NextConsensus UInt160FromBytes error: %s", err)
-	}
+	this.NextConsensus = helper.UInt160FromBytes(nextConsensusBs);
 	return nil
 }
 
 type NeoBlockHeader struct {
-	*block.BlockHeader
+	*block.Header
 }
 
 func (this *NeoBlockHeader) Deserialization(source *common.ZeroCopySource) error {
-	this.BlockHeader = new(block.BlockHeader)
+	this.Header = block.NewBlockHeader()
 	br := io.NewBinaryReaderFromBuf(source.Bytes())
-	this.BlockHeader.Deserialize(br)
+	this.Header.Deserialize(br)
 	if br.Err != nil {
-		return fmt.Errorf("joeqian10/neo-gogogo/block.BlockHeader Deserialize error: %s", br.Err)
+		return fmt.Errorf("neo3-gogogo Header Deserialize error: %s", br.Err)
 	}
 	return nil
 }
@@ -79,7 +75,7 @@ func (this *NeoBlockHeader) Serialization(sink *common.ZeroCopySink) error {
 	bw := io.NewBufBinaryWriter()
 	this.Serialize(bw.BinaryWriter)
 	if bw.Err != nil {
-		return fmt.Errorf("joeqian10/neo-gogogo/block.BlockHeader Serialize error: %s", bw.Err)
+		return fmt.Errorf("neo3-gogogo Header Serialize error: %s", bw.Err)
 	}
 	sink.WriteBytes(bw.Bytes())
 	return nil
@@ -89,7 +85,7 @@ func (this *NeoBlockHeader) GetMessage() ([]byte, error) {
 	buf := io.NewBufBinaryWriter()
 	this.SerializeUnsigned(buf.BinaryWriter)
 	if buf.Err != nil {
-		return nil, fmt.Errorf("GetHashData of NeoBlockHeader neo-gogogo block.BlockHeader SerializeUnsigned error: %s", buf.Err)
+		return nil, fmt.Errorf("neo3-gogogo Header SerializeUnsigned error: %s", buf.Err)
 	}
 	return buf.Bytes(), nil
 }
@@ -103,7 +99,7 @@ func (this *NeoCrossChainMsg) Deserialization(source *common.ZeroCopySource) err
 	br := io.NewBinaryReaderFromBuf(source.Bytes())
 	this.Deserialize(br)
 	if br.Err != nil {
-		return fmt.Errorf("neo-gogogo mpt.StateRoot Deserialize error: %s", br.Err)
+		return fmt.Errorf("neo3-gogogo mpt.StateRoot Deserialize error: %s", br.Err)
 	}
 	return nil
 }
@@ -112,32 +108,40 @@ func (this *NeoCrossChainMsg) Serialization(sink *common.ZeroCopySink) error {
 	bw := io.NewBufBinaryWriter()
 	this.Serialize(bw.BinaryWriter)
 	if bw.Err != nil {
-		return fmt.Errorf("neo-gogogo mpt.StateRoot Serialize error: %s", bw.Err)
+		return fmt.Errorf("neo3-gogogo mpt.StateRoot Serialize error: %s", bw.Err)
 	}
 	sink.WriteBytes(bw.Bytes())
 	return nil
 }
 
-func (this *NeoCrossChainMsg) GetScriptHash() (helper.UInt160, error) {
-	verificationScriptBs, err := hex.DecodeString(this.Witness.VerificationScript)
+func (this *NeoCrossChainMsg) GetScriptHash() (*helper.UInt160, error) {
+	if len(this.Witnesses) == 0 {
+		return nil, fmt.Errorf("NeoCrossChainMsg.Witness incorrect length")
+	}
+	verificationScriptBs, err := crypto.Base64Decode(this.Witnesses[0].Verification) // base64
 	if err != nil {
-		return helper.UInt160{}, fmt.Errorf("NeoCrossChainMsg.Witness.VerificationScript decode to bytes error: %s", err)
+		return nil, fmt.Errorf("NeoCrossChainMsg.Witness.Verification decode error: %s", err)
 	}
 	if len(verificationScriptBs) == 0 {
-		return helper.UInt160{}, fmt.Errorf("NeoCrossChainMsg.Witness.VerificationScript length is 0 ")
+		return nil, fmt.Errorf("NeoCrossChainMsg.Witness.VerificationScript is empty")
 	}
-	scriptHash, err := helper.UInt160FromBytes(crypto.Hash160(verificationScriptBs))
-	if err != nil {
-		return helper.UInt160{}, fmt.Errorf("neo-gogogo tx.Witness GetScriptHash error: %s", err)
-	}
+	scriptHash := helper.UInt160FromBytes(crypto.Hash160(verificationScriptBs))
 	return scriptHash, nil
 }
 
-func (this *NeoCrossChainMsg) GetMessage() ([]byte, error) {
+func (this *NeoCrossChainMsg) GetMessage(magic uint32) ([]byte, error) {
+	buff2 := io.NewBufBinaryWriter()
+	this.SerializeUnsigned(buff2.BinaryWriter)
+	if buff2.Err != nil {
+		return nil, fmt.Errorf("neo3-gogogo mpt.StateRoot SerializeUnsigned error: %s", buff2.Err)
+	}
+	hash := helper.UInt256FromBytes(crypto.Sha256(buff2.Bytes()))
+
 	buf := io.NewBufBinaryWriter()
-	this.SerializeUnsigned(buf.BinaryWriter)
+	buf.BinaryWriter.WriteLE(magic)
+	buf.BinaryWriter.WriteLE(hash)
 	if buf.Err != nil {
-		return nil, fmt.Errorf("GetHashData of NeoBlockHeader neo-gogogo mpt.StateRoot SerializeUnsigned error: %s", buf.Err)
+		return nil, fmt.Errorf("write hash error: %s", buf.Err)
 	}
 	return buf.Bytes(), nil
 }
