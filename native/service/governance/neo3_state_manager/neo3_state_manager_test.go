@@ -23,7 +23,7 @@ import (
 var (
 	acct     = account.NewAccount("")
 	conAccts = func() []*account.Account {
-		accts := make([]*account.Account, 0)
+		accts := make([]*account.Account, 0, 7)
 		for i := 0; i < 7; i++ {
 			accts = append(accts, account.NewAccount(strconv.FormatUint(uint64(i), 10)))
 		}

@@ -23,7 +23,7 @@ func (this *StateValidatorListParam) Deserialization(source *common.ZeroCopySour
 	if eof {
 		return fmt.Errorf("source.NextVarUint, deserialize StateValidators length error")
 	}
-	stateValidators := make([]string, 0)
+	stateValidators := make([]string, 0, n)
 	for i := 0; uint64(i) < n; i++ {
 		ss, eof := source.NextString()
 		if eof {
