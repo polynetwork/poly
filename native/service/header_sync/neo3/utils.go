@@ -52,7 +52,7 @@ func verifyHeader(native *native.NativeService, chainID uint64, header *NeoBlock
 }
 
 func VerifyCrossChainMsgSig(native *native.NativeService, magic uint32, crossChainMsg *NeoCrossChainMsg) error {
-	// todo, review code, get neo3 state validator from native contract
+	// get neo3 state validator from native contract
 	svListBytes, err := neo3_state_manager.GetCurrentStateValidator(native)
 	if err != nil {
 		return fmt.Errorf("verifyCrossChainMsg, neo3_state_manager.GetCurrentStateValidator error: %v", err)
@@ -61,7 +61,7 @@ func VerifyCrossChainMsgSig(native *native.NativeService, magic uint32, crossCha
 	if err != nil {
 		return fmt.Errorf("verifyCrossChainMsg, neo3_state_manager.DeserializeStringArray error: %v", err)
 	}
-	pubKeys := make([]crypto.ECPoint, len(svStrings))
+	pubKeys := make([]crypto.ECPoint, len(svStrings), len(svStrings))
 	for i, v := range svStrings {
 		pubKey, err := crypto.NewECPointFromString(v)
 		if err != nil {
@@ -71,7 +71,7 @@ func VerifyCrossChainMsgSig(native *native.NativeService, magic uint32, crossCha
 	}
 	n := len(pubKeys)
 	m := n - (n-1)/3
-	msc, err := sc.CreateMultiSigContract(m, pubKeys)
+	msc, err := sc.CreateMultiSigContract(m, pubKeys) // sort public keys inside
 	if err != nil {
 		return fmt.Errorf("verifyCrossChainMsg, sc.CreateMultiSigContract error: %v", err)
 	}

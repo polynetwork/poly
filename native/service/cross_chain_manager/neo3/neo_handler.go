@@ -57,8 +57,7 @@ func (this *Neo3Handler) MakeDepositProposal(service *native.NativeService) (*sc
 	// convert neo3 contract address bytes to id, it is different from other chains
 	// need to store int in a []byte, contract id can be get from "getcontractstate" api
 	// neo3 native contracts have negative ids, while custom contracts have positive ones
-
-	id :=	this.ConvertCcmcAddressToId(sideChain.CCMCAddress)
+	id :=	int(int32(helper.BytesToUInt32(sideChain.CCMCAddress)))
 
 	value, err := verifyFromNeoTx(params.Proof, crossChainMsg, id)
 	if err != nil {
@@ -72,9 +71,4 @@ func (this *Neo3Handler) MakeDepositProposal(service *native.NativeService) (*sc
 		return nil, fmt.Errorf("neo3 MakeDepositProposal, putDoneTx error:%s", err)
 	}
 	return value, nil
-}
-
-func (this *Neo3Handler) ConvertCcmcAddressToId(idBytes []byte) int {
-	id := int(int32(helper.BytesToUInt32(idBytes)))
-	return id
 }

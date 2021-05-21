@@ -63,25 +63,21 @@ func putStateValidators(native *native.NativeService, stateValidators []string) 
 	if err != nil {
 		return fmt.Errorf("putStateValidator, get old state validators error: %v", err)
 	}
-	// use a map to filter old svs
-	mm := make(map[string]string)
-	for _, v := range oldSVs {
-		if _, ok := mm[v]; ok {
-			continue
+	// max capacity = len(oldSVs)+len(stateValidators)
+	newSVs := make([]string, 0, len(oldSVs)+len(stateValidators))
+	newSVs = append(newSVs, oldSVs...)
+	// filter duplicate svs
+	for _, sv := range stateValidators {
+		isInOld := false
+		for _, oldSv := range oldSVs{
+			if sv == oldSv {
+				isInOld = true
+				break
+			}
 		}
-		mm[v] = v
-	}
-	// use the map to add new svs
-	for _, v := range stateValidators {
-		if _, ok := mm[v]; ok {
-			continue
+		if !isInOld {
+			newSVs = append(newSVs, sv)
 		}
-		mm[v] = v
-	}
-	// convert map back to string array
-	newSVs := make([]string, 0)
-	for _, v := range mm {
-		newSVs = append(newSVs, v)
 	}
 	// convert back to []byte
 	data := SerializeStringArray(newSVs)
@@ -96,34 +92,22 @@ func removeStateValidators(native *native.NativeService, stateValidators []strin
 	if err != nil {
 		return fmt.Errorf("removeStateValidator, get old state validators error: %v", err)
 	}
-	// use a map to filter old svs
-	mm := make(map[string]string)
-	for _, v := range oldSVs {
-		if _, ok := mm[v]; ok {
-			continue
+	// remove in the slice
+	for _, sv := range stateValidators {
+		for i, oldSv := range oldSVs{
+			if sv == oldSv {
+				oldSVs = append(oldSVs[:i], oldSVs[i+1:]...)
+				break
+			}
 		}
-		mm[v] = v
-	}
-	// use the map to delete svs
-	for _, v := range stateValidators {
-		// if the sv is in map, delete it, else continue
-		if _, ok := mm[v]; ok {
-			delete(mm, v)
-		}
-	}
-	// convert map back to UInt160 array
-	newSVs := make([]string, 0)
-	for _, v := range mm {
-		newSVs = append(newSVs, v)
 	}
 	// if no sv left, delete the storage, else put remaining back
-	if len(newSVs) == 0 {
+	if len(oldSVs) == 0 {
 		native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(STATE_VALIDATOR)))
 		return nil
 	}
-
 	// convert back to []byte
-	data := SerializeStringArray(newSVs)
+	data := SerializeStringArray(oldSVs)
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(STATE_VALIDATOR)), cstates.GenRawStorageItem(data))
 	return nil
 }
@@ -135,7 +119,7 @@ func getStateValidatorApply(native *native.NativeService, applyID uint64) (*Stat
 		return nil, fmt.Errorf("getStateValidatorApply, get stateValidatorListParamStore error: %v", err)
 	}
 	if svListParamStore == nil {
-		return nil, fmt.Errorf("getStateValidatorApply, can't find any record")
+		return nil, nil
 	}
 	svListParam := new(StateValidatorListParam)
 	svListParamBytes, err := cstates.GetValueFromRawStorageItem(svListParamStore)
@@ -202,7 +186,7 @@ func getStateValidatorRemove(native *native.NativeService, removeID uint64) (*St
 		return nil, fmt.Errorf("getStateValidatorRemove, get stateValidatorListParamStore error: %v", err)
 	}
 	if svListParamStore == nil {
-		return nil, fmt.Errorf("getStateValidatorRemove, can't find any record")
+		return nil, nil
 	}
 	svListParam := new(StateValidatorListParam)
 	svListParamBytes, err := cstates.GetValueFromRawStorageItem(svListParamStore)
