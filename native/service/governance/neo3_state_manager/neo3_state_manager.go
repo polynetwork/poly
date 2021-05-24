@@ -163,6 +163,7 @@ func ApproveRemoveStateValidator(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRemoveStateValidator, removeStateValidators error: %v", err)
 	}
 
+	native.GetCacheDB().Delete(utils.ConcatKey(utils.Neo3StateManagerContractAddress, []byte(STATE_VALIDATOR_REMOVE), utils.GetUint64Bytes(params.ID)))
 	native.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.Neo3StateManagerContractAddress,
