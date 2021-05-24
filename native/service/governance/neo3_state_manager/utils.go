@@ -36,32 +36,32 @@ func DeserializeStringArray(data []byte) ([]string, error) {
 	return result, nil
 }
 
-func getStateValidators(native *native.NativeService) ([]string, error) {
+func getStateValidators(native *native.NativeService) ([]byte, error) {
 	contract := utils.Neo3StateManagerContractAddress
 	svStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(STATE_VALIDATOR)))
 	if err != nil {
 		return nil, fmt.Errorf("getStateValidator, get stateValidatorListParamStore error: %v", err)
 	}
 	if svStore == nil {
-		return []string{}, nil
+		return []byte{}, nil
 	}
 	svBytes, err := cstates.GetValueFromRawStorageItem(svStore)
 	if err != nil {
 		return nil, fmt.Errorf("getStateValidator, deserialize from raw storage item error: %v", err)
 	}
-	svs, err := DeserializeStringArray(svBytes)
-	if err != nil {
-		return nil, fmt.Errorf("getStateValidator, convert to UInt160 array error: %v", err)
-	}
-	return svs, nil
+	return svBytes, nil
 }
 
 func putStateValidators(native *native.NativeService, stateValidators []string) error {
 	contract := utils.Neo3StateManagerContractAddress
 	// get current stored value
-	oldSVs, err := getStateValidators(native)
+	oldSvBytes, err := getStateValidators(native)
 	if err != nil {
 		return fmt.Errorf("putStateValidator, get old state validators error: %v", err)
+	}
+	oldSVs, err := DeserializeStringArray(oldSvBytes)
+	if err != nil {
+		return fmt.Errorf("putStateValidator, convert to string array error: %v", err)
 	}
 	// max capacity = len(oldSVs)+len(stateValidators)
 	newSVs := make([]string, 0, len(oldSVs)+len(stateValidators))
@@ -69,7 +69,7 @@ func putStateValidators(native *native.NativeService, stateValidators []string) 
 	// filter duplicate svs
 	for _, sv := range stateValidators {
 		isInOld := false
-		for _, oldSv := range oldSVs{
+		for _, oldSv := range oldSVs {
 			if sv == oldSv {
 				isInOld = true
 				break
@@ -88,13 +88,17 @@ func putStateValidators(native *native.NativeService, stateValidators []string) 
 func removeStateValidators(native *native.NativeService, stateValidators []string) error {
 	contract := utils.Neo3StateManagerContractAddress
 	// get current stored value
-	oldSVs, err := getStateValidators(native)
+	oldSvBytes, err := getStateValidators(native)
 	if err != nil {
 		return fmt.Errorf("removeStateValidator, get old state validators error: %v", err)
 	}
+	oldSVs, err := DeserializeStringArray(oldSvBytes)
+	if err != nil {
+		return fmt.Errorf("removeStateValidator, convert to string array error: %v", err)
+	}
 	// remove in the slice
 	for _, sv := range stateValidators {
-		for i, oldSv := range oldSVs{
+		for i, oldSv := range oldSVs {
 			if sv == oldSv {
 				oldSVs = append(oldSVs[:i], oldSVs[i+1:]...)
 				break

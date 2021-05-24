@@ -25,17 +25,6 @@ const (
 	STATE_VALIDATOR_REMOVE_ID = "stateValidatorRemoveID"
 )
 
-// todo, review code
-
-func GetCurrentStateValidator(native *native.NativeService) ([]byte, error) {
-	svs, err := getStateValidators(native)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("GetCurrentStateValidator, getStateValidators error: %v", err)
-	}
-	data := SerializeStringArray(svs)
-	return data, nil
-}
-
 //Register methods of node_manager contract
 func RegisterStateValidatorManagerContract(native *native.NativeService) {
 	native.Register(GET_CURRENT_STATE_VALIDATOR, GetCurrentStateValidator)
@@ -43,6 +32,14 @@ func RegisterStateValidatorManagerContract(native *native.NativeService) {
 	native.Register(APPROVE_REGISTER_STATE_VALIDATOR, ApproveRegisterStateValidator)
 	native.Register(REMOVE_STATE_VALIDATOR, RemoveStateValidator)
 	native.Register(APPROVE_REMOVE_STATE_VALIDATOR, ApproveRemoveStateValidator)
+}
+
+func GetCurrentStateValidator(native *native.NativeService) ([]byte, error) {
+	data, err := getStateValidators(native)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("GetCurrentStateValidator, getStateValidators error: %v", err)
+	}
+	return data, nil
 }
 
 func RegisterStateValidator(native *native.NativeService) ([]byte, error) {

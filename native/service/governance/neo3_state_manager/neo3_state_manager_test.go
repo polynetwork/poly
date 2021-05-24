@@ -205,10 +205,6 @@ func TestGetCurrentStateValidator(t *testing.T) {
 		//}
 	}
 	// get
-	svs, err := getStateValidators(nativeService)
-	assert.Nil(t, err)
-	assert.Equal(t, 4, len(svs))
-
 	svBytes, err := GetCurrentStateValidator(nativeService)
 	assert.Nil(t, err)
 	assert.Equal(t, 269, len(svBytes))
@@ -263,9 +259,9 @@ func TestRemoveStateValidator(t *testing.T) {
 	}
 
 	// confirm state validators in storage
-	svs, err := getStateValidators(nativeService)
+	svBytes, err := GetCurrentStateValidator(nativeService)
 	assert.Nil(t, err)
-	assert.Equal(t, 4, len(svs))
+	assert.Equal(t, 269, len(svBytes))
 
 	// remove
 	nativeService = NewNative(sink.Bytes(), tx, nativeService.GetCacheDB()) // for remove
