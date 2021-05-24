@@ -30,6 +30,7 @@ import (
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/heco"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/msc"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/neo"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/neo3"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/okex"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/ont"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/quorum"
@@ -66,6 +67,8 @@ func GetChainHandler(router uint64) (scom.ChainHandler, error) {
 		return ont.NewONTHandler(), nil
 	case utils.NEO_ROUTER:
 		return neo.NewNEOHandler(), nil
+	case utils.NEO3_ROUTER:
+		return neo3.NewNeo3Handler(), nil
 	case utils.COSMOS_ROUTER:
 		return cosmos.NewCosmosHandler(), nil
 	case utils.QUORUM_ROUTER:

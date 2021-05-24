@@ -66,10 +66,11 @@ func Test_NeoBlockHeader_Serialization(t *testing.T) {
 	}
 	paramSerialize.BlockHeader = genesisHeader
 	sink := common.NewZeroCopySink(nil)
-	paramSerialize.Serialization(sink)
+	err := paramSerialize.Serialization(sink)
+	assert.Nil(t, err)
 
 	paramDeserialize := new(NeoBlockHeader)
-	err := paramDeserialize.Deserialization(common.NewZeroCopySource(sink.Bytes()))
+	err = paramDeserialize.Deserialization(common.NewZeroCopySource(sink.Bytes()))
 	assert.Nil(t, err)
 	assert.Equal(t, paramDeserialize, paramSerialize)
 }
@@ -92,10 +93,11 @@ func Test_NeoCrossChainMsg_Serialization(t *testing.T) {
 	}
 
 	sink := common.NewZeroCopySink(nil)
-	paramSerialize.Serialization(sink)
+	err := paramSerialize.Serialization(sink)
+	assert.Nil(t, err)
 
 	paramDeserialize := new(NeoCrossChainMsg)
-	err := paramDeserialize.Deserialization(common.NewZeroCopySource(sink.Bytes()))
+	err = paramDeserialize.Deserialization(common.NewZeroCopySource(sink.Bytes()))
 	assert.Nil(t, err)
 	assert.Equal(t, paramDeserialize, paramSerialize)
 }

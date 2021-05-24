@@ -15,14 +15,13 @@
  * along with The poly network .  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package neo
+package neo3
 
 import (
-	"encoding/binary"
 	"encoding/hex"
-	"github.com/joeqian10/neo-gogogo/block"
-	"github.com/joeqian10/neo-gogogo/helper"
-	tx2 "github.com/joeqian10/neo-gogogo/tx"
+	"github.com/joeqian10/neo3-gogogo/crypto"
+	"github.com/joeqian10/neo3-gogogo/helper"
+	tx2 "github.com/joeqian10/neo3-gogogo/tx"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/account"
 	"github.com/polynetwork/poly/common"
@@ -35,11 +34,11 @@ import (
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	hscom "github.com/polynetwork/poly/native/service/header_sync/common"
-	"github.com/polynetwork/poly/native/service/header_sync/neo"
-	hs "github.com/polynetwork/poly/native/service/header_sync/neo"
+	"github.com/polynetwork/poly/native/service/header_sync/neo3"
 	"github.com/polynetwork/poly/native/service/utils"
 	"github.com/polynetwork/poly/native/storage"
 	"github.com/stretchr/testify/assert"
+	"log"
 	"testing"
 )
 
@@ -51,8 +50,8 @@ var (
 		service, _ := native.NewNativeService(cacheDB, new(types.Transaction), 0, 200, common.Uint256{}, 0, nil, false)
 		return service
 	}
-	getNeoHanderFunc = func() *NEOHandler {
-		return NewNEOHandler()
+	getNeoHanderFunc = func() *Neo3Handler {
+		return NewNeo3Handler()
 	}
 	setBKers = func() {
 		genesis.GenesisBookkeepers = []keypair.PublicKey{acct.PublicKey}
@@ -88,31 +87,32 @@ func Test_Neo_MakeDepositProposal(t *testing.T) {
 	var native *native.NativeService
 	{
 		prevHash, _ := helper.UInt256FromString("0x0000000000000000000000000000000000000000000000000000000000000000")
-		merKleRoot, _ := helper.UInt256FromString("0xee3ba4cd680d1acd06b067a7d57fd20e47f79203a23e99f28915e57b4e6c1058")
-		nextConsensus, _ := helper.AddressToScriptHash("AdP4zfgVEgn8nhRN5s76aVNEcDaftkqbyW")
-		consensusData := binary.BigEndian.Uint64(helper.HexToBytes("000000007c2bac1d"))
-		genesisHeader := &neo.NeoBlockHeader{
-			&block.BlockHeader{
-				Version:       0,
-				PrevHash:      prevHash,
-				MerkleRoot:    merKleRoot,
-				Timestamp:     1468595301,
-				Index:         0,
-				NextConsensus: nextConsensus,
-				ConsensusData: consensusData,
-				Witness: &tx2.Witness{
-					InvocationScript:   []byte{0},
-					VerificationScript: []byte{81},
-				},
-			},
+		merkleRoot, _ := helper.UInt256FromString("0x0000000000000000000000000000000000000000000000000000000000000000")
+		nextConsensus, _ := crypto.AddressToScriptHash("NVg7LjGcUSrgxgjX3zEgqaksfMaiS8Z6e1", helper.DefaultAddressVersion)
+		vs, _ := crypto.Base64Decode("EQ==")
+		witness := tx2.Witness{
+			InvocationScript: []byte{},
+			VerificationScript: vs,
 		}
+		genesisHeader := &neo3.NeoBlockHeader{}
+		genesisHeader.SetVersion(0)
+		genesisHeader.SetPrevHash(prevHash)
+		genesisHeader.SetMerkleRoot(merkleRoot)
+		genesisHeader.SetTimeStamp(1468595301000)
+		genesisHeader.SetIndex(0)
+		genesisHeader.SetPrimaryIndex(0x00)
+		genesisHeader.SetNextConsensus(nextConsensus)
+		genesisHeader.SetWitnesses([]tx2.Witness{witness})
+
 		param := new(hscom.SyncGenesisHeaderParam)
 		param.ChainID = 4
 		var err error
 		sink := common.NewZeroCopySink(nil)
 		err = genesisHeader.Serialization(sink)
 		param.GenesisHeader = sink.Bytes()
-		assert.Nil(t, err)
+		if err != nil {
+			t.Errorf("NeoBlockHeaderToBytes error:%v", err)
+		}
 
 		sink = common.NewZeroCopySink(nil)
 		param.Serialization(sink)
@@ -122,7 +122,7 @@ func Test_Neo_MakeDepositProposal(t *testing.T) {
 		}
 
 		native = NewNative(sink.Bytes(), tx, nil)
-		neoHandler := hs.NewNEOHandler()
+		neoHandler := neo3.NewNeo3Handler()
 		err = neoHandler.SyncGenesisHeader(native)
 		assert.NoError(t, err)
 	}
@@ -151,9 +151,29 @@ func Test_Neo_MakeDepositProposal(t *testing.T) {
 		}
 
 		native = NewNative(sink.Bytes(), tx, native.GetCacheDB())
-		neoHandler := NewNEOHandler()
+		neoHandler := NewNeo3Handler()
 		SetContract(native, "b0d4f20da68a6007d4fb7eac374b5566a5b0e229")
 		_, err = neoHandler.MakeDepositProposal(native)
 		assert.Nil(t, err)
 	}
+}
+
+func TestNEOHandler_SetCcmcId(t *testing.T) {
+	// test positive int
+	idp := 12
+	idpBytes := helper.IntToBytes(idp)
+	ss := helper.BytesToHex(idpBytes)
+	log.Println(ss)
+	assert.Equal(t, "0c000000", ss)
+
+	idp2 := int(helper.BytesToUInt32(idpBytes))
+	assert.Equal(t, idp, idp2)
+
+	// test negative int
+	idn := -5
+	idnBytes := helper.IntToBytes(idn)
+	log.Println(helper.BytesToHex(idnBytes))
+
+	idn2 := int(int32(helper.BytesToUInt32(idnBytes)))
+	assert.Equal(t, idn, idn2)
 }
