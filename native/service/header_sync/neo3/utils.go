@@ -104,8 +104,7 @@ func VerifyCrossChainMsgSig(native *native.NativeService, magic uint32, crossCha
 		VerificationScript: verScript,
 	}
 	v1 := tx.VerifyMultiSignatureWitness(msg, witness)
-	v2 := tx.VerifySignatureWitness(msg, witness)
-	if !v1 && !v2 {
+	if !v1 {
 		return fmt.Errorf("verifyCrossChainMsg, verify witness failed, height: %d", crossChainMsg.Index)
 	}
 	return nil
