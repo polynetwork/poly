@@ -22,8 +22,8 @@ import (
 	"github.com/polynetwork/poly/native/service/header_sync/neo"
 	"github.com/polynetwork/poly/native/service/header_sync/neo3"
 
-	"github.com/polynetwork/poly/native/service/cross_chain_manager/kai"
 	"github.com/polynetwork/poly/native/service/header_sync/heco"
+	"github.com/polynetwork/poly/native/service/header_sync/kai"
 	"github.com/polynetwork/poly/native/service/header_sync/msc"
 	"github.com/polynetwork/poly/native/service/header_sync/okex"
 
