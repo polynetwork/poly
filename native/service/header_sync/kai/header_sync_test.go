@@ -19,10 +19,10 @@ package kai
 import (
 	"context"
 	"encoding/json"
-	"math/big"
 	"strings"
 	"testing"
 
+	kaiclient "github.com/kardiachain/go-kaiclient/kardia"
 	"github.com/kardiachain/go-kardia/lib/bytes"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/account"
@@ -36,7 +36,6 @@ import (
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	scom "github.com/polynetwork/poly/native/service/header_sync/common"
-	"github.com/polynetwork/poly/native/service/header_sync/kai/kaiclient"
 	"github.com/polynetwork/poly/native/service/utils"
 	"github.com/polynetwork/poly/native/storage"
 	"gotest.tools/assert"
@@ -47,20 +46,21 @@ var (
 	setBKers                  = func() {
 		genesis.GenesisBookkeepers = []keypair.PublicKey{acct.PublicKey}
 	}
-	tool *kaiclient.Client
+	tool kaiclient.Node
 )
+
+func newKaiClient() kaiclient.Node {
+	url := "https://dev-6.kardiachain.io"
+	node, err := kaiclient.NewNode(url, nil)
+	if err != nil {
+		panic(err)
+	}
+	return node
+}
 
 func init() {
 	setBKers()
 	tool = newKaiClient()
-}
-
-func newKaiClient() *kaiclient.Client {
-	kaiclient, err := kaiclient.Dial("https://dev-6.kardiachain.io")
-	if err != nil {
-		panic(err)
-	}
-	return kaiclient
 }
 
 func NewNative(args []byte, tx *types.Transaction, db *storage.CacheDB) (*native.NativeService, error) {
@@ -132,13 +132,13 @@ func typeOfError(e error) int {
 
 const ChainID = 138
 
-func getGenesisHeaderByHeight(t *testing.T, epochHeight uint64) *kaiclient.KaiHeader {
-	h, err := tool.FullHeaderByNumber(context.Background(), big.NewInt(int64(epochHeight)))
+func getGenesisHeaderByHeight(t *testing.T, epochHeight uint64) *kaiclient.FullHeader {
+	h, err := tool.FullHeaderByNumber(context.Background(), epochHeight)
 	assert.NilError(t, err)
 	return h
 }
 
-func getGenesisHeader(t *testing.T) *kaiclient.KaiHeader {
+func getGenesisHeader(t *testing.T) *kaiclient.FullHeader {
 	return getGenesisHeaderByHeight(t, 5)
 }
 
@@ -227,5 +227,10 @@ func TestSyncBlockHeader(t *testing.T) {
 }
 
 func TestVerifyHeader(t *testing.T) {
-
+	native := syncGenesisBlockHeader(t)
+	epochInfo, err := GetEpochSwitchInfo(native, 138)
+	assert.NilError(t, err)
+	h6 := getGenesisHeaderByHeight(t, 6)
+	err = VerifyHeader(h6, epochInfo)
+	assert.NilError(t, err)
 }

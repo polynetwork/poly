@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/kardiachain/go-kardia/lib/bytes"
-	"github.com/kardiachain/go-kardia/types"
 	"github.com/polynetwork/poly/common"
 )
 
@@ -51,10 +50,4 @@ func (info *EpochSwitchInfo) Deserialization(source *common.ZeroCopySource) erro
 		return fmt.Errorf("deserialize ChainID of EpochSwitchInfo failed")
 	}
 	return nil
-}
-
-type Header struct {
-	Header *types.Header
-	Commit *types.Commit
-	Vset   *types.ValidatorSet
 }

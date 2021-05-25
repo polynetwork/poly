@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"strconv"
 
+	kaiclient "github.com/kardiachain/go-kaiclient/kardia"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
 	"github.com/polynetwork/poly/native"
@@ -53,7 +54,7 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) error {
 		return fmt.Errorf("Handler SyncGenesisHeader, checkWitness error: %v", err)
 	}
 	// get genesis header from input parameters
-	var header Header
+	var header kaiclient.FullHeader
 	if err := json.Unmarshal(param.GenesisHeader, &header); err != nil {
 		return fmt.Errorf("Handler SyncGenesisHeader, Unmarshal error: %v", err)
 	}
@@ -84,7 +85,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		return fmt.Errorf("SyncBlockHeader, get epoch switching height failed: %v", err)
 	}
 	for _, v := range params.Headers {
-		var myHeader Header
+		var myHeader kaiclient.FullHeader
 		if err := json.Unmarshal(v, &myHeader); err != nil {
 			return fmt.Errorf("SyncBlockHeader failed to unmarshal header: %v", err)
 		}

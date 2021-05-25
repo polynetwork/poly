@@ -90,7 +90,7 @@ func (h *Handler) MakeDepositProposal(service *native.NativeService) (*scom.Make
 			Height:             int64(myHeader.Header.Height),
 			BlockHash:          myHeader.Header.Hash().Bytes(),
 			NextValidatorsHash: myHeader.Header.NextValidatorsHash.Bytes(),
-			ChainID:            "",
+			ChainID:            info.ChainID,
 		})
 	}
 

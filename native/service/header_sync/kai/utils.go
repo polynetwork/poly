@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 
+	kaiclient "github.com/kardiachain/go-kaiclient/kardia"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/config"
 	cstates "github.com/polynetwork/poly/core/states"
@@ -13,8 +14,8 @@ import (
 	"github.com/polynetwork/poly/native/service/utils"
 )
 
-func VerifyHeader(myHeader *Header, info *EpochSwitchInfo) error {
-	valset := myHeader.Vset
+func VerifyHeader(myHeader *kaiclient.FullHeader, info *EpochSwitchInfo) error {
+	valset := myHeader.ValidatorSet
 	// now verify this header
 	if !bytes.Equal(info.NextValidatorsHash, valset.Hash().Bytes()) {
 		return fmt.Errorf("VerifyHeader, block validator is not right, next validator hash: %s, "+
@@ -24,7 +25,7 @@ func VerifyHeader(myHeader *Header, info *EpochSwitchInfo) error {
 		return fmt.Errorf("VerifyHeader, block validator is not right!, header validator hash: %s, "+
 			"validator set hash: %s", myHeader.Header.ValidatorsHash.String(), valset.Hash().Hex())
 	}
-	if err := valset.VerifyCommit(info.ChainID, myHeader.Header.LastBlockID, myHeader.Header.Height, myHeader.Commit); err != nil {
+	if err := valset.VerifyCommit("", myHeader.Header.LastBlockID, myHeader.Header.Height-1, myHeader.Commit); err != nil {
 		return err
 	}
 	return nil
