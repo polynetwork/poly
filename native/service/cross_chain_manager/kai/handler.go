@@ -29,6 +29,7 @@ import (
 	"github.com/ethereum/go-ethereum/light"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
+	kaiclient "github.com/kardiachain/go-kaiclient/kardia"
 	"github.com/kardiachain/go-kardia/types"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
@@ -66,7 +67,7 @@ func (h *Handler) MakeDepositProposal(service *native.NativeService) (*scom.Make
 		return nil, fmt.Errorf("you must commit the header used to verify transaction's proof and get none")
 	}
 
-	var myHeader hskai.Header
+	var myHeader kaiclient.FullHeader
 	if err := json.Unmarshal(params.HeaderOrCrossChainMsg, &myHeader); err != nil {
 		return nil, fmt.Errorf("KAI MakeDepositProposal, unmarshal cosmos header failed: %v", err)
 	}
