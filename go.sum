@@ -420,6 +420,7 @@ github.com/ontio/go-bip32 v0.0.0-20190520025953-d3cea6894a2b/go.mod h1:J0eVc7BEM
 github.com/ontio/ontology v1.10.0/go.mod h1:iok/imHJVQXi5/Yr88dcbrKBRHGdiota1ZC6qh6l6Rc=
 github.com/ontio/ontology v1.11.0 h1:0T/hxFDHQqRcs1+yEdgaym5YIvGx5yebOsHYdKVWgHI=
 github.com/ontio/ontology v1.11.0/go.mod h1:Qw74bfTBlIQka+jQX4nXuWvyOYGGt368/V7XFxaf4tY=
+github.com/ontio/ontology v1.11.1-0.20200812075204-26cf1fa5dd47 h1:9iZitqJe7SBGF8f6jOHjhotrB7ZLKKMM+g6S0tMbOL4=
 github.com/ontio/ontology v1.11.1-0.20200812075204-26cf1fa5dd47/go.mod h1:aoLM6pLdjBLx2CwC/AUtxdHvLZzAVqYH/xehh6/sRP4=
 github.com/ontio/ontology-crypto v1.0.9 h1:6fxBsz3W4CcdJk4/9QO7j0Qq7NdlP2ixPrViu8XpzzM=
 github.com/ontio/ontology-crypto v1.0.9/go.mod h1:h/jeqqb9Ma/Leszxqh6zY3eTF2yks44hyRKikMni+YQ=
