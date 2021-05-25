@@ -17,7 +17,7 @@ require (
 	github.com/itchyny/base58-go v0.1.0
 	github.com/joeqian10/neo-gogogo v1.1.0
 	github.com/joeqian10/neo3-gogogo v0.3.3
-	github.com/ontio/ontology v1.11.0
+	github.com/ontio/ontology v1.11.1-0.20200812075204-26cf1fa5dd47
 	github.com/ontio/ontology-crypto v1.0.9
 	github.com/ontio/ontology-eventbus v0.9.1
 	github.com/pborman/uuid v1.2.0
