@@ -19,15 +19,57 @@ package kai
 import (
 	"encoding/json"
 	"fmt"
+	"strconv"
 
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
 	"github.com/polynetwork/poly/native"
+	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	hscommon "github.com/polynetwork/poly/native/service/header_sync/common"
+	"github.com/polynetwork/poly/native/service/utils"
 )
 
 // Handler ...
 type Handler struct {
+}
+
+func NewHandler() *Handler {
+	return &Handler{}
+}
+
+func (h *Handler) SyncGenesisHeader(native *native.NativeService) error {
+	param := new(hscommon.SyncGenesisHeaderParam)
+	if err := param.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
+		return fmt.Errorf("Handler SyncGenesisHeader, contract params deserialize error: %v", err)
+	}
+	// Get current epoch operator
+	operatorAddress, err := node_manager.GetCurConOperator(native)
+	if err != nil {
+		return fmt.Errorf("Handler SyncGenesisHeader, get current consensus operator address error: %v", err)
+	}
+	//check witness
+	err = utils.ValidateOwner(native, operatorAddress)
+	if err != nil {
+		return fmt.Errorf("Handler SyncGenesisHeader, checkWitness error: %v", err)
+	}
+	// get genesis header from input parameters
+	var header Header
+	if err := json.Unmarshal(param.GenesisHeader, &header); err != nil {
+		return fmt.Errorf("Handler SyncGenesisHeader, Unmarshal error: %v", err)
+	}
+
+	// check if has genesis header
+	info, err := GetEpochSwitchInfo(native, param.ChainID)
+	if err == nil && info != nil {
+		return fmt.Errorf("Handler SyncGenesisHeader, genesis header had been initialized")
+	}
+	PutEpochSwitchInfo(native, param.ChainID, &EpochSwitchInfo{
+		Height:             int64(header.Header.Height),
+		NextValidatorsHash: header.Header.NextValidatorsHash.Bytes(),
+		ChainID:            strconv.Itoa(int(param.ChainID)),
+		BlockHash:          header.Header.Hash().Bytes(),
+	})
+	return nil
 }
 
 // SyncBlockHeader ...
