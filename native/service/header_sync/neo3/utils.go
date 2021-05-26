@@ -32,19 +32,19 @@ import (
 
 //verify header of any height
 //find key height and get neoconsensus first, then check the witness
-func verifyHeader(native *native.NativeService, chainID uint64, header *NeoBlockHeader) error {
+func verifyHeader(native *native.NativeService, chainID uint64, header *NeoBlockHeader, magic uint32) error {
 	neoConsensus, err := getConsensusValByChainId(native, chainID)
 	if err != nil {
 		return fmt.Errorf("verifyHeader, get Consensus error: %s", err)
 	}
-	if neoConsensus.NextConsensus != header.Witness.GetScriptHash() {
+	if !neoConsensus.NextConsensus.Equals(header.Witness.GetScriptHash()) {
 		return fmt.Errorf("verifyHeader, invalid script hash in header error, expected: %s, got: %s", neoConsensus.NextConsensus.String(), header.Witness.GetScriptHash().String())
 	}
-
-	msg, err := header.GetMessage()
+	msg, err := header.GetMessage(magic)
 	if err != nil {
 		return fmt.Errorf("verifyHeader, unable to get hash data of header")
 	}
+	// verify witness
 	if verified := tx.VerifyMultiSignatureWitness(msg, header.Witness); !verified {
 		return fmt.Errorf("verifyHeader, VerifyMultiSignatureWitness error: %s, height: %d", err, header.GetIndex())
 	}
@@ -88,6 +88,7 @@ func VerifyCrossChainMsgSig(native *native.NativeService, magic uint32, crossCha
 	if err != nil {
 		return fmt.Errorf("verifyCrossChainMsg, unable to get unsigned message of neo crossChainMsg")
 	}
+	// verify witness
 	if len(crossChainMsg.Witnesses) == 0 {
 		return fmt.Errorf("verifyCrossChainMsg, incorrect witness length")
 	}

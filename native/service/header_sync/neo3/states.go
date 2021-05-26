@@ -81,11 +81,19 @@ func (this *NeoBlockHeader) Serialization(sink *common.ZeroCopySink) error {
 	return nil
 }
 
-func (this *NeoBlockHeader) GetMessage() ([]byte, error) {
+func (this *NeoBlockHeader) GetMessage(magic uint32) ([]byte, error) {
+	buff2 := io.NewBufBinaryWriter()
+	this.SerializeUnsigned(buff2.BinaryWriter)
+	if buff2.Err != nil {
+		return nil, fmt.Errorf("neo3-gogogo Header SerializeUnsigned error: %s", buff2.Err)
+	}
+	hash := helper.UInt256FromBytes(crypto.Sha256(buff2.Bytes()))
+
 	buf := io.NewBufBinaryWriter()
-	this.SerializeUnsigned(buf.BinaryWriter)
+	buf.BinaryWriter.WriteLE(magic)
+	buf.BinaryWriter.WriteLE(hash)
 	if buf.Err != nil {
-		return nil, fmt.Errorf("neo3-gogogo Header SerializeUnsigned error: %s", buf.Err)
+		return nil, fmt.Errorf("NeoBlockHeader.GetMessage write hash error: %s", buf.Err)
 	}
 	return buf.Bytes(), nil
 }
@@ -141,7 +149,7 @@ func (this *NeoCrossChainMsg) GetMessage(magic uint32) ([]byte, error) {
 	buf.BinaryWriter.WriteLE(magic)
 	buf.BinaryWriter.WriteLE(hash)
 	if buf.Err != nil {
-		return nil, fmt.Errorf("write hash error: %s", buf.Err)
+		return nil, fmt.Errorf("NeoCrossChainMsg.GetMessage write hash error: %s", buf.Err)
 	}
 	return buf.Bytes(), nil
 }
