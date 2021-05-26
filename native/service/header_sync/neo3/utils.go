@@ -40,7 +40,7 @@ func verifyHeader(native *native.NativeService, chainID uint64, header *NeoBlock
 	if !neoConsensus.NextConsensus.Equals(header.Witness.GetScriptHash()) {
 		return fmt.Errorf("verifyHeader, invalid script hash in header error, expected: %s, got: %s", neoConsensus.NextConsensus.String(), header.Witness.GetScriptHash().String())
 	}
-
+	// todo
 	msg, err := header.GetMessage()
 	if err != nil {
 		return fmt.Errorf("verifyHeader, unable to get hash data of header")
@@ -88,6 +88,7 @@ func VerifyCrossChainMsgSig(native *native.NativeService, magic uint32, crossCha
 	if err != nil {
 		return fmt.Errorf("verifyCrossChainMsg, unable to get unsigned message of neo crossChainMsg")
 	}
+	// verify witness
 	if len(crossChainMsg.Witnesses) == 0 {
 		return fmt.Errorf("verifyCrossChainMsg, incorrect witness length")
 	}
