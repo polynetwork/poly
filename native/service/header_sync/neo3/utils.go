@@ -37,7 +37,7 @@ func verifyHeader(native *native.NativeService, chainID uint64, header *NeoBlock
 	if err != nil {
 		return fmt.Errorf("verifyHeader, get Consensus error: %s", err)
 	}
-	if neoConsensus.NextConsensus != header.Witness.GetScriptHash() {
+	if !neoConsensus.NextConsensus.Equals(header.Witness.GetScriptHash()) {
 		return fmt.Errorf("verifyHeader, invalid script hash in header error, expected: %s, got: %s", neoConsensus.NextConsensus.String(), header.Witness.GetScriptHash().String())
 	}
 
