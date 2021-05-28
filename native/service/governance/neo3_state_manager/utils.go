@@ -37,6 +37,9 @@ func SerializeStringArray(data []string) []byte {
 }
 
 func DeserializeStringArray(data []byte) ([]string, error) {
+	if len(data) == 0 {
+		return []string{}, nil
+	}
 	source := common.NewZeroCopySource(data)
 	n, eof := source.NextVarUint()
 	if eof {
