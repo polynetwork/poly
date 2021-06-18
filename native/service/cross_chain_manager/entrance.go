@@ -19,6 +19,7 @@ package cross_chain_manager
 import (
 	"encoding/hex"
 	"fmt"
+
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/fabric"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/fisco"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
@@ -31,6 +32,7 @@ import (
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/eth"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/neo"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/ont"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/quorum"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	"github.com/polynetwork/poly/native/service/utils"
 )
@@ -64,6 +66,8 @@ func GetChainHandler(router uint64) (scom.ChainHandler, error) {
 		return neo.NewNEOHandler(), nil
 	case utils.COSMOS_ROUTER:
 		return cosmos.NewCosmosHandler(), nil
+	case utils.QUORUM_ROUTER:
+		return quorum.NewQuorumHandler(), nil
 	case utils.FISCO_ROUTER:
 		return fisco.NewFiscoHandler(), nil
 	case utils.FABRIC_ROUTER:
