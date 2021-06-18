@@ -30,3 +30,5 @@ glide.lock
 docker/payload
 config.json
 peers.recent
+poly
+tools/

@@ -45,4 +45,5 @@ var (
 	COSMOS_ROUTER = uint64(5)
 	FISCO_ROUTER  = uint64(6)
 	FABRIC_ROUTER = uint64(7)
+	QUORUM_ROUTER = uint64(8)
 )
