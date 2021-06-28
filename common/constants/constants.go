@@ -43,3 +43,7 @@ const (
 // extra info change height
 const EXTRA_INFO_HEIGHT_MAINNET = 2917744
 const EXTRA_INFO_HEIGHT_TESTNET = 1664798
+
+// eth 1559 heigh
+const ETH1559_HEIGHT_MAINNET = 2917744 // TODO change to correct number
+const ETH1559_HEIGHT_TESTNET = 10499401

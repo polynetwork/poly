@@ -17,14 +17,13 @@ require (
 	github.com/itchyny/base58-go v0.1.0
 	github.com/joeqian10/neo-gogogo v1.1.0
 	github.com/joeqian10/neo3-gogogo v0.3.3
-	github.com/kardiachain/go-kaiclient v1.0.2-0.20210525090440-5f0648f4d185 // indirect
-	github.com/kardiachain/go-kardia v1.2.3-0.20210525082104-2913103edf92 // indirect
+	github.com/kardiachain/go-kaiclient v1.0.2-0.20210525090440-5f0648f4d185
+	github.com/kardiachain/go-kardia v1.2.3-0.20210525082104-2913103edf92
 	github.com/ontio/ontology v1.11.1-0.20200812075204-26cf1fa5dd47
 	github.com/ontio/ontology-crypto v1.0.9
 	github.com/ontio/ontology-eventbus v0.9.1
 	github.com/pborman/uuid v1.2.0
 	github.com/polynetwork/poly-io-test v0.0.0-20200819093740-8cf514b07750
-	github.com/prometheus/tsdb v0.10.0 // indirect
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca
 	github.com/tendermint/tendermint v0.33.7

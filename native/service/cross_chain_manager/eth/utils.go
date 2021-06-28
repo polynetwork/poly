@@ -25,7 +25,6 @@ import (
 	"math/big"
 
 	ecom "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/light"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -85,7 +84,7 @@ func verifyFromEthTx(native *native.NativeService, proof, extra []byte, fromChai
 	return txParam, nil
 }
 
-func VerifyMerkleProof(ethProof *ETHProof, blockData *types.Header, contractAddr []byte) ([]byte, error) {
+func VerifyMerkleProof(ethProof *ETHProof, blockData *eth.Header, contractAddr []byte) ([]byte, error) {
 	//1. prepare verify account
 	nodeList := new(light.NodeList)
 
