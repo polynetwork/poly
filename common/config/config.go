@@ -104,6 +104,11 @@ var EXTRA_INFO_HEIGHT = map[uint32]uint32{
 	NETWORK_ID_TEST_NET: constants.EXTRA_INFO_HEIGHT_TESTNET,
 }
 
+var ETH1559_HEIGHT = map[uint32]uint64{
+	NETWORK_ID_MAIN_NET: constants.ETH1559_HEIGHT_MAINNET,
+	NETWORK_ID_TEST_NET: constants.ETH1559_HEIGHT_TESTNET,
+}
+
 var EXTRA_INFO_HEIGHT_FORK_CHECK bool
 
 func GetNetworkMagic(id uint32) uint32 {
@@ -112,6 +117,14 @@ func GetNetworkMagic(id uint32) uint32 {
 		return nid
 	}
 	return id
+}
+
+func GetEth1559Height(id uint32) uint64 {
+	height := ETH1559_HEIGHT[id]
+	if height == 0 {
+		height = constants.ETH1559_HEIGHT_TESTNET
+	}
+	return height
 }
 
 func GetExtraInfoHeight(id uint32) uint32 {
