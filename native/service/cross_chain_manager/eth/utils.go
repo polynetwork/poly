@@ -25,6 +25,7 @@ import (
 	"math/big"
 
 	ecom "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/light"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -82,6 +83,11 @@ func verifyFromEthTx(native *native.NativeService, proof, extra []byte, fromChai
 		return nil, fmt.Errorf("VerifyFromEthProof, deserialize merkleValue error:%s", err)
 	}
 	return txParam, nil
+}
+
+// used by quorum
+func VerifyMerkleProofLegacy(ethProof *ETHProof, blockData *types.Header, contractAddr []byte) ([]byte, error) {
+	return VerifyMerkleProof(ethProof, eth.To1559(blockData), contractAddr)
 }
 
 func VerifyMerkleProof(ethProof *ETHProof, blockData *eth.Header, contractAddr []byte) ([]byte, error) {

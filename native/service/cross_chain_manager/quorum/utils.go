@@ -19,6 +19,7 @@ package quorum
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/ethereum/go-ethereum/core/types"
 	eth2 "github.com/polynetwork/poly/native/service/cross_chain_manager/eth"
 	cmanager "github.com/polynetwork/poly/native/service/governance/side_chain_manager"
@@ -32,7 +33,7 @@ func verifyFromQuorumTx(proof, extra []byte, hdr *types.Header, sideChain *cmana
 	if len(ethProof.StorageProofs) != 1 {
 		return fmt.Errorf("VerifyFromEthProof, incorrect proof format")
 	}
-	proofResult, err := eth2.VerifyMerkleProof(ethProof, hdr, sideChain.CCMCAddress)
+	proofResult, err := eth2.VerifyMerkleProofLegacy(ethProof, hdr, sideChain.CCMCAddress)
 	if err != nil {
 		return fmt.Errorf("VerifyFromEthProof, verifyMerkleProof error:%v", err)
 	}
