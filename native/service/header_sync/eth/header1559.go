@@ -31,8 +31,8 @@ import (
 	"github.com/ethereum/go-ethereum/common/math"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/polynetwork/poly/common/config"
+	"github.com/polynetwork/poly/native/service/header_sync/eth/rlp"
 	"golang.org/x/crypto/sha3"
 )
 
