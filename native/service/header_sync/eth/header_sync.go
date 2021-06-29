@@ -166,7 +166,12 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 		}
 
 		//verify difficulty
-		expected := difficultyCalculator(new(big.Int).SetUint64(header.Time), parentHeader)
+		var expected *big.Int
+		if isLondon(&header) {
+			expected = makeDifficultyCalculator(big.NewInt(9700000))(header.Time, parentHeader)
+		} else {
+			expected = difficultyCalculator(new(big.Int).SetUint64(header.Time), parentHeader)
+		}
 		if expected.Cmp(header.Difficulty) != 0 {
 			return fmt.Errorf("SyncBlockHeader, invalid difficulty: have %v, want %v, header: %s", header.Difficulty, expected, string(v))
 		}
