@@ -85,7 +85,12 @@ func verifyFromEthTx(native *native.NativeService, proof, extra []byte, fromChai
 	return txParam, nil
 }
 
-func VerifyMerkleProof(ethProof *ETHProof, blockData *types.Header, contractAddr []byte) ([]byte, error) {
+// used by quorum
+func VerifyMerkleProofLegacy(ethProof *ETHProof, blockData *types.Header, contractAddr []byte) ([]byte, error) {
+	return VerifyMerkleProof(ethProof, eth.To1559(blockData), contractAddr)
+}
+
+func VerifyMerkleProof(ethProof *ETHProof, blockData *eth.Header, contractAddr []byte) ([]byte, error) {
 	//1. prepare verify account
 	nodeList := new(light.NodeList)
 

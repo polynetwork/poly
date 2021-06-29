@@ -21,19 +21,19 @@ import (
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
+	"hash"
+	"math/big"
+	"time"
+
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/polynetwork/poly/common/log"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	"golang.org/x/crypto/sha3"
-	"hash"
-	"math/big"
-	"time"
 
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/consensus"
 	"github.com/ethereum/go-ethereum/core/types"
-	cty "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
@@ -104,7 +104,7 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 	}
 	caches := NewCaches(3, native)
 	for _, v := range headerParams.Headers {
-		var header cty.Header
+		var header Header
 		err := json.Unmarshal(v, &header)
 		if err != nil {
 			return fmt.Errorf("SyncBlockHeader, deserialize header err: %v", err)
@@ -156,15 +156,15 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 		if header.GasUsed > header.GasLimit {
 			return fmt.Errorf("SyncBlockHeader, invalid gasUsed: have %d, gasLimit %d, header: %s", header.GasUsed, header.GasLimit, string(v))
 		}
-		// GasLimit adjustment range 0.0976%（=1/1024 ）
-		diff := int64(parentHeader.GasLimit) - int64(header.GasLimit)
-		if diff < 0 {
-			diff *= -1
+		if isLondon(&header) {
+			err = VerifyEip1559Header(parentHeader, &header)
+		} else {
+			err = VerifyGaslimit(parentHeader.GasLimit, header.GasLimit)
 		}
-		limit := parentHeader.GasLimit / params.GasLimitBoundDivisor
-		if uint64(diff) >= limit || header.GasLimit < params.MinGasLimit {
-			return fmt.Errorf("SyncBlockHeader, invalid gas limit: have %d, want %d += %d, header: %s", header.GasLimit, parentHeader.GasLimit, limit, string(v))
+		if err != nil {
+			return fmt.Errorf("SyncBlockHeader, err:%v", err)
 		}
+
 		//verify difficulty
 		expected := difficultyCalculator(new(big.Int).SetUint64(header.Time), parentHeader)
 		if expected.Cmp(header.Difficulty) != 0 {
@@ -203,20 +203,20 @@ func (this *ETHHandler) SyncCrossChainMsg(native *native.NativeService) error {
 	return nil
 }
 
-func getGenesisHeader(input []byte) (cty.Header, error) {
+func getGenesisHeader(input []byte) (Header, error) {
 	params := new(scom.SyncGenesisHeaderParam)
 	if err := params.Deserialization(common.NewZeroCopySource(input)); err != nil {
-		return cty.Header{}, fmt.Errorf("getGenesisHeader, contract params deserialize error: %v", err)
+		return Header{}, fmt.Errorf("getGenesisHeader, contract params deserialize error: %v", err)
 	}
-	var header cty.Header
+	var header Header
 	err := json.Unmarshal(params.GenesisHeader, &header)
 	if err != nil {
-		return cty.Header{}, fmt.Errorf("getGenesisHeader, deserialize header err: %v", err)
+		return Header{}, fmt.Errorf("getGenesisHeader, deserialize header err: %v", err)
 	}
 	return header, nil
 }
 
-func difficultyCalculator(time *big.Int, parent *types.Header) *big.Int {
+func difficultyCalculator(time *big.Int, parent *Header) *big.Int {
 	// https://github.com/ethereum/EIPs/issues/100.
 	// algorithm:
 	// diff = (parent_diff +
@@ -265,7 +265,7 @@ func difficultyCalculator(time *big.Int, parent *types.Header) *big.Int {
 	return x
 }
 
-func (this *ETHHandler) verifyHeader(header *cty.Header, caches *Caches) error {
+func (this *ETHHandler) verifyHeader(header *Header, caches *Caches) error {
 	// try to verfify header
 	number := header.Number.Uint64()
 	size := datasetSize(number)
@@ -322,7 +322,7 @@ func (this *ETHHandler) verifyHeader(header *cty.Header, caches *Caches) error {
 	return nil
 }
 
-func HashHeader(header *types.Header) (hash ethcommon.Hash) {
+func HashHeader(header *Header) (hash ethcommon.Hash) {
 	hasher := sha3.NewLegacyKeccak256()
 	rlp.Encode(hasher, []interface{}{
 		header.ParentHash,

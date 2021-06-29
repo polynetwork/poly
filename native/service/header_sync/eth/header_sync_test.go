@@ -21,6 +21,9 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
+	"strings"
+	"testing"
+
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/account"
 	"github.com/polynetwork/poly/common"
@@ -34,8 +37,6 @@ import (
 	"github.com/polynetwork/poly/native/service/utils"
 	"github.com/polynetwork/poly/native/storage"
 	"github.com/stretchr/testify/assert"
-	"strings"
-	"testing"
 
 	ethcommon "github.com/ethereum/go-ethereum/common"
 )
@@ -91,7 +92,8 @@ func NewNative(args []byte, tx *types.Transaction, db *storage.CacheDB) *native.
 		store, _ := leveldbstore.NewMemLevelDBStore()
 		db = storage.NewCacheDB(overlaydb.NewOverlayDB(store))
 	}
-	return native.NewNativeService(db, tx, 0, 0, common.Uint256{0}, 0, args, false)
+	ret, _ := native.NewNativeService(db, tx, 0, 0, common.Uint256{0}, 0, args, false)
+	return ret
 }
 
 func getLatestHeight(native *native.NativeService) uint64 {
