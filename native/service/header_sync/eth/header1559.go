@@ -234,7 +234,15 @@ func (h *Header) UnmarshalJSON(input []byte) error {
 	return nil
 }
 
+var (
+	isTest           bool
+	testLondonHeight uint64
+)
+
 func isLondon(h *Header) bool {
+	if isTest {
+		return h.Number.Uint64() >= testLondonHeight
+	}
 	return h.BaseFee != nil || h.Number.Uint64() >= config.GetEth1559Height(config.DefConfig.P2PNode.NetworkId)
 }
 
