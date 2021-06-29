@@ -26,9 +26,9 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/polynetwork/poly/common/log"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
+	"github.com/polynetwork/poly/native/service/header_sync/eth/rlp"
 	"golang.org/x/crypto/sha3"
 
 	ethcommon "github.com/ethereum/go-ethereum/common"
@@ -166,7 +166,12 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 		}
 
 		//verify difficulty
-		expected := difficultyCalculator(new(big.Int).SetUint64(header.Time), parentHeader)
+		var expected *big.Int
+		if isLondon(&header) {
+			expected = makeDifficultyCalculator(big.NewInt(9700000))(header.Time, parentHeader)
+		} else {
+			expected = difficultyCalculator(new(big.Int).SetUint64(header.Time), parentHeader)
+		}
 		if expected.Cmp(header.Difficulty) != 0 {
 			return fmt.Errorf("SyncBlockHeader, invalid difficulty: have %v, want %v, header: %s", header.Difficulty, expected, string(v))
 		}
@@ -324,7 +329,7 @@ func (this *ETHHandler) verifyHeader(header *Header, caches *Caches) error {
 
 func HashHeader(header *Header) (hash ethcommon.Hash) {
 	hasher := sha3.NewLegacyKeccak256()
-	rlp.Encode(hasher, []interface{}{
+	enc := []interface{}{
 		header.ParentHash,
 		header.UncleHash,
 		header.Coinbase,
@@ -338,7 +343,11 @@ func HashHeader(header *Header) (hash ethcommon.Hash) {
 		header.GasUsed,
 		header.Time,
 		header.Extra,
-	})
+	}
+	if header.BaseFee != nil {
+		enc = append(enc, header.BaseFee)
+	}
+	rlp.Encode(hasher, enc)
 	hasher.Sum(hash[:0])
 	return hash
 }
