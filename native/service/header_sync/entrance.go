@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"github.com/polynetwork/poly/native/service/header_sync/neo"
 	"github.com/polynetwork/poly/native/service/header_sync/neo3"
+	"github.com/polynetwork/poly/native/service/header_sync/neo3legacy"
 
 	"github.com/polynetwork/poly/native/service/header_sync/heco"
 	"github.com/polynetwork/poly/native/service/header_sync/msc"
@@ -65,6 +66,8 @@ func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
 		return neo.NewNEOHandler(), nil
 	case utils.NEO3_ROUTER:
 		return neo3.NewNeo3Handler(), nil
+	case utils.NEO3_LEGACY_ROUTER:
+		return neo3legacy.NewNeo3Handler(), nil
 	case utils.COSMOS_ROUTER:
 		return cosmos.NewCosmosHandler(), nil
 	case utils.QUORUM_ROUTER:
