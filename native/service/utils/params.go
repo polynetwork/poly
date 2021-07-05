@@ -51,5 +51,6 @@ var (
 	MSC_ROUTER         = uint64(10)
 	NEO3_LEGACY_ROUTER = uint64(11)
 	OKEX_ROUTER        = uint64(12)
-	NEO3_ROUTER        = uint64(13)
+  KAI_ROUTER         = uint64(13)
+	NEO3_ROUTER        = uint64(14)
 )
