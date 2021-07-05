@@ -28,6 +28,7 @@ import (
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/cosmos"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/eth"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/heco"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/kai"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/msc"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/neo"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/neo3"
@@ -83,6 +84,8 @@ func GetChainHandler(router uint64) (scom.ChainHandler, error) {
 		return msc.NewHandler(), nil
 	case utils.OKEX_ROUTER:
 		return okex.NewHandler(), nil
+	case utils.KAI_ROUTER:
+		return kai.NewHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported router:%d", router)
 	}

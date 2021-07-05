@@ -21,8 +21,10 @@ import (
 	"fmt"
 	"github.com/polynetwork/poly/native/service/header_sync/neo"
 	"github.com/polynetwork/poly/native/service/header_sync/neo3"
+	"github.com/polynetwork/poly/native/service/header_sync/neo3legacy"
 
 	"github.com/polynetwork/poly/native/service/header_sync/heco"
+	"github.com/polynetwork/poly/native/service/header_sync/kai"
 	"github.com/polynetwork/poly/native/service/header_sync/msc"
 	"github.com/polynetwork/poly/native/service/header_sync/okex"
 
@@ -65,6 +67,8 @@ func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
 		return neo.NewNEOHandler(), nil
 	case utils.NEO3_ROUTER:
 		return neo3.NewNeo3Handler(), nil
+	case utils.NEO3_LEGACY_ROUTER:
+		return neo3legacy.NewNeo3Handler(), nil
 	case utils.COSMOS_ROUTER:
 		return cosmos.NewCosmosHandler(), nil
 	case utils.QUORUM_ROUTER:
@@ -79,6 +83,8 @@ func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
 		return msc.NewHandler(), nil
 	case utils.OKEX_ROUTER:
 		return okex.NewHandler(), nil
+	case utils.KAI_ROUTER:
+		return kai.NewHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported router:%d", router)
 	}
