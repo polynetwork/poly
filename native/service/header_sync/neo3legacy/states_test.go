@@ -15,18 +15,18 @@
  * along with The poly network .  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package neo3
+package neo3legacy
 
 import (
-	"github.com/joeqian10/neo3-gogogo/block"
-	"github.com/joeqian10/neo3-gogogo/crypto"
-	"github.com/joeqian10/neo3-gogogo/rpc/models"
+	"github.com/joeqian10/neo3-gogogo-legacy/block"
+	"github.com/joeqian10/neo3-gogogo-legacy/crypto"
+	"github.com/joeqian10/neo3-gogogo-legacy/rpc/models"
 	"log"
 	"testing"
 
-	"github.com/joeqian10/neo3-gogogo/helper"
-	"github.com/joeqian10/neo3-gogogo/mpt"
-	tx2 "github.com/joeqian10/neo3-gogogo/tx"
+	"github.com/joeqian10/neo3-gogogo-legacy/helper"
+	"github.com/joeqian10/neo3-gogogo-legacy/mpt"
+	tx2 "github.com/joeqian10/neo3-gogogo-legacy/tx"
 	"github.com/polynetwork/poly/common"
 	"github.com/stretchr/testify/assert"
 )
