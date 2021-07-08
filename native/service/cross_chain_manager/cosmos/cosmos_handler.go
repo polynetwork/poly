@@ -19,17 +19,15 @@ package cosmos
 import (
 	"bytes"
 	"fmt"
+
 	"github.com/cosmos/cosmos-sdk/codec"
+	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/store/rootmulti"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
 	"github.com/polynetwork/poly/native/service/header_sync/cosmos"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/crypto/merkle"
-	"github.com/tendermint/tendermint/crypto/multisig"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
+	tmcrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 type CosmosHandler struct{}
@@ -43,16 +41,9 @@ type CosmosProofValue struct {
 	Value []byte
 }
 
-func newCDC() *codec.Codec {
-	cdc := codec.New()
-	cdc.RegisterInterface((*crypto.PubKey)(nil), nil)
-	cdc.RegisterConcrete(ed25519.PubKeyEd25519{}, ed25519.PubKeyAminoName, nil)
-	cdc.RegisterConcrete(secp256k1.PubKeySecp256k1{}, secp256k1.PubKeyAminoName, nil)
-	cdc.RegisterConcrete(multisig.PubKeyMultisigThreshold{}, multisig.PubKeyMultisigThresholdAminoRoute, nil)
-
-	cdc.RegisterInterface((*crypto.PrivKey)(nil), nil)
-	cdc.RegisterConcrete(ed25519.PrivKeyEd25519{}, ed25519.PrivKeyAminoName, nil)
-	cdc.RegisterConcrete(secp256k1.PrivKeySecp256k1{}, secp256k1.PrivKeyAminoName, nil)
+func newCDC() *codec.LegacyAmino {
+	cdc := codec.NewLegacyAmino()
+	cryptocodec.RegisterCrypto(cdc)
 	return cdc
 }
 
@@ -99,7 +90,7 @@ func (this *CosmosHandler) MakeDepositProposal(service *native.NativeService) (*
 	if err = cdc.UnmarshalBinaryBare(params.Extra, &proofValue); err != nil {
 		return nil, fmt.Errorf("Cosmos MakeDepositProposal, unmarshal proof value err: %v", err)
 	}
-	var proof merkle.Proof
+	var proof tmcrypto.ProofOps
 	err = cdc.UnmarshalBinaryBare(params.Proof, &proof)
 	if err != nil {
 		return nil, fmt.Errorf("Cosmos MakeDepositProposal, unmarshal proof err: %v", err)

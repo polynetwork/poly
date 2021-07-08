@@ -28,7 +28,7 @@ import (
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	"github.com/polynetwork/poly/native/service/header_sync/okex"
-	"github.com/tendermint/tendermint/crypto/merkle"
+	tmcrypto "github.com/tendermint/tendermint/proto/tendermint/crypto"
 )
 
 type OKHandler struct{}
@@ -89,7 +89,7 @@ func (this *OKHandler) MakeDepositProposal(service *native.NativeService) (*scom
 	if err = cdc.UnmarshalBinaryBare(params.Extra, &proofValue); err != nil {
 		return nil, fmt.Errorf("okex MakeDepositProposal, unmarshal proof value err: %v", err)
 	}
-	var proof merkle.Proof
+	var proof tmcrypto.ProofOps
 	err = cdc.UnmarshalBinaryBare(params.Proof, &proof)
 	if err != nil {
 		return nil, fmt.Errorf("okex MakeDepositProposal, unmarshal proof err: %v", err)

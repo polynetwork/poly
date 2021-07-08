@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/config"
 	cstates "github.com/polynetwork/poly/core/states"
@@ -99,10 +100,10 @@ func VerifyCosmosHeader(myHeader *CosmosHeader, info *CosmosEpochSwitchInfo) err
 		if commitSig.Absent() {
 			continue // OK, some precommits can be missing.
 		}
-		_, val := valset.GetByIndex(idx)
+		_, val := valset.GetByIndex(int32(idx))
 		// Validate signature.
-		precommitSignBytes := myHeader.Commit.VoteSignBytes(info.ChainID, idx)
-		if !val.PubKey.VerifyBytes(precommitSignBytes, commitSig.Signature) {
+		precommitSignBytes := myHeader.Commit.VoteSignBytes(info.ChainID, int32(idx))
+		if !val.PubKey.VerifySignature(precommitSignBytes, commitSig.Signature) {
 			return fmt.Errorf("VerifyCosmosHeader, Invalid commit -- invalid signature: %v", commitSig)
 		}
 		// Good precommit!

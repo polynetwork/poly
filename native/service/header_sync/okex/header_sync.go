@@ -48,9 +48,8 @@ func NewHandler() *Handler {
 }
 
 // NewCDC ...
-func NewCDC() *codec.Codec {
-	cdc := codec.New()
-
+func NewCDC() *codec.LegacyAmino {
+	cdc := codec.NewLegacyAmino()
 	ethsecp256k1.RegisterCodec(cdc)
 	return cdc
 }
@@ -257,10 +256,10 @@ func VerifyCosmosHeader(myHeader *CosmosHeader, info *CosmosEpochSwitchInfo) err
 		if commitSig.Absent() {
 			continue // OK, some precommits can be missing.
 		}
-		_, val := valset.GetByIndex(idx)
+		_, val := valset.GetByIndex(int32(idx))
 		// Validate signature.
-		precommitSignBytes := myHeader.Commit.VoteSignBytes(info.ChainID, idx)
-		if !val.PubKey.VerifyBytes(precommitSignBytes, commitSig.Signature) {
+		precommitSignBytes := myHeader.Commit.VoteSignBytes(info.ChainID, int32(idx))
+		if !val.PubKey.VerifySignature(precommitSignBytes, commitSig.Signature) {
 			return fmt.Errorf("VerifyCosmosHeader, Invalid commit -- invalid signature: %v", commitSig)
 		}
 		// Good precommit!

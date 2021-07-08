@@ -18,11 +18,11 @@ package ethsecp256k1
 
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
-	cryptoamino "github.com/tendermint/tendermint/crypto/encoding/amino"
+	cryptoamino "github.com/cosmos/cosmos-sdk/crypto/ledger"
 )
 
 // CryptoCodec is the default amino codec used by ethermint
-var CryptoCodec = codec.New()
+var CryptoCodec = codec.NewLegacyAmino()
 
 func init() {
 	RegisterCodec(CryptoCodec)
@@ -30,7 +30,7 @@ func init() {
 
 // RegisterCodec registers all the necessary types with amino for the given
 // codec.
-func RegisterCodec(cdc *codec.Codec) {
+func RegisterCodec(cdc *codec.LegacyAmino) {
 	cryptoamino.RegisterAmino(cdc)
 	cdc.RegisterConcrete(PubKey{}, PubKeyName, nil)
 	cdc.RegisterConcrete(PrivKey{}, PrivKeyName, nil)

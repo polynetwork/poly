@@ -98,6 +98,10 @@ func (privkey PrivKey) ToECDSA() *ecdsa.PrivateKey {
 	return key
 }
 
+func (privkey PrivKey) Type() string {
+	return KeyType
+}
+
 // ----------------------------------------------------------------------------
 // secp256k1 Public Key
 
@@ -131,7 +135,7 @@ func (key PubKey) Bytes() []byte {
 // VerifyBytes verifies that the ECDSA public key created a given signature over
 // the provided message. It will calculate the Keccak256 hash of the message
 // prior to verification.
-func (key PubKey) VerifyBytes(msg []byte, sig []byte) bool {
+func (key PubKey) VerifySignature(msg []byte, sig []byte) bool {
 	if len(sig) == 65 {
 		// remove recovery ID if contained in the signature
 		sig = sig[:len(sig)-1]
@@ -148,4 +152,8 @@ func (key PubKey) Equals(other tmcrypto.PubKey) bool {
 	}
 
 	return false
+}
+
+func (key PubKey) Type() string {
+	return KeyType
 }
