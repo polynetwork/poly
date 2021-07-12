@@ -540,18 +540,49 @@ type CosmosProofValue struct {
 	Value []byte
 }
 
-func validateHeaderExtraField(native *native.NativeService, headerWOP *HeaderWithOptionalProof, ctx *Context) (err error) {
-	if headerWOP.Proof == nil {
-		return fmt.Errorf("Proof missing")
+func putSpan(native *native.NativeService, ctx *Context, span *Span) (err error) {
+	spanBytes, err := json.Marshal(span)
+	if err != nil {
+		err = fmt.Errorf("putSpan json.Marshal Span failed:%v", err)
+		return
 	}
-	var proof CosmosProof
-	if err = json.Unmarshal(headerWOP.Proof, &proof); err != nil {
-		return fmt.Errorf("validateHeaderExtraField, unmarshal CosmosProof err: %v", err)
+	native.GetCacheDB().Put(
+		utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.POLYGON_SPAN), utils.GetUint64Bytes(ctx.ChainID)),
+		cstates.GenRawStorageItem(spanBytes))
+	return
+}
+
+func getSpan(native *native.NativeService, ctx *Context) (span *Span, err error) {
+	spanBytes, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.POLYGON_SPAN), utils.GetUint64Bytes(ctx.ChainID)))
+	if err != nil {
+		err = fmt.Errorf("getSpan failed:%v", err)
+		return
 	}
 
-	span, err := VerifySpan(native, ctx.ExtraInfo.HeimdallChainID, &proof)
+	if spanBytes == nil {
+		err = fmt.Errorf("getSpan:no span")
+		return
+	}
+
+	spanBytes, err = cstates.GetValueFromRawStorageItem(spanBytes)
 	if err != nil {
-		return fmt.Errorf("VerifySpan err: %v", err)
+		err = fmt.Errorf("getSpan, GetValueFromRawStorageItem err:%v", err)
+		return
+	}
+
+	span = &Span{}
+	err = json.Unmarshal(spanBytes, span)
+	if err != nil {
+		err = fmt.Errorf("getSpan, json.Unmarshal err:%v", err)
+		return
+	}
+	return
+}
+
+func validateHeaderExtraFieldWithSpan(native *native.NativeService, headerWOP *HeaderWithOptionalProof, ctx *Context, span *Span) (err error) {
+	if span == nil {
+		err = fmt.Errorf("empty span")
+		return
 	}
 
 	height := headerWOP.Header.Number.Uint64()
@@ -573,6 +604,33 @@ func validateHeaderExtraField(native *native.NativeService, headerWOP *HeaderWit
 		return errors.New("invalid validators")
 	}
 	return nil
+}
+
+func validateHeaderExtraField(native *native.NativeService, headerWOP *HeaderWithOptionalProof, ctx *Context) (err error) {
+	if headerWOP.Proof == nil {
+		var span *Span
+		span, err = getSpan(native, ctx)
+		if err != nil {
+			return
+		}
+
+		return validateHeaderExtraFieldWithSpan(native, headerWOP, ctx, span)
+	}
+	var proof CosmosProof
+	if err = json.Unmarshal(headerWOP.Proof, &proof); err != nil {
+		return fmt.Errorf("validateHeaderExtraField, unmarshal CosmosProof err: %v", err)
+	}
+
+	span, err := VerifySpan(native, ctx.ExtraInfo.HeimdallChainID, &proof)
+	if err != nil {
+		return fmt.Errorf("VerifySpan err: %v", err)
+	}
+
+	err = validateHeaderExtraFieldWithSpan(native, headerWOP, ctx, span)
+	if err == nil {
+		err = putSpan(native, ctx, span)
+	}
+	return
 }
 
 func verifyCascadingFields(native *native.NativeService, header *types.Header, ctx *Context) (snap *Snapshot, err error) {
