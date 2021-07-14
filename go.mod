@@ -21,9 +21,11 @@ require (
 	github.com/ontio/ontology-crypto v1.0.9
 	github.com/ontio/ontology-eventbus v0.9.1
 	github.com/pborman/uuid v1.2.0
+	github.com/pkg/errors v0.9.1
 	github.com/polynetwork/poly-io-test v0.0.0-20200819093740-8cf514b07750
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/goleveldb v1.0.1-0.20190923125748-758128399b1d
+	github.com/tendermint/go-amino v0.15.1
 	github.com/tendermint/tendermint v0.33.7
 	github.com/urfave/cli v1.22.4
 	github.com/valyala/bytebufferpool v1.0.0

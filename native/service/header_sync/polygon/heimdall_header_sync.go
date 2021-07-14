@@ -22,13 +22,6 @@ import (
 
 	"bytes"
 
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/crypto/multisig"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
-	tbytes "github.com/tendermint/tendermint/libs/bytes"
-
-	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/rootmulti"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/config"
@@ -38,8 +31,9 @@ import (
 	"github.com/polynetwork/poly/native/event"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	hscommon "github.com/polynetwork/poly/native/service/header_sync/common"
+	polygonTypes "github.com/polynetwork/poly/native/service/header_sync/polygon/types"
+	polygonCmn "github.com/polynetwork/poly/native/service/header_sync/polygon/types/common"
 	"github.com/polynetwork/poly/native/service/utils"
-	"github.com/tendermint/tendermint/types"
 )
 
 type HeimdallHandler struct {
@@ -50,26 +44,10 @@ func NewHeimdallHandler() *HeimdallHandler {
 	return &HeimdallHandler{}
 }
 
-// NewCDC ...
-func NewCDC() *codec.Codec {
-	cdc := codec.New()
-
-	cdc.RegisterInterface((*crypto.PubKey)(nil), nil)
-	cdc.RegisterConcrete(ed25519.PubKeyEd25519{}, ed25519.PubKeyAminoName, nil)
-	cdc.RegisterConcrete(secp256k1.PubKeySecp256k1{}, secp256k1.PubKeyAminoName, nil)
-	cdc.RegisterConcrete(multisig.PubKeyMultisigThreshold{}, multisig.PubKeyMultisigThresholdAminoRoute, nil)
-
-	cdc.RegisterInterface((*crypto.PrivKey)(nil), nil)
-	cdc.RegisterConcrete(ed25519.PrivKeyEd25519{}, ed25519.PrivKeyAminoName, nil)
-	cdc.RegisterConcrete(secp256k1.PrivKeySecp256k1{}, secp256k1.PrivKeyAminoName, nil)
-
-	return cdc
-}
-
 type CosmosHeader struct {
-	Header  types.Header
-	Commit  *types.Commit
-	Valsets []*types.Validator
+	Header  polygonTypes.Header
+	Commit  *polygonTypes.Commit
+	Valsets []*polygonTypes.Validator
 }
 
 // SyncGenesisHeader ...
@@ -89,7 +67,7 @@ func (h *HeimdallHandler) SyncGenesisHeader(native *native.NativeService) (err e
 		return fmt.Errorf("HeimdallHandler SyncGenesisHeader, checkWitness error: %v", err)
 	}
 	// get genesis header from input parameters
-	cdc := NewCDC()
+	cdc := polygonTypes.NewCDC()
 	var header CosmosHeader
 	err = cdc.UnmarshalBinaryBare(param.GenesisHeader, &header)
 	if err != nil {
@@ -114,7 +92,7 @@ func (h *HeimdallHandler) SyncBlockHeader(native *native.NativeService) error {
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return fmt.Errorf("SyncBlockHeader, contract params deserialize error: %v", err)
 	}
-	cdc := NewCDC()
+	cdc := polygonTypes.NewCDC()
 	cnt := 0
 	info, err := GetEpochSwitchInfo(native, params.ChainID)
 	if err != nil {
@@ -200,11 +178,11 @@ type CosmosEpochSwitchInfo struct {
 
 	// Hash of the block at `Height`. Poly don't save the whole header.
 	// So we can identify the content of this block by `BlockHash`.
-	BlockHash tbytes.HexBytes
+	BlockHash polygonCmn.HexBytes
 
 	// The hash of new validators set which used to verify validators set
 	// committed with proof.
-	NextValidatorsHash tbytes.HexBytes
+	NextValidatorsHash polygonCmn.HexBytes
 
 	// The cosmos chain-id of this chain basing Cosmos-sdk.
 	ChainID string
@@ -267,13 +245,13 @@ func VerifySpan(native *native.NativeService, chainID uint64, proof *CosmosProof
 	}
 
 	span = &Span{}
-	err = NewCDC().UnmarshalBinaryBare(proof.Value.Value, span)
+	err = polygonTypes.NewCDC().UnmarshalBinaryBare(proof.Value.Value, span)
 	return
 }
 
 func VerifyCosmosHeader(myHeader *CosmosHeader, info *CosmosEpochSwitchInfo) error {
 	// now verify this header
-	valset := types.NewValidatorSet(myHeader.Valsets)
+	valset := polygonTypes.NewValidatorSet(myHeader.Valsets)
 	if !bytes.Equal(info.NextValidatorsHash, valset.Hash()) {
 		return fmt.Errorf("VerifyCosmosHeader, block validator is not right, next validator hash: %s, "+
 			"validator set hash: %s", info.NextValidatorsHash.String(), hex.EncodeToString(valset.Hash()))
@@ -282,9 +260,9 @@ func VerifyCosmosHeader(myHeader *CosmosHeader, info *CosmosEpochSwitchInfo) err
 		return fmt.Errorf("VerifyCosmosHeader, block validator is not right!, header validator hash: %s, "+
 			"validator set hash: %s", myHeader.Header.ValidatorsHash.String(), hex.EncodeToString(valset.Hash()))
 	}
-	if myHeader.Commit.GetHeight() != myHeader.Header.Height {
+	if myHeader.Commit.Height() != myHeader.Header.Height {
 		return fmt.Errorf("VerifyCosmosHeader, commit height is not right! commit height: %d, "+
-			"header height: %d", myHeader.Commit.GetHeight(), myHeader.Header.Height)
+			"header height: %d", myHeader.Commit.Height(), myHeader.Header.Height)
 	}
 	if !bytes.Equal(myHeader.Commit.BlockID.Hash, myHeader.Header.Hash()) {
 		return fmt.Errorf("VerifyCosmosHeader, commit hash is not right!, commit block hash: %s,"+
@@ -293,22 +271,26 @@ func VerifyCosmosHeader(myHeader *CosmosHeader, info *CosmosEpochSwitchInfo) err
 	if err := myHeader.Commit.ValidateBasic(); err != nil {
 		return fmt.Errorf("VerifyCosmosHeader, commit is not right! err: %s", err.Error())
 	}
-	if valset.Size() != len(myHeader.Commit.Signatures) {
+	if valset.Size() != myHeader.Commit.Size() {
 		return fmt.Errorf("VerifyCosmosHeader, the size of precommits is not right!")
 	}
 	talliedVotingPower := int64(0)
-	for idx, commitSig := range myHeader.Commit.Signatures {
-		if commitSig.Absent() {
-			continue // OK, some precommits can be missing.
-		}
+	for _, commitSig := range myHeader.Commit.Precommits {
+		idx := commitSig.ValidatorIndex
 		_, val := valset.GetByIndex(idx)
+		if val == nil {
+			return fmt.Errorf("VerifyCosmosHeader, validator %d doesn't exist!", idx)
+		}
+		if commitSig.Type != polygonTypes.PrecommitType {
+			return fmt.Errorf("VerifyCosmosHeader, commitSig.Type(%d) wrong", commitSig.Type)
+		}
 		// Validate signature.
 		precommitSignBytes := myHeader.Commit.VoteSignBytes(info.ChainID, idx)
 		if !val.PubKey.VerifyBytes(precommitSignBytes, commitSig.Signature) {
 			return fmt.Errorf("VerifyCosmosHeader, Invalid commit -- invalid signature: %v", commitSig)
 		}
 		// Good precommit!
-		if myHeader.Commit.BlockID.Equals(commitSig.BlockID(myHeader.Commit.BlockID)) {
+		if myHeader.Commit.BlockID.Equals(commitSig.BlockID) {
 			talliedVotingPower += val.VotingPower
 		}
 	}
