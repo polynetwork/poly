@@ -80,11 +80,11 @@ func NewNative(args []byte, tx *types.Transaction, db *storage.CacheDB) (service
 			return
 		}
 		extraInfo := ExtraInfo{
-			Sprint:           64,
-			Period:           2,
-			ProducerDelay:    6,
-			BackupMultiplier: 2,
-			HeimdallChainID:  heimdalChainID,
+			Sprint:              64,
+			Period:              2,
+			ProducerDelay:       6,
+			BackupMultiplier:    2,
+			HeimdallPolyChainID: heimdalChainID,
 		}
 		extraInfoBytes, _ := json.Marshal(extraInfo)
 		err = side_chain_manager.PutSideChain(service, &side_chain_manager.SideChain{

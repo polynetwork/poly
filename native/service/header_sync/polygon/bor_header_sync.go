@@ -181,11 +181,11 @@ func storeGenesis(native *native.NativeService, params *scom.SyncGenesisHeaderPa
 }
 
 type ExtraInfo struct {
-	Sprint           uint64
-	Period           uint64
-	ProducerDelay    uint64
-	BackupMultiplier uint64
-	HeimdallChainID  uint64
+	Sprint              uint64
+	Period              uint64
+	ProducerDelay       uint64
+	BackupMultiplier    uint64
+	HeimdallPolyChainID uint64
 }
 
 type Context struct {
@@ -624,7 +624,7 @@ func validateHeaderExtraField(native *native.NativeService, headerWOP *HeaderWit
 		return fmt.Errorf("validateHeaderExtraField, unmarshal CosmosProof err: %v", err)
 	}
 
-	span, err := VerifySpan(native, ctx.ExtraInfo.HeimdallChainID, &proof)
+	span, err := VerifySpan(native, ctx.ExtraInfo.HeimdallPolyChainID, &proof)
 	if err != nil {
 		return fmt.Errorf("VerifySpan err: %v", err)
 	}
