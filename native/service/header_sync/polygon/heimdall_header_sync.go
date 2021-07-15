@@ -216,8 +216,8 @@ func (info *CosmosEpochSwitchInfo) Deserialization(source *common.ZeroCopySource
 	return nil
 }
 
-func VerifySpan(native *native.NativeService, chainID uint64, proof *CosmosProof) (span *Span, err error) {
-	info, err := GetEpochSwitchInfo(native, chainID)
+func VerifySpan(native *native.NativeService, heimdallPolyChainID uint64, proof *CosmosProof) (span *Span, err error) {
+	info, err := GetEpochSwitchInfo(native, heimdallPolyChainID)
 	if err != nil {
 		err = fmt.Errorf("HeimdallHandler failed to get epoch switching height: %v", err)
 		return
@@ -244,8 +244,14 @@ func VerifySpan(native *native.NativeService, chainID uint64, proof *CosmosProof
 		return
 	}
 
-	span = &Span{}
-	err = polygonTypes.NewCDC().UnmarshalBinaryBare(proof.Value.Value, span)
+	heimdallSpan := &polygonTypes.HeimdallSpan{}
+	err = polygonTypes.NewCDC().UnmarshalBinaryBare(proof.Value.Value, heimdallSpan)
+	if err != nil {
+		err = fmt.Errorf("validateHeaderExtraField heimdallSpan UnmarshalBinaryBare error: %s", err)
+		return
+	}
+
+	span, err = SpanFromHeimdall(heimdallSpan)
 	return
 }
 
@@ -276,6 +282,9 @@ func VerifyCosmosHeader(myHeader *CosmosHeader, info *CosmosEpochSwitchInfo) err
 	}
 	talliedVotingPower := int64(0)
 	for _, commitSig := range myHeader.Commit.Precommits {
+		if commitSig == nil {
+			continue
+		}
 		idx := commitSig.ValidatorIndex
 		_, val := valset.GetByIndex(idx)
 		if val == nil {

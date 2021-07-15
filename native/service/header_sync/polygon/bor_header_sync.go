@@ -18,6 +18,7 @@ package polygon
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -26,6 +27,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/cosmos/cosmos-sdk/codec"
 	ecommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -37,6 +39,7 @@ import (
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	scom "github.com/polynetwork/poly/native/service/header_sync/common"
+	polygonTypes "github.com/polynetwork/poly/native/service/header_sync/polygon/types"
 	"github.com/polynetwork/poly/native/service/utils"
 	"github.com/tendermint/tendermint/crypto/merkle"
 	"golang.org/x/crypto/sha3"
@@ -102,9 +105,6 @@ func (h *BorHandler) SyncGenesisHeader(native *native.NativeService) (err error)
 	err = json.Unmarshal(side.ExtraInfo, &extraInfo)
 	if err != nil {
 		return fmt.Errorf("bor Handler SyncGenesisHeader, ExtraInfo Unmarshal error: %v", err)
-	}
-	if !isSprintStart(genesis.Header.Number.Uint64(), extraInfo.Sprint) {
-		return fmt.Errorf("bor Handler SyncGenesisHeader, block is not sprint start, sprint:%d", extraInfo.Sprint)
 	}
 
 	err = storeGenesis(native, params, &genesis)
@@ -191,6 +191,7 @@ type ExtraInfo struct {
 type Context struct {
 	ExtraInfo ExtraInfo
 	ChainID   uint64
+	Cdc       *codec.Codec
 }
 
 type HeaderWithDifficultySum struct {
@@ -221,7 +222,7 @@ func (h *BorHandler) SyncBlockHeader(native *native.NativeService) error {
 		return fmt.Errorf("bor Handler SyncBlockHeader, ExtraInfo Unmarshal error: %v", err)
 	}
 
-	ctx := &Context{ExtraInfo: extraInfo, ChainID: headerParams.ChainID}
+	ctx := &Context{ExtraInfo: extraInfo, ChainID: headerParams.ChainID, Cdc: polygonTypes.NewCDC()}
 
 	for _, v := range headerParams.Headers {
 		var headerWOP HeaderWithOptionalProof
@@ -541,9 +542,10 @@ type CosmosProofValue struct {
 }
 
 func putSpan(native *native.NativeService, ctx *Context, span *Span) (err error) {
-	spanBytes, err := json.Marshal(span)
+
+	spanBytes, err := ctx.Cdc.MarshalBinaryBare(span)
 	if err != nil {
-		err = fmt.Errorf("putSpan json.Marshal Span failed:%v", err)
+		err = fmt.Errorf("putSpan MarshalBinaryBare failed:%v", err)
 		return
 	}
 	native.GetCacheDB().Put(
@@ -571,9 +573,9 @@ func getSpan(native *native.NativeService, ctx *Context) (span *Span, err error)
 	}
 
 	span = &Span{}
-	err = json.Unmarshal(spanBytes, span)
+	err = ctx.Cdc.UnmarshalBinaryBare(spanBytes, span)
 	if err != nil {
-		err = fmt.Errorf("getSpan, json.Unmarshal err:%v", err)
+		err = fmt.Errorf("getSpan, UnmarshalBinaryBare err:%v", err)
 		return
 	}
 	return
@@ -601,7 +603,7 @@ func validateHeaderExtraFieldWithSpan(native *native.NativeService, headerWOP *H
 	}
 
 	if !bytes.Equal(extra, headerWOP.Header.Extra[extraVanity:len(headerWOP.Header.Extra)-extraSeal]) {
-		return errors.New("invalid validators")
+		return fmt.Errorf("invalid validators for sprint end, expect:%s got:%s", hex.EncodeToString(extra), hex.EncodeToString(headerWOP.Header.Extra[extraVanity:len(headerWOP.Header.Extra)-extraSeal]))
 	}
 	return nil
 }
@@ -616,8 +618,9 @@ func validateHeaderExtraField(native *native.NativeService, headerWOP *HeaderWit
 
 		return validateHeaderExtraFieldWithSpan(native, headerWOP, ctx, span)
 	}
+	cdc := polygonTypes.NewCDC()
 	var proof CosmosProof
-	if err = json.Unmarshal(headerWOP.Proof, &proof); err != nil {
+	if err = cdc.UnmarshalBinaryBare(headerWOP.Proof, &proof); err != nil {
 		return fmt.Errorf("validateHeaderExtraField, unmarshal CosmosProof err: %v", err)
 	}
 
