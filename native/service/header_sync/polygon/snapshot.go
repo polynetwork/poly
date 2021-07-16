@@ -71,3 +71,9 @@ func (s *Snapshot) Difficulty(signer common.Address) uint64 {
 
 	return uint64(totalValidators - (tempIndex - proposerIndex))
 }
+
+// only used in test
+func (s *Snapshot) equal(s2 *Snapshot) bool {
+
+	return s.ValidatorSet.String() == s2.ValidatorSet.String()
+}
