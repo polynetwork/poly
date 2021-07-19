@@ -19,6 +19,7 @@ package header_sync
 
 import (
 	"fmt"
+
 	"github.com/polynetwork/poly/native/service/header_sync/neo"
 	"github.com/polynetwork/poly/native/service/header_sync/neo3"
 	"github.com/polynetwork/poly/native/service/header_sync/neo3legacy"
@@ -27,6 +28,7 @@ import (
 	"github.com/polynetwork/poly/native/service/header_sync/kai"
 	"github.com/polynetwork/poly/native/service/header_sync/msc"
 	"github.com/polynetwork/poly/native/service/header_sync/okex"
+	"github.com/polynetwork/poly/native/service/header_sync/polygon"
 
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
@@ -85,6 +87,10 @@ func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
 		return okex.NewHandler(), nil
 	case utils.KAI_ROUTER:
 		return kai.NewHandler(), nil
+	case utils.POLYGON_HEIMDALL_ROUTER:
+		return polygon.NewHeimdallHandler(), nil
+	case utils.POLYGON_BOR_ROUTER:
+		return polygon.NewBorHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported router:%d", router)
 	}
