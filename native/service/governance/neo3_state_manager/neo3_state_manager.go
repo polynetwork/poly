@@ -64,7 +64,7 @@ func RegisterStateValidator(native *native.NativeService) ([]byte, error) {
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterStateValidator, params.Deserialization error: %v", err)
 	}
-	//check witness
+	// check witness
 	if err := utils.ValidateOwner(native, params.Address); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterStateValidator, checkWitness: %s, error: %v", params.Address.ToBase58(), err)
 	}
@@ -79,19 +79,17 @@ func ApproveRegisterStateValidator(native *native.NativeService) ([]byte, error)
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterStateValidator, contract params deserialize error: %v", err)
 	}
-
-	//check witness
+	// check witness
 	err := utils.ValidateOwner(native, params.Address)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterStateValidator, checkWitness error: %v", err)
 	}
-
+	// get sv list
 	svListParam, err := getStateValidatorApply(native, params.ID)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterStateValidator, getStateValidatorApply error: %v", err)
 	}
-
-	//check consensus signs
+	// check consensus signs
 	ok, err := node_manager.CheckConsensusSigns(native, APPROVE_REGISTER_STATE_VALIDATOR, utils.GetUint64Bytes(params.ID), params.Address)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRegisterStateValidator, CheckConsensusSigns error: %v", err)
@@ -99,7 +97,6 @@ func ApproveRegisterStateValidator(native *native.NativeService) ([]byte, error)
 	if !ok {
 		return utils.BYTE_FALSE, nil
 	}
-
 	// put all the state validators in storage
 	err = putStateValidators(native, svListParam.StateValidators)
 	if err != nil {
@@ -120,7 +117,7 @@ func RemoveStateValidator(native *native.NativeService) ([]byte, error) {
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RemoveStateValidator, contract params deserialize error: %v", err)
 	}
-	//check witness
+	// check witness
 	if err := utils.ValidateOwner(native, params.Address); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RemoveStateValidator, checkWitness: %s, error: %v", params.Address.ToBase58(), err)
 	}
@@ -136,19 +133,17 @@ func ApproveRemoveStateValidator(native *native.NativeService) ([]byte, error) {
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRemoveStateValidator, contract params deserialize error: %v", err)
 	}
-
-	//check witness
+	// check witness
 	err := utils.ValidateOwner(native, params.Address)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRemoveStateValidator, checkWitness error: %v", err)
 	}
-
+	// get sv list
 	svListParam, err := getStateValidatorRemove(native, params.ID)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRemoveStateValidator, getStateValidatorRemove error: %v", err)
 	}
-
-	//check consensus signs
+	// check consensus signs
 	ok, err := node_manager.CheckConsensusSigns(native, APPROVE_REMOVE_STATE_VALIDATOR, utils.GetUint64Bytes(params.ID), params.Address)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ApproveRemoveStateValidator, CheckConsensusSigns error: %v", err)
@@ -156,7 +151,6 @@ func ApproveRemoveStateValidator(native *native.NativeService) ([]byte, error) {
 	if !ok {
 		return utils.BYTE_FALSE, nil
 	}
-
 	// remove svs
 	err = removeStateValidators(native, svListParam.StateValidators)
 	if err != nil {
