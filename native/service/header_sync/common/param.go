@@ -43,6 +43,7 @@ const (
 	EPOCH_SWITCH                = "epochSwitch"
 	SYNC_HEADER_NAME            = "syncHeader"
 	SYNC_CROSSCHAIN_MSG         = "syncCrossChainMsg"
+	POLYGON_SPAN                = "polygonSpan"
 )
 
 type HeaderSyncHandler interface {
