@@ -38,4 +38,5 @@ func init() {
 	native.Contracts[utils.Neo3StateManagerContractAddress] = neo3_state_manager.RegisterStateValidatorManagerContract
 
 	config.EXTRA_INFO_HEIGHT_FORK_CHECK = true
+	config.POLYGON_SNAP_HEIGHT_FORCE_CHECK = true
 }

@@ -33,7 +33,9 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/common/log"
+	"github.com/polynetwork/poly/core/ledger"
 	cstates "github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
@@ -608,7 +610,13 @@ func validateHeaderExtraFieldWithSpan(native *native.NativeService, headerWOP *H
 	return nil
 }
 
+// only used for test
+var skipVerifySpan bool
+
 func validateHeaderExtraField(native *native.NativeService, headerWOP *HeaderWithOptionalProof, ctx *Context) (err error) {
+	if skipVerifySpan {
+		return
+	}
 	if headerWOP.Proof == nil {
 		var span *Span
 		span, err = getSpan(native, ctx)
@@ -715,9 +723,17 @@ func validatorContains(a []*Validator, x *Validator) (*Validator, bool) {
 	return nil, false
 }
 
+func shouldApplyFix() bool {
+	height := config.GetPolygonSnapHeight(config.DefConfig.P2PNode.NetworkId)
+	return !config.POLYGON_SNAP_HEIGHT_FORCE_CHECK || ledger.DefLedger.GetCurrentBlockHeight() >= height
+}
+
 func getSnapshot(native *native.NativeService, parent *HeaderWithDifficultySum, ctx *Context) (s *Snapshot, err error) {
 	if parent.HeaderWithOptionalSnap.Snapshot != nil {
 		s = parent.HeaderWithOptionalSnap.Snapshot
+		if shouldApplyFix() {
+			err = s.ValidatorSet.updateTotalVotingPower()
+		}
 		return
 	}
 
@@ -736,6 +752,9 @@ func getSnapshot(native *native.NativeService, parent *HeaderWithDifficultySum, 
 	}
 
 	s = snapHeader.HeaderWithOptionalSnap.Snapshot
+	if shouldApplyFix() {
+		err = s.ValidatorSet.updateTotalVotingPower()
+	}
 	return
 }
 
