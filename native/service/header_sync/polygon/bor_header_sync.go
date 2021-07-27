@@ -35,7 +35,6 @@ import (
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/common/log"
-	"github.com/polynetwork/poly/core/ledger"
 	cstates "github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
@@ -723,15 +722,15 @@ func validatorContains(a []*Validator, x *Validator) (*Validator, bool) {
 	return nil, false
 }
 
-func shouldApplyFix() bool {
-	height := config.GetPolygonSnapHeight(config.DefConfig.P2PNode.NetworkId)
-	return !config.POLYGON_SNAP_HEIGHT_FORCE_CHECK || ledger.DefLedger.GetCurrentBlockHeight() >= height
+func shouldApplyFix(currentChainID uint64) bool {
+	chainID := config.GetPolygonSnapChainID(config.DefConfig.P2PNode.NetworkId)
+	return uint32(currentChainID) != chainID
 }
 
 func getSnapshot(native *native.NativeService, parent *HeaderWithDifficultySum, ctx *Context) (s *Snapshot, err error) {
 	if parent.HeaderWithOptionalSnap.Snapshot != nil {
 		s = parent.HeaderWithOptionalSnap.Snapshot
-		if shouldApplyFix() {
+		if shouldApplyFix(ctx.ChainID) {
 			err = s.ValidatorSet.updateTotalVotingPower()
 		}
 		return
@@ -752,7 +751,7 @@ func getSnapshot(native *native.NativeService, parent *HeaderWithDifficultySum, 
 	}
 
 	s = snapHeader.HeaderWithOptionalSnap.Snapshot
-	if shouldApplyFix() {
+	if shouldApplyFix(ctx.ChainID) {
 		err = s.ValidatorSet.updateTotalVotingPower()
 	}
 	return

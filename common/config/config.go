@@ -109,13 +109,12 @@ var ETH1559_HEIGHT = map[uint32]uint64{
 	NETWORK_ID_TEST_NET: constants.ETH1559_HEIGHT_TESTNET,
 }
 
-var POLYGON_SNAP_HEIGHT = map[uint32]uint32{
-	NETWORK_ID_MAIN_NET: constants.POLYGON_SNAP_HEIGHT_MAINNET,
-	NETWORK_ID_TEST_NET: constants.POLYGON_SNAP_HEIGHT_TESTNET,
+var POLYGON_SNAP_CHAINID = map[uint32]uint32{
+	NETWORK_ID_MAIN_NET: constants.POLYGON_SNAP_CHAINID_MAINNET,
 }
 
 var (
-	EXTRA_INFO_HEIGHT_FORK_CHECK, POLYGON_SNAP_HEIGHT_FORCE_CHECK bool
+	EXTRA_INFO_HEIGHT_FORK_CHECK bool
 )
 
 func GetNetworkMagic(id uint32) uint32 {
@@ -126,11 +125,8 @@ func GetNetworkMagic(id uint32) uint32 {
 	return id
 }
 
-func GetPolygonSnapHeight(id uint32) uint32 {
-	height := POLYGON_SNAP_HEIGHT[id]
-	if height == 0 {
-		height = constants.POLYGON_SNAP_HEIGHT_TESTNET
-	}
+func GetPolygonSnapChainID(id uint32) uint32 {
+	height := POLYGON_SNAP_CHAINID[id]
 	return height
 }
 
