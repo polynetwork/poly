@@ -33,6 +33,7 @@ import (
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/common/log"
 	cstates "github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/native"
@@ -608,7 +609,13 @@ func validateHeaderExtraFieldWithSpan(native *native.NativeService, headerWOP *H
 	return nil
 }
 
+// only used for test
+var skipVerifySpan bool
+
 func validateHeaderExtraField(native *native.NativeService, headerWOP *HeaderWithOptionalProof, ctx *Context) (err error) {
+	if skipVerifySpan {
+		return
+	}
 	if headerWOP.Proof == nil {
 		var span *Span
 		span, err = getSpan(native, ctx)
@@ -715,9 +722,17 @@ func validatorContains(a []*Validator, x *Validator) (*Validator, bool) {
 	return nil, false
 }
 
+func shouldApplyFix(currentChainID uint64) bool {
+	chainID := config.GetPolygonSnapChainID(config.DefConfig.P2PNode.NetworkId)
+	return uint32(currentChainID) != chainID
+}
+
 func getSnapshot(native *native.NativeService, parent *HeaderWithDifficultySum, ctx *Context) (s *Snapshot, err error) {
 	if parent.HeaderWithOptionalSnap.Snapshot != nil {
 		s = parent.HeaderWithOptionalSnap.Snapshot
+		if shouldApplyFix(ctx.ChainID) {
+			err = s.ValidatorSet.updateTotalVotingPower()
+		}
 		return
 	}
 
@@ -736,6 +751,9 @@ func getSnapshot(native *native.NativeService, parent *HeaderWithDifficultySum, 
 	}
 
 	s = snapHeader.HeaderWithOptionalSnap.Snapshot
+	if shouldApplyFix(ctx.ChainID) {
+		err = s.ValidatorSet.updateTotalVotingPower()
+	}
 	return
 }
 
