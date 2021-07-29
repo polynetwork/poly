@@ -67,10 +67,10 @@ func verifyFromEthTx(native *native.NativeService, proof, extra []byte, fromChai
 	//determine where the k and v from
 	proofResult, err := VerifyMerkleProof(ethProof, blockData, sideChain.CCMCAddress)
 	if err != nil {
-		return nil, fmt.Errorf("VerifyFromEthProof, VerifyMerkleProof error:%v", err)
+		return nil, fmt.Errorf("VerifyFromEthProof, verifyMerkleProof error:%v", err)
 	}
 	if proofResult == nil {
-		return nil, fmt.Errorf("VerifyFromEthProof, VerifyMerkleProof failed!")
+		return nil, fmt.Errorf("VerifyFromEthProof, verifyMerkleProof failed!")
 	}
 
 	if !CheckProofResult(proofResult, extra) {
@@ -85,7 +85,12 @@ func verifyFromEthTx(native *native.NativeService, proof, extra []byte, fromChai
 	return txParam, nil
 }
 
-func VerifyMerkleProof(ethProof *ETHProof, blockData *types.Header, contractAddr []byte) ([]byte, error) {
+// used by quorum
+func VerifyMerkleProofLegacy(ethProof *ETHProof, blockData *types.Header, contractAddr []byte) ([]byte, error) {
+	return VerifyMerkleProof(ethProof, eth.To1559(blockData), contractAddr)
+}
+
+func VerifyMerkleProof(ethProof *ETHProof, blockData *eth.Header, contractAddr []byte) ([]byte, error) {
 	//1. prepare verify account
 	nodeList := new(light.NodeList)
 
@@ -97,26 +102,26 @@ func VerifyMerkleProof(ethProof *ETHProof, blockData *types.Header, contractAddr
 
 	addr := ecom.Hex2Bytes(scom.Replace0x(ethProof.Address))
 	if !bytes.Equal(addr, contractAddr) {
-		return nil, fmt.Errorf("VerifyMerkleProof, contract address is error, proof address: %s, side chain address: %s", ethProof.Address, hex.EncodeToString(contractAddr))
+		return nil, fmt.Errorf("verifyMerkleProof, contract address is error, proof address: %s, side chain address: %s", ethProof.Address, hex.EncodeToString(contractAddr))
 	}
 	acctKey := crypto.Keccak256(addr)
 
-	//2. verify account proof
+	// 2. verify account proof
 	acctVal, err := trie.VerifyProof(blockData.Root, acctKey, ns)
 	if err != nil {
-		return nil, fmt.Errorf("VerifyMerkleProof, verify account proof error:%s\n", err)
+		return nil, fmt.Errorf("verifyMerkleProof, verify account proof error:%s\n", err)
 	}
 
 	nounce := new(big.Int)
 	_, ok := nounce.SetString(scom.Replace0x(ethProof.Nonce), 16)
 	if !ok {
-		return nil, fmt.Errorf("VerifyMerkleProof, invalid format of nounce:%s\n", ethProof.Nonce)
+		return nil, fmt.Errorf("verifyMerkleProof, invalid format of nounce:%s\n", ethProof.Nonce)
 	}
 
 	balance := new(big.Int)
 	_, ok = balance.SetString(scom.Replace0x(ethProof.Balance), 16)
 	if !ok {
-		return nil, fmt.Errorf("VerifyMerkleProof, invalid format of balance:%s\n", ethProof.Balance)
+		return nil, fmt.Errorf("verifyMerkleProof, invalid format of balance:%s\n", ethProof.Balance)
 	}
 
 	storageHash := ecom.HexToHash(scom.Replace0x(ethProof.StorageHash))
@@ -135,13 +140,13 @@ func VerifyMerkleProof(ethProof *ETHProof, blockData *types.Header, contractAddr
 	}
 
 	if !bytes.Equal(acctrlp, acctVal) {
-		return nil, fmt.Errorf("VerifyMerkleProof, verify account proof failed, wanted:%v, get:%v", acctrlp, acctVal)
+		return nil, fmt.Errorf("verifyMerkleProof, verify account proof failed, wanted:%v, get:%v", acctrlp, acctVal)
 	}
 
 	//3.verify storage proof
 	nodeList = new(light.NodeList)
 	if len(ethProof.StorageProofs) != 1 {
-		return nil, fmt.Errorf("VerifyMerkleProof, invalid storage proof format")
+		return nil, fmt.Errorf("verifyMerkleProof, invalid storage proof format")
 	}
 
 	sp := ethProof.StorageProofs[0]
@@ -154,7 +159,7 @@ func VerifyMerkleProof(ethProof *ETHProof, blockData *types.Header, contractAddr
 	ns = nodeList.NodeSet()
 	val, err := trie.VerifyProof(storageHash, storageKey, ns)
 	if err != nil {
-		return nil, fmt.Errorf("VerifyMerkleProof, verify storage proof error:%s\n", err)
+		return nil, fmt.Errorf("verifyMerkleProof, verify storage proof error:%s\n", err)
 	}
 
 	return val, nil
@@ -164,7 +169,7 @@ func CheckProofResult(result, value []byte) bool {
 	var s_temp []byte
 	err := rlp.DecodeBytes(result, &s_temp)
 	if err != nil {
-		log.Errorf("CheckProofResult, rlp.DecodeBytes error:%s\n", err)
+		log.Errorf("checkProofResult, rlp.DecodeBytes error:%s\n", err)
 		return false
 	}
 	//
