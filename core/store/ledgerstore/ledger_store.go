@@ -20,20 +20,21 @@ package ledgerstore
 
 import (
 	"fmt"
-	"github.com/polynetwork/poly/core/payload"
-	"github.com/polynetwork/poly/core/states"
-	"github.com/polynetwork/poly/native"
 	"os"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/polynetwork/poly/core/payload"
+	"github.com/polynetwork/poly/core/states"
+	"github.com/polynetwork/poly/native"
+
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/common/log"
-	"github.com/polynetwork/poly/consensus/vbft/config"
+	vconfig "github.com/polynetwork/poly/consensus/vbft/config"
 	"github.com/polynetwork/poly/core/signature"
 	"github.com/polynetwork/poly/core/store"
 	scom "github.com/polynetwork/poly/core/store/common"
@@ -419,6 +420,13 @@ func (this *LedgerStoreImp) verifyHeader(header *types.Header, vbftPeerInfo map[
 
 	if prevHeader.Height+1 != header.Height {
 		return vbftPeerInfo, fmt.Errorf("block height is incorrect")
+	}
+	crossRoot, err := this.GetCrossStateRoot(prevHeader.Height)
+	if err != nil {
+		return vbftPeerInfo, fmt.Errorf("GetCrossStateRoot fail:%v", err)
+	}
+	if header.CrossStateRoot != crossRoot {
+		return vbftPeerInfo, fmt.Errorf("cross state root is incorrect")
 	}
 
 	if prevHeader.Timestamp >= header.Timestamp {
