@@ -110,11 +110,9 @@ func Test_Neo_MakeDepositProposal(t *testing.T) {
 		param.ChainID = 4
 		var err error
 		sink := common.NewZeroCopySink(nil)
-		genesisHeader.Serialization(sink)
+		err = genesisHeader.Serialization(sink)
 		param.GenesisHeader = sink.Bytes()
-		if err != nil {
-			t.Errorf("NeoBlockHeaderToBytes error:%v", err)
-		}
+		assert.Nil(t, err)
 
 		sink = common.NewZeroCopySink(nil)
 		param.Serialization(sink)
@@ -158,5 +156,4 @@ func Test_Neo_MakeDepositProposal(t *testing.T) {
 		_, err = neoHandler.MakeDepositProposal(native)
 		assert.Nil(t, err)
 	}
-
 }

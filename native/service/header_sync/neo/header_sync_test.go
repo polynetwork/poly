@@ -228,5 +228,4 @@ func TestSyncBlockHeader(t *testing.T) {
 		err := neoHandler.SyncBlockHeader(native)
 		assert.NoError(t, err)
 	}
-
 }

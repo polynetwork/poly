@@ -57,10 +57,10 @@ func (this *NEOHandler) MakeDepositProposal(service *native.NativeService) (*sco
 	}
 	// Ensure the tx has not been processed before, and mark the tx as processed
 	if err := scom.CheckDoneTx(service, value.CrossChainID, params.SourceChainID); err != nil {
-		return nil, fmt.Errorf("neo MakeDepositProposal, check done transaction error:%s", err)
+		return nil, fmt.Errorf("neo MakeDepositProposal, check done transaction error: %s", err)
 	}
 	if err = scom.PutDoneTx(service, value.CrossChainID, params.SourceChainID); err != nil {
-		return nil, fmt.Errorf("neo MakeDepositProposal, putDoneTx error:%s", err)
+		return nil, fmt.Errorf("neo MakeDepositProposal, putDoneTx error: %s", err)
 	}
 	return value, nil
 }
