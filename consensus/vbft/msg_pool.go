@@ -87,7 +87,7 @@ func (self *ConsensusRound) hasMsg(msg ConsensusMsg, msgHash common.Uint256) (bo
 }
 
 type MsgPool struct {
-	lock       sync.RWMutex
+	lock       sync.Mutex
 	server     *Server
 	historyLen uint32
 	rounds     map[uint32]*ConsensusRound // indexed by BlockNum
@@ -138,8 +138,8 @@ func (pool *MsgPool) DropMsg(msg ConsensusMsg) {
 }
 
 func (pool *MsgPool) HasMsg(msg ConsensusMsg, msgHash common.Uint256) bool {
-	pool.lock.RLock()
-	defer pool.lock.RUnlock()
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
 
 	if roundMsgs, present := pool.rounds[msg.GetBlockNum()]; !present {
 		return false
@@ -161,8 +161,8 @@ func (pool *MsgPool) Persist() error {
 }
 
 func (pool *MsgPool) GetProposalMsgs(blocknum uint32) []ConsensusMsg {
-	pool.lock.RLock()
-	defer pool.lock.RUnlock()
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
 
 	roundMsgs, ok := pool.rounds[blocknum]
 	if !ok {
@@ -176,8 +176,8 @@ func (pool *MsgPool) GetProposalMsgs(blocknum uint32) []ConsensusMsg {
 }
 
 func (pool *MsgPool) GetEndorsementsMsgs(blocknum uint32) []ConsensusMsg {
-	pool.lock.RLock()
-	defer pool.lock.RUnlock()
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
 
 	roundMsgs, ok := pool.rounds[blocknum]
 	if !ok {
@@ -191,8 +191,8 @@ func (pool *MsgPool) GetEndorsementsMsgs(blocknum uint32) []ConsensusMsg {
 }
 
 func (pool *MsgPool) GetCommitMsgs(blocknum uint32) []ConsensusMsg {
-	pool.lock.RLock()
-	defer pool.lock.RUnlock()
+	pool.lock.Lock()
+	defer pool.lock.Unlock()
 
 	roundMsgs, ok := pool.rounds[blocknum]
 	if !ok {
