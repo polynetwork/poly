@@ -30,16 +30,16 @@ import (
 func verifyFromNeoTx(proof []byte, crosschainMsg *neo.NeoCrossChainMsg, contractAddr []byte) (*scom.MakeTxParam, error) {
 	crossStateProofRoot, err := helper.UInt256FromString(crosschainMsg.StateRoot.StateRoot)
 	if err != nil {
-		return nil, fmt.Errorf("verifyFromNeoTx, decode cross state proof root from string error:%s", err)
+		return nil, fmt.Errorf("verifyFromNeoTx, decode cross state proof root from string error: %s", err)
 	}
 	value, err := VerifyNeoCrossChainProof(proof, crossStateProofRoot.Bytes(), contractAddr)
 	if err != nil {
-		return nil, fmt.Errorf("VerifyFromNeoTx, Verify Neo cross chain proof error:%v", err)
+		return nil, fmt.Errorf("VerifyFromNeoTx, Verify Neo cross chain proof error: %v", err)
 	}
 	source := common.NewZeroCopySource(value)
 	txParam := new(scom.MakeTxParam)
 	if err := txParam.Deserialization(source); err != nil {
-		return nil, fmt.Errorf("VerifyFromNeoTx, deserialize merkleValue error:%s", err)
+		return nil, fmt.Errorf("VerifyFromNeoTx, deserialize merkleValue error: %s", err)
 	}
 	return txParam, nil
 }
@@ -47,14 +47,14 @@ func verifyFromNeoTx(proof []byte, crosschainMsg *neo.NeoCrossChainMsg, contract
 func VerifyNeoCrossChainProof(proof []byte, stateRoot []byte, contractAddr []byte) ([]byte, error) {
 	scriptHash, key, proofs, err := mpt.ResolveProof(proof)
 	if err != nil {
-		return nil, fmt.Errorf("VerifyNeoCrossChainProof, joeqian10/neo-gogogo/mpt.ResolveProof error:%v", err)
+		return nil, fmt.Errorf("VerifyNeoCrossChainProof, neo-gogogo mpt.ResolveProof error: %v", err)
 	}
 	if !bytes.Equal(scriptHash.Bytes(), contractAddr) {
-		return nil, fmt.Errorf("VerifyNeoCrossChainProof, error:scriptHash is not CCMC contract address, expected:%s, but got %s", hex.EncodeToString(common.ToArrayReverse(contractAddr)), scriptHash.String())
+		return nil, fmt.Errorf("VerifyNeoCrossChainProof, error:scriptHash is not CCMC contract address, expected: %s, but got: %s", hex.EncodeToString(common.ToArrayReverse(contractAddr)), scriptHash.String())
 	}
 	value, err := mpt.VerifyProof(stateRoot, scriptHash, key, proofs)
 	if err != nil {
-		return nil, fmt.Errorf("VerifyNeoCrossChainProof, joeqian10/neo-gogogo/mpt.VerifyProof error:%v", err)
+		return nil, fmt.Errorf("VerifyNeoCrossChainProof, neo-gogogo mpt.VerifyProof error: %v", err)
 	}
 
 	return value, nil
