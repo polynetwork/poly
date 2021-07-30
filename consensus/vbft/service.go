@@ -466,7 +466,6 @@ func (self *Server) initialize() error {
 	go self.syncer.run()
 	go self.stateMgr.run()
 	go self.msgSendLoop()
-	go self.timerLoop()
 	go self.actionLoop()
 	go func() {
 		self.quitWg.Add(1)
@@ -1660,26 +1659,13 @@ func (self *Server) actionLoop() {
 				}
 			}
 
-		case <-self.quitC:
-			log.Infof("server %d actionLoop quit", self.Index)
-			return
-		}
-	}
-}
-
-func (self *Server) timerLoop() {
-	self.quitWg.Add(1)
-	defer self.quitWg.Done()
-
-	for {
-		select {
 		case evt := <-self.timer.C:
 			if err := self.processTimerEvent(evt); err != nil {
 				log.Errorf("failed to process timer evt: %d, err: %s", evt.evtType, err)
 			}
 
 		case <-self.quitC:
-			log.Infof("server %d timerLoop quit", self.Index)
+			log.Infof("server %d actionLoop quit", self.Index)
 			return
 		}
 	}
