@@ -99,6 +99,15 @@ var CHAIN_ID = map[uint32]uint64{
 	NETWORK_ID_TEST_NET: TESTNET_CHAIN_ID,
 }
 
+
+var ETH1559_HEIGHT = map[uint32]uint64{
+	NETWORK_ID_MAIN_NET: constants.ETH1559_HEIGHT_MAINNET,
+	NETWORK_ID_TEST_NET: constants.ETH1559_HEIGHT_TESTNET,
+}
+
+
+
+
 func GetNetworkMagic(id uint32) uint32 {
 	nid, ok := NETWORK_MAGIC[id]
 	if ok {
@@ -106,6 +115,15 @@ func GetNetworkMagic(id uint32) uint32 {
 	}
 	return id
 }
+
+func GetEth1559Height(id uint32) uint64 {
+	height := ETH1559_HEIGHT[id]
+	if height == 0 {
+		height = constants.ETH1559_HEIGHT_TESTNET
+	}
+	return height
+}
+
 
 func GetNetworkName(id uint32) string {
 	name, ok := NETWORK_NAME[id]
