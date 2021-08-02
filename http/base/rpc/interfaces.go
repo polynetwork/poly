@@ -98,6 +98,26 @@ func GetLatestBlockMsgsSnap(params []interface{}) map[string]interface{} {
 	return responseSuccess(result)
 }
 
+// get cross state root
+func GetCrossStateRoot(params []interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return responsePack(berr.INVALID_PARAMS, nil)
+	}
+	switch (params[0]).(type) {
+	// block height
+	case float64:
+		height := uint32(params[0].(float64))
+		result, err := bactor.GetCrossStateRoot(height)
+		if err != nil {
+			return responsePack(berr.UNKNOWN_BLOCK, err.Error())
+		}
+		return responseSuccess(result)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
+}
+
 //get block hash
 // A JSON example for getblockhash method as following:
 //   {"jsonrpc": "2.0", "method": "getblockhash", "params": [1], "id": 0}

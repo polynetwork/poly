@@ -39,6 +39,7 @@ func StartRPCServer() error {
 	rpc.HandleFunc("getblockcount", rpc.GetBlockCount)
 	rpc.HandleFunc("getblockhash", rpc.GetBlockHash)
 	rpc.HandleFunc("getlatestblockmsgssnap", rpc.GetLatestBlockMsgsSnap)
+	rpc.HandleFunc("getcrossstateroot", rpc.GetCrossStateRoot)
 	rpc.HandleFunc("getconnectioncount", rpc.GetConnectionCount)
 	//HandleFunc("getrawmempool", GetRawMemPool)
 
