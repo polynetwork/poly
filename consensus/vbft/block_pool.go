@@ -22,9 +22,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/polynetwork/poly/core/store/overlaydb"
 	"math"
 	"sync"
+
+	"github.com/polynetwork/poly/core/store/overlaydb"
 
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/common"
@@ -752,12 +753,6 @@ func (pool *BlockPool) onBlockSealed(blockNum uint32) {
 	for _, n := range toFreeCandidates {
 		delete(pool.candidateBlocks, n)
 	}
-}
-
-func (pool *BlockPool) getExecMerkleRoot(blkNum uint32) (common.Uint256, error) {
-	pool.lock.RLock()
-	defer pool.lock.RUnlock()
-	return pool.chainStore.getExecMerkleRoot(blkNum)
 }
 
 func (pool *BlockPool) getExecWriteSet(blkNum uint32) *overlaydb.MemDB {
