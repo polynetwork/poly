@@ -1,8 +1,8 @@
 package test
 
 /*
- * Copyright (C) 2018 The ontology Authors
- * This file is part of The ontology library.
+ * Copyright (C) 2021 The poly network Authors
+ * This file is part of The poly network library.
  *
  * The ontology is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
