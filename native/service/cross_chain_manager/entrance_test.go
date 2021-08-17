@@ -3,6 +3,7 @@ package cross_chain_manager
 import (
 	"encoding/hex"
 	"fmt"
+	"log"
 
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/account"
@@ -85,7 +86,22 @@ func TestTx(t *testing.T) {
 		native = NewNative(sink.Bytes(), &types.Transaction{ChainID: 0}, nil)
 		SetChain(native, "4b61a4c0ab51b53cfabf1339bfdb7dfd27be596a", 1)
 
+		PutWhiteAddress(native, []string{"0x250e76987d838a75310c34bf422ea9f1AC4Cc906"})
+
+		b, _ := hex.DecodeString("250e76987d838a75310c34bf422ea9f1ac4cc906")
+		toAddrHex := "0x" + hex.EncodeToString(b)
+		toAddr, white, err := CheckIfAddressWhite(native, toAddrHex)
+		fmt.Printf("to %v, white %s, addr: %s \n", toAddr, white, toAddrHex)
+		if err != nil {
+			//return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, check to address %s in white error: %v", toAddrHex, err)
+			log.Fatal("check white err: ", err)
+		}
+		if !toAddr {
+			//return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, check to address %s not in white: %v", toAddrHex, white)
+		}
+
 		d, err := ImportExTransfer(native)
+
 		if err != nil {
 			fmt.Printf("%v", err)
 		}

@@ -158,7 +158,6 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, check to address %s not in white: %v", toAddrHex, white)
 	}
 
-
 	//check if chainid exist
 	sideChain, err = side_chain_manager.GetSideChain(native, targetid)
 	if err != nil {

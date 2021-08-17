@@ -19,6 +19,7 @@ package cross_chain_manager
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	cstates "github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/native"
@@ -68,20 +69,23 @@ func CheckIfAddressWhite(native *native.NativeService, address string) (bool, []
 	contract := utils.CrossChainManagerContractAddress
 	store, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(WHITE_ADDRESS)))
 	if err != nil {
-		return true, nil, fmt.Errorf("CheckIfAddressWhite, get data error: %v", err)
+		return false, nil, fmt.Errorf("CheckIfAddressWhite, get data error: %v", err)
 	}
 	if store == nil {
-		return true, nil, fmt.Errorf("CheckIfAddressWhite, store is nil")
+		return false, nil, fmt.Errorf("CheckIfAddressWhite, store is nil")
 	}
 	value, err := cstates.GetValueFromRawStorageItem(store)
+	if err != nil {
+		return false, nil, fmt.Errorf("CheckIfAddressWhite, GetValueFromRawStorageItem err: %v", err)
+	}
 	var addJson []string
 	err = json.Unmarshal(value, &addJson)
 	if err != nil {
-		return true, nil, fmt.Errorf("CheckIfAddressWhite, Unmarshal err: %v", err)
+		return false, nil, fmt.Errorf("CheckIfAddressWhite, Unmarshal err: %v", err)
 	}
 	for _,v := range addJson {
-		if v == address {
-			return true, nil, nil
+		if strings.EqualFold(v, address) {
+			return true, addJson, nil
 		}
 	}
 	
