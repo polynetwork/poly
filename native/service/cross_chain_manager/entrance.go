@@ -48,6 +48,8 @@ const (
 	WHITE_CHAIN                = "WhiteChain"
 
 	BLACKED_CHAIN = "BlackedChain"
+
+	WHITE_ADDRESS = "WhiteAddress"
 )
 
 func RegisterCrossChainManagerContract(native *native.NativeService) {
@@ -56,6 +58,8 @@ func RegisterCrossChainManagerContract(native *native.NativeService) {
 
 	native.Register(BLACK_CHAIN, BlackChain)
 	native.Register(WHITE_CHAIN, WhiteChain)
+
+	native.Register(WHITE_ADDRESS, WhiteAddress)
 }
 
 func GetChainHandler(router uint64) (scom.ChainHandler, error) {
@@ -134,6 +138,26 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	if blacked {
 		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, target chain is blacked")
 	}
+
+	// check if address in white
+	fromAddrHex := "0x" + hex.EncodeToString(txParam.FromContractAddress)
+	fromAddr, white, err := CheckIfAddressWhite(native, fromAddrHex)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, check from address %s in white error: %v", fromAddrHex, err)
+	}
+	if !fromAddr {
+		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, check from address %s not in white: %v", fromAddrHex, white)
+	}
+
+	toAddrHex := "0x" + hex.EncodeToString(txParam.ToContractAddress)
+	toAddr, white, err := CheckIfAddressWhite(native, toAddrHex)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, check to address %s in white error: %v", toAddrHex, err)
+	}
+	if !toAddr {
+		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, check to address %s not in white: %v", toAddrHex, white)
+	}
+
 
 	//check if chainid exist
 	sideChain, err = side_chain_manager.GetSideChain(native, targetid)
@@ -237,5 +261,29 @@ func WhiteChain(native *native.NativeService) ([]byte, error) {
 	}
 
 	RemoveBlackChain(native, params.ChainID)
+	return utils.BYTE_TRUE, nil
+}
+
+func WhiteAddress(native *native.NativeService) ([]byte, error) {
+	params := new(WhiteAddressParam)
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("WhiteAddress, contract params deserialize error: %v", err)
+	}
+	// Get current epoch operator
+	operatorAddress, err := node_manager.GetCurConOperator(native)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("WhiteAddress, get current consensus operator address error: %v", err)
+	}
+	//check witness
+	err = utils.ValidateOwner(native, operatorAddress)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("WhiteAddress, checkWitness error: %v", err)
+	}
+
+	err = PutWhiteAddress(native, params.Addresses)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("WhiteAddress, put error: %v", err)
+	}
+
 	return utils.BYTE_TRUE, nil
 }

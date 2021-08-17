@@ -39,3 +39,23 @@ func (this *BlackChainParam) Deserialization(source *common.ZeroCopySource) erro
 	this.ChainID = chainID
 	return nil
 }
+
+type WhiteAddressParam struct {
+	Addresses []string
+}
+func (this *WhiteAddressParam) Serialization(sink *common.ZeroCopySink) {
+	for _,s := range this.Addresses {
+		sink.WriteString(s)
+	}
+}
+
+func (this *WhiteAddressParam) Deserialization(source *common.ZeroCopySource) error {
+	this.Addresses = make([]string,0)
+	for {
+		s, eof := source.NextString();
+		if eof {
+			return nil
+		}
+		this.Addresses = append(this.Addresses, s)
+	}
+}

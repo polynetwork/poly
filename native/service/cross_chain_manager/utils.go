@@ -17,7 +17,9 @@
 package cross_chain_manager
 
 import (
+	"encoding/json"
 	"fmt"
+
 	cstates "github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/service/utils"
@@ -47,4 +49,41 @@ func RemoveBlackChain(native *native.NativeService, chainID uint64) {
 	contract := utils.CrossChainManagerContractAddress
 	chainIDBytes := utils.GetUint64Bytes(chainID)
 	native.GetCacheDB().Delete(utils.ConcatKey(contract, []byte(BLACKED_CHAIN), chainIDBytes))
+}
+
+// lock proxy address white list
+func PutWhiteAddress(native *native.NativeService, addresses []string) error {
+	contract := utils.CrossChainManagerContractAddress
+	addressBytes, err := json.Marshal(addresses)
+	if err != nil {
+		return fmt.Errorf("PutWhiteAddress, addresses marshal error: %v", err)
+	}
+
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(WHITE_ADDRESS)),
+		cstates.GenRawStorageItem(addressBytes))
+	return nil
+}
+
+func CheckIfAddressWhite(native *native.NativeService, address string) (bool, []string, error) {
+	contract := utils.CrossChainManagerContractAddress
+	store, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(WHITE_ADDRESS)))
+	if err != nil {
+		return true, nil, fmt.Errorf("CheckIfAddressWhite, get data error: %v", err)
+	}
+	if store == nil {
+		return true, nil, fmt.Errorf("CheckIfAddressWhite, store is nil")
+	}
+	value, err := cstates.GetValueFromRawStorageItem(store)
+	var addJson []string
+	err = json.Unmarshal(value, &addJson)
+	if err != nil {
+		return true, nil, fmt.Errorf("CheckIfAddressWhite, Unmarshal err: %v", err)
+	}
+	for _,v := range addJson {
+		if v == address {
+			return true, nil, nil
+		}
+	}
+	
+	return false, addJson, nil
 }

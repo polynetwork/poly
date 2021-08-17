@@ -31,3 +31,6 @@ docker/payload
 config.json
 peers.recent
 .vscode
+
+tools/
+poly
