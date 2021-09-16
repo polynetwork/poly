@@ -109,6 +109,11 @@ var ETH1559_HEIGHT = map[uint32]uint64{
 	NETWORK_ID_TEST_NET: constants.ETH1559_HEIGHT_TESTNET,
 }
 
+var HECO120_HEIGHT = map[uint32]uint64{
+	NETWORK_ID_MAIN_NET: constants.HECO120_HEIGHT_MAINNET,
+	NETWORK_ID_TEST_NET: constants.HECO120_HEIGHT_TESTNET,
+}
+
 var POLYGON_SNAP_CHAINID = map[uint32]uint32{
 	NETWORK_ID_MAIN_NET: constants.POLYGON_SNAP_CHAINID_MAINNET,
 }
@@ -134,6 +139,14 @@ func GetEth1559Height(id uint32) uint64 {
 	height := ETH1559_HEIGHT[id]
 	if height == 0 {
 		height = constants.ETH1559_HEIGHT_TESTNET
+	}
+	return height
+}
+
+func GetHeco120Height(id uint32) uint64 {
+	height := HECO120_HEIGHT[id]
+	if height == 0 {
+		height = constants.HECO120_HEIGHT_TESTNET
 	}
 	return height
 }

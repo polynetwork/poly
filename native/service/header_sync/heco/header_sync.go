@@ -27,7 +27,6 @@ import (
 	ecommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
 	cstates "github.com/polynetwork/poly/core/states"
@@ -35,6 +34,8 @@ import (
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	scom "github.com/polynetwork/poly/native/service/header_sync/common"
+	"github.com/polynetwork/poly/native/service/header_sync/eth"
+	"github.com/polynetwork/poly/native/service/header_sync/eth/rlp"
 	"github.com/polynetwork/poly/native/service/utils"
 	"golang.org/x/crypto/sha3"
 )
@@ -53,7 +54,7 @@ func NewHecoHandler() *Handler {
 
 // GenesisHeader ...
 type GenesisHeader struct {
-	Header         types.Header
+	Header         eth.Header
 	PrevValidators []HeightAndValidators
 }
 
@@ -202,7 +203,7 @@ type HeaderWithChainID struct {
 
 // HeaderWithDifficultySum ...
 type HeaderWithDifficultySum struct {
-	Header          *types.Header `json:"header"`
+	Header          *eth.Header   `json:"header"`
 	DifficultySum   *big.Int      `json:"difficultySum"`
 	EpochParentHash *ecommon.Hash `json:"epochParentHash"`
 }
@@ -232,7 +233,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 	ctx := &Context{ExtraInfo: extraInfo, ChainID: headerParams.ChainID}
 
 	for _, v := range headerParams.Headers {
-		var header types.Header
+		var header eth.Header
 		err := json.Unmarshal(v, &header)
 		if err != nil {
 			return fmt.Errorf("heco Handler SyncBlockHeader, deserialize header err: %v", err)
@@ -321,7 +322,7 @@ func isHeaderExist(native *native.NativeService, headerHash ecommon.Hash, ctx *C
 	return headerStore != nil, nil
 }
 
-func verifySignature(native *native.NativeService, header *types.Header, ctx *Context) (signer ecommon.Address, err error) {
+func verifySignature(native *native.NativeService, header *eth.Header, ctx *Context) (signer ecommon.Address, err error) {
 	return verifyHeader(native, header, ctx)
 }
 
@@ -407,7 +408,7 @@ func putCanonicalHeight(native *native.NativeService, chainID uint64, height uin
 		cstates.GenRawStorageItem(utils.GetUint64Bytes(uint64(height))))
 }
 
-func addHeader(native *native.NativeService, header *types.Header, phv *HeightAndValidators, ctx *Context) (err error) {
+func addHeader(native *native.NativeService, header *eth.Header, phv *HeightAndValidators, ctx *Context) (err error) {
 
 	parentHeader, err := getHeader(native, header.ParentHash, ctx.ChainID)
 	if err != nil {
@@ -492,7 +493,7 @@ type HeightAndValidators struct {
 	Hash       *ecommon.Hash
 }
 
-func getPrevHeightAndValidators(native *native.NativeService, header *types.Header, ctx *Context) (phv, pphv *HeightAndValidators, lastSeenHeight int64, err error) {
+func getPrevHeightAndValidators(native *native.NativeService, header *eth.Header, ctx *Context) (phv, pphv *HeightAndValidators, lastSeenHeight int64, err error) {
 
 	genesis, err := getGenesis(native, ctx.ChainID)
 	if err != nil {
@@ -656,7 +657,7 @@ var (
 	GasLimitBoundDivisor uint64 = 256 // The bound divisor of the gas limit, used in update calculations.
 )
 
-func verifyHeader(native *native.NativeService, header *types.Header, ctx *Context) (signer ecommon.Address, err error) {
+func verifyHeader(native *native.NativeService, header *eth.Header, ctx *Context) (signer ecommon.Address, err error) {
 
 	// Don't waste time checking blocks from the future
 	if header.Time > uint64(time.Now().Unix()) {
@@ -700,11 +701,18 @@ func verifyHeader(native *native.NativeService, header *types.Header, ctx *Conte
 		return
 	}
 
+	// Verify that the gas limit is <= 2^63-1
+	cap := uint64(0x7fffffffffffffff)
+	if header.GasLimit > cap {
+		err = fmt.Errorf("invalid gasLimit: have %v, max %v", header.GasLimit, cap)
+		return
+	}
+
 	// All basic checks passed, verify cascading fields
 	return verifyCascadingFields(native, header, ctx)
 }
 
-func verifyCascadingFields(native *native.NativeService, header *types.Header, ctx *Context) (signer ecommon.Address, err error) {
+func verifyCascadingFields(native *native.NativeService, header *eth.Header, ctx *Context) (signer ecommon.Address, err error) {
 
 	number := header.Number.Uint64()
 
@@ -723,10 +731,30 @@ func verifyCascadingFields(native *native.NativeService, header *types.Header, c
 		return
 	}
 
+	// Verify that the gasUsed is <= gasLimit
+	if header.GasUsed > header.GasLimit {
+		err = fmt.Errorf("invalid gasUsed: have %d, gasLimit %d", header.GasUsed, header.GasLimit)
+		return
+	}
+
+	if !is120(header) {
+		// Verify BaseFee not present before EIP-1559 fork.
+		if header.BaseFee != nil {
+			err = fmt.Errorf("invalid baseFee before fork: have %d, want <nil>", header.BaseFee)
+			return
+		}
+		if err = VerifyGaslimit(parent.Header.GasLimit, header.GasLimit); err != nil {
+			return
+		}
+	} else if err = VerifyEip1559Header(parent.Header, header); err != nil {
+		// Verify the header's EIP-1559 attributes.
+		return
+	}
+
 	return verifySeal(native, header, ctx)
 }
 
-func verifySeal(native *native.NativeService, header *types.Header, ctx *Context) (signer ecommon.Address, err error) {
+func verifySeal(native *native.NativeService, header *eth.Header, ctx *Context) (signer ecommon.Address, err error) {
 	// Verifying the genesis block is not supported
 	number := header.Number.Uint64()
 	if number == 0 {
@@ -752,7 +780,7 @@ func verifySeal(native *native.NativeService, header *types.Header, ctx *Context
 }
 
 // ecrecover extracts the Ethereum account address from a signed header.
-func ecrecover(header *types.Header, chainID *big.Int) (ecommon.Address, error) {
+func ecrecover(header *eth.Header, chainID *big.Int) (ecommon.Address, error) {
 	// Retrieve the signature from the header extra-data
 	if len(header.Extra) < extraSeal {
 		return ecommon.Address{}, errors.New("extra-data 65 byte signature suffix missing")
@@ -771,14 +799,14 @@ func ecrecover(header *types.Header, chainID *big.Int) (ecommon.Address, error) 
 }
 
 // SealHash returns the hash of a block prior to it being sealed.
-func SealHash(header *types.Header, chainID *big.Int) (hash ecommon.Hash) {
+func SealHash(header *eth.Header, chainID *big.Int) (hash ecommon.Hash) {
 	hasher := sha3.NewLegacyKeccak256()
 	encodeSigHeader(hasher, header, chainID)
 	hasher.Sum(hash[:0])
 	return hash
 }
 
-func encodeSigHeader(w io.Writer, header *types.Header, chainID *big.Int) {
+func encodeSigHeader(w io.Writer, header *eth.Header, chainID *big.Int) {
 	err := rlp.Encode(w, []interface{}{
 		header.ParentHash,
 		header.UncleHash,
