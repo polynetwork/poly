@@ -24,10 +24,12 @@ import (
 )
 
 type VoteInfo struct {
+	Status   bool
 	VoteInfo map[string]bool
 }
 
 func (this *VoteInfo) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteBool(this.Status)
 	sink.WriteUint64(uint64(len(this.VoteInfo)))
 	var VoteInfoList []string
 	for k := range this.VoteInfo {
@@ -44,6 +46,10 @@ func (this *VoteInfo) Serialization(sink *common.ZeroCopySink) {
 }
 
 func (this *VoteInfo) Deserialization(source *common.ZeroCopySource) error {
+	status, eof := source.NextBool()
+	if eof {
+		return fmt.Errorf("VoteInfo deserialize status length error")
+	}
 	n, eof := source.NextUint64()
 	if eof {
 		return fmt.Errorf("VoteInfo deserialize VoteInfo length error")
@@ -60,6 +66,7 @@ func (this *VoteInfo) Deserialization(source *common.ZeroCopySource) error {
 		}
 		voteInfo[k] = v
 	}
+	this.Status = status
 	this.VoteInfo = voteInfo
 	return nil
 }

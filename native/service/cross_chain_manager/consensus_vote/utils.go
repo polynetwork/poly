@@ -69,6 +69,11 @@ func CheckVotes(native *native.NativeService, id []byte, address common.Address)
 		return false, fmt.Errorf("CheckVotes, getVoteInfo error: %v", err)
 	}
 
+	//check voteInfo status
+	if voteInfo.Status == true {
+		return false, nil
+	}
+
 	//check signs num
 	//get view
 	view, err := node_manager.GetView(native)
@@ -106,9 +111,12 @@ func CheckVotes(native *native.NativeService, id []byte, address common.Address)
 	}
 	if flag {
 		voteInfo.VoteInfo[address.ToBase58()] = true
+		num = num + 1
 		putVoteInfo(native, id, voteInfo)
 	}
 	if num >= (2*sum+2)/3 {
+		voteInfo.Status = true
+		putVoteInfo(native, id, voteInfo)
 		return true, nil
 	} else {
 		return false, nil

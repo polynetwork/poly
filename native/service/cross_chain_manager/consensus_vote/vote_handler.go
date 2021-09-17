@@ -20,11 +20,11 @@ package consensus_vote
 import (
 	"crypto/sha256"
 	"fmt"
-	"github.com/polynetwork/poly/native/service/utils"
 
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
+	"github.com/polynetwork/poly/native/service/utils"
 )
 
 type VoteHandler struct {
