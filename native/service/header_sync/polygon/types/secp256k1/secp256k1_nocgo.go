@@ -1,6 +1,3 @@
-//go:build !libsecp256k1
-// +build !libsecp256k1
-
 /*
  * Copyright (C) 2021 The poly network Authors
  * This file is part of The poly network library.
