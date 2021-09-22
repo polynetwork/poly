@@ -104,7 +104,8 @@ func CheckVotes(native *native.NativeService, id []byte, address common.Address)
 				num = num + 1
 			}
 			sum = sum + 1
-			if addr == address {
+			_, ok = voteInfo.VoteInfo[address.ToBase58()]
+			if addr == address && !ok {
 				flag = true
 			}
 		}

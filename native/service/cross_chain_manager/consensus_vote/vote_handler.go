@@ -35,7 +35,6 @@ func NewVoteHandler() *VoteHandler {
 }
 
 func (this *VoteHandler) MakeDepositProposal(service *native.NativeService) (*scom.MakeTxParam, error) {
-	input := service.GetInput()
 	params := new(scom.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
 		return nil, fmt.Errorf("vote MakeDepositProposal, contract params deserialize error: %v", err)
@@ -51,8 +50,15 @@ func (this *VoteHandler) MakeDepositProposal(service *native.NativeService) (*sc
 		return nil, fmt.Errorf("vote MakeDepositProposal, checkWitness error: %v", err)
 	}
 
-	//use sourcechainid, height, params as unique id
-	temp := sha256.Sum256(input)
+	//use sourcechainid, height, extra as unique id
+	unique := &scom.EntranceParam{
+		SourceChainID: params.SourceChainID,
+		Height:        params.Height,
+		Extra:         params.Extra,
+	}
+	sink := common.NewZeroCopySink(nil)
+	unique.Serialization(sink)
+	temp := sha256.Sum256(sink.Bytes())
 	id := temp[:]
 
 	ok, err := CheckVotes(service, id, address)
