@@ -31,7 +31,7 @@ type VoteInfo struct {
 func (this *VoteInfo) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteBool(this.Status)
 	sink.WriteUint64(uint64(len(this.VoteInfo)))
-	var VoteInfoList []string
+	VoteInfoList := make([]string, 0, len(this.VoteInfo))
 	for k := range this.VoteInfo {
 		VoteInfoList = append(VoteInfoList, k)
 	}

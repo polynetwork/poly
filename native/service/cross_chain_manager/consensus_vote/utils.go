@@ -70,7 +70,7 @@ func CheckVotes(native *native.NativeService, id []byte, address common.Address)
 	}
 
 	//check voteInfo status
-	if voteInfo.Status == true {
+	if voteInfo.Status {
 		return false, nil
 	}
 
