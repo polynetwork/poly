@@ -127,7 +127,7 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
-	if txParam == nil {
+	if txParam == nil && sideChain.Router == utils.VOTE_ROUTER {
 		return utils.BYTE_TRUE, nil
 	}
 
