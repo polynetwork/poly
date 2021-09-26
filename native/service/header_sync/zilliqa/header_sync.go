@@ -128,11 +128,16 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			}
 
 			// 2. check parent block
-			preHash := util.DecodeHex(dsBlock.PrevDSHash)
-			_, err = GetDsHeaderByHash(native, preHash[:], headerParams.ChainID)
-			if err != nil {
-				return fmt.Errorf("SyncDsBlockHeader, get the parent block failed. parent hash is: %s, Error:%s, header: %s", dsBlock.PrevDSHash, err, string(v))
+			// we pass 14551 here, because 14550's hash is incorrect
+			// 14550 is genesis ds block
+			if dsBlock.BlockHeader.BlockNum != 14551  {
+				preHash := util.DecodeHex(dsBlock.PrevDSHash)
+				_, err = GetDsHeaderByHash(native, preHash[:], headerParams.ChainID)
+				if err != nil {
+					return fmt.Errorf("SyncDsBlockHeader, get the parent block failed. parent hash is: %s, Error:%s, header: %s", dsBlock.PrevDSHash, err, string(v))
+				}
 			}
+
 
 			// 3. get old ds comm list
 			dsBlockNum := dsBlock.BlockHeader.BlockNum
