@@ -15,14 +15,11 @@
  * along with The poly network .  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package zilliqa
+package zilliqalegacy
 
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Zilliqa/gozilliqa-sdk/core"
-	"github.com/Zilliqa/gozilliqa-sdk/util"
-	verifier2 "github.com/Zilliqa/gozilliqa-sdk/verifier"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
 	"github.com/polynetwork/poly/native"
@@ -30,6 +27,9 @@ import (
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	scom "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/utils"
+	"github.com/renlulu/gozilliqa-sdklegacy/core"
+	"github.com/renlulu/gozilliqa-sdklegacy/util"
+	verifier2 "github.com/renlulu/gozilliqa-sdklegacy/verifier"
 )
 
 // Handler ...
@@ -128,16 +128,11 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			}
 
 			// 2. check parent block
-			// we pass 14551 here, because 14550's hash is incorrect
-			// 14550 is genesis ds block
-			if dsBlock.BlockHeader.BlockNum != 14551  {
-				preHash := util.DecodeHex(dsBlock.PrevDSHash)
-				_, err = GetDsHeaderByHash(native, preHash[:], headerParams.ChainID)
-				if err != nil {
-					return fmt.Errorf("SyncDsBlockHeader, get the parent block failed. parent hash is: %s, Error:%s, header: %s", dsBlock.PrevDSHash, err, string(v))
-				}
+			preHash := util.DecodeHex(dsBlock.PrevDSHash)
+			_, err = GetDsHeaderByHash(native, preHash[:], headerParams.ChainID)
+			if err != nil {
+				return fmt.Errorf("SyncDsBlockHeader, get the parent block failed. parent hash is: %s, Error:%s, header: %s", dsBlock.PrevDSHash, err, string(v))
 			}
-
 
 			// 3. get old ds comm list
 			dsBlockNum := dsBlock.BlockHeader.BlockNum
@@ -231,5 +226,5 @@ func getGenesisHeader(input []byte) (TxBlockAndDsComm, error) {
 
 // ExtraInfo ...
 type ExtraInfo struct {
-	NumOfGuardList int // for zilliqa
+	NumOfGuardList int // for zilliqalegacy
 }

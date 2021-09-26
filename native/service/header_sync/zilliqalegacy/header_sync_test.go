@@ -1,9 +1,7 @@
-package zilliqa
+package zilliqalegacy
 
 import (
 	"encoding/json"
-	"github.com/Zilliqa/gozilliqa-sdk/core"
-	"github.com/Zilliqa/gozilliqa-sdk/util"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/ontology/core/states"
 	"github.com/polynetwork/poly/account"
@@ -19,6 +17,8 @@ import (
 	scom "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/utils"
 	"github.com/polynetwork/poly/native/storage"
+	"github.com/renlulu/gozilliqa-sdklegacy/core"
+	"github.com/renlulu/gozilliqa-sdklegacy/util"
 	"gotest.tools/assert"
 	"math/big"
 	"strings"

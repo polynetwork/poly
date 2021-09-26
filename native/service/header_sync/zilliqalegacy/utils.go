@@ -15,18 +15,18 @@
  * along with The poly network .  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package zilliqa
+package zilliqalegacy
 
 import (
 	"container/list"
 	"encoding/json"
 	"fmt"
-	"github.com/Zilliqa/gozilliqa-sdk/core"
-	"github.com/Zilliqa/gozilliqa-sdk/util"
 	cstates "github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/native"
 	scom "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/utils"
+	"github.com/renlulu/gozilliqa-sdklegacy/core"
+	"github.com/renlulu/gozilliqa-sdklegacy/util"
 )
 
 const dsCommKey = "dsComm"

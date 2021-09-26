@@ -24,7 +24,7 @@ require (
 	github.com/pborman/uuid v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/polynetwork/poly-io-test v0.0.0-20200819093740-8cf514b07750
-	github.com/renlulu/gozilliqa-sdklegacy v0.0.0-20210926102505-c3fd6bb52053 // indirect
+	github.com/renlulu/gozilliqa-sdklegacy v0.0.0-20210926102505-c3fd6bb52053
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/goleveldb v1.0.1-0.20190923125748-758128399b1d
 	github.com/tendermint/go-amino v0.15.1

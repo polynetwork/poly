@@ -35,7 +35,7 @@ import (
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/ont"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/polygon"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/quorum"
-	"github.com/polynetwork/poly/native/service/cross_chain_manager/zilliqa"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/zilliqalegacy"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	"github.com/polynetwork/poly/native/service/utils"
@@ -79,7 +79,7 @@ func GetChainHandler(router uint64) (scom.ChainHandler, error) {
 	case utils.HECO_ROUTER:
 		return heco.NewHecoHandler(), nil
 	case utils.ZILLIQA_ROUTER:
-		return zilliqa.NewHandler(), nil
+		return zilliqalegacy.NewHandler(), nil
 	case utils.MSC_ROUTER:
 		return msc.NewHandler(), nil
 	case utils.OKEX_ROUTER:

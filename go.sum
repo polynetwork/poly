@@ -38,8 +38,6 @@ github.com/VividCortex/gohistogram v1.0.0/go.mod h1:Pf5mBqqDxYaXu3hDrrU+w6nw50o/
 github.com/Workiva/go-datastructures v1.0.50/go.mod h1:Z+F2Rca0qCsVYDS8z7bAGm8f3UkzuWYS/oBZz5a7VVA=
 github.com/Workiva/go-datastructures v1.0.52 h1:PLSK6pwn8mYdaoaCZEMsXBpBotr4HHn9abU0yMQt0NI=
 github.com/Workiva/go-datastructures v1.0.52/go.mod h1:Z+F2Rca0qCsVYDS8z7bAGm8f3UkzuWYS/oBZz5a7VVA=
-github.com/Zilliqa/gozilliqa-sdk v1.2.1-0.20210329093354-1b8e0a7a2e25 h1:DFzNXEpvnU8Wdo2+51OptoHY/WJQenrhJFslbQydRR0=
-github.com/Zilliqa/gozilliqa-sdk v1.2.1-0.20210329093354-1b8e0a7a2e25/go.mod h1:XLd05IRvH+nQt2lLvW6I2pfWBtRYE4i8Tpx45xBrlUE=
 github.com/Zilliqa/gozilliqa-sdk v1.2.1-0.20210926082820-a45f577f4d32 h1:DBZLPtpq6jM+xl5lqM8SxBd47gATsW61gwVH57ohk+0=
 github.com/Zilliqa/gozilliqa-sdk v1.2.1-0.20210926082820-a45f577f4d32/go.mod h1:XLd05IRvH+nQt2lLvW6I2pfWBtRYE4i8Tpx45xBrlUE=
 github.com/aead/siphash v1.0.1/go.mod h1:Nywa3cDsYNNK3gaciGTWPwHt0wlpNV15vwmswBAUSII=
@@ -275,7 +273,6 @@ github.com/gorilla/websocket v1.4.1-0.20190629185528-ae1634f6a989/go.mod h1:E7qH
 github.com/gorilla/websocket v1.4.1/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/gorilla/websocket v1.4.2 h1:+/TMaTYc4QFitKJxsQ7Yye35DkWvkdLcvGKqM+x0Ufc=
 github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
-github.com/gosuri/uilive v0.0.3 h1:kvo6aB3pez9Wbudij8srWo4iY6SFTTxTKOkb+uRCE8I=
 github.com/gosuri/uilive v0.0.3/go.mod h1:qkLSc0A5EXSP6B04TrN4oQoxqFI7A8XvoXSlJi8cwk8=
 github.com/gosuri/uilive v0.0.4 h1:hUEBpQDj8D8jXgtCdBu7sWsy5sbW/5GhuO8KBwJ2jyY=
 github.com/gosuri/uilive v0.0.4/go.mod h1:V/epo5LjjlDE5RJUcqx8dbw+zc93y5Ya3yg8tfZ74VI=
@@ -347,8 +344,6 @@ github.com/jmhodges/levigo v1.0.0/go.mod h1:Q6Qx+uH3RAqyK4rFQroq9RL7mdkABMcfhEI+
 github.com/joeqian10/neo-gogogo v0.0.0-20200611102831-c17de5e1f0f8/go.mod h1:1fVDp4U1ROZQBRIooecbGNHHJpfs3bG9528sqlZ096g=
 github.com/joeqian10/neo-gogogo v1.1.0 h1:TjqBwFQnNCtw6LK3QMog3yHa9sTZaZmqP+zqGOZ3SZ0=
 github.com/joeqian10/neo-gogogo v1.1.0/go.mod h1:1fVDp4U1ROZQBRIooecbGNHHJpfs3bG9528sqlZ096g=
-github.com/joeqian10/neo3-gogogo v0.3.4 h1:obvYV5QCJELY5RmA8+pBPj03SQrHaUId22vK654jzPQ=
-github.com/joeqian10/neo3-gogogo v0.3.4/go.mod h1:k0wb1hcBjjspDpyHtEXIpDUEXAw5SfX7coi5AkNtxoU=
 github.com/joeqian10/neo3-gogogo v0.3.8 h1:oOAcdUeIFjE4g+93Fsgf/fjYkZdOPt3PNefE223Mi/A=
 github.com/joeqian10/neo3-gogogo v0.3.8/go.mod h1:k0wb1hcBjjspDpyHtEXIpDUEXAw5SfX7coi5AkNtxoU=
 github.com/joeqian10/neo3-gogogo-legacy v1.0.0 h1:UeYhbn2q75WpuXlj6WrEzsygcWRws06LE2QB3/u/DCE=
@@ -451,7 +446,6 @@ github.com/onsi/gomega v1.7.0 h1:XPnZz8VVBHjVsy1vzJmRwIcSwiUO+JFfrv/xGiigmME=
 github.com/onsi/gomega v1.7.0/go.mod h1:ex+gbHU/CVuBBDIJjb2X0qEXbFg53c61hWP/1CpauHY=
 github.com/ontio/go-bip32 v0.0.0-20190520025953-d3cea6894a2b/go.mod h1:J0eVc7BEMmVVXbGv9PHoxjRSEwOwLr0qfzPk8Rdl5iw=
 github.com/ontio/ontology v1.10.0/go.mod h1:iok/imHJVQXi5/Yr88dcbrKBRHGdiota1ZC6qh6l6Rc=
-github.com/ontio/ontology v1.11.0 h1:0T/hxFDHQqRcs1+yEdgaym5YIvGx5yebOsHYdKVWgHI=
 github.com/ontio/ontology v1.11.0/go.mod h1:Qw74bfTBlIQka+jQX4nXuWvyOYGGt368/V7XFxaf4tY=
 github.com/ontio/ontology v1.11.1-0.20200812075204-26cf1fa5dd47 h1:9iZitqJe7SBGF8f6jOHjhotrB7ZLKKMM+g6S0tMbOL4=
 github.com/ontio/ontology v1.11.1-0.20200812075204-26cf1fa5dd47/go.mod h1:aoLM6pLdjBLx2CwC/AUtxdHvLZzAVqYH/xehh6/sRP4=
