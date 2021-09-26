@@ -532,6 +532,8 @@ github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqn
 github.com/rcrowley/go-metrics v0.0.0-20200313005456-10cdbea86bc0/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/renlulu/gozilliqa-sdklegacy v0.0.0-20210926102505-c3fd6bb52053 h1:4SPSsgX0Kb3U0grS3ubyy3CFMyXwD7g65RUKX3RXsk0=
 github.com/renlulu/gozilliqa-sdklegacy v0.0.0-20210926102505-c3fd6bb52053/go.mod h1:G1F6zA775maiVm3UlsGYB/YKwFu2jGZfVYzUqqi7dHg=
+github.com/renlulu/gozilliqa-sdklegacy v0.0.0-20210926114807-88a08c5ab803 h1:IRlxA6Ii+xclKSSzZ2iiTDLbh4y48boQS+0VDS8tXNo=
+github.com/renlulu/gozilliqa-sdklegacy v0.0.0-20210926114807-88a08c5ab803/go.mod h1:G1F6zA775maiVm3UlsGYB/YKwFu2jGZfVYzUqqi7dHg=
 github.com/rjeczalik/notify v0.9.1 h1:CLCKso/QK1snAlnhNR/CNvNiFU2saUtjV0bx3EwNeCE=
 github.com/rjeczalik/notify v0.9.1/go.mod h1:rKwnCoCGeuQnwBtTSPL9Dad03Vh2n40ePRrjvIXnJho=
 github.com/rogpeppe/fastuuid v0.0.0-20150106093220-6724a57986af/go.mod h1:XWv6SoW27p1b0cqNHllgS5HIMJraePCO15w5zCzIWYg=
