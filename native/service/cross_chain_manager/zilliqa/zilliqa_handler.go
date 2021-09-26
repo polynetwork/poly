@@ -24,7 +24,7 @@ import (
 	"github.com/Zilliqa/gozilliqa-sdk/mpt"
 	"github.com/Zilliqa/gozilliqa-sdk/util"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/polynetwork/poly/native/service/header_sync/zilliqalegacy"
+	"github.com/polynetwork/poly/native/service/header_sync/zilliqa"
 	"strings"
 
 	"github.com/polynetwork/poly/common"
@@ -46,12 +46,12 @@ func NewHandler() *Handler {
 func (h *Handler) MakeDepositProposal(service *native.NativeService) (*scom.MakeTxParam, error) {
 	params := new(scom.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
-		return nil, fmt.Errorf("zilliqalegacy MakeDepositProposal, contract params deserialize error: %s", err)
+		return nil, fmt.Errorf("zilliqa MakeDepositProposal, contract params deserialize error: %s", err)
 	}
 
 	sideChain, err := side_chain_manager.GetSideChain(service, params.SourceChainID)
 	if err != nil {
-		return nil, fmt.Errorf("zilliqalegacy MakeDepositProposal, side_chain_manager.GetSideChain error: %v", err)
+		return nil, fmt.Errorf("zilliqa MakeDepositProposal, side_chain_manager.GetSideChain error: %v", err)
 	}
 
 	value, err := verifyFromTx(service, params.Proof, params.Extra, params.SourceChainID, params.Height, sideChain)
@@ -74,7 +74,7 @@ type ZILProof struct {
 	StorageProofs []StorageProof `json:"storageProof"`
 }
 
-// key should be storage key (in zilliqalegacy)
+// key should be storage key (in zilliqa)
 type StorageProof struct {
 	Key   []byte   `json:"key"`
 	Value []byte   `json:"value"`
@@ -82,7 +82,7 @@ type StorageProof struct {
 }
 
 func verifyFromTx(native *native.NativeService, proof, extra []byte, fromChainID uint64, height uint32, sideChain *side_chain_manager.SideChain) (param *scom.MakeTxParam, err error) {
-	bestHeader, err := zilliqalegacy.GetCurrentTxHeader(native, fromChainID)
+	bestHeader, err := zilliqa.GetCurrentTxHeader(native, fromChainID)
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromZilProof, get current header fail, error:%s", err)
 	}
@@ -91,7 +91,7 @@ func verifyFromTx(native *native.NativeService, proof, extra []byte, fromChainID
 	if bestHeight < height {
 		return nil, fmt.Errorf("VerifyFromZilProof, transaction is not confirmed, current height: %d, input height: %d", bestHeight, height)
 	}
-	blockData, err := zilliqalegacy.GetTxHeaderByHeight(native, uint64(height), fromChainID)
+	blockData, err := zilliqa.GetTxHeaderByHeight(native, uint64(height), fromChainID)
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromZilProof, get header by height, height:%d, error:%s", height, err)
 	}

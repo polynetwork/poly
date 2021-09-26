@@ -226,5 +226,5 @@ func getGenesisHeader(input []byte) (TxBlockAndDsComm, error) {
 
 // ExtraInfo ...
 type ExtraInfo struct {
-	NumOfGuardList int // for zilliqalegacy
+	NumOfGuardList int // for zilliqa
 }
