@@ -20,11 +20,11 @@ package zilliqalegacy
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/Zilliqa/gozilliqa-sdk/core"
-	"github.com/Zilliqa/gozilliqa-sdk/mpt"
-	"github.com/Zilliqa/gozilliqa-sdk/util"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/polynetwork/poly/native/service/header_sync/zilliqalegacy"
+	"github.com/renlulu/gozilliqa-sdklegacy/core"
+	"github.com/renlulu/gozilliqa-sdklegacy/mpt"
+	"github.com/renlulu/gozilliqa-sdklegacy/util"
 	"strings"
 
 	"github.com/polynetwork/poly/common"
