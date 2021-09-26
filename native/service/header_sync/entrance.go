@@ -81,6 +81,7 @@ func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
 		return heco.NewHecoHandler(), nil
 	case utils.ZILLIQA_ROUTER:
 		return zilliqalegacy.NewHandler(), nil
+		//todo
 	case utils.ZILLIQA_ROUTER:
 		return zilliqa.NewHandler(), nil
 	case utils.MSC_ROUTER:
