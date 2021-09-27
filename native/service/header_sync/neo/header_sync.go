@@ -83,7 +83,7 @@ func (this *NEOHandler) SyncBlockHeader(native *native.NativeService) error {
 			return fmt.Errorf("SyncBlockHeader, NeoBlockHeaderFromBytes error: %v", err)
 		}
 		if !header.NextConsensus.Equals(neoConsensus.NextConsensus) && header.Index > neoConsensus.Height {
-			if err = verifyHeader(native, params.ChainID, header); err != nil {
+			if err = verifyHeader(params.ChainID, header); err != nil {
 				return fmt.Errorf("SyncBlockHeader, verifyHeader error: %v", err)
 			}
 			newNeoConsensus = &NeoConsensus{

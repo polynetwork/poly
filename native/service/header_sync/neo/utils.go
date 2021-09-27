@@ -30,13 +30,9 @@ import (
 
 //verify header of any height
 //find key height and get neoconsensus first, then check the witness
-func verifyHeader(native *native.NativeService, chainID uint64, header *NeoBlockHeader) error {
-	neoConsensus, err := getConsensusValByChainId(native, chainID)
-	if err != nil {
-		return fmt.Errorf("verifyHeader, get Consensus error:%s", err)
-	}
-	if neoConsensus.NextConsensus != header.Witness.GetScriptHash() {
-		return fmt.Errorf("verifyHeader, invalid script hash in header error, expected:%s, got:%s", neoConsensus.NextConsensus.String(), header.Witness.GetScriptHash().String())
+func verifyHeader(chainID uint64, header *NeoBlockHeader) error {
+	if header.NextConsensus != header.Witness.GetScriptHash() {
+		return fmt.Errorf("verifyHeader, invalid script hash in header error, expected:%s, got:%s", header.NextConsensus.String(), header.Witness.GetScriptHash().String())
 	}
 
 	msg, err := header.GetMessage()
