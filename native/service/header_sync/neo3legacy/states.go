@@ -53,7 +53,7 @@ func (this *NeoConsensus) Deserialization(source *common.ZeroCopySource) error {
 		return fmt.Errorf("NeoConsensus.Deserialization, NextConsensus NextVarBytes error")
 	}
 
-	this.NextConsensus = helper.UInt160FromBytes(nextConsensusBs);
+	this.NextConsensus = helper.UInt160FromBytes(nextConsensusBs)
 	return nil
 }
 
