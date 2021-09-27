@@ -20,6 +20,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/zilliqa"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/consensus_vote"
 
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
@@ -61,6 +62,8 @@ func RegisterCrossChainManagerContract(native *native.NativeService) {
 
 func GetChainHandler(router uint64) (scom.ChainHandler, error) {
 	switch router {
+	case utils.VOTE_ROUTER:
+		return consensus_vote.NewVoteHandler(), nil
 	case utils.BTC_ROUTER:
 		return btc.NewBTCHandler(), nil
 	case utils.ETH_ROUTER:
@@ -126,6 +129,9 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	txParam, err := handler.MakeDepositProposal(native)
 	if err != nil {
 		return utils.BYTE_FALSE, err
+	}
+	if txParam == nil && sideChain.Router == utils.VOTE_ROUTER {
+		return utils.BYTE_TRUE, nil
 	}
 
 	//2. make target chain tx

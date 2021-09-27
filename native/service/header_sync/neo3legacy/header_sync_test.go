@@ -75,7 +75,7 @@ func TestSyncGenesisHeader(t *testing.T) {
 	nextConsensus, _ := crypto.AddressToScriptHash("NVg7LjGcUSrgxgjX3zEgqaksfMaiS8Z6e1", helper.DefaultAddressVersion)
 	vs, _ := crypto.Base64Decode("EQ==")
 	witness := tx2.Witness{
-		InvocationScript: []byte{},
+		InvocationScript:   []byte{},
 		VerificationScript: vs,
 	}
 	genesisHeader := &NeoBlockHeader{Header: block.NewBlockHeader()}
@@ -116,7 +116,7 @@ func TestSyncBlockHeader(t *testing.T) {
 	is := []byte{}
 	vs, _ := crypto.Base64Decode("EQ==")
 	witness := tx2.Witness{
-		InvocationScript: is,
+		InvocationScript:   is,
 		VerificationScript: vs,
 	}
 	genesisHeader := &NeoBlockHeader{Header: block.NewBlockHeader()}
@@ -140,7 +140,7 @@ func TestSyncBlockHeader(t *testing.T) {
 	is, _ = crypto.Base64Decode("DEAF2siXzBq5rCzpaNvAxTPuebSgsn3XX7bKMvuf1RzQx1QqJDLBn/XxMyCzAOnsolp67X8eLZ8xuc4bovqSMf4lDECxfs8iV5/5yLs2hVW0tB1d1n7R1J3HEoJ8vNCJr/xrqt3bJRoOFL+eObBmjyo+ZSk5M6GrGH+UqpglZqr0upu8DEAX9lh0LKdbFTOg5GfZ8gP9UdGURu/xbM288BKFUBXhTH1p/2Y4hqZzJoXes+DdlRCwWzhToCMa468OnmTHkxDoDEB4etR6RX+B69qB5cv7QjihqnTowYWzU3Zhec+yz+2wgETkD0aD4uUafiSGpCK7xNB7aknDbFgMJXWSK7cM+c3NDEDw4z4PxskKUfJ1cmXKXxhtdzo/05iEi6c/n2rfZHPLd/YA0aBPQuWf3QSWizQYsmsYyA2uriKR2PA7asqYYB60")
 	vs, _ = crypto.Base64Decode("FQwhAwCbdUDhDyVi5f2PrJ6uwlFmpYsm5BI0j/WoaSe/rCKiDCEDAgXpzvrqWh38WAryDI1aokaLsBSPGl5GBfxiLIDmBLoMIQIUuvDO6jpm8X5+HoOeol/YvtbNgua7bmglAYkGX0T/AQwhAj6bMuqJuU0GbmSbEk/VDjlu6RNp6OKmrhsRwXDQIiVtDCEDQI3NQWOW9keDrFh+oeFZPFfZ/qiAyKahkg6SollHeAYMIQKng0vpsy4pgdFXy1u9OstCz9EepcOxAiTXpE6YxZEPGwwhAroscPWZbzV6QxmHBYWfriz+oT4RcpYoAHcrPViKnUq9F0F7zmyl")
 	witness = tx2.Witness{
-		InvocationScript: is,
+		InvocationScript:   is,
 		VerificationScript: vs,
 	}
 	neoHeader100 := &NeoBlockHeader{Header: block.NewBlockHeader()}
@@ -165,7 +165,7 @@ func TestSyncBlockHeader(t *testing.T) {
 	is, _ = crypto.Base64Decode("DEBGAk7oudrv67j+GFWetgK8W0Hu6m/15ceMxaq3sl6aKfjTQckmQfqzzGgzJ/rrdWMCyCsjYkgc14MdFvI/GnopDEBj9dRQtcKyu9K2qOyvqqkUoqK/9A32kdj0LbXpYPw+WDrz0DlvjNQF8dc2EuvmwTrYuQ5fUTrHvaPXKTmOPl3IDEAKtZf8AaZmY+onQejV8jqkEN5DGKKWthYGpVza5jueTvx4Hi1B5Uh7k6jW5Z6Y7mUVGuIUAGLbeULsp/MAQiyjDEBibp/Gy0rg5h1Hm3TokJi12KfYSMizn973+rkMDjKiWW1ySq6Sif3BEqlHi1prbuFPYSQf7xiJgs3+P0aFXfPzDEBdqKNocAkjWPBbxrHCHq0DRJoXBgmrXA9BSmytymp/pdU4xt2Y/Gxb/GBBXOAorOumjZ46DxWwnqfVpJ9adHMj")
 	vs, _ = crypto.Base64Decode("FQwhAwCbdUDhDyVi5f2PrJ6uwlFmpYsm5BI0j/WoaSe/rCKiDCEDAgXpzvrqWh38WAryDI1aokaLsBSPGl5GBfxiLIDmBLoMIQIUuvDO6jpm8X5+HoOeol/YvtbNgua7bmglAYkGX0T/AQwhAj6bMuqJuU0GbmSbEk/VDjlu6RNp6OKmrhsRwXDQIiVtDCEDQI3NQWOW9keDrFh+oeFZPFfZ/qiAyKahkg6SollHeAYMIQKng0vpsy4pgdFXy1u9OstCz9EepcOxAiTXpE6YxZEPGwwhAroscPWZbzV6QxmHBYWfriz+oT4RcpYoAHcrPViKnUq9F0F7zmyl")
 	witness = tx2.Witness{
-		InvocationScript: is,
+		InvocationScript:   is,
 		VerificationScript: vs,
 	}
 	neoHeader200 := &NeoBlockHeader{Header: block.NewBlockHeader()}
