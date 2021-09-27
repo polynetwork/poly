@@ -79,8 +79,7 @@ func GetChainHandler(router uint64) (scom.ChainHandler, error) {
 		return bsc.NewHandler(), nil
 	case utils.HECO_ROUTER:
 		return heco.NewHecoHandler(), nil
-		//todo
-	case utils.ZILLIQA_ROUTER:
+	case utils.ZILLIQA_LEGACY_ROUTER:
 		return zilliqalegacy.NewHandler(), nil
 	case utils.ZILLIQA_ROUTER:
 		return zilliqa.NewHandler(), nil
