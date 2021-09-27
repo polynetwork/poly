@@ -19,6 +19,7 @@ package cross_chain_manager
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/zilliqa"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/consensus_vote"
 
 	"github.com/polynetwork/poly/common"
@@ -36,7 +37,7 @@ import (
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/ont"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/polygon"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/quorum"
-	"github.com/polynetwork/poly/native/service/cross_chain_manager/zilliqa"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/zilliqalegacy"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	"github.com/polynetwork/poly/native/service/utils"
@@ -81,6 +82,8 @@ func GetChainHandler(router uint64) (scom.ChainHandler, error) {
 		return bsc.NewHandler(), nil
 	case utils.HECO_ROUTER:
 		return heco.NewHecoHandler(), nil
+	case utils.ZILLIQA_LEGACY_ROUTER:
+		return zilliqalegacy.NewHandler(), nil
 	case utils.ZILLIQA_ROUTER:
 		return zilliqa.NewHandler(), nil
 	case utils.MSC_ROUTER:

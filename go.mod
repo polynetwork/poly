@@ -3,7 +3,7 @@ module github.com/polynetwork/poly
 go 1.14
 
 require (
-	github.com/Zilliqa/gozilliqa-sdk v1.2.1-0.20210329093354-1b8e0a7a2e25
+	github.com/Zilliqa/gozilliqa-sdk v1.2.1-0.20210927032600-4c733f2cb879
 	github.com/btcsuite/btcd v0.20.1-beta
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/cosmos/cosmos-sdk v0.39.1
@@ -24,6 +24,7 @@ require (
 	github.com/pborman/uuid v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/polynetwork/poly-io-test v0.0.0-20200819093740-8cf514b07750
+	github.com/renlulu/gozilliqa-sdklegacy v0.0.0-20210926114807-88a08c5ab803
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/goleveldb v1.0.1-0.20190923125748-758128399b1d
 	github.com/tendermint/go-amino v0.15.1
