@@ -56,6 +56,7 @@ var (
 	acct17    *account.Account   = account.NewAccount("")
 	acctList1 []*account.Account = []*account.Account{acct1, acct2, acct3, acct4, acct5, acct6, acct7}
 	acctList2 []*account.Account = []*account.Account{acct11, acct12, acct13, acct14, acct15, acct16, acct17}
+	acctList3 []*account.Account = []*account.Account{acct1, acct2, acct3, acct4, acct5}
 )
 
 func Init(db *storage.CacheDB) {
@@ -165,6 +166,21 @@ func TestNormalConsensusVote(t *testing.T) {
 		assert.Equal(t, (*scom.MakeTxParam)(nil), v, "makeTxParam not nil error")
 		assert.NilError(t, err, "test error")
 
+		//redundant sign
+		param.RelayerAddress = acctList1[3].Address[:]
+		param.Extra = makeTxParamSink.Bytes()
+		sink = common.NewZeroCopySink(nil)
+		param.Serialization(sink)
+
+		tx = &types.Transaction{
+			ChainID:    0,
+			SignedAddr: []common.Address{acctList1[3].Address},
+		}
+		ns = NewNative(sink.Bytes(), tx, db)
+		v, err = voteHandler.MakeDepositProposal(ns)
+		assert.Equal(t, (*scom.MakeTxParam)(nil), v, "makeTxParam not nil error")
+		assert.NilError(t, err, "test error")
+
 		//quorum sign
 		param.RelayerAddress = acctList1[4].Address[:]
 		param.Extra = makeTxParamSink.Bytes()
@@ -197,6 +213,7 @@ func TestNormalConsensusVote(t *testing.T) {
 	}
 }
 
+//consensus peer 1-7,vote 1-4, change to 8-14, vote 5, error, vote 8-12, success
 func TestNodeChangeConsensusVote(t *testing.T) {
 	store, _ := leveldbstore.NewMemLevelDBStore()
 	db := storage.NewCacheDB(overlaydb.NewOverlayDB(store))
@@ -268,7 +285,7 @@ func TestNodeChangeConsensusVote(t *testing.T) {
 		ns := NewNative(sink.Bytes(), tx, db)
 		v, err := voteHandler.MakeDepositProposal(ns)
 		assert.Equal(t, (*scom.MakeTxParam)(nil), v, "makeTxParam not nil error")
-		assert.NilError(t, err, "test error")
+		assert.Error(t, err, "vote MakeDepositProposal, CheckVotes error: CheckVotes, signer is not consensus peer")
 
 		for i := 0; i <= 3; i++ {
 			param.RelayerAddress = acctList2[i].Address[:]
@@ -309,6 +326,214 @@ func TestNodeChangeConsensusVote(t *testing.T) {
 		tx = &types.Transaction{
 			ChainID:    0,
 			SignedAddr: []common.Address{acctList2[5].Address},
+		}
+		ns = NewNative(sink.Bytes(), tx, db)
+		v, err = voteHandler.MakeDepositProposal(ns)
+		assert.Equal(t, (*scom.MakeTxParam)(nil), v, "makeTxParam not nil error")
+		assert.NilError(t, err, "test error")
+	}
+}
+
+func TestSameCrossChainIDConsensusVote(t *testing.T) {
+	store, _ := leveldbstore.NewMemLevelDBStore()
+	db := storage.NewCacheDB(overlaydb.NewOverlayDB(store))
+	Init(db)
+
+	voteHandler := NewVoteHandler()
+	{
+		param := new(scom.EntranceParam)
+		param.SourceChainID = 10
+		param.Height = 20000
+		makeTxParam := &scom.MakeTxParam{
+			TxHash:              []byte{0x01, 0x02},
+			CrossChainID:        []byte{0x01, 0x02},
+			FromContractAddress: []byte{0x01, 0x02},
+			ToChainID:           2,
+			ToContractAddress:   []byte{0x01, 0x02},
+			Method:              "lock",
+			Args:                []byte{0x01, 0x02},
+		}
+		makeTxParamSink := common.NewZeroCopySink(nil)
+		makeTxParam.Serialization(makeTxParamSink)
+
+		for i := 0; i <= 3; i++ {
+			param.RelayerAddress = acctList1[i].Address[:]
+			param.Extra = makeTxParamSink.Bytes()
+			sink := common.NewZeroCopySink(nil)
+			param.Serialization(sink)
+
+			tx := &types.Transaction{
+				ChainID:    0,
+				SignedAddr: []common.Address{acctList1[i].Address},
+			}
+			ns := NewNative(sink.Bytes(), tx, db)
+			v, err := voteHandler.MakeDepositProposal(ns)
+			assert.Equal(t, (*scom.MakeTxParam)(nil), v, "makeTxParam not nil error")
+			assert.NilError(t, err, "test error")
+		}
+
+		//quorum sign
+		param.RelayerAddress = acctList1[4].Address[:]
+		param.Extra = makeTxParamSink.Bytes()
+		sink := common.NewZeroCopySink(nil)
+		param.Serialization(sink)
+
+		tx := &types.Transaction{
+			ChainID:    0,
+			SignedAddr: []common.Address{acctList1[4].Address},
+		}
+		ns := NewNative(sink.Bytes(), tx, db)
+		v, err := voteHandler.MakeDepositProposal(ns)
+		assert.Equal(t, true, reflect.DeepEqual(makeTxParam, v), "makeTxParam is not correct")
+		assert.NilError(t, err, "test error")
+
+		//same crosschain id
+		param = new(scom.EntranceParam)
+		param.SourceChainID = 10
+		param.Height = 20001
+		makeTxParam = &scom.MakeTxParam{
+			TxHash:              []byte{0x01, 0x02},
+			CrossChainID:        []byte{0x01, 0x02},
+			FromContractAddress: []byte{0x01, 0x02},
+			ToChainID:           2,
+			ToContractAddress:   []byte{0x01, 0x02},
+			Method:              "lock",
+			Args:                []byte{0x01, 0x02},
+		}
+		makeTxParamSink = common.NewZeroCopySink(nil)
+		makeTxParam.Serialization(makeTxParamSink)
+
+		for i := 0; i <= 3; i++ {
+			param.RelayerAddress = acctList1[i].Address[:]
+			param.Extra = makeTxParamSink.Bytes()
+			sink := common.NewZeroCopySink(nil)
+			param.Serialization(sink)
+
+			tx := &types.Transaction{
+				ChainID:    0,
+				SignedAddr: []common.Address{acctList1[i].Address},
+			}
+			ns := NewNative(sink.Bytes(), tx, db)
+			v, err := voteHandler.MakeDepositProposal(ns)
+			assert.Equal(t, (*scom.MakeTxParam)(nil), v, "makeTxParam not nil error")
+			assert.NilError(t, err, "test error")
+		}
+
+		//quorum sign
+		param.RelayerAddress = acctList1[4].Address[:]
+		param.Extra = makeTxParamSink.Bytes()
+		sink = common.NewZeroCopySink(nil)
+		param.Serialization(sink)
+
+		tx = &types.Transaction{
+			ChainID:    0,
+			SignedAddr: []common.Address{acctList1[4].Address},
+		}
+		ns = NewNative(sink.Bytes(), tx, db)
+		v, err = voteHandler.MakeDepositProposal(ns)
+		assert.Equal(t, (*scom.MakeTxParam)(nil), v, "makeTxParam not nil error")
+		assert.Error(t, err, "vote MakeDepositProposal, check done transaction error:checkDoneTx, tx already done")
+	}
+}
+
+//consensus peer 1-7 vote 1-4, consensus peer change to 1-5, 1 trigger this tx
+func TestAutoTriggerConsensusVote(t *testing.T) {
+	store, _ := leveldbstore.NewMemLevelDBStore()
+	db := storage.NewCacheDB(overlaydb.NewOverlayDB(store))
+	Init(db)
+
+	voteHandler := NewVoteHandler()
+	{
+		param := new(scom.EntranceParam)
+		param.SourceChainID = 10
+		param.Height = 20000
+		makeTxParam := &scom.MakeTxParam{
+			TxHash:              []byte{0x01, 0x02},
+			CrossChainID:        []byte{0x01, 0x02},
+			FromContractAddress: []byte{0x01, 0x02},
+			ToChainID:           2,
+			ToContractAddress:   []byte{0x01, 0x02},
+			Method:              "lock",
+			Args:                []byte{0x01, 0x02},
+		}
+		makeTxParamSink := common.NewZeroCopySink(nil)
+		makeTxParam.Serialization(makeTxParamSink)
+
+		for i := 0; i <= 3; i++ {
+			param.RelayerAddress = acctList1[i].Address[:]
+			param.Extra = makeTxParamSink.Bytes()
+			sink := common.NewZeroCopySink(nil)
+			param.Serialization(sink)
+
+			tx := &types.Transaction{
+				ChainID:    0,
+				SignedAddr: []common.Address{acctList1[i].Address},
+			}
+			ns := NewNative(sink.Bytes(), tx, db)
+			v, err := voteHandler.MakeDepositProposal(ns)
+			assert.Equal(t, (*scom.MakeTxParam)(nil), v, "makeTxParam not nil error")
+			assert.NilError(t, err, "test error")
+		}
+
+		//change consensus node
+		var view uint32 = 1
+		peerPoolMap := &node_manager.PeerPoolMap{
+			PeerPoolMap: make(map[string]*node_manager.PeerPoolItem),
+		}
+		for i, acct := range acctList3 {
+			peerPoolMap.PeerPoolMap[hex.EncodeToString(keypair.SerializePublicKey(acct.PublicKey))] =
+				&node_manager.PeerPoolItem{
+					Index:      uint32(i + 11),
+					PeerPubkey: hex.EncodeToString(keypair.SerializePublicKey(acct.PublicKey)),
+					Address:    acct.Address,
+					Status:     node_manager.ConsensusStatus,
+				}
+		}
+		contract := utils.NodeManagerContractAddress
+		viewBytes := utils.GetUint32Bytes(view)
+		sink := common.NewZeroCopySink(nil)
+		peerPoolMap.Serialization(sink)
+		db.Put(utils.ConcatKey(contract, []byte(node_manager.PEER_POOL), viewBytes), cstates.GenRawStorageItem(sink.Bytes()))
+
+		//trigger by account 1
+		param.RelayerAddress = acctList1[0].Address[:]
+		param.Extra = makeTxParamSink.Bytes()
+		sink = common.NewZeroCopySink(nil)
+		param.Serialization(sink)
+
+		tx := &types.Transaction{
+			ChainID:    0,
+			SignedAddr: []common.Address{acctList1[0].Address},
+		}
+		ns := NewNative(sink.Bytes(), tx, db)
+		v, err := voteHandler.MakeDepositProposal(ns)
+		assert.Equal(t, true, reflect.DeepEqual(makeTxParam, v), "makeTxParam is not correct")
+		assert.NilError(t, err, "test error")
+
+		//reduntant sign
+		param.RelayerAddress = acctList1[4].Address[:]
+		param.Extra = makeTxParamSink.Bytes()
+		sink = common.NewZeroCopySink(nil)
+		param.Serialization(sink)
+
+		tx = &types.Transaction{
+			ChainID:    0,
+			SignedAddr: []common.Address{acctList1[4].Address},
+		}
+		ns = NewNative(sink.Bytes(), tx, db)
+		v, err = voteHandler.MakeDepositProposal(ns)
+		assert.Equal(t, (*scom.MakeTxParam)(nil), v, "makeTxParam not nil error")
+		assert.NilError(t, err, "test error")
+
+		//reduntant sign2
+		param.RelayerAddress = acctList1[0].Address[:]
+		param.Extra = makeTxParamSink.Bytes()
+		sink = common.NewZeroCopySink(nil)
+		param.Serialization(sink)
+
+		tx = &types.Transaction{
+			ChainID:    0,
+			SignedAddr: []common.Address{acctList1[0].Address},
 		}
 		ns = NewNative(sink.Bytes(), tx, db)
 		v, err = voteHandler.MakeDepositProposal(ns)
