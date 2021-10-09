@@ -101,6 +101,7 @@ func CheckVotes(native *native.NativeService, id []byte, address common.Address)
 
 			if addr == address {
 				consensus = true
+				break
 			}
 		}
 	}
