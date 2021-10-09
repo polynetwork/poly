@@ -74,7 +74,6 @@ func CheckVotes(native *native.NativeService, id []byte, address common.Address)
 		return false, nil
 	}
 
-	//check signs num
 	//get view
 	view, err := node_manager.GetView(native)
 	if err != nil {
@@ -85,6 +84,32 @@ func CheckVotes(native *native.NativeService, id []byte, address common.Address)
 	if err != nil {
 		return false, fmt.Errorf("CheckVotes, GetPeerPoolMap error: %v", err)
 	}
+
+	//check if signer is consensus peer
+	consensus := false
+	for key, v := range peerPoolMap.PeerPoolMap {
+		if v.Status == node_manager.ConsensusStatus {
+			k, err := hex.DecodeString(key)
+			if err != nil {
+				return false, fmt.Errorf("CheckVotes, hex.DecodeString public key error: %v", err)
+			}
+			publicKey, err := keypair.DeserializePublicKey(k)
+			if err != nil {
+				return false, fmt.Errorf("CheckVotes, keypair.DeserializePublicKey error: %v", err)
+			}
+			addr := types.AddressFromPubKey(publicKey)
+
+			if addr == address {
+				consensus = true
+				break
+			}
+		}
+	}
+	if !consensus {
+		return false, fmt.Errorf("CheckVotes, signer is not consensus peer")
+	}
+
+	//check signs num
 	num := 0
 	sum := 0
 	flag := false
@@ -104,8 +129,10 @@ func CheckVotes(native *native.NativeService, id []byte, address common.Address)
 				num = num + 1
 			}
 			sum = sum + 1
+
+			//check if voted
 			_, ok = voteInfo.VoteInfo[address.ToBase58()]
-			if addr == address && !ok {
+			if !ok {
 				flag = true
 			}
 		}

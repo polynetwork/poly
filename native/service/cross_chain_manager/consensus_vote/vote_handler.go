@@ -71,6 +71,12 @@ func (this *VoteHandler) MakeDepositProposal(service *native.NativeService) (*sc
 		if err := txParam.Deserialization(data); err != nil {
 			return nil, fmt.Errorf("vote MakeDepositProposal, deserialize MakeTxParam error:%s", err)
 		}
+		if err := scom.CheckDoneTx(service, txParam.CrossChainID, params.SourceChainID); err != nil {
+			return nil, fmt.Errorf("vote MakeDepositProposal, check done transaction error:%s", err)
+		}
+		if err := scom.PutDoneTx(service, txParam.CrossChainID, params.SourceChainID); err != nil {
+			return nil, fmt.Errorf("vote MakeDepositProposal, PutDoneTx error:%s", err)
+		}
 		return txParam, nil
 	}
 	return nil, nil
