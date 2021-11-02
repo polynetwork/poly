@@ -18,7 +18,11 @@ package ethsecp256k1
 
 import (
 	"github.com/cosmos/cosmos-sdk/codec"
-	cryptoamino "github.com/cosmos/cosmos-sdk/crypto/ledger"
+
+	"github.com/tendermint/tendermint/crypto"
+	"github.com/tendermint/tendermint/crypto/ed25519"
+	"github.com/tendermint/tendermint/crypto/secp256k1"
+	"github.com/tendermint/tendermint/crypto/sr25519"
 )
 
 // CryptoCodec is the default amino codec used by ethermint
@@ -31,7 +35,24 @@ func init() {
 // RegisterCodec registers all the necessary types with amino for the given
 // codec.
 func RegisterCodec(cdc *codec.LegacyAmino) {
-	cryptoamino.RegisterAmino(cdc)
+	cdc.RegisterInterface((*crypto.PubKey)(nil), nil)
+	cdc.RegisterConcrete(sr25519.PubKey{},
+		sr25519.PubKeyName, nil)
+	cdc.RegisterConcrete(&ed25519.PubKey{},
+		ed25519.PubKeyName, nil)
+	cdc.RegisterConcrete(&secp256k1.PubKey{},
+		secp256k1.PubKeyName, nil)
+
+	cdc.RegisterInterface((*crypto.PrivKey)(nil), nil)
+	cdc.RegisterConcrete(sr25519.PrivKey{},
+		sr25519.PrivKeyName, nil)
+	cdc.RegisterConcrete(&ed25519.PrivKey{},
+		ed25519.PrivKeyName, nil)
+	cdc.RegisterConcrete(&secp256k1.PrivKey{},
+		secp256k1.PrivKeyName, nil)
+
 	cdc.RegisterConcrete(PubKey{}, PubKeyName, nil)
 	cdc.RegisterConcrete(PrivKey{}, PrivKeyName, nil)
+
+	cdc.Seal()
 }
