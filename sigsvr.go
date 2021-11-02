@@ -18,6 +18,11 @@
 package main
 
 import (
+	"os"
+	"os/signal"
+	"runtime"
+	"syscall"
+
 	"github.com/polynetwork/poly/cmd"
 	"github.com/polynetwork/poly/cmd/abi"
 	cmdsvr "github.com/polynetwork/poly/cmd/sigsvr"
@@ -27,10 +32,6 @@ import (
 	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/common/log"
 	"github.com/urfave/cli"
-	"os"
-	"os/signal"
-	"runtime"
-	"syscall"
 )
 
 func setupSigSvr() *cli.App {

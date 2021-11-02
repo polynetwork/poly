@@ -69,7 +69,7 @@ func (privkey PrivKey) PubKey() tmcrypto.PubKey {
 
 // Bytes returns the raw ECDSA private key bytes.
 func (privkey PrivKey) Bytes() []byte {
-	return CryptoCodec.MustMarshalBinaryBare(privkey)
+	return CryptoCodec.Amino.MustMarshalBinaryBare(privkey)
 }
 
 // Sign creates a recoverable ECDSA signature on the secp256k1 curve over the
@@ -125,7 +125,7 @@ func (key PubKey) Address() tmcrypto.Address {
 // Bytes returns the raw bytes of the ECDSA public key.
 // The function panics if the key cannot be marshaled to bytes.
 func (key PubKey) Bytes() []byte {
-	bz, err := CryptoCodec.MarshalBinaryBare(key)
+	bz, err := CryptoCodec.Amino.MarshalBinaryBare(key)
 	if err != nil {
 		panic(err)
 	}

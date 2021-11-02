@@ -66,7 +66,7 @@ func (this *CosmosHandler) MakeDepositProposal(service *native.NativeService) (*
 	}
 	cdc := newCDC()
 	var myHeader cosmos.CosmosHeader
-	if err := cdc.UnmarshalBinaryBare(params.HeaderOrCrossChainMsg, &myHeader); err != nil {
+	if err := cdc.Amino.UnmarshalBinaryBare(params.HeaderOrCrossChainMsg, &myHeader); err != nil {
 		return nil, fmt.Errorf("Cosmos MakeDepositProposal, unmarshal cosmos header failed: %v", err)
 	}
 	if myHeader.Header.Height != int64(params.Height) {
@@ -87,11 +87,11 @@ func (this *CosmosHandler) MakeDepositProposal(service *native.NativeService) (*
 	}
 
 	var proofValue CosmosProofValue
-	if err = cdc.UnmarshalBinaryBare(params.Extra, &proofValue); err != nil {
+	if err = cdc.Amino.UnmarshalBinaryBare(params.Extra, &proofValue); err != nil {
 		return nil, fmt.Errorf("Cosmos MakeDepositProposal, unmarshal proof value err: %v", err)
 	}
 	var proof tmcrypto.ProofOps
-	err = cdc.UnmarshalBinaryBare(params.Proof, &proof)
+	err = cdc.Amino.UnmarshalBinaryBare(params.Proof, &proof)
 	if err != nil {
 		return nil, fmt.Errorf("Cosmos MakeDepositProposal, unmarshal proof err: %v", err)
 	}

@@ -61,7 +61,7 @@ func (this *CosmosHandler) SyncGenesisHeader(native *native.NativeService) error
 	// get genesis header from input parameters
 	cdc := newCDC()
 	var header CosmosHeader
-	err = cdc.UnmarshalBinaryBare(param.GenesisHeader, &header)
+	err = cdc.Amino.UnmarshalBinaryBare(param.GenesisHeader, &header)
 	if err != nil {
 		return fmt.Errorf("CosmosHandler SyncGenesisHeader: %s", err)
 	}
@@ -92,7 +92,7 @@ func (this *CosmosHandler) SyncBlockHeader(native *native.NativeService) error {
 	}
 	for _, v := range params.Headers {
 		var myHeader CosmosHeader
-		err := cdc.UnmarshalBinaryBare(v, &myHeader)
+		err := cdc.Amino.UnmarshalBinaryBare(v, &myHeader)
 		if err != nil {
 			return fmt.Errorf("SyncBlockHeader failed to unmarshal header: %v", err)
 		}
