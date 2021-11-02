@@ -74,7 +74,7 @@ func (this *CosmosHandler) SyncGenesisHeader(native *native.NativeService) error
 		Height:             header.Header.Height,
 		NextValidatorsHash: header.Header.NextValidatorsHash,
 		ChainID:            header.Header.ChainID,
-		BlockHash:          header.Header.Hash(),
+		BlockHash:          HashCosmosHeader(header.Header),
 	})
 	return nil
 }
@@ -109,7 +109,7 @@ func (this *CosmosHandler) SyncBlockHeader(native *native.NativeService) error {
 		}
 		info.NextValidatorsHash = myHeader.Header.NextValidatorsHash
 		info.Height = myHeader.Header.Height
-		info.BlockHash = myHeader.Header.Hash()
+		info.BlockHash = HashCosmosHeader(myHeader.Header)
 		cnt++
 	}
 	if cnt == 0 {

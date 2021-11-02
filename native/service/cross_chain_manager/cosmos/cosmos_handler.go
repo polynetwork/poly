@@ -80,7 +80,7 @@ func (this *CosmosHandler) MakeDepositProposal(service *native.NativeService) (*
 		myHeader.Header.Height > info.Height {
 		cosmos.PutEpochSwitchInfo(service, params.SourceChainID, &cosmos.CosmosEpochSwitchInfo{
 			Height:             myHeader.Header.Height,
-			BlockHash:          myHeader.Header.Hash(),
+			BlockHash:          cosmos.HashCosmosHeader(myHeader.Header),
 			NextValidatorsHash: myHeader.Header.NextValidatorsHash,
 			ChainID:            myHeader.Header.ChainID,
 		})
