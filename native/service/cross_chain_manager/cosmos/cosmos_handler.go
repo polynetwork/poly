@@ -20,8 +20,6 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/cosmos/cosmos-sdk/store/rootmulti"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
@@ -41,12 +39,6 @@ type CosmosProofValue struct {
 	Value []byte
 }
 
-func newCDC() *codec.LegacyAmino {
-	cdc := codec.NewLegacyAmino()
-	cryptocodec.RegisterCrypto(cdc)
-	return cdc
-}
-
 func (this *CosmosHandler) MakeDepositProposal(service *native.NativeService) (*scom.MakeTxParam, error) {
 	params := new(scom.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
@@ -64,9 +56,8 @@ func (this *CosmosHandler) MakeDepositProposal(service *native.NativeService) (*
 	if len(params.HeaderOrCrossChainMsg) == 0 {
 		return nil, fmt.Errorf("you must commit the header used to verify transaction's proof and get none")
 	}
-	cdc := newCDC()
 	var myHeader cosmos.CosmosHeader
-	if err := cdc.Amino.UnmarshalBinaryBare(params.HeaderOrCrossChainMsg, &myHeader); err != nil {
+	if err := cosmos.Cdc.UnmarshalBinaryBare(params.HeaderOrCrossChainMsg, &myHeader); err != nil {
 		return nil, fmt.Errorf("Cosmos MakeDepositProposal, unmarshal cosmos header failed: %v", err)
 	}
 	if myHeader.Header.Height != int64(params.Height) {
@@ -87,11 +78,11 @@ func (this *CosmosHandler) MakeDepositProposal(service *native.NativeService) (*
 	}
 
 	var proofValue CosmosProofValue
-	if err = cdc.Amino.UnmarshalBinaryBare(params.Extra, &proofValue); err != nil {
+	if err = cosmos.Cdc.UnmarshalBinaryBare(params.Extra, &proofValue); err != nil {
 		return nil, fmt.Errorf("Cosmos MakeDepositProposal, unmarshal proof value err: %v", err)
 	}
 	var proof tmcrypto.ProofOps
-	err = cdc.Amino.UnmarshalBinaryBare(params.Proof, &proof)
+	err = cosmos.Cdc.UnmarshalBinaryBare(params.Proof, &proof)
 	if err != nil {
 		return nil, fmt.Errorf("Cosmos MakeDepositProposal, unmarshal proof err: %v", err)
 	}

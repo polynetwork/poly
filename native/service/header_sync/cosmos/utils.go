@@ -31,20 +31,37 @@ import (
 	hscommon "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/utils"
 
+	amino "github.com/tendermint/go-amino"
 	"github.com/tendermint/tendermint/crypto"
+	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/merkle"
+	"github.com/tendermint/tendermint/crypto/secp256k1"
+	"github.com/tendermint/tendermint/crypto/sr25519"
 	"github.com/tendermint/tendermint/types"
-
-	"github.com/cosmos/cosmos-sdk/codec"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 )
 
-var cdc *codec.LegacyAmino
+var Cdc *amino.Codec
 
 func init() {
-	cdc = codec.NewLegacyAmino()
-	cryptocodec.RegisterCrypto(cdc)
-	cdc.Seal()
+	Cdc := amino.NewCodec()
+
+	Cdc.RegisterInterface((*crypto.PubKey)(nil), nil)
+	Cdc.RegisterConcrete(sr25519.PubKey{},
+		sr25519.PubKeyName, nil)
+	Cdc.RegisterConcrete(&ed25519.PubKey{},
+		ed25519.PubKeyName, nil)
+	Cdc.RegisterConcrete(&secp256k1.PubKey{},
+		secp256k1.PubKeyName, nil)
+
+	Cdc.RegisterInterface((*crypto.PrivKey)(nil), nil)
+	Cdc.RegisterConcrete(sr25519.PrivKey{},
+		sr25519.PrivKeyName, nil)
+	Cdc.RegisterConcrete(&ed25519.PrivKey{},
+		ed25519.PrivKeyName, nil)
+	Cdc.RegisterConcrete(&secp256k1.PrivKey{},
+		secp256k1.PrivKeyName, nil)
+
+	Cdc.Seal()
 }
 
 func notifyEpochSwitchInfo(native *native.NativeService, chainID uint64, info *CosmosEpochSwitchInfo) {
@@ -198,7 +215,7 @@ func aminoValSetHash(valSet *types.ValidatorSet) []byte {
 // See: https://github.com/tendermint/tendermint/blob/v0.33.7/types/encoding_helper.go#L5
 func cdcEncode(item interface{}) []byte {
 	if item != nil && !isTypedNil(item) && !isEmpty(item) {
-		return cdc.Amino.MustMarshalBinaryBare(item)
+		return Cdc.MustMarshalBinaryBare(item)
 	}
 	return nil
 }

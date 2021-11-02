@@ -21,8 +21,6 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/codec"
-	cryptocodec "github.com/cosmos/cosmos-sdk/crypto/codec"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
 	"github.com/polynetwork/poly/native"
@@ -35,12 +33,6 @@ type CosmosHandler struct{}
 
 func NewCosmosHandler() *CosmosHandler {
 	return &CosmosHandler{}
-}
-
-func newCDC() *codec.LegacyAmino {
-	cdc := codec.NewLegacyAmino()
-	cryptocodec.RegisterCrypto(cdc)
-	return cdc
 }
 
 func (this *CosmosHandler) SyncGenesisHeader(native *native.NativeService) error {
@@ -59,9 +51,8 @@ func (this *CosmosHandler) SyncGenesisHeader(native *native.NativeService) error
 		return fmt.Errorf("CosmosHandler SyncGenesisHeader, checkWitness error: %v", err)
 	}
 	// get genesis header from input parameters
-	cdc := newCDC()
 	var header CosmosHeader
-	err = cdc.Amino.UnmarshalBinaryBare(param.GenesisHeader, &header)
+	err = Cdc.UnmarshalBinaryBare(param.GenesisHeader, &header)
 	if err != nil {
 		return fmt.Errorf("CosmosHandler SyncGenesisHeader: %s", err)
 	}
@@ -84,7 +75,6 @@ func (this *CosmosHandler) SyncBlockHeader(native *native.NativeService) error {
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return fmt.Errorf("SyncBlockHeader, contract params deserialize error: %v", err)
 	}
-	cdc := newCDC()
 	cnt := 0
 	info, err := GetEpochSwitchInfo(native, params.ChainID)
 	if err != nil {
@@ -92,7 +82,7 @@ func (this *CosmosHandler) SyncBlockHeader(native *native.NativeService) error {
 	}
 	for _, v := range params.Headers {
 		var myHeader CosmosHeader
-		err := cdc.Amino.UnmarshalBinaryBare(v, &myHeader)
+		err := Cdc.UnmarshalBinaryBare(v, &myHeader)
 		if err != nil {
 			return fmt.Errorf("SyncBlockHeader failed to unmarshal header: %v", err)
 		}
