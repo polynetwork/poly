@@ -1,25 +1,26 @@
 /*
- * Copyright (C) 2018 The ontology Authors
- * This file is part of The ontology library.
+ * Copyright (C) 2021 The poly network Authors
+ * This file is part of The poly network library.
  *
- * The ontology is free software: you can redistribute it and/or modify
+ * The poly network is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * The ontology is distributed in the hope that it will be useful,
+ * The poly network is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with The ontology.  If not, see <http://www.gnu.org/licenses/>.
+ * along with the poly network.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package vbft
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/polynetwork/poly/common"
@@ -36,11 +37,11 @@ type PendingBlock struct {
 	hasSubmitted bool
 }
 type ChainStore struct {
+	lock            sync.RWMutex
 	db              *ledger.Ledger
 	chainedBlockNum uint32
 	pendingBlocks   map[uint32]*PendingBlock
 	pid             *actor.PID
-	needSubmitBlock bool
 }
 
 func OpenBlockStore(db *ledger.Ledger, serverPid *actor.PID) (*ChainStore, error) {
@@ -49,7 +50,6 @@ func OpenBlockStore(db *ledger.Ledger, serverPid *actor.PID) (*ChainStore, error
 		chainedBlockNum: db.GetCurrentBlockHeight(),
 		pendingBlocks:   make(map[uint32]*PendingBlock),
 		pid:             serverPid,
-		needSubmitBlock: false,
 	}
 	merkleRoot, err := db.GetStateMerkleRoot(chainstore.chainedBlockNum)
 	if err != nil {
@@ -74,24 +74,16 @@ func (self *ChainStore) close() {
 }
 
 func (self *ChainStore) GetChainedBlockNum() uint32 {
+	self.lock.RLock()
+	defer self.lock.RUnlock()
+
 	return self.chainedBlockNum
 }
 
-func (self *ChainStore) getExecMerkleRoot(blkNum uint32) (common.Uint256, error) {
-	if blk, present := self.pendingBlocks[blkNum]; blk != nil && present {
-		return blk.execResult.MerkleRoot, nil
-	}
-	merkleRoot, err := self.db.GetStateMerkleRoot(blkNum)
-	if err != nil {
-		log.Errorf("GetStateMerkleRoot blockNum:%d, error :%s", blkNum, err)
-		return common.Uint256{}, fmt.Errorf("GetStateMerkleRoot blockNum:%d, error :%s", blkNum, err)
-	} else {
-		return merkleRoot, nil
-	}
-
-}
-
 func (self *ChainStore) getCrossStateRoot(blkNum uint32) (common.Uint256, error) {
+	self.lock.RLock()
+	defer self.lock.RUnlock()
+
 	if blk, present := self.pendingBlocks[blkNum]; blk != nil && present {
 		return blk.execResult.CrossStatesRoot, nil
 	}
@@ -104,6 +96,9 @@ func (self *ChainStore) getCrossStateRoot(blkNum uint32) (common.Uint256, error)
 }
 
 func (self *ChainStore) getExecWriteSet(blkNum uint32) *overlaydb.MemDB {
+	self.lock.RLock()
+	defer self.lock.RUnlock()
+
 	if blk, present := self.pendingBlocks[blkNum]; blk != nil && present {
 		return blk.execResult.WriteSet
 	}
@@ -112,6 +107,9 @@ func (self *ChainStore) getExecWriteSet(blkNum uint32) *overlaydb.MemDB {
 
 func (self *ChainStore) ReloadFromLedger() {
 	height := self.db.GetCurrentBlockHeight()
+	self.lock.Lock()
+	defer self.lock.Unlock()
+
 	if height > self.chainedBlockNum {
 		// update chainstore height
 		self.chainedBlockNum = height
@@ -141,9 +139,22 @@ func (self *ChainStore) AddBlock(block *Block) error {
 		panic("nil block header")
 	}
 	blkNum := self.GetChainedBlockNum() + 1
+
+	shouldTell := false
+	self.lock.Lock()
+	defer func() {
+		self.lock.Unlock()
+		if shouldTell && self.pid != nil {
+			self.pid.Tell(
+				&message.BlockConsensusComplete{
+					Block: block.Block,
+				})
+		}
+	}()
 	err := self.submitBlock(blkNum - 1)
 	if err != nil {
 		log.Errorf("chainstore blkNum:%d, SubmitBlock: %s", blkNum-1, err)
+		return fmt.Errorf("chainstore AddBlock submitBlock: %s", err)
 	}
 	execResult, err := self.db.ExecuteBlock(block.Block)
 	if err != nil {
@@ -151,12 +162,7 @@ func (self *ChainStore) AddBlock(block *Block) error {
 		return fmt.Errorf("chainstore AddBlock GetBlockExecResult: %s", err)
 	}
 	self.pendingBlocks[blkNum] = &PendingBlock{block: block, execResult: &execResult, hasSubmitted: false}
-	if self.pid != nil {
-		self.pid.Tell(
-			&message.BlockConsensusComplete{
-				Block: block.Block,
-			})
-	}
+	shouldTell = true
 	self.chainedBlockNum = blkNum
 	return nil
 }
@@ -167,8 +173,8 @@ func (self *ChainStore) submitBlock(blkNum uint32) error {
 	}
 	if submitBlk, present := self.pendingBlocks[blkNum]; submitBlk != nil && submitBlk.hasSubmitted == false && present {
 		err := self.db.SubmitBlock(submitBlk.block.Block, *submitBlk.execResult)
-		if err != nil && blkNum > self.GetChainedBlockNum() {
-			return fmt.Errorf("ledger add submitBlk (%d, %d) failed: %s", blkNum, self.GetChainedBlockNum(), err)
+		if err != nil && blkNum > self.chainedBlockNum {
+			return fmt.Errorf("ledger add submitBlk (%d, %d) failed: %s", blkNum, self.chainedBlockNum, err)
 		}
 		if _, present := self.pendingBlocks[blkNum-1]; present {
 			delete(self.pendingBlocks, blkNum-1)
@@ -179,6 +185,9 @@ func (self *ChainStore) submitBlock(blkNum uint32) error {
 }
 
 func (self *ChainStore) getBlock(blockNum uint32) (*Block, error) {
+	self.lock.RLock()
+	defer self.lock.RUnlock()
+
 	if blk, present := self.pendingBlocks[blockNum]; present {
 		return blk.block, nil
 	}

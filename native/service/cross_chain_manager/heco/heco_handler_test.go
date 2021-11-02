@@ -5,8 +5,15 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"math/big"
+	"net/http"
+	"strconv"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	etypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/ontology/core/states"
 	"github.com/polynetwork/poly/account"
@@ -19,21 +26,15 @@ import (
 	"github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/native"
 	ccmcom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
-	"github.com/polynetwork/poly/native/service/cross_chain_manager/eth"
+	eth2 "github.com/polynetwork/poly/native/service/cross_chain_manager/eth"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	synccom "github.com/polynetwork/poly/native/service/header_sync/common"
+	"github.com/polynetwork/poly/native/service/header_sync/eth"
 	"github.com/polynetwork/poly/native/service/header_sync/heco"
 	"github.com/polynetwork/poly/native/service/utils"
 	"github.com/polynetwork/poly/native/storage"
 	"gotest.tools/assert"
-	"io/ioutil"
-	"math/big"
-	"net/http"
-	"strconv"
-	"strings"
-	"testing"
-	"time"
 )
 
 var (
@@ -237,12 +238,12 @@ type BlockReq struct {
 }
 
 type BlockRep struct {
-	JsonRPC string         `json:"jsonrpc"`
-	Result  *etypes.Header `json:"result"`
-	Id      uint           `json:"id"`
+	JsonRPC string      `json:"jsonrpc"`
+	Result  *eth.Header `json:"result"`
+	Id      uint        `json:"id"`
 }
 
-func (this *HecoClient) GetBlockHeader(height uint64) (*etypes.Header, error) {
+func (this *HecoClient) GetBlockHeader(height uint64) (*eth.Header, error) {
 	params := []interface{}{fmt.Sprintf("0x%x", height), true}
 	req := &BlockReq{
 		JsonRpc: "2.0",
@@ -372,7 +373,7 @@ func getLatestHeight(native *native.NativeService) (height uint64) {
 	return
 }
 
-func untilGetBlockHeader(t *testing.T, c *HecoClient, height uint64) *etypes.Header {
+func untilGetBlockHeader(t *testing.T, c *HecoClient, height uint64) *eth.Header {
 	for {
 		hdr, err := c.GetBlockHeader(height)
 		if err == nil {
@@ -446,7 +447,7 @@ func TestProofHandle(t *testing.T) {
 		key := hex.EncodeToString(big.NewInt(int64(KeyIndex)).Bytes())
 		proofHeight := uint32(CrossChainTxHeight + BlocksToWait)
 		proofHeightHex := hexutil.EncodeBig(big.NewInt(int64(proofHeight)))
-		keyBytes, err := eth.MappingKeyAt(key, "01")
+		keyBytes, err := eth2.MappingKeyAt(key, "01")
 		if err != nil {
 			fmt.Printf("handleLockDepositEvents - MappingKeyAt error:%s\n", err.Error())
 			return

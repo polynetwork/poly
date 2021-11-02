@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 The poly network Authors
+ * Copyright (C) 2021 The poly network Authors
  * This file is part of The poly network library.
  *
  * The  poly network  is free software: you can redistribute it and/or modify
@@ -43,6 +43,7 @@ const (
 	EPOCH_SWITCH                = "epochSwitch"
 	SYNC_HEADER_NAME            = "syncHeader"
 	SYNC_CROSSCHAIN_MSG         = "syncCrossChainMsg"
+	POLYGON_SPAN                = "polygonSpan"
 )
 
 type HeaderSyncHandler interface {

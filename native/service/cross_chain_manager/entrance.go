@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 The poly network Authors
+ * Copyright (C) 2021 The poly network Authors
  * This file is part of The poly network library.
  *
  * The  poly network  is free software: you can redistribute it and/or modify
@@ -19,6 +19,8 @@ package cross_chain_manager
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/zilliqa"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/consensus_vote"
 
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
@@ -33,8 +35,9 @@ import (
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/neo3"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/okex"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/ont"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/polygon"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/quorum"
-	"github.com/polynetwork/poly/native/service/cross_chain_manager/zilliqa"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/zilliqalegacy"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	"github.com/polynetwork/poly/native/service/utils"
@@ -59,6 +62,8 @@ func RegisterCrossChainManagerContract(native *native.NativeService) {
 
 func GetChainHandler(router uint64) (scom.ChainHandler, error) {
 	switch router {
+	case utils.VOTE_ROUTER:
+		return consensus_vote.NewVoteHandler(), nil
 	case utils.BTC_ROUTER:
 		return btc.NewBTCHandler(), nil
 	case utils.ETH_ROUTER:
@@ -77,12 +82,16 @@ func GetChainHandler(router uint64) (scom.ChainHandler, error) {
 		return bsc.NewHandler(), nil
 	case utils.HECO_ROUTER:
 		return heco.NewHecoHandler(), nil
+	case utils.ZILLIQA_LEGACY_ROUTER:
+		return zilliqalegacy.NewHandler(), nil
 	case utils.ZILLIQA_ROUTER:
 		return zilliqa.NewHandler(), nil
 	case utils.MSC_ROUTER:
 		return msc.NewHandler(), nil
 	case utils.OKEX_ROUTER:
 		return okex.NewHandler(), nil
+	case utils.POLYGON_BOR_ROUTER:
+		return polygon.NewHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported router:%d", router)
 	}
@@ -120,6 +129,9 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	txParam, err := handler.MakeDepositProposal(native)
 	if err != nil {
 		return utils.BYTE_FALSE, err
+	}
+	if txParam == nil && sideChain.Router == utils.VOTE_ROUTER {
+		return utils.BYTE_TRUE, nil
 	}
 
 	//2. make target chain tx

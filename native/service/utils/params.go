@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 The poly network Authors
+ * Copyright (C) 2021 The poly network Authors
  * This file is part of The poly network library.
  *
  * The  poly network  is free software: you can redistribute it and/or modify
@@ -39,16 +39,21 @@ var (
 	RelayerManagerContractAddress, _    = common.AddressParseFromBytes([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x06})
 	Neo3StateManagerContractAddress, _  = common.AddressParseFromBytes([]byte{0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x07})
 
-	BTC_ROUTER     = uint64(1)
-	ETH_ROUTER     = uint64(2)
-	ONT_ROUTER     = uint64(3)
-	NEO_ROUTER     = uint64(4)
-	COSMOS_ROUTER  = uint64(5)
-	BSC_ROUTER     = uint64(6)
-	HECO_ROUTER    = uint64(7)
-	QUORUM_ROUTER  = uint64(8)
-	ZILLIQA_ROUTER = uint64(9)
-	MSC_ROUTER     = uint64(10)
-	NEO3_ROUTER    = uint64(11)
-	OKEX_ROUTER    = uint64(12)
+	VOTE_ROUTER             = uint64(0)
+	BTC_ROUTER              = uint64(1)
+	ETH_ROUTER              = uint64(2)
+	ONT_ROUTER              = uint64(3)
+	NEO_ROUTER              = uint64(4)
+	COSMOS_ROUTER           = uint64(5)
+	BSC_ROUTER              = uint64(6)
+	HECO_ROUTER             = uint64(7)
+	QUORUM_ROUTER           = uint64(8)
+	ZILLIQA_LEGACY_ROUTER   = uint64(9)
+	MSC_ROUTER              = uint64(10)
+	NEO3_LEGACY_ROUTER      = uint64(11)
+	OKEX_ROUTER             = uint64(12)
+	NEO3_ROUTER             = uint64(14)
+	POLYGON_HEIMDALL_ROUTER = uint64(15)
+	POLYGON_BOR_ROUTER      = uint64(16)
+	ZILLIQA_ROUTER          = uint64(17)
 )

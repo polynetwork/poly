@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2018 The ontology Authors
- * This file is part of The ontology library.
+ * Copyright (C) 2021 The poly network Authors
+ * This file is part of The poly network library.
  *
- * The ontology is free software: you can redistribute it and/or modify
+ * The poly network is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * The ontology is distributed in the hope that it will be useful,
+ * The poly network is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with The ontology.  If not, see <http://www.gnu.org/licenses/>.
+ * along with the poly network.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package config
@@ -109,7 +109,18 @@ var ETH1559_HEIGHT = map[uint32]uint64{
 	NETWORK_ID_TEST_NET: constants.ETH1559_HEIGHT_TESTNET,
 }
 
-var EXTRA_INFO_HEIGHT_FORK_CHECK bool
+var HECO120_HEIGHT = map[uint32]uint64{
+	NETWORK_ID_MAIN_NET: constants.HECO120_HEIGHT_MAINNET,
+	NETWORK_ID_TEST_NET: constants.HECO120_HEIGHT_TESTNET,
+}
+
+var POLYGON_SNAP_CHAINID = map[uint32]uint32{
+	NETWORK_ID_MAIN_NET: constants.POLYGON_SNAP_CHAINID_MAINNET,
+}
+
+var (
+	EXTRA_INFO_HEIGHT_FORK_CHECK bool
+)
 
 func GetNetworkMagic(id uint32) uint32 {
 	nid, ok := NETWORK_MAGIC[id]
@@ -119,10 +130,23 @@ func GetNetworkMagic(id uint32) uint32 {
 	return id
 }
 
+func GetPolygonSnapChainID(id uint32) uint32 {
+	height := POLYGON_SNAP_CHAINID[id]
+	return height
+}
+
 func GetEth1559Height(id uint32) uint64 {
 	height := ETH1559_HEIGHT[id]
 	if height == 0 {
 		height = constants.ETH1559_HEIGHT_TESTNET
+	}
+	return height
+}
+
+func GetHeco120Height(id uint32) uint64 {
+	height := HECO120_HEIGHT[id]
+	if height == 0 {
+		height = constants.HECO120_HEIGHT_TESTNET
 	}
 	return height
 }

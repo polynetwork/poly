@@ -16,14 +16,18 @@ require (
 	github.com/howeyc/gopass v0.0.0-20190910152052-7cb4b85ec19c
 	github.com/itchyny/base58-go v0.1.0
 	github.com/joeqian10/neo-gogogo v1.1.0
-	github.com/joeqian10/neo3-gogogo v0.3.4
+	github.com/joeqian10/neo3-gogogo v0.3.8
+	github.com/joeqian10/neo3-gogogo-legacy v1.0.0
 	github.com/ontio/ontology v1.11.1-0.20200812075204-26cf1fa5dd47
 	github.com/ontio/ontology-crypto v1.0.9
 	github.com/ontio/ontology-eventbus v0.9.1
 	github.com/pborman/uuid v1.2.0
+	github.com/pkg/errors v0.9.1
 	github.com/polynetwork/poly-io-test v0.0.0-20200819093740-8cf514b07750
+	github.com/renlulu/gozilliqa-sdklegacy v0.0.0-20210926114807-88a08c5ab803
 	github.com/stretchr/testify v1.7.0
 	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca
+	github.com/tendermint/go-amino v0.16.0
 	github.com/tendermint/tendermint v0.34.14
 	github.com/urfave/cli v1.22.4
 	github.com/valyala/bytebufferpool v1.0.0

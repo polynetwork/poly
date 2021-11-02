@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 The poly network Authors
+ * Copyright (C) 2021 The poly network Authors
  * This file is part of The poly network library.
  *
  * The  poly network  is free software: you can redistribute it and/or modify
@@ -91,7 +91,7 @@ func Test_Neo_MakeDepositProposal(t *testing.T) {
 		nextConsensus, _ := crypto.AddressToScriptHash("NVg7LjGcUSrgxgjX3zEgqaksfMaiS8Z6e1", helper.DefaultAddressVersion)
 		vs, _ := crypto.Base64Decode("EQ==")
 		witness := tx2.Witness{
-			InvocationScript: []byte{},
+			InvocationScript:   []byte{},
 			VerificationScript: vs,
 		}
 		genesisHeader := &neo3.NeoBlockHeader{}

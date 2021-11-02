@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2018 The ontology Authors
- * This file is part of The ontology library.
+ * Copyright (C) 2021 The poly network Authors
+ * This file is part of The poly network library.
  *
- * The ontology is free software: you can redistribute it and/or modify
+ * The poly network is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * The ontology is distributed in the hope that it will be useful,
+ * The poly network is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with The ontology.  If not, see <http://www.gnu.org/licenses/>.
+ * along with the poly network.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package constants
@@ -44,6 +44,12 @@ const (
 const EXTRA_INFO_HEIGHT_MAINNET = 2917744
 const EXTRA_INFO_HEIGHT_TESTNET = 1664798
 
-// eth 1559 heigh
-const ETH1559_HEIGHT_MAINNET = 2917744 // TODO change to correct number
+// eth 1559 height
+const ETH1559_HEIGHT_MAINNET = 12965000
 const ETH1559_HEIGHT_TESTNET = 10499401
+
+// heco 120 height
+const HECO120_HEIGHT_MAINNET = 8577000
+const HECO120_HEIGHT_TESTNET = 8290000
+
+const POLYGON_SNAP_CHAINID_MAINNET = 16

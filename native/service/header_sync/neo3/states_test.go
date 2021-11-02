@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2020 The poly network Authors
+ * Copyright (C) 2021 The poly network Authors
  * This file is part of The poly network library.
  *
  * The  poly network  is free software: you can redistribute it and/or modify
@@ -53,7 +53,7 @@ func Test_NeoBlockHeader_Serialization(t *testing.T) {
 	nextConsensus, _ := crypto.AddressToScriptHash("NVg7LjGcUSrgxgjX3zEgqaksfMaiS8Z6e1", helper.DefaultAddressVersion)
 	//vs, _ := crypto.Base64Decode("EQ==")
 	witness := tx2.Witness{
-		InvocationScript: []byte{},
+		InvocationScript:   []byte{},
 		VerificationScript: []byte{},
 	}
 	genesisHeader := block.NewBlockHeader()
@@ -82,12 +82,14 @@ func Test_NeoBlockHeader_Serialization(t *testing.T) {
 func Test_NeoCrossChainMsg_Serialization(t *testing.T) {
 	paramSerialize := &NeoCrossChainMsg{
 		StateRoot: &mpt.StateRoot{
-			Version:   0,
-			Index:     1000,
-			RootHash:   "0x53360e02b03f548c6fc2f74f760d82a6749df6a844fd117ad7b62504390c8f8c",
-			Witness: models.RpcWitness {
-				Invocation:   "DEBnIRHFS8tG/6pw4cqZQbOQZri6rboaQPUJTCVS2ZD/HwOZG2m9IG3NJ8E/gTV++o7G1r35l+p5aQcAbqwoP1wTDECeyQcx2M1DP/irLP7sQy/tNRyina2rdK6ATV/QY+Ib4tJ3sYpXaiPx4iGo+AgqUeTRDmD8anfUNtYzjYgos6x9DEDS+medyKx59813WgtCusxLIK0tx50H36tbMGmTUQxR5nHzrpG8nzQ8HKNKRNMgQNBoT4U3pcHMpwJY9bXUge4R",
-				Verification: "EwwhAnIujtkuXxpCUIyfti3TyTtoOhUd/wjLU4lwdHzBhsu6DCECkeyvwoMh29AA30IiQMankxndS3LESLsUGkLoTzfm/doMIQOyS9DtdzAVHs/Ne1yheExdO8NYTw1NkKyi1i4gd5tG1wwhA/sZ1ZOuaNWI9PnKa/3WYbE9xjnVVYWhVYYXFD38xLJWFEF7zmyl",
+			Version:  0,
+			Index:    1000,
+			RootHash: "0x53360e02b03f548c6fc2f74f760d82a6749df6a844fd117ad7b62504390c8f8c",
+			Witnesses: []models.RpcWitness{
+				{
+					Invocation:   "DEBnIRHFS8tG/6pw4cqZQbOQZri6rboaQPUJTCVS2ZD/HwOZG2m9IG3NJ8E/gTV++o7G1r35l+p5aQcAbqwoP1wTDECeyQcx2M1DP/irLP7sQy/tNRyina2rdK6ATV/QY+Ib4tJ3sYpXaiPx4iGo+AgqUeTRDmD8anfUNtYzjYgos6x9DEDS+medyKx59813WgtCusxLIK0tx50H36tbMGmTUQxR5nHzrpG8nzQ8HKNKRNMgQNBoT4U3pcHMpwJY9bXUge4R",
+					Verification: "EwwhAnIujtkuXxpCUIyfti3TyTtoOhUd/wjLU4lwdHzBhsu6DCECkeyvwoMh29AA30IiQMankxndS3LESLsUGkLoTzfm/doMIQOyS9DtdzAVHs/Ne1yheExdO8NYTw1NkKyi1i4gd5tG1wwhA/sZ1ZOuaNWI9PnKa/3WYbE9xjnVVYWhVYYXFD38xLJWFEF7zmyl",
+				},
 			},
 		},
 	}

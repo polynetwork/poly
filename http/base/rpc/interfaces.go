@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2018 The ontology Authors
- * This file is part of The ontology library.
+ * Copyright (C) 2021 The poly network Authors
+ * This file is part of The poly network library.
  *
- * The ontology is free software: you can redistribute it and/or modify
+ * The poly network is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
  *
- * The ontology is distributed in the hope that it will be useful,
+ * The poly network is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License for more details.
  *
  * You should have received a copy of the GNU Lesser General Public License
- * along with The ontology.  If not, see <http://www.gnu.org/licenses/>.
+ * along with the poly network.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package rpc
@@ -96,6 +96,26 @@ func GetBlockCount(params []interface{}) map[string]interface{} {
 func GetLatestBlockMsgsSnap(params []interface{}) map[string]interface{} {
 	result := vbft.GetLatestBlockMsgsSnap()
 	return responseSuccess(result)
+}
+
+// get cross state root
+func GetCrossStateRoot(params []interface{}) map[string]interface{} {
+	if len(params) < 1 {
+		return responsePack(berr.INVALID_PARAMS, nil)
+	}
+	switch (params[0]).(type) {
+	// block height
+	case float64:
+		height := uint32(params[0].(float64))
+		result, err := bactor.GetCrossStateRoot(height)
+		if err != nil {
+			return responsePack(berr.UNKNOWN_BLOCK, err.Error())
+		}
+		return responseSuccess(result)
+	default:
+		return responsePack(berr.INVALID_PARAMS, "")
+	}
+
 }
 
 //get block hash
