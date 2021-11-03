@@ -21,6 +21,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"fmt"
+	"reflect"
 
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/config"
@@ -29,6 +30,9 @@ import (
 	"github.com/polynetwork/poly/native/event"
 	hscommon "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/utils"
+
+	"github.com/switcheo/tendermint/crypto"
+	"github.com/switcheo/tendermint/crypto/merkle"
 	"github.com/switcheo/tendermint/types"
 )
 
@@ -73,21 +77,24 @@ func PutEpochSwitchInfo(service *native.NativeService, chainId uint64, info *Cos
 func VerifyCosmosHeader(myHeader *CosmosHeader, info *CosmosEpochSwitchInfo) error {
 	// now verify this header
 	valset := types.NewValidatorSet(myHeader.Valsets)
-	if !bytes.Equal(info.NextValidatorsHash, valset.Hash()) {
-		return fmt.Errorf("VerifyCosmosHeader, block validator is not right, next validator hash: %s, "+
-			"validator set hash: %s", info.NextValidatorsHash.String(), hex.EncodeToString(valset.Hash()))
+	valSetHash := HashCosmosValSet(valset, myHeader.Header.Version.Block)
+	if !bytes.Equal(info.NextValidatorsHash, valSetHash) {
+		if !bytes.Equal(info.NextValidatorsHash, aminoValSetHash(valset)) {
+			return fmt.Errorf("VerifyCosmosHeader, block validator is not right, next validator hash: %s, "+
+				"validator set hash: %s", info.NextValidatorsHash.String(), hex.EncodeToString(valSetHash))
+		}
 	}
-	if !bytes.Equal(myHeader.Header.ValidatorsHash, valset.Hash()) {
+	if !bytes.Equal(myHeader.Header.ValidatorsHash, valSetHash) {
 		return fmt.Errorf("VerifyCosmosHeader, block validator is not right!, header validator hash: %s, "+
-			"validator set hash: %s", myHeader.Header.ValidatorsHash.String(), hex.EncodeToString(valset.Hash()))
+			"validator set hash: %s", myHeader.Header.ValidatorsHash.String(), hex.EncodeToString(valSetHash))
 	}
 	if myHeader.Commit.GetHeight() != myHeader.Header.Height {
 		return fmt.Errorf("VerifyCosmosHeader, commit height is not right! commit height: %d, "+
 			"header height: %d", myHeader.Commit.GetHeight(), myHeader.Header.Height)
 	}
-	if !bytes.Equal(myHeader.Commit.BlockID.Hash, myHeader.Header.Hash()) {
+	if !bytes.Equal(myHeader.Commit.BlockID.Hash, HashCosmosHeader(myHeader.Header)) {
 		return fmt.Errorf("VerifyCosmosHeader, commit hash is not right!, commit block hash: %s,"+
-			" header hash: %s", myHeader.Commit.BlockID.Hash.String(), hex.EncodeToString(valset.Hash()))
+			" header hash: %s", myHeader.Commit.BlockID.Hash.String(), hex.EncodeToString(valSetHash))
 	}
 	if err := myHeader.Commit.ValidateBasic(); err != nil {
 		return fmt.Errorf("VerifyCosmosHeader, commit is not right! err: %s", err.Error())
@@ -116,4 +123,94 @@ func VerifyCosmosHeader(myHeader *CosmosHeader, info *CosmosEpochSwitchInfo) err
 	}
 
 	return nil
+}
+
+// HashCosmosHeader supports hashing both pre and post stargate tendermint block headers
+func HashCosmosHeader(header types.Header) []byte {
+	// hash encoding changed from amino to protobuf on block version 11, tm v0.34:
+	// https://github.com/tendermint/tendermint/pull/5173
+	if header.Version.Block <= 10 {
+		return aminoHeaderHash(&header)
+	}
+	return header.Hash()
+}
+
+// HashCosmosHeader supports hashing both pre and post stargate validator sets
+func HashCosmosValSet(valSet *types.ValidatorSet, blockVersion uint64) []byte {
+	// hash encoding changed from amino to protobuf on block version 11, tm v0.34:
+	// https://github.com/tendermint/tendermint/pull/5173
+	if blockVersion <= 10 {
+		return aminoValSetHash(valSet)
+	}
+	return valSet.Hash()
+}
+
+// See: https://github.com/tendermint/tendermint/blob/v0.33.7/types/block.go#L395
+func aminoHeaderHash(h *types.Header) []byte {
+	if h == nil || len(h.ValidatorsHash) == 0 {
+		return nil
+	}
+	return merkle.HashFromByteSlices([][]byte{
+		cdcEncode(h.Version),
+		cdcEncode(h.ChainID),
+		cdcEncode(h.Height),
+		cdcEncode(h.Time),
+		cdcEncode(h.LastBlockID),
+		cdcEncode(h.LastCommitHash),
+		cdcEncode(h.DataHash),
+		cdcEncode(h.ValidatorsHash),
+		cdcEncode(h.NextValidatorsHash),
+		cdcEncode(h.ConsensusHash),
+		cdcEncode(h.AppHash),
+		cdcEncode(h.LastResultsHash),
+		cdcEncode(h.EvidenceHash),
+		cdcEncode(h.ProposerAddress),
+	})
+}
+
+// See: https://github.com/tendermint/tendermint/blob/v0.33.7/types/validator_set.go#L316
+// and: https://github.com/tendermint/tendermint/blob/v0.33.7/types/validator.go#L90
+func aminoValSetHash(valSet *types.ValidatorSet) []byte {
+	bzs := make([][]byte, len(valSet.Validators))
+	for i, val := range valSet.Validators {
+		bzs[i] = cdcEncode(struct {
+			PubKey      crypto.PubKey
+			VotingPower int64
+		}{
+			val.PubKey,
+			val.VotingPower,
+		})
+	}
+	return merkle.HashFromByteSlices(bzs)
+}
+
+// See: https://github.com/tendermint/tendermint/blob/v0.33.7/types/encoding_helper.go#L5
+func cdcEncode(item interface{}) []byte {
+	if item != nil && !isTypedNil(item) && !isEmpty(item) {
+		return Cdc.MustMarshalBinaryBare(item)
+	}
+	return nil
+}
+
+// See: https://github.com/tendermint/tendermint/blob/v0.33.7/types/utils.go#L10
+func isTypedNil(o interface{}) bool {
+	rv := reflect.ValueOf(o)
+	switch rv.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Map, reflect.Ptr, reflect.Slice:
+		return rv.IsNil()
+	default:
+		return false
+	}
+}
+
+// See: https://github.com/tendermint/tendermint/blob/v0.33.7/types/utils.go#L20
+// Returns true if it has zero length.
+func isEmpty(o interface{}) bool {
+	rv := reflect.ValueOf(o)
+	switch rv.Kind() {
+	case reflect.Array, reflect.Chan, reflect.Map, reflect.Slice, reflect.String:
+		return rv.Len() == 0
+	default:
+		return false
+	}
 }

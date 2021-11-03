@@ -20,16 +20,11 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/cosmos/cosmos-sdk/store/rootmulti"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
 	"github.com/polynetwork/poly/native/service/header_sync/cosmos"
-	"github.com/switcheo/tendermint/crypto"
-	"github.com/switcheo/tendermint/crypto/ed25519"
-	"github.com/switcheo/tendermint/crypto/secp256k1"
-	"github.com/switcheo/tendermint/crypto/sr25519"
 	tm33merkle "github.com/tendermint/tendermint/crypto/merkle"
 )
 
@@ -42,20 +37,6 @@ func NewCosmosHandler() *CosmosHandler {
 type CosmosProofValue struct {
 	Kp    string
 	Value []byte
-}
-
-func newCDC() *codec.Codec {
-	cdc := codec.New()
-	cdc.RegisterInterface((*crypto.PubKey)(nil), nil)
-	cdc.RegisterConcrete(sr25519.PubKey{}, sr25519.PubKeyName, nil)
-	cdc.RegisterConcrete(ed25519.PubKey{}, ed25519.PubKeyName, nil)
-	cdc.RegisterConcrete(secp256k1.PubKey{}, secp256k1.PubKeyName, nil)
-
-	cdc.RegisterInterface((*crypto.PrivKey)(nil), nil)
-	cdc.RegisterConcrete(sr25519.PrivKey{}, sr25519.PrivKeyName, nil)
-	cdc.RegisterConcrete(ed25519.PrivKey{}, ed25519.PrivKeyName, nil)
-	cdc.RegisterConcrete(secp256k1.PrivKey{}, secp256k1.PrivKeyName, nil)
-	return cdc
 }
 
 func (this *CosmosHandler) MakeDepositProposal(service *native.NativeService) (*scom.MakeTxParam, error) {
@@ -75,9 +56,8 @@ func (this *CosmosHandler) MakeDepositProposal(service *native.NativeService) (*
 	if len(params.HeaderOrCrossChainMsg) == 0 {
 		return nil, fmt.Errorf("you must commit the header used to verify transaction's proof and get none")
 	}
-	cdc := newCDC()
 	var myHeader cosmos.CosmosHeader
-	if err := cdc.UnmarshalBinaryBare(params.HeaderOrCrossChainMsg, &myHeader); err != nil {
+	if err := cosmos.Cdc.UnmarshalBinaryBare(params.HeaderOrCrossChainMsg, &myHeader); err != nil {
 		return nil, fmt.Errorf("Cosmos MakeDepositProposal, unmarshal cosmos header failed: %v", err)
 	}
 	if myHeader.Header.Height != int64(params.Height) {
@@ -91,18 +71,18 @@ func (this *CosmosHandler) MakeDepositProposal(service *native.NativeService) (*
 		myHeader.Header.Height > info.Height {
 		cosmos.PutEpochSwitchInfo(service, params.SourceChainID, &cosmos.CosmosEpochSwitchInfo{
 			Height:             myHeader.Header.Height,
-			BlockHash:          myHeader.Header.Hash(),
+			BlockHash:          cosmos.HashCosmosHeader(myHeader.Header),
 			NextValidatorsHash: myHeader.Header.NextValidatorsHash,
 			ChainID:            myHeader.Header.ChainID,
 		})
 	}
 
 	var proofValue CosmosProofValue
-	if err = cdc.UnmarshalBinaryBare(params.Extra, &proofValue); err != nil {
+	if err = cosmos.Cdc.UnmarshalBinaryBare(params.Extra, &proofValue); err != nil {
 		return nil, fmt.Errorf("Cosmos MakeDepositProposal, unmarshal proof value err: %v", err)
 	}
 	var proof tm33merkle.Proof
-	err = cdc.UnmarshalBinaryBare(params.Proof, &proof)
+	err = cosmos.Cdc.UnmarshalBinaryBare(params.Proof, &proof)
 	if err != nil {
 		return nil, fmt.Errorf("Cosmos MakeDepositProposal, unmarshal proof err: %v", err)
 	}
