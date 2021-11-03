@@ -2,9 +2,10 @@ package cosmos
 
 import (
 	"fmt"
+
 	"github.com/polynetwork/poly/common"
-	"github.com/tendermint/tendermint/libs/bytes"
-	"github.com/tendermint/tendermint/types"
+	"github.com/switcheo/tendermint/libs/bytes"
+	"github.com/switcheo/tendermint/types"
 )
 
 type CosmosEpochSwitchInfo struct {

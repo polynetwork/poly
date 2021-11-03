@@ -20,6 +20,7 @@ package cosmos
 import (
 	"bytes"
 	"fmt"
+
 	"github.com/cosmos/cosmos-sdk/codec"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
@@ -27,10 +28,10 @@ import (
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	hscommon "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/utils"
-	"github.com/tendermint/tendermint/crypto"
-	"github.com/tendermint/tendermint/crypto/ed25519"
-	"github.com/tendermint/tendermint/crypto/multisig"
-	"github.com/tendermint/tendermint/crypto/secp256k1"
+	"github.com/switcheo/tendermint/crypto"
+	"github.com/switcheo/tendermint/crypto/ed25519"
+	"github.com/switcheo/tendermint/crypto/secp256k1"
+	"github.com/switcheo/tendermint/crypto/sr25519"
 )
 
 type CosmosHandler struct{}
@@ -43,13 +44,14 @@ func newCDC() *codec.Codec {
 	cdc := codec.New()
 
 	cdc.RegisterInterface((*crypto.PubKey)(nil), nil)
-	cdc.RegisterConcrete(ed25519.PubKeyEd25519{}, ed25519.PubKeyAminoName, nil)
-	cdc.RegisterConcrete(secp256k1.PubKeySecp256k1{}, secp256k1.PubKeyAminoName, nil)
-	cdc.RegisterConcrete(multisig.PubKeyMultisigThreshold{}, multisig.PubKeyMultisigThresholdAminoRoute, nil)
+	cdc.RegisterConcrete(sr25519.PubKey{}, sr25519.PubKeyName, nil)
+	cdc.RegisterConcrete(ed25519.PubKey{}, ed25519.PubKeyName, nil)
+	cdc.RegisterConcrete(secp256k1.PubKey{}, secp256k1.PubKeyName, nil)
 
 	cdc.RegisterInterface((*crypto.PrivKey)(nil), nil)
-	cdc.RegisterConcrete(ed25519.PrivKeyEd25519{}, ed25519.PrivKeyAminoName, nil)
-	cdc.RegisterConcrete(secp256k1.PrivKeySecp256k1{}, secp256k1.PrivKeyAminoName, nil)
+	cdc.RegisterConcrete(sr25519.PrivKey{}, sr25519.PrivKeyName, nil)
+	cdc.RegisterConcrete(ed25519.PrivKey{}, ed25519.PrivKeyName, nil)
+	cdc.RegisterConcrete(secp256k1.PrivKey{}, secp256k1.PrivKeyName, nil)
 	return cdc
 }
 
