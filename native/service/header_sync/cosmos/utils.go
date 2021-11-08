@@ -84,7 +84,8 @@ func VerifyCosmosHeader(myHeader *CosmosHeader, info *CosmosEpochSwitchInfo) err
 	valset := types.NewValidatorSet(myHeader.Valsets)
 	valSetHash := HashCosmosValSet(valset, myHeader.Header.Version.Block.Uint64())
 	if !bytes.Equal(info.NextValidatorsHash, valSetHash) {
-		if !bytes.Equal(info.NextValidatorsHash, valset.Hash()) { // recheck legacy hash
+		// recheck legacy hash to allow for upgrade block to pass (info has old hash format, but header has new block version)
+		if !bytes.Equal(info.NextValidatorsHash, valset.Hash()) {
 			return fmt.Errorf("VerifyCosmosHeader, block validator is not right, next validator hash: %s, "+
 				"validator set hash: %s", info.NextValidatorsHash.String(), hex.EncodeToString(valSetHash))
 		}
@@ -135,10 +136,11 @@ func HashCosmosHeader(header types.Header) []byte {
 	// hash encoding changed from amino to protobuf on block version 11, tm v0.34:
 	// https://github.com/tendermint/tendermint/pull/5173
 	if header.Version.Block < 11 {
-		return header.Hash()
+		return header.Hash() // legacy hash
 	}
-	// convert header to new type and hash with protobuf
+	// convert header to new type
 	h := tm34types.Header{}
+	// use new type's hash that hashes protobuf bytes instead of amino bytes
 	return h.Hash()
 }
 
@@ -147,8 +149,9 @@ func HashCosmosValSet(valSet *types.ValidatorSet, blockVersion uint64) []byte {
 	// hash encoding changed from amino to protobuf on block version 11, tm v0.34:
 	// https://github.com/tendermint/tendermint/pull/5173
 	if blockVersion < 11 {
-		return valSet.Hash()
+		return valSet.Hash() // legacy hash
 	}
+	// convert vals and valset to new type
 	vals := make([]*tm34types.Validator, valSet.Size())
 	for i, v := range valSet.Validators {
 		var pubKey tm34crypto.PubKey
@@ -179,5 +182,6 @@ func HashCosmosValSet(valSet *types.ValidatorSet, blockVersion uint64) []byte {
 		vals[i].ProposerPriority = v.ProposerPriority
 	}
 	vs := tm34types.NewValidatorSet(vals)
+	// use new type's hash that hashes protobuf bytes instead of amino bytes
 	return vs.Hash()
 }
