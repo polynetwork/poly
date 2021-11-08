@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/polynetwork/poly/common"
-	"github.com/switcheo/tendermint/libs/bytes"
-	"github.com/switcheo/tendermint/types"
+	"github.com/tendermint/tendermint/libs/bytes"
+	"github.com/tendermint/tendermint/types"
 )
 
 type CosmosEpochSwitchInfo struct {

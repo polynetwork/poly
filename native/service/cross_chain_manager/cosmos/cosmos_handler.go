@@ -25,7 +25,7 @@ import (
 	"github.com/polynetwork/poly/native"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
 	"github.com/polynetwork/poly/native/service/header_sync/cosmos"
-	tm33merkle "github.com/tendermint/tendermint/crypto/merkle"
+	"github.com/tendermint/tendermint/crypto/merkle"
 )
 
 type CosmosHandler struct{}
@@ -81,7 +81,7 @@ func (this *CosmosHandler) MakeDepositProposal(service *native.NativeService) (*
 	if err = cosmos.Cdc.UnmarshalBinaryBare(params.Extra, &proofValue); err != nil {
 		return nil, fmt.Errorf("Cosmos MakeDepositProposal, unmarshal proof value err: %v", err)
 	}
-	var proof tm33merkle.Proof
+	var proof merkle.Proof
 	err = cosmos.Cdc.UnmarshalBinaryBare(params.Proof, &proof)
 	if err != nil {
 		return nil, fmt.Errorf("Cosmos MakeDepositProposal, unmarshal proof err: %v", err)
