@@ -167,7 +167,9 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 
 		//verify difficulty
 		var expected *big.Int
-		if isLondon(&header) {
+		if isArrowGlacier(&header) {
+			expected = makeDifficultyCalculator(big.NewInt(10_700_000))(header.Time, parentHeader)
+		} else if isLondon(&header) {
 			expected = makeDifficultyCalculator(big.NewInt(9700000))(header.Time, parentHeader)
 		} else {
 			expected = difficultyCalculator(new(big.Int).SetUint64(header.Time), parentHeader)
