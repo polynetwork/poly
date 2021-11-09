@@ -34,6 +34,8 @@ import (
 	tm34ed25519 "github.com/switcheo/tendermint/crypto/ed25519"
 	tm34secp256k1 "github.com/switcheo/tendermint/crypto/secp256k1"
 	tm34sr25519 "github.com/switcheo/tendermint/crypto/sr25519"
+	tm34bytes "github.com/switcheo/tendermint/libs/bytes"
+	tm34version "github.com/switcheo/tendermint/proto/tendermint/version"
 	tm34types "github.com/switcheo/tendermint/types"
 	"github.com/tendermint/tendermint/crypto/ed25519"
 	"github.com/tendermint/tendermint/crypto/secp256k1"
@@ -115,7 +117,7 @@ func VerifyCosmosHeader(myHeader *CosmosHeader, info *CosmosEpochSwitchInfo) err
 		}
 		_, val := valset.GetByIndex(idx)
 		// Validate signature.
-		precommitSignBytes := myHeader.Commit.VoteSignBytes(info.ChainID, idx)
+		precommitSignBytes := VoteSignBytes(myHeader, idx)
 		if !val.PubKey.VerifyBytes(precommitSignBytes, commitSig.Signature) {
 			return fmt.Errorf("VerifyCosmosHeader, Invalid commit -- invalid signature: %v", commitSig)
 		}
@@ -139,7 +141,31 @@ func HashCosmosHeader(header types.Header) []byte {
 		return header.Hash() // legacy hash
 	}
 	// convert header to new type
-	h := tm34types.Header{}
+	h := tm34types.Header{
+		Version: tm34version.Consensus{
+			Block: uint64(header.Version.Block),
+			App:   uint64(header.Version.App),
+		},
+		ChainID: header.ChainID,
+		Height:  header.Height,
+		Time:    header.Time,
+		LastBlockID: tm34types.BlockID{
+			Hash: tm34bytes.HexBytes(header.LastBlockID.Hash),
+			PartSetHeader: tm34types.PartSetHeader{
+				Total: uint32(header.LastBlockID.PartsHeader.Total),
+				Hash:  tm34bytes.HexBytes(header.LastBlockID.PartsHeader.Hash),
+			},
+		},
+		LastCommitHash:     tm34bytes.HexBytes(header.LastCommitHash),
+		DataHash:           tm34bytes.HexBytes(header.DataHash),
+		ValidatorsHash:     tm34bytes.HexBytes(header.ValidatorsHash),
+		NextValidatorsHash: tm34bytes.HexBytes(header.NextValidatorsHash),
+		ConsensusHash:      tm34bytes.HexBytes(header.ConsensusHash),
+		AppHash:            tm34bytes.HexBytes(header.AppHash),
+		LastResultsHash:    tm34bytes.HexBytes(header.LastResultsHash),
+		EvidenceHash:       tm34bytes.HexBytes(header.EvidenceHash),
+		ProposerAddress:    tm34bytes.HexBytes(header.ProposerAddress),
+	}
 	// use new type's hash that hashes protobuf bytes instead of amino bytes
 	return h.Hash()
 }
@@ -155,26 +181,13 @@ func HashCosmosValSet(valSet *types.ValidatorSet, blockVersion uint64) []byte {
 	vals := make([]*tm34types.Validator, valSet.Size())
 	for i, v := range valSet.Validators {
 		var pubKey tm34crypto.PubKey
-		var ok bool
 		switch pk := v.PubKey.(type) {
 		case sr25519.PubKeySr25519:
-			var bz interface{} = pk[:]
-			pubKey, ok = bz.(tm34sr25519.PubKey)
-			if !ok {
-				panic(fmt.Sprintf("Failed to convert pubkey type: %x", v.PubKey))
-			}
+			pubKey = tm34sr25519.PubKey(pk[:])
 		case ed25519.PubKeyEd25519:
-			var bz interface{} = pk[:]
-			pubKey, ok = bz.(tm34ed25519.PubKey)
-			if !ok {
-				panic(fmt.Sprintf("Failed to convert pubkey type: %x", v.PubKey))
-			}
+			pubKey = tm34ed25519.PubKey(pk[:])
 		case secp256k1.PubKeySecp256k1:
-			var bz interface{} = pk[:]
-			pubKey, ok = bz.(tm34secp256k1.PubKey)
-			if !ok {
-				panic(fmt.Sprintf("Failed to convert pubkey type: %x", v.PubKey))
-			}
+			pubKey = tm34secp256k1.PubKey(pk[:])
 		default:
 			panic(fmt.Sprintf("Unknown pubkey type: %x", v.PubKey))
 		}
@@ -184,4 +197,35 @@ func HashCosmosValSet(valSet *types.ValidatorSet, blockVersion uint64) []byte {
 	vs := tm34types.NewValidatorSet(vals)
 	// use new type's hash that hashes protobuf bytes instead of amino bytes
 	return vs.Hash()
+}
+
+func VoteSignBytes(header *CosmosHeader, valIdx int) []byte {
+	// hash encoding changed from amino to protobuf on block version 11, tm v0.34:
+	// https://github.com/tendermint/tendermint/pull/5173
+	if header.Header.Version.Block < 11 {
+		return header.Commit.VoteSignBytes(header.Header.ChainID, valIdx) // legacy hash
+	}
+	// convert commit to new type
+	sigs := make([]tm34types.CommitSig, len(header.Commit.Signatures))
+	for i, v := range header.Commit.Signatures {
+		sigs[i] = tm34types.CommitSig{
+			BlockIDFlag:      tm34types.BlockIDFlag(v.BlockIDFlag),
+			ValidatorAddress: tm34bytes.HexBytes(v.ValidatorAddress),
+			Timestamp:        v.Timestamp,
+			Signature:        v.Signature,
+		}
+	}
+	commit := tm34types.NewCommit(
+		header.Commit.Height,
+		int32(header.Commit.Round),
+		tm34types.BlockID{
+			Hash: tm34bytes.HexBytes(header.Commit.BlockID.Hash),
+			PartSetHeader: tm34types.PartSetHeader{
+				Total: uint32(header.Commit.BlockID.PartsHeader.Total),
+				Hash:  tm34bytes.HexBytes(header.Commit.BlockID.PartsHeader.Hash),
+			},
+		},
+		sigs,
+	)
+	return commit.VoteSignBytes(header.Header.ChainID, int32(valIdx))
 }

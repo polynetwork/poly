@@ -13,6 +13,7 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/gosuri/uiprogress v0.0.1
 	github.com/hashicorp/golang-lru v0.5.4
+	github.com/confio/ics23/go v0.6.6
 	github.com/howeyc/gopass v0.0.0-20190910152052-7cb4b85ec19c
 	github.com/itchyny/base58-go v0.1.0
 	github.com/joeqian10/neo-gogogo v1.1.0

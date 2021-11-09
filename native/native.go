@@ -19,6 +19,7 @@ package native
 
 import (
 	"fmt"
+
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
 	"github.com/polynetwork/poly/core/types"
@@ -108,8 +109,10 @@ func (this *NativeService) Invoke() (interface{}, error) {
 	}
 	result, err := service(this)
 	if err != nil {
+		log.Infof("INVOKE FAIL: %s", err)
 		return result, fmt.Errorf("[Invoke] Native serivce function execute error:%s", err)
 	}
+	log.Infof("INVOKE RESULT: %x", result)
 	this.PopContext()
 	this.notifications = append(notifications, this.notifications...)
 	this.crossHashes = append(this.crossHashes, hashes...)

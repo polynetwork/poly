@@ -20,7 +20,6 @@ import (
 	"bytes"
 	"fmt"
 
-	"github.com/cosmos/cosmos-sdk/store/rootmulti"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
@@ -86,14 +85,13 @@ func (this *CosmosHandler) MakeDepositProposal(service *native.NativeService) (*
 	if err != nil {
 		return nil, fmt.Errorf("Cosmos MakeDepositProposal, unmarshal proof err: %v", err)
 	}
+	prt := ProofRuntime()
 	if len(proofValue.Kp) != 0 {
-		prt := rootmulti.DefaultProofRuntime()
 		err = prt.VerifyValue(&proof, myHeader.Header.AppHash, proofValue.Kp, proofValue.Value)
 		if err != nil {
 			return nil, fmt.Errorf("Cosmos MakeDepositProposal, proof error: %s", err)
 		}
 	} else {
-		prt := rootmulti.DefaultProofRuntime()
 		err = prt.VerifyAbsence(&proof, myHeader.Header.AppHash, string(proofValue.Value))
 		if err != nil {
 			return nil, fmt.Errorf("Cosmos MakeDepositProposal, proof error: %s", err)
