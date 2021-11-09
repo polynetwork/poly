@@ -93,7 +93,7 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 	}
 	err = putGenesisBlockHeader(native, blockHeader, params.ChainID, block.BlockHeader)
 	if err != nil {
-		return fmt.Errorf("ETHHandler SyncGenesisHeader, put blockHeader error: %v", err)
+		return errors.Errorf("ETHHandler SyncGenesisHeader, put blockHeader error: %v", err)
 	}
 
 	return nil
