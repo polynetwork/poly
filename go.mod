@@ -37,3 +37,5 @@ require (
 	golang.org/x/net v0.0.0-20210903162142-ad29c8ab022f
 	gotest.tools v2.2.0+incompatible
 )
+
+replace github.com/tendermint/tm-db/064 => github.com/tendermint/tm-db v0.6.4
