@@ -45,7 +45,7 @@ func init() {
 	NETURLMAP[251] = "https://barnard-seed.starcoin.org"
 	NETURLMAP[252] = "https://proxima-seed.starcoin.org"
 	NETURLMAP[253] = "https://halley-seed.starcoin.org"
-	NETURLMAP[1] = "https://main-seed.starcoin.org/"
+	NETURLMAP[1] = "https://main-seed.starcoin.org"
 }
 
 func findNetwork(chainId uint64) (string, error) {
@@ -60,8 +60,8 @@ func findNetwork(chainId uint64) (string, error) {
 type Handler struct {
 }
 
-// NewHandler ...
-func NewHandler() *Handler {
+// NewSTCHandler ...
+func NewSTCHandler() *Handler {
 	return &Handler{}
 }
 
@@ -84,7 +84,7 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 		return errors.Errorf("StarcoinHandler SyncGenesisHeader, checkWitness error: %v", err)
 	}
 
-	url, err := findNetwork(native.GetChainID())
+	url, err := findNetwork(params.ChainID)
 	if err != nil {
 		return errors.WithStack(err)
 	}

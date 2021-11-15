@@ -612,12 +612,10 @@ github.com/spf13/viper v1.4.0/go.mod h1:PTJ7Z/lr49W6bUbkmS1V3by4uWynFiR9p7+dSq/y
 github.com/spf13/viper v1.6.2/go.mod h1:t3iDnF5Jlj76alVNuyFBk5oUMCvsrkbvZK0WQdfDi5k=
 github.com/spf13/viper v1.6.3 h1:pDDu1OyEDTKzpJwdq4TiuLyMsUgRa/BT5cn5O62NoHs=
 github.com/spf13/viper v1.6.3/go.mod h1:jUMtyi0/lB5yZH/FjyGAoH7IMNrIhlBf6pXZmbMDvzw=
-github.com/starcoinorg/starcoin-go v0.0.0-20211101111647-f868a72531f1 h1:/5vQ8YNiqj2bzlCkEnoHtPNYUT38D+CeP2RkNF6mtKU=
-github.com/starcoinorg/starcoin-go v0.0.0-20211101111647-f868a72531f1/go.mod h1:M8SbOvYYohExF6e+dJ/A9Jm9DXwo4Ym8WWXmVn4zld4=
-github.com/starcoinorg/starcoin-go v0.0.0-20211103073823-0620bb5dcc52 h1:IjlJU0u0cyzotJCFvyEbLgKB/hfAeRSMuAh1UfrQMIM=
-github.com/starcoinorg/starcoin-go v0.0.0-20211103073823-0620bb5dcc52/go.mod h1:M8SbOvYYohExF6e+dJ/A9Jm9DXwo4Ym8WWXmVn4zld4=
-github.com/starcoinorg/starcoin-go v0.0.0-20211104073812-1eb78402d0b4 h1:vPCUM1Z5xybRAdBe7ZEHyWqtSu69UzJIQ2Vz4hWI3w8=
-github.com/starcoinorg/starcoin-go v0.0.0-20211104073812-1eb78402d0b4/go.mod h1:M8SbOvYYohExF6e+dJ/A9Jm9DXwo4Ym8WWXmVn4zld4=
+github.com/starcoinorg/starcoin-go v0.0.0-20211112021220-c2a8c3b85a0a h1:GoHVM7K33kOxO1YNECmvgknCTUhVMLuSDyx/FAasA9w=
+github.com/starcoinorg/starcoin-go v0.0.0-20211112021220-c2a8c3b85a0a/go.mod h1:M8SbOvYYohExF6e+dJ/A9Jm9DXwo4Ym8WWXmVn4zld4=
+github.com/starcoinorg/starcoin-go v0.0.0-20211115050437-3ac255f64020 h1:ZLVJP2xqZoV1ePAd+G7dJ31APqGZColvx9+SVkQheec=
+github.com/starcoinorg/starcoin-go v0.0.0-20211115050437-3ac255f64020/go.mod h1:M8SbOvYYohExF6e+dJ/A9Jm9DXwo4Ym8WWXmVn4zld4=
 github.com/status-im/keycard-go v0.0.0-20190316090335-8537d3370df4 h1:Gb2Tyox57NRNuZ2d3rmvB3pcmbu7O1RS3m8WRx7ilrg=
 github.com/status-im/keycard-go v0.0.0-20190316090335-8537d3370df4/go.mod h1:RZLeN1LMWmRsyYjvAu+I6Dm9QmlDaIIt+Y+4Kd7Tp+Q=
 github.com/steakknife/bloomfilter v0.0.0-20180922174646-6819c0d2a570 h1:gIlAHnH1vJb5vwEjIp5kBj/eu99p/bl0Ay2goiPe5xE=
