@@ -47,24 +47,32 @@ func putBlockHeader(native *native.NativeService, blockHeader types.BlockHeader,
 	return nil
 }
 
-func putGenesisBlockHeader(native *native.NativeService, blockHeader *types.BlockHeader, chainID uint64, jsonBlockHeader stc.BlockHeader) error {
+func putGenesisBlockHeader(native *native.NativeService, blockHeader types.BlockHeader, chainID uint64) error {
 	contract := utils.HeaderSyncContractAddress
+
+	storeBytes, err := blockHeader.BcsSerialize()
+	if err != nil {
+		return errors.WithStack(err)
+	}
 
 	headerHash, err := blockHeader.GetHash()
 	if err != nil {
 		return errors.WithStack(err)
 	}
 
-	storeBytes, _ := json.Marshal(&jsonBlockHeader)
+	headHashBytes, err := headerHash.BcsSerialize()
+	if err != nil {
+		return errors.WithStack(err)
+	}
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.GENESIS_HEADER), utils.GetUint64Bytes(chainID)),
 		states.GenRawStorageItem(storeBytes))
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), *headerHash),
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), headHashBytes),
 		states.GenRawStorageItem(storeBytes))
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.MAIN_CHAIN), utils.GetUint64Bytes(chainID), utils.GetUint64Bytes(blockHeader.Number)),
-		states.GenRawStorageItem(*headerHash))
+		states.GenRawStorageItem(headHashBytes))
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.CURRENT_HEADER_HEIGHT),
 		utils.GetUint64Bytes(chainID)), states.GenRawStorageItem(utils.GetUint64Bytes(blockHeader.Number)))
-	scom.NotifyPutHeader(native, chainID, blockHeader.Number, stc.BytesToHexString(*headerHash))
+	scom.NotifyPutHeader(native, chainID, blockHeader.Number, stc.BytesToHexString(headHashBytes))
 	return nil
 }
 

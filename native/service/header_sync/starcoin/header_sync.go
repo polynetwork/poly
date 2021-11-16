@@ -19,10 +19,10 @@ package starcoin
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/params"
+	stc "github.com/starcoinorg/starcoin-go/client"
 	"github.com/starcoinorg/starcoin-go/types"
 	"math/big"
 	"time"
@@ -35,7 +35,6 @@ import (
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	scom "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/utils"
-	stc "github.com/starcoinorg/starcoin-go/client"
 )
 
 var NETURLMAP = make(map[uint64]string)
@@ -84,33 +83,25 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 		return errors.Errorf("StarcoinHandler SyncGenesisHeader, checkWitness error: %v", err)
 	}
 
-	url, err := findNetwork(params.ChainID)
+	header, err := getGenesisHeader(native.GetInput())
 	if err != nil {
-		return errors.WithStack(err)
-	}
-
-	client := stc.NewStarcoinClient(url)
-	block, err := client.GetBlockByNumber(context.Background(), 0)
-	if err != nil {
-		return errors.WithStack(err)
+		return fmt.Errorf("StarcoinHandler SyncGenesisHeader: %s", err)
 	}
 
 	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.GENESIS_HEADER), utils.GetUint64Bytes(params.ChainID)))
 	if err != nil {
-		return errors.Errorf("ETHHandler GetHeaderByHeight, get blockHashStore error: %v", err)
+		return errors.Errorf("STCHandler GetHeaderByHeight, get blockHashStore error: %v", err)
 	}
 	if headerStore != nil {
-		return errors.Errorf("ETHHandler GetHeaderByHeight, genesis header had been initialized")
+		return errors.Errorf("STCHandler GetHeaderByHeight, genesis header had been initialized")
 	}
 
-	//block header storage
-	blockHeader, err := block.GetHeader()
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	err = putGenesisBlockHeader(native, blockHeader, params.ChainID, block.BlockHeader)
+	err = putGenesisBlockHeader(native, header, params.ChainID)
 	if err != nil {
-		return fmt.Errorf("ETHHandler SyncGenesisHeader, put blockHeader error: %v", err)
+		return fmt.Errorf("STCHandler SyncGenesisHeader, put blockHeader error: %v", err)
 	}
 
 	return nil
@@ -218,6 +209,20 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 	}
 	//caches.deleteCaches()
 	return nil
+}
+
+func getGenesisHeader(input []byte) (types.BlockHeader, error) {
+	params := new(scom.SyncGenesisHeaderParam)
+	if err := params.Deserialization(common.NewZeroCopySource(input)); err != nil {
+		return types.BlockHeader{}, fmt.Errorf("getGenesisHeader, contract params deserialize error: %v", err)
+	}
+	var jsonHeader stc.BlockHeader
+	err := json.Unmarshal(params.GenesisHeader, &jsonHeader)
+	if err != nil {
+		return types.BlockHeader{}, fmt.Errorf("getGenesisHeader, deserialize header err: %v", err)
+	}
+
+	return jsonHeader.ToTypesHeader(), nil
 }
 
 func (h *Handler) SyncCrossChainMsg(native *native.NativeService) error {
