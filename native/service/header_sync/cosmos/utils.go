@@ -115,7 +115,7 @@ func VerifyCosmosHeader(myHeader *CosmosHeader, info *CosmosEpochSwitchInfo) err
 		if commitSig.Absent() {
 			continue // OK, some precommits can be missing.
 		}
-		_, val := valset.GetByIndex(idx)
+		val := myHeader.Valsets[idx]
 		// Validate signature.
 		precommitSignBytes := VoteSignBytes(myHeader, idx)
 		if !val.PubKey.VerifyBytes(precommitSignBytes, commitSig.Signature) {
