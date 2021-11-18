@@ -40,10 +40,10 @@ func putBlockHeader(native *native.NativeService, blockHeader types.BlockHeader,
 	if err != nil {
 		return errors.WithStack(err)
 	}
-
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), *headerHash),
+	hashBytes, _ := headerHash.BcsSerialize()
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), hashBytes),
 		states.GenRawStorageItem(storeBytes))
-	scom.NotifyPutHeader(native, chainID, blockHeader.Number, stc.BytesToHexString(*headerHash))
+	scom.NotifyPutHeader(native, chainID, blockHeader.Number, stc.BytesToHexString(hashBytes))
 	return nil
 }
 
@@ -59,20 +59,16 @@ func putGenesisBlockHeader(native *native.NativeService, blockHeader types.Block
 	if err != nil {
 		return errors.WithStack(err)
 	}
-
-	headHashBytes, err := headerHash.BcsSerialize()
-	if err != nil {
-		return errors.WithStack(err)
-	}
+	fmt.Println(stc.BytesToHexString(*headerHash))
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.GENESIS_HEADER), utils.GetUint64Bytes(chainID)),
 		states.GenRawStorageItem(storeBytes))
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), headHashBytes),
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), *headerHash),
 		states.GenRawStorageItem(storeBytes))
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.MAIN_CHAIN), utils.GetUint64Bytes(chainID), utils.GetUint64Bytes(blockHeader.Number)),
-		states.GenRawStorageItem(headHashBytes))
+		states.GenRawStorageItem(*headerHash))
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.CURRENT_HEADER_HEIGHT),
 		utils.GetUint64Bytes(chainID)), states.GenRawStorageItem(utils.GetUint64Bytes(blockHeader.Number)))
-	scom.NotifyPutHeader(native, chainID, blockHeader.Number, stc.BytesToHexString(headHashBytes))
+	scom.NotifyPutHeader(native, chainID, blockHeader.Number, stc.BytesToHexString(*headerHash))
 	return nil
 }
 

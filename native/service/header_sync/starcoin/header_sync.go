@@ -113,14 +113,13 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		return errors.Errorf("SyncBlockHeader, contract params deserialize error: %v", err)
 	}
 
-	//caches := NewCaches(3, native)
 	for _, v := range headerParams.Headers {
-		var header types.BlockHeader
-		err := json.Unmarshal(v, &header)
+		var jsonHeader stc.BlockHeader
+		err := json.Unmarshal(v, &jsonHeader)
 		if err != nil {
 			return errors.Errorf("SyncBlockHeader, deserialize header err: %v", err)
 		}
-
+		var header = jsonHeader.ToTypesHeader()
 		headerHash, err := header.GetHash()
 		if err != nil {
 			return errors.Errorf("SyncBlockHeader, get header hash err: %v", err)
@@ -135,6 +134,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			continue
 		}
 		// get pre header
+		fmt.Println(stc.BytesToHexString(header.ParentHash))
 		parentHeader, err := GetHeaderByHash(native, header.ParentHash, headerParams.ChainID)
 		if err != nil {
 			return errors.Errorf("SyncBlockHeader, get the parent block failed. Error:%s, header: %s", err, string(v))
