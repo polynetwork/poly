@@ -5,6 +5,7 @@ temp/*
 temp/
 idea/
 build/
+tools/
 wsl/*
 *.patch
 .idea/
@@ -20,6 +21,7 @@ Chain/*
 nodectl
 ontology
 wallet.dat
+poly
 cscope*
 *.exe
 **/*.log
