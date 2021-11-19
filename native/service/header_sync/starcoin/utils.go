@@ -19,8 +19,6 @@ package starcoin
 
 import (
 	"bytes"
-	"encoding/json"
-	"fmt"
 	"github.com/pkg/errors"
 	"github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/native"
@@ -35,15 +33,17 @@ const allowedFutureBlockTime = 30 * time.Second
 
 func putBlockHeader(native *native.NativeService, blockHeader types.BlockHeader, chainID uint64) error {
 	contract := utils.HeaderSyncContractAddress
-	storeBytes, _ := json.Marshal(&blockHeader)
+	storeBytes, err := blockHeader.BcsSerialize()
+	if err != nil {
+		return errors.WithStack(err)
+	}
 	headerHash, err := blockHeader.GetHash()
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	hashBytes, _ := headerHash.BcsSerialize()
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), hashBytes),
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), *headerHash),
 		states.GenRawStorageItem(storeBytes))
-	scom.NotifyPutHeader(native, chainID, blockHeader.Number, stc.BytesToHexString(hashBytes))
+	scom.NotifyPutHeader(native, chainID, blockHeader.Number, stc.BytesToHexString(*headerHash))
 	return nil
 }
 
@@ -59,7 +59,6 @@ func putGenesisBlockHeader(native *native.NativeService, blockHeader types.Block
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	fmt.Println(stc.BytesToHexString(*headerHash))
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.GENESIS_HEADER), utils.GetUint64Bytes(chainID)),
 		states.GenRawStorageItem(storeBytes))
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), *headerHash),
@@ -149,11 +148,11 @@ func GetHeaderByHash(native *native.NativeService, hash []byte, chainID uint64) 
 	if err != nil {
 		return nil, errors.Errorf("GetHeaderByHash, deserialize headerBytes from raw storage item err:%v", err)
 	}
-	var blockHeader types.BlockHeader
-	if err := json.Unmarshal(storeBytes, &blockHeader); err != nil {
-		return nil, fmt.Errorf("GetHeaderByHash, deserialize header error: %v", err)
+	header, err := types.BcsDeserializeBlockHeader(storeBytes)
+	if err != nil {
+		return nil, errors.Errorf("GetHeaderByHash, deserialize header error: %v", err)
 	}
-	return &blockHeader, nil
+	return &header, nil
 }
 
 func appendHeader2Main(native *native.NativeService, height uint64, txhash types.HashValue, chainID uint64) error {
