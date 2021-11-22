@@ -19,8 +19,8 @@ package cross_chain_manager
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/polynetwork/poly/native/service/cross_chain_manager/zilliqa"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/consensus_vote"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/zilliqa"
 
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
@@ -37,6 +37,7 @@ import (
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/ont"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/polygon"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/quorum"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/starcoin"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/zilliqalegacy"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
@@ -92,6 +93,8 @@ func GetChainHandler(router uint64) (scom.ChainHandler, error) {
 		return okex.NewHandler(), nil
 	case utils.POLYGON_BOR_ROUTER:
 		return polygon.NewHandler(), nil
+	case utils.STARCOIN_ROUTER:
+		return starcoin.NewHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported router:%d", router)
 	}
