@@ -19,6 +19,7 @@ package header_sync
 
 import (
 	"fmt"
+	"github.com/polynetwork/poly/native/service/header_sync/starcoin"
 	"github.com/polynetwork/poly/native/service/header_sync/zilliqa"
 	"github.com/polynetwork/poly/native/service/header_sync/zilliqalegacy"
 
@@ -91,6 +92,8 @@ func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
 		return polygon.NewHeimdallHandler(), nil
 	case utils.POLYGON_BOR_ROUTER:
 		return polygon.NewBorHandler(), nil
+	case utils.STARCOIN_ROUTER:
+		return starcoin.NewSTCHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported router:%d", router)
 	}
