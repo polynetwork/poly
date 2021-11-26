@@ -20,6 +20,8 @@ package starcoin
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
 	cmanager "github.com/polynetwork/poly/native/service/governance/side_chain_manager"
@@ -56,7 +58,13 @@ func verifyFromEthTx(native *native.NativeService, proof, extra []byte, fromChai
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromEthProof, verifyMerkleProof error:%v", err)
 	}
-	return nil, nil
+
+	data := common.NewZeroCopySource(extra)
+	txParam := new(scom.MakeTxParam)
+	if err := txParam.Deserialization(data); err != nil {
+		return nil, fmt.Errorf("VerifyFromEthProof, deserialize merkleValue error:%s", err)
+	}
+	return txParam, nil
 }
 
 func VerifyEventProof(proof *STCProof, data *types.BlockHeader, address []byte) (bool, error) {
