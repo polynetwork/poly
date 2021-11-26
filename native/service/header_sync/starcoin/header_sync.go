@@ -22,6 +22,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/ethereum/go-ethereum/params"
+	"github.com/holiman/uint256"
 	stc "github.com/starcoinorg/starcoin-go/client"
 	"github.com/starcoinorg/starcoin-go/types"
 	"math/big"
@@ -113,14 +114,23 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		return errors.Errorf("SyncBlockHeader, contract params deserialize error: %v", err)
 	}
 
+	//get genesis header
+	genesisHeader, err := GetGenesisBlockHeader(native, headerParams.ChainID)
+	if err != nil {
+		return errors.Errorf("SyncBlockHeader,get genesis header error: %v", err)
+	}
+
 	for _, v := range headerParams.Headers {
-		var jsonHeader stc.BlockHeader
+		var jsonHeader stc.BlockHeaderWithDifficutyInfo
 		err := json.Unmarshal(v, &jsonHeader)
 		if err != nil {
 			return errors.Errorf("SyncBlockHeader, deserialize header err: %v", err)
 		}
-		var header, _ = jsonHeader.ToTypesHeader()
+		var header, _ = jsonHeader.BlockHeader.ToTypesHeader()
 		headerHash, err := header.GetHash()
+		currentHeight := header.Number
+		timeTarget := jsonHeader.BlockTimeTarget
+		difficultyWindow := jsonHeader.BlockDifficutyWindow
 		if err != nil {
 			return errors.Errorf("SyncBlockHeader, get header hash err: %v", err)
 		}
@@ -171,13 +181,19 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			return errors.Errorf("SyncBlockHeader, invalid gasuseed: have %v, max %v, header: %s", header.GasUsed, cap, string(v))
 		}
 
-		//verify difficulty
-		var expected *big.Int
-		expected = difficultyCalculator(new(big.Int).SetUint64(header.Timestamp), parentHeader)
-		if expected.Cmp(header.GetDiffculty()) != 0 {
-			//todo
-			//return errors.Errorf("SyncBlockHeader, invalid difficulty: have %v, want %v, header: %s", header.Difficulty, expected, string(v))
+		difficultyWindowU64 := uint64(difficultyWindow)
+		if (currentHeight - genesisHeader.Number) >= difficultyWindowU64 {
+			//verify difficulty
+			var expected *big.Int
+			expected, err = difficultyCalculator(native, currentHeight, headerParams.ChainID, uint64(timeTarget), difficultyWindowU64)
+			if err != nil {
+				return errors.Errorf("difficulty calculator error: %v, header: %s", err, string(v))
+			}
+			if expected.Cmp(header.GetDiffculty()) != 0 {
+				return errors.Errorf("SyncBlockHeader, invalid difficulty: have %v, want %v, header: %s", header.Difficulty, expected, string(v))
+			}
 		}
+
 		// verfify header
 		err = h.verifyHeader(header)
 		if err != nil {
@@ -232,7 +248,73 @@ func (h *Handler) verifyHeader(header *types.BlockHeader) error {
 	return nil
 }
 
-func difficultyCalculator(time *big.Int, parent *types.BlockHeader) *big.Int {
-	//todo calculator difficulty
-	return new(big.Int).SetUint64(0)
+func difficultyCalculator(native *native.NativeService, currentHeight uint64, chainId uint64, timeTarget uint64, difficultyWindow uint64) (*big.Int, error) {
+	//get last difficulty
+	var lastDifficulties = make([]BlockDiffInfo, difficultyWindow)
+	for height := currentHeight - 1; height >= currentHeight-difficultyWindow-1; height-- {
+		header, _ := GetHeaderByHeight(native, height, chainId)
+		target := new(uint256.Int).SetBytes(header.Difficulty[:])
+		lastDifficulties = append(lastDifficulties, BlockDiffInfo{header.Timestamp, *target})
+	}
+	nextTarget, err := getNextTarget(lastDifficulties, timeTarget)
+	return nextTarget.ToBig(), err
+}
+
+func getNextTarget(blocks []BlockDiffInfo, timePlan uint64) (uint256.Int, error) {
+	nextTarget := new(uint256.Int).SetUint64(0)
+	length := len(blocks)
+	if length < 1 {
+		return *nextTarget, fmt.Errorf("get next target blocks is null.")
+	}
+	if length == 1 {
+		return blocks[0].Target, nil
+	}
+	totalTarget := new(uint256.Int).SetUint64(0)
+	for _, block := range blocks {
+		_, overflow := totalTarget.AddOverflow(totalTarget, &block.Target)
+		if overflow {
+			return *nextTarget, fmt.Errorf("get next target, total target overflow: %d, %s.", totalTarget, block)
+		}
+	}
+	lengthU256 := new(uint256.Int).SetUint64(uint64(length))
+	avgTarget := totalTarget.Div(totalTarget, lengthU256)
+
+	var avgTime uint64
+	if length == 2 {
+		avgTime = blocks[0].Timestamp - blocks[1].Timestamp
+	}
+	if length > 2 {
+		latestTimestamp := blocks[0].Timestamp
+		totalBlockTime := uint64(0)
+		vblocks := 0
+		for idx, block := range blocks {
+			if idx == 0 {
+				continue
+			}
+			totalBlockTime = totalBlockTime + (latestTimestamp - block.Timestamp)
+			vblocks = vblocks + idx
+		}
+		avgTime = totalBlockTime / uint64(vblocks)
+	}
+
+	if avgTime == 0 {
+		avgTime = 1
+	}
+	timePlanU256 := new(uint256.Int).SetUint64(timePlan)
+	avgTimeU256 := new(uint256.Int).SetUint64(avgTime)
+	nextTarget = avgTarget.Div(avgTarget, timePlanU256)
+	nextTarget, overflow := nextTarget.MulOverflow(nextTarget, avgTimeU256)
+	if overflow {
+		return *nextTarget, fmt.Errorf("get next target, next target overflow: avgTimeU256: %d, nextTarget: %d, avgTimeU256: %d .", avgTimeU256, nextTarget, avgTimeU256)
+	}
+	tempNextTarget := nextTarget
+	tempNumber := new(uint256.Int).SetUint64(2)
+	tempNextTarget = tempNextTarget.Div(tempNextTarget, tempNumber)
+	tempAvgTarget := avgTarget.Div(avgTarget, tempNumber)
+	if tempNextTarget.Gt(avgTarget) {
+		nextTarget = avgTarget.Mul(avgTarget, tempNumber)
+	} else if tempNextTarget.Lt(tempAvgTarget) {
+		nextTarget = tempAvgTarget
+	}
+	return *nextTarget, nil
 }

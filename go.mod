@@ -14,6 +14,7 @@ require (
 	github.com/gosuri/uiprogress v0.0.1
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/confio/ics23/go v0.6.6
+	github.com/holiman/uint256 v1.2.0
 	github.com/howeyc/gopass v0.0.0-20190910152052-7cb4b85ec19c
 	github.com/itchyny/base58-go v0.1.0
 	github.com/joeqian10/neo-gogogo v1.1.0
@@ -26,7 +27,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/polynetwork/poly-io-test v0.0.0-20200819093740-8cf514b07750
 	github.com/renlulu/gozilliqa-sdklegacy v0.0.0-20210926114807-88a08c5ab803
-	github.com/starcoinorg/starcoin-go v0.0.0-20211119023234-a6250be08772
+	github.com/starcoinorg/starcoin-go v0.0.0-20211125014812-db7aec773be7
 	github.com/stretchr/testify v1.7.0
 	github.com/switcheo/tendermint v0.34.14-2
 	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca

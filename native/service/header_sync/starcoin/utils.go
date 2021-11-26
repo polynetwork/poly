@@ -19,6 +19,7 @@ package starcoin
 
 import (
 	"bytes"
+	"github.com/holiman/uint256"
 	"github.com/pkg/errors"
 	"github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/native"
@@ -28,6 +29,11 @@ import (
 	"github.com/starcoinorg/starcoin-go/types"
 	"time"
 )
+
+type BlockDiffInfo struct {
+	Timestamp uint64
+	Target    uint256.Int
+}
 
 const allowedFutureBlockTime = 30 * time.Second
 
@@ -69,6 +75,26 @@ func putGenesisBlockHeader(native *native.NativeService, blockHeader types.Block
 		utils.GetUint64Bytes(chainID)), states.GenRawStorageItem(utils.GetUint64Bytes(blockHeader.Number)))
 	scom.NotifyPutHeader(native, chainID, blockHeader.Number, stc.BytesToHexString(*headerHash))
 	return nil
+}
+
+func GetGenesisBlockHeader(native *native.NativeService, chainID uint64) (*types.BlockHeader, error) {
+	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress,
+		[]byte(scom.GENESIS_HEADER), utils.GetUint64Bytes(chainID)))
+	if err != nil {
+		return nil, errors.Errorf("GetGenesisBlockHeader error: %v", err)
+	}
+	if headerStore == nil {
+		return nil, errors.Errorf("GetGenesisBlockHeader, can not find any header records")
+	}
+	storeBytes, err := states.GetValueFromRawStorageItem(headerStore)
+	if err != nil {
+		return nil, errors.Errorf("GetGenesisBlockHeader, deserialize headerBytes from raw storage item err:%v", err)
+	}
+	header, err := types.BcsDeserializeBlockHeader(storeBytes)
+	if err != nil {
+		return nil, errors.Errorf("GetGenesisBlockHeader, deserialize header error: %v", err)
+	}
+	return &header, nil
 }
 
 func GetCurrentHeader(native *native.NativeService, chainID uint64) (*types.BlockHeader, error) {
