@@ -23,6 +23,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/holiman/uint256"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/account"
 	"github.com/polynetwork/poly/common"
@@ -39,6 +40,8 @@ import (
 	"github.com/polynetwork/poly/native/storage"
 	stc "github.com/starcoinorg/starcoin-go/client"
 	stctypes "github.com/starcoinorg/starcoin-go/types"
+	"reflect"
+
 	//stcutils "github.com/starcoinorg/starcoin-go/utils"
 	"github.com/stretchr/testify/assert"
 	"strings"
@@ -363,5 +366,90 @@ func TestSyncHeader(t *testing.T) {
 			t.Fatal("SyncBlockHeader", err)
 		}
 		assert.Equal(t, SUCCESS, typeOfError(err))
+	}
+}
+
+func Test_getNextTarget(t *testing.T) {
+	type args struct {
+		blocks   []BlockDiffInfo
+		timePlan uint64
+	}
+	diff0, _ := hex.DecodeString("0e74b15e")
+	diff1, _ := hex.DecodeString("128dd7af")
+	diff2, _ := hex.DecodeString("14a42733")
+	diff3, _ := hex.DecodeString("133b86e6")
+	diff4, _ := hex.DecodeString("11f54845")
+	diff5, _ := hex.DecodeString("1310dccb")
+	diff6, _ := hex.DecodeString("1222c9f0")
+	diff7, _ := hex.DecodeString("12b92b58")
+	diff8, _ := hex.DecodeString("124da70c")
+	diff9, _ := hex.DecodeString("11408ac0")
+	diff10, _ := hex.DecodeString("15d7bcb2")
+	diff11, _ := hex.DecodeString("16317044")
+	diff12, _ := hex.DecodeString("168d12d7")
+	diff13, _ := hex.DecodeString("1ac09aff")
+	diff14, _ := hex.DecodeString("18a2cdbd")
+	diff15, _ := hex.DecodeString("184f681a")
+	diff16, _ := hex.DecodeString("18115b5e")
+	diff17, _ := hex.DecodeString("1afaf67a")
+	diff18, _ := hex.DecodeString("19f7fe19")
+	diff19, _ := hex.DecodeString("180d92a4")
+	diff20, _ := hex.DecodeString("161206f7")
+	diff21, _ := hex.DecodeString("15688141")
+	diff22, _ := hex.DecodeString("13ec5a26")
+	diff23, _ := hex.DecodeString("1431ab06")
+	diff24, _ := hex.DecodeString("135b2bde")
+	blocks := []BlockDiffInfo{
+		BlockDiffInfo{1637911931937, *new(uint256.Int).SetBytes(diff1)},
+		BlockDiffInfo{1637911903653, *new(uint256.Int).SetBytes(diff2)},
+		BlockDiffInfo{1637911889623, *new(uint256.Int).SetBytes(diff3)},
+		BlockDiffInfo{1637911888900, *new(uint256.Int).SetBytes(diff4)},
+		BlockDiffInfo{1637911888227, *new(uint256.Int).SetBytes(diff5)},
+		BlockDiffInfo{1637911877864, *new(uint256.Int).SetBytes(diff6)},
+		BlockDiffInfo{1637911875570, *new(uint256.Int).SetBytes(diff7)},
+		BlockDiffInfo{1637911867620, *new(uint256.Int).SetBytes(diff8)},
+		BlockDiffInfo{1637911863497, *new(uint256.Int).SetBytes(diff9)},
+		BlockDiffInfo{1637911862363, *new(uint256.Int).SetBytes(diff10)},
+		BlockDiffInfo{1637911839267, *new(uint256.Int).SetBytes(diff11)},
+		BlockDiffInfo{1637911832464, *new(uint256.Int).SetBytes(diff12)},
+		BlockDiffInfo{1637911825582, *new(uint256.Int).SetBytes(diff13)},
+		BlockDiffInfo{1637911811002, *new(uint256.Int).SetBytes(diff14)},
+		BlockDiffInfo{1637911809762, *new(uint256.Int).SetBytes(diff15)},
+		BlockDiffInfo{1637911804871, *new(uint256.Int).SetBytes(diff16)},
+		BlockDiffInfo{1637911800093, *new(uint256.Int).SetBytes(diff17)},
+		BlockDiffInfo{1637911789309, *new(uint256.Int).SetBytes(diff18)},
+		BlockDiffInfo{1637911785915, *new(uint256.Int).SetBytes(diff19)},
+		BlockDiffInfo{1637911784248, *new(uint256.Int).SetBytes(diff20)},
+		BlockDiffInfo{1637911782976, *new(uint256.Int).SetBytes(diff21)},
+		BlockDiffInfo{1637911779023, *new(uint256.Int).SetBytes(diff22)},
+		BlockDiffInfo{1637911777159, *new(uint256.Int).SetBytes(diff23)},
+		BlockDiffInfo{1637911770816, *new(uint256.Int).SetBytes(diff24)},
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    uint256.Int
+		wantErr bool
+	}{
+		{"test difficulty",
+			args{
+				blocks,
+				5962,
+			},
+			*new(uint256.Int).SetBytes(diff0),
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := getNextTarget(tt.args.blocks, tt.args.timePlan)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getNextTarget() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("getNextTarget() got = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
