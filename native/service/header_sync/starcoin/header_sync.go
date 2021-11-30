@@ -259,7 +259,7 @@ func difficultyCalculator(native *native.NativeService, currentHeight uint64, ch
 		if err != nil {
 			return nil, fmt.Errorf("difficultyCalculator, get header by height errr: %s.", err)
 		}
-		target := new(uint256.Int).SetBytes(header.Difficulty[:])
+		target := targetToDiff(new(uint256.Int).SetBytes(header.Difficulty[:]))
 		lastDifficulties = append(lastDifficulties, BlockDiffInfo{header.Timestamp, *target})
 	}
 	nextTarget, err := getNextTarget(lastDifficulties, timeTarget)
