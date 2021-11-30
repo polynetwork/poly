@@ -369,61 +369,61 @@ func TestSyncHeader(t *testing.T) {
 	}
 }
 
-func Test_getNextTarget(t *testing.T) {
+func TestGetNextTarget(t *testing.T) {
 	type args struct {
 		blocks   []BlockDiffInfo
 		timePlan uint64
 	}
-	diff0, _ := hex.DecodeString("0e74b15e")
-	diff1, _ := hex.DecodeString("128dd7af")
-	diff2, _ := hex.DecodeString("14a42733")
-	diff3, _ := hex.DecodeString("133b86e6")
-	diff4, _ := hex.DecodeString("11f54845")
-	diff5, _ := hex.DecodeString("1310dccb")
-	diff6, _ := hex.DecodeString("1222c9f0")
-	diff7, _ := hex.DecodeString("12b92b58")
-	diff8, _ := hex.DecodeString("124da70c")
-	diff9, _ := hex.DecodeString("11408ac0")
-	diff10, _ := hex.DecodeString("15d7bcb2")
-	diff11, _ := hex.DecodeString("16317044")
-	diff12, _ := hex.DecodeString("168d12d7")
-	diff13, _ := hex.DecodeString("1ac09aff")
-	diff14, _ := hex.DecodeString("18a2cdbd")
-	diff15, _ := hex.DecodeString("184f681a")
-	diff16, _ := hex.DecodeString("18115b5e")
-	diff17, _ := hex.DecodeString("1afaf67a")
-	diff18, _ := hex.DecodeString("19f7fe19")
-	diff19, _ := hex.DecodeString("180d92a4")
-	diff20, _ := hex.DecodeString("161206f7")
-	diff21, _ := hex.DecodeString("15688141")
-	diff22, _ := hex.DecodeString("13ec5a26")
-	diff23, _ := hex.DecodeString("1431ab06")
-	diff24, _ := hex.DecodeString("135b2bde")
+	diff0, _ := hex.DecodeString("0f1ccd00")
+	diff1, _ := hex.DecodeString("109b3b25")
+	diff2, _ := hex.DecodeString("107bac2f")
+	diff3, _ := hex.DecodeString("0fc6aaf6")
+	diff4, _ := hex.DecodeString("0e4573d9")
+	diff5, _ := hex.DecodeString("0d9c454d")
+	diff6, _ := hex.DecodeString("0d02072c")
+	diff7, _ := hex.DecodeString("0c1a3c67")
+	diff8, _ := hex.DecodeString("0b9f8d6c")
+	diff9, _ := hex.DecodeString("0bb8e472")
+	diff10, _ := hex.DecodeString("0b1d156a")
+	diff11, _ := hex.DecodeString("0ad6bdde")
+	diff12, _ := hex.DecodeString("0aa1d359")
+	diff13, _ := hex.DecodeString("0a8a9c6b")
+	diff14, _ := hex.DecodeString("0a55d2b8")
+	diff15, _ := hex.DecodeString("09ff1eb6")
+	diff16, _ := hex.DecodeString("0a9b7089")
+	diff17, _ := hex.DecodeString("0afc8034")
+	diff18, _ := hex.DecodeString("0b9f2116")
+	diff19, _ := hex.DecodeString("0c551ecb")
+	diff20, _ := hex.DecodeString("0bac0c9b")
+	diff21, _ := hex.DecodeString("0b56064f")
+	diff22, _ := hex.DecodeString("0ad8c0ab")
+	diff23, _ := hex.DecodeString("0a6fc4c9")
+	diff24, _ := hex.DecodeString("0ab72a30")
 	blocks := []BlockDiffInfo{
-		BlockDiffInfo{1637911931937, *new(uint256.Int).SetBytes(diff1)},
-		BlockDiffInfo{1637911903653, *new(uint256.Int).SetBytes(diff2)},
-		BlockDiffInfo{1637911889623, *new(uint256.Int).SetBytes(diff3)},
-		BlockDiffInfo{1637911888900, *new(uint256.Int).SetBytes(diff4)},
-		BlockDiffInfo{1637911888227, *new(uint256.Int).SetBytes(diff5)},
-		BlockDiffInfo{1637911877864, *new(uint256.Int).SetBytes(diff6)},
-		BlockDiffInfo{1637911875570, *new(uint256.Int).SetBytes(diff7)},
-		BlockDiffInfo{1637911867620, *new(uint256.Int).SetBytes(diff8)},
-		BlockDiffInfo{1637911863497, *new(uint256.Int).SetBytes(diff9)},
-		BlockDiffInfo{1637911862363, *new(uint256.Int).SetBytes(diff10)},
-		BlockDiffInfo{1637911839267, *new(uint256.Int).SetBytes(diff11)},
-		BlockDiffInfo{1637911832464, *new(uint256.Int).SetBytes(diff12)},
-		BlockDiffInfo{1637911825582, *new(uint256.Int).SetBytes(diff13)},
-		BlockDiffInfo{1637911811002, *new(uint256.Int).SetBytes(diff14)},
-		BlockDiffInfo{1637911809762, *new(uint256.Int).SetBytes(diff15)},
-		BlockDiffInfo{1637911804871, *new(uint256.Int).SetBytes(diff16)},
-		BlockDiffInfo{1637911800093, *new(uint256.Int).SetBytes(diff17)},
-		BlockDiffInfo{1637911789309, *new(uint256.Int).SetBytes(diff18)},
-		BlockDiffInfo{1637911785915, *new(uint256.Int).SetBytes(diff19)},
-		BlockDiffInfo{1637911784248, *new(uint256.Int).SetBytes(diff20)},
-		BlockDiffInfo{1637911782976, *new(uint256.Int).SetBytes(diff21)},
-		BlockDiffInfo{1637911779023, *new(uint256.Int).SetBytes(diff22)},
-		BlockDiffInfo{1637911777159, *new(uint256.Int).SetBytes(diff23)},
-		BlockDiffInfo{1637911770816, *new(uint256.Int).SetBytes(diff24)},
+		BlockDiffInfo{1637915608880, *targetToDiff(new(uint256.Int).SetBytes(diff1))},
+		BlockDiffInfo{1637915598323, *targetToDiff(new(uint256.Int).SetBytes(diff2))},
+		BlockDiffInfo{1637915593635, *targetToDiff(new(uint256.Int).SetBytes(diff3))},
+		BlockDiffInfo{1637915590037, *targetToDiff(new(uint256.Int).SetBytes(diff4))},
+		BlockDiffInfo{1637915589658, *targetToDiff(new(uint256.Int).SetBytes(diff5))},
+		BlockDiffInfo{1637915587412, *targetToDiff(new(uint256.Int).SetBytes(diff6))},
+		BlockDiffInfo{1637915583955, *targetToDiff(new(uint256.Int).SetBytes(diff7))},
+		BlockDiffInfo{1637915582180, *targetToDiff(new(uint256.Int).SetBytes(diff8))},
+		BlockDiffInfo{1637915578529, *targetToDiff(new(uint256.Int).SetBytes(diff9))},
+		BlockDiffInfo{1637915571549, *targetToDiff(new(uint256.Int).SetBytes(diff10))},
+		BlockDiffInfo{1637915569450, *targetToDiff(new(uint256.Int).SetBytes(diff11))},
+		BlockDiffInfo{1637915565236, *targetToDiff(new(uint256.Int).SetBytes(diff12))},
+		BlockDiffInfo{1637915560700, *targetToDiff(new(uint256.Int).SetBytes(diff13))},
+		BlockDiffInfo{1637915555504, *targetToDiff(new(uint256.Int).SetBytes(diff14))},
+		BlockDiffInfo{1637915551514, *targetToDiff(new(uint256.Int).SetBytes(diff15))},
+		BlockDiffInfo{1637915548906, *targetToDiff(new(uint256.Int).SetBytes(diff16))},
+		BlockDiffInfo{1637915537703, *targetToDiff(new(uint256.Int).SetBytes(diff17))},
+		BlockDiffInfo{1637915528782, *targetToDiff(new(uint256.Int).SetBytes(diff18))},
+		BlockDiffInfo{1637915518066, *targetToDiff(new(uint256.Int).SetBytes(diff19))},
+		BlockDiffInfo{1637915507321, *targetToDiff(new(uint256.Int).SetBytes(diff20))},
+		BlockDiffInfo{1637915506330, *targetToDiff(new(uint256.Int).SetBytes(diff21))},
+		BlockDiffInfo{1637915503277, *targetToDiff(new(uint256.Int).SetBytes(diff22))},
+		BlockDiffInfo{1637915501439, *targetToDiff(new(uint256.Int).SetBytes(diff23))},
+		BlockDiffInfo{1637915499540, *targetToDiff(new(uint256.Int).SetBytes(diff24))},
 	}
 	tests := []struct {
 		name    string
@@ -434,7 +434,7 @@ func Test_getNextTarget(t *testing.T) {
 		{"test difficulty",
 			args{
 				blocks,
-				5962,
+				5918,
 			},
 			*new(uint256.Int).SetBytes(diff0),
 			false,
@@ -447,7 +447,7 @@ func Test_getNextTarget(t *testing.T) {
 				t.Errorf("getNextTarget() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
+			if !reflect.DeepEqual(targetToDiff(&got).ToBig(), tt.want.ToBig()) {
 				t.Errorf("getNextTarget() got = %v, want %v", got, tt.want)
 			}
 		})

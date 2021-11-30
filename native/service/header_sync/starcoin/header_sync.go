@@ -39,6 +39,7 @@ import (
 )
 
 var NETURLMAP = make(map[uint64]string)
+var MAXU256 = &big.Int{}
 
 func init() {
 	NETURLMAP[254] = "http://localhost:9850"
@@ -46,6 +47,8 @@ func init() {
 	NETURLMAP[252] = "https://proxima-seed.starcoin.org"
 	NETURLMAP[253] = "https://halley-seed.starcoin.org"
 	NETURLMAP[1] = "https://main-seed.starcoin.org"
+
+	MAXU256.SetString("115792089237316195423570985008687907853269984665640564039457584007913129639935",10)
 }
 
 func findNetwork(chainId uint64) (string, error) {
@@ -277,6 +280,7 @@ func getNextTarget(blocks []BlockDiffInfo, timePlan uint64) (uint256.Int, error)
 	for _, block := range blocks {
 		totalTarget.Add(totalTarget, block.Target.ToBig())
 	}
+
 	totalTargetU256, overflow := uint256.FromBig(totalTarget)
 	if overflow {
 		return *nextTarget, fmt.Errorf("get next target, total target overflow: %d.", totalTarget)
@@ -319,8 +323,14 @@ func getNextTarget(blocks []BlockDiffInfo, timePlan uint64) (uint256.Int, error)
 	tempAvgTarget := new(uint256.Int).Div(avgTarget, tempNumber)
 	if tempNextTarget.Gt(avgTarget) {
 		nextTarget.Mul(avgTarget, tempNumber)
-	} else if tempNextTarget.Lt(tempAvgTarget) {
+	} else if nextTarget.Lt(tempAvgTarget) {
 		nextTarget = tempAvgTarget.Clone()
 	}
 	return *nextTarget, nil
+}
+
+func targetToDiff(target *uint256.Int) *uint256.Int {
+	bigint :=  &big.Int{}
+	diff,_ := uint256.FromBig(bigint.Div(MAXU256,target.ToBig()))
+	return diff
 }
