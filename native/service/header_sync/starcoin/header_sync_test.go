@@ -23,6 +23,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/holiman/uint256"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/account"
 	"github.com/polynetwork/poly/common"
@@ -39,6 +40,8 @@ import (
 	"github.com/polynetwork/poly/native/storage"
 	stc "github.com/starcoinorg/starcoin-go/client"
 	stctypes "github.com/starcoinorg/starcoin-go/types"
+	"reflect"
+
 	//stcutils "github.com/starcoinorg/starcoin-go/utils"
 	"github.com/stretchr/testify/assert"
 	"strings"
@@ -363,5 +366,90 @@ func TestSyncHeader(t *testing.T) {
 			t.Fatal("SyncBlockHeader", err)
 		}
 		assert.Equal(t, SUCCESS, typeOfError(err))
+	}
+}
+
+func TestGetNextTarget(t *testing.T) {
+	type args struct {
+		blocks   []BlockDiffInfo
+		timePlan uint64
+	}
+	diff0, _ := hex.DecodeString("0f1ccd00")
+	diff1, _ := hex.DecodeString("109b3b25")
+	diff2, _ := hex.DecodeString("107bac2f")
+	diff3, _ := hex.DecodeString("0fc6aaf6")
+	diff4, _ := hex.DecodeString("0e4573d9")
+	diff5, _ := hex.DecodeString("0d9c454d")
+	diff6, _ := hex.DecodeString("0d02072c")
+	diff7, _ := hex.DecodeString("0c1a3c67")
+	diff8, _ := hex.DecodeString("0b9f8d6c")
+	diff9, _ := hex.DecodeString("0bb8e472")
+	diff10, _ := hex.DecodeString("0b1d156a")
+	diff11, _ := hex.DecodeString("0ad6bdde")
+	diff12, _ := hex.DecodeString("0aa1d359")
+	diff13, _ := hex.DecodeString("0a8a9c6b")
+	diff14, _ := hex.DecodeString("0a55d2b8")
+	diff15, _ := hex.DecodeString("09ff1eb6")
+	diff16, _ := hex.DecodeString("0a9b7089")
+	diff17, _ := hex.DecodeString("0afc8034")
+	diff18, _ := hex.DecodeString("0b9f2116")
+	diff19, _ := hex.DecodeString("0c551ecb")
+	diff20, _ := hex.DecodeString("0bac0c9b")
+	diff21, _ := hex.DecodeString("0b56064f")
+	diff22, _ := hex.DecodeString("0ad8c0ab")
+	diff23, _ := hex.DecodeString("0a6fc4c9")
+	diff24, _ := hex.DecodeString("0ab72a30")
+	blocks := []BlockDiffInfo{
+		BlockDiffInfo{1637915608880, *targetToDiff(new(uint256.Int).SetBytes(diff1))},
+		BlockDiffInfo{1637915598323, *targetToDiff(new(uint256.Int).SetBytes(diff2))},
+		BlockDiffInfo{1637915593635, *targetToDiff(new(uint256.Int).SetBytes(diff3))},
+		BlockDiffInfo{1637915590037, *targetToDiff(new(uint256.Int).SetBytes(diff4))},
+		BlockDiffInfo{1637915589658, *targetToDiff(new(uint256.Int).SetBytes(diff5))},
+		BlockDiffInfo{1637915587412, *targetToDiff(new(uint256.Int).SetBytes(diff6))},
+		BlockDiffInfo{1637915583955, *targetToDiff(new(uint256.Int).SetBytes(diff7))},
+		BlockDiffInfo{1637915582180, *targetToDiff(new(uint256.Int).SetBytes(diff8))},
+		BlockDiffInfo{1637915578529, *targetToDiff(new(uint256.Int).SetBytes(diff9))},
+		BlockDiffInfo{1637915571549, *targetToDiff(new(uint256.Int).SetBytes(diff10))},
+		BlockDiffInfo{1637915569450, *targetToDiff(new(uint256.Int).SetBytes(diff11))},
+		BlockDiffInfo{1637915565236, *targetToDiff(new(uint256.Int).SetBytes(diff12))},
+		BlockDiffInfo{1637915560700, *targetToDiff(new(uint256.Int).SetBytes(diff13))},
+		BlockDiffInfo{1637915555504, *targetToDiff(new(uint256.Int).SetBytes(diff14))},
+		BlockDiffInfo{1637915551514, *targetToDiff(new(uint256.Int).SetBytes(diff15))},
+		BlockDiffInfo{1637915548906, *targetToDiff(new(uint256.Int).SetBytes(diff16))},
+		BlockDiffInfo{1637915537703, *targetToDiff(new(uint256.Int).SetBytes(diff17))},
+		BlockDiffInfo{1637915528782, *targetToDiff(new(uint256.Int).SetBytes(diff18))},
+		BlockDiffInfo{1637915518066, *targetToDiff(new(uint256.Int).SetBytes(diff19))},
+		BlockDiffInfo{1637915507321, *targetToDiff(new(uint256.Int).SetBytes(diff20))},
+		BlockDiffInfo{1637915506330, *targetToDiff(new(uint256.Int).SetBytes(diff21))},
+		BlockDiffInfo{1637915503277, *targetToDiff(new(uint256.Int).SetBytes(diff22))},
+		BlockDiffInfo{1637915501439, *targetToDiff(new(uint256.Int).SetBytes(diff23))},
+		BlockDiffInfo{1637915499540, *targetToDiff(new(uint256.Int).SetBytes(diff24))},
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    uint256.Int
+		wantErr bool
+	}{
+		{"test difficulty",
+			args{
+				blocks,
+				5918,
+			},
+			*new(uint256.Int).SetBytes(diff0),
+			false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := getNextTarget(tt.args.blocks, tt.args.timePlan)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getNextTarget() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(targetToDiff(&got).ToBig(), tt.want.ToBig()) {
+				t.Errorf("getNextTarget() got = %v, want %v", got, tt.want)
+			}
+		})
 	}
 }

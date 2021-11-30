@@ -39,6 +39,7 @@ import (
 )
 
 var NETURLMAP = make(map[uint64]string)
+var MAXU256 = &big.Int{}
 
 func init() {
 	NETURLMAP[254] = "http://localhost:9850"
@@ -46,6 +47,8 @@ func init() {
 	NETURLMAP[252] = "https://proxima-seed.starcoin.org"
 	NETURLMAP[253] = "https://halley-seed.starcoin.org"
 	NETURLMAP[1] = "https://main-seed.starcoin.org"
+
+	MAXU256.SetString("115792089237316195423570985008687907853269984665640564039457584007913129639935",10)
 }
 
 func findNetwork(chainId uint64) (string, error) {
@@ -252,16 +255,19 @@ func difficultyCalculator(native *native.NativeService, currentHeight uint64, ch
 	//get last difficulty
 	var lastDifficulties = make([]BlockDiffInfo, difficultyWindow)
 	for height := currentHeight - 1; height >= currentHeight-difficultyWindow-1; height-- {
-		header, _ := GetHeaderByHeight(native, height, chainId)
+		header, err := GetHeaderByHeight(native, height, chainId)
+		if err != nil {
+			return nil, fmt.Errorf("difficultyCalculator, get header by height errr: %s.", err)
+		}
 		target := new(uint256.Int).SetBytes(header.Difficulty[:])
 		lastDifficulties = append(lastDifficulties, BlockDiffInfo{header.Timestamp, *target})
 	}
 	nextTarget, err := getNextTarget(lastDifficulties, timeTarget)
-	return nextTarget.ToBig(), err
+	return  targetToDiff(&nextTarget).ToBig(), err
 }
 
 func getNextTarget(blocks []BlockDiffInfo, timePlan uint64) (uint256.Int, error) {
-	nextTarget := new(uint256.Int).SetUint64(0)
+	nextTarget := uint256.NewInt(0)
 	length := len(blocks)
 	if length < 1 {
 		return *nextTarget, fmt.Errorf("get next target blocks is null.")
@@ -269,15 +275,19 @@ func getNextTarget(blocks []BlockDiffInfo, timePlan uint64) (uint256.Int, error)
 	if length == 1 {
 		return blocks[0].Target, nil
 	}
-	totalTarget := new(uint256.Int).SetUint64(0)
+
+	totalTarget := new(big.Int)
 	for _, block := range blocks {
-		_, overflow := totalTarget.AddOverflow(totalTarget, &block.Target)
-		if overflow {
-			return *nextTarget, fmt.Errorf("get next target, total target overflow: %d, %s.", totalTarget, block)
-		}
+		totalTarget.Add(totalTarget, block.Target.ToBig())
 	}
+
+	totalTargetU256, overflow := uint256.FromBig(totalTarget)
+	if overflow {
+		return *nextTarget, fmt.Errorf("get next target, total target overflow: %d.", totalTarget)
+	}
+
 	lengthU256 := new(uint256.Int).SetUint64(uint64(length))
-	avgTarget := totalTarget.Div(totalTarget, lengthU256)
+	avgTarget := new(uint256.Int).Div(totalTargetU256, lengthU256)
 
 	var avgTime uint64
 	if length == 2 {
@@ -296,25 +306,31 @@ func getNextTarget(blocks []BlockDiffInfo, timePlan uint64) (uint256.Int, error)
 		}
 		avgTime = totalBlockTime / uint64(vblocks)
 	}
-
 	if avgTime == 0 {
 		avgTime = 1
 	}
+
 	timePlanU256 := new(uint256.Int).SetUint64(timePlan)
 	avgTimeU256 := new(uint256.Int).SetUint64(avgTime)
-	nextTarget = avgTarget.Div(avgTarget, timePlanU256)
-	nextTarget, overflow := nextTarget.MulOverflow(nextTarget, avgTimeU256)
+	nextTarget.Div(avgTarget, timePlanU256)
+	_, overflow = nextTarget.MulOverflow(nextTarget, avgTimeU256)
 	if overflow {
 		return *nextTarget, fmt.Errorf("get next target, next target overflow: avgTimeU256: %d, nextTarget: %d, avgTimeU256: %d .", avgTimeU256, nextTarget, avgTimeU256)
 	}
-	tempNextTarget := nextTarget
+	tempNextTarget := nextTarget.Clone()
 	tempNumber := new(uint256.Int).SetUint64(2)
-	tempNextTarget = tempNextTarget.Div(tempNextTarget, tempNumber)
-	tempAvgTarget := avgTarget.Div(avgTarget, tempNumber)
+	tempNextTarget.Div(tempNextTarget, tempNumber)
+	tempAvgTarget := new(uint256.Int).Div(avgTarget, tempNumber)
 	if tempNextTarget.Gt(avgTarget) {
-		nextTarget = avgTarget.Mul(avgTarget, tempNumber)
-	} else if tempNextTarget.Lt(tempAvgTarget) {
-		nextTarget = tempAvgTarget
+		nextTarget.Mul(avgTarget, tempNumber)
+	} else if nextTarget.Lt(tempAvgTarget) {
+		nextTarget = tempAvgTarget.Clone()
 	}
 	return *nextTarget, nil
+}
+
+func targetToDiff(target *uint256.Int) *uint256.Int {
+	bigint :=  &big.Int{}
+	diff,_ := uint256.FromBig(bigint.Div(MAXU256,target.ToBig()))
+	return diff
 }

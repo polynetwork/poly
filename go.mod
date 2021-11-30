@@ -6,6 +6,7 @@ require (
 	github.com/Zilliqa/gozilliqa-sdk v1.2.1-0.20210927032600-4c733f2cb879
 	github.com/btcsuite/btcd v0.21.0-beta
 	github.com/btcsuite/btcutil v1.0.2
+	github.com/confio/ics23/go v0.6.6
 	github.com/cosmos/cosmos-sdk v0.39.1
 	github.com/ethereum/go-ethereum v1.9.15
 	github.com/gcash/bchd v0.16.5
@@ -13,7 +14,6 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/gosuri/uiprogress v0.0.1
 	github.com/hashicorp/golang-lru v0.5.4
-	github.com/confio/ics23/go v0.6.6
 	github.com/holiman/uint256 v1.2.0
 	github.com/howeyc/gopass v0.0.0-20190910152052-7cb4b85ec19c
 	github.com/itchyny/base58-go v0.1.0
