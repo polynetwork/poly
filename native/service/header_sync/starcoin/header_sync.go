@@ -263,7 +263,7 @@ func difficultyCalculator(native *native.NativeService, currentHeight uint64, ch
 		lastDifficulties = append(lastDifficulties, BlockDiffInfo{header.Timestamp, *target})
 	}
 	nextTarget, err := getNextTarget(lastDifficulties, timeTarget)
-	return nextTarget.ToBig(), err
+	return  targetToDiff(&nextTarget).ToBig(), err
 }
 
 func getNextTarget(blocks []BlockDiffInfo, timePlan uint64) (uint256.Int, error) {
