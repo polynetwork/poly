@@ -253,7 +253,7 @@ func (h *Handler) verifyHeader(header *types.BlockHeader) error {
 
 func difficultyCalculator(native *native.NativeService, currentHeight uint64, chainId uint64, timeTarget uint64, difficultyWindow uint64) (*big.Int, error) {
 	//get last difficulty
-	var lastDifficulties = make([]BlockDiffInfo, difficultyWindow)
+	var lastDifficulties []BlockDiffInfo
 	for height := currentHeight - 1; height > currentHeight-difficultyWindow-1; height-- {
 		header, err := GetHeaderByHeight(native, height, chainId)
 		if err != nil {
