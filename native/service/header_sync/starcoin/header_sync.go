@@ -48,7 +48,7 @@ func init() {
 	NETURLMAP[253] = "https://halley-seed.starcoin.org"
 	NETURLMAP[1] = "https://main-seed.starcoin.org"
 
-	MAXU256.SetString("115792089237316195423570985008687907853269984665640564039457584007913129639935",10)
+	MAXU256.SetString("115792089237316195423570985008687907853269984665640564039457584007913129639935", 10)
 }
 
 func findNetwork(chainId uint64) (string, error) {
@@ -254,7 +254,7 @@ func (h *Handler) verifyHeader(header *types.BlockHeader) error {
 func difficultyCalculator(native *native.NativeService, currentHeight uint64, chainId uint64, timeTarget uint64, difficultyWindow uint64) (*big.Int, error) {
 	//get last difficulty
 	var lastDifficulties = make([]BlockDiffInfo, difficultyWindow)
-	for height := currentHeight - 1; height >= currentHeight-difficultyWindow-1; height-- {
+	for height := currentHeight - 1; height > currentHeight-difficultyWindow-1; height-- {
 		header, err := GetHeaderByHeight(native, height, chainId)
 		if err != nil {
 			return nil, fmt.Errorf("difficultyCalculator, get header by height errr: %s.", err)
@@ -263,7 +263,7 @@ func difficultyCalculator(native *native.NativeService, currentHeight uint64, ch
 		lastDifficulties = append(lastDifficulties, BlockDiffInfo{header.Timestamp, *target})
 	}
 	nextTarget, err := getNextTarget(lastDifficulties, timeTarget)
-	return  targetToDiff(&nextTarget).ToBig(), err
+	return targetToDiff(&nextTarget).ToBig(), err
 }
 
 func getNextTarget(blocks []BlockDiffInfo, timePlan uint64) (uint256.Int, error) {
@@ -330,7 +330,7 @@ func getNextTarget(blocks []BlockDiffInfo, timePlan uint64) (uint256.Int, error)
 }
 
 func targetToDiff(target *uint256.Int) *uint256.Int {
-	bigint :=  &big.Int{}
-	diff,_ := uint256.FromBig(bigint.Div(MAXU256,target.ToBig()))
+	bigint := &big.Int{}
+	diff, _ := uint256.FromBig(bigint.Div(MAXU256, target.ToBig()))
 	return diff
 }

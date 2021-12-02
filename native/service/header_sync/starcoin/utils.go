@@ -139,7 +139,7 @@ func GetHeaderByHeight(native *native.NativeService, height, chainID uint64) (*t
 		return nil, errors.Errorf("GetHeaderByHeight, get blockHashStore error: %v", err)
 	}
 	if headerStore == nil {
-		return nil, errors.Errorf("GetHeaderByHeight, can not find any header records")
+		return nil, errors.Errorf("GetHeaderByHeight, can not find any header records, height: %v", height)
 	}
 	hashBytes, err := states.GetValueFromRawStorageItem(headerStore)
 	if err != nil {
