@@ -20,7 +20,6 @@ package neo3_state_manager
 import (
 	"fmt"
 	"github.com/polynetwork/poly/common"
-	"github.com/polynetwork/poly/common/config"
 	cstates "github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/event"
@@ -40,9 +39,10 @@ func SerializeStringArray(data []string) []byte {
 func DeserializeStringArray(data []byte, height uint32) ([]string, error) {
 	// check if is testnet and height is 8607191
 	if len(data) == 0 {
-		if config.DefConfig.P2PNode.NetworkId != config.NETWORK_ID_TEST_NET || height != 8607191 {
-			return []string{}, nil
-		}
+		//if config.DefConfig.P2PNode.NetworkId != config.NETWORK_ID_TEST_NET || height != 8607191 {
+		//	return []string{}, nil
+		//}
+		return []string{}, nil
 	}
 	source := common.NewZeroCopySource(data)
 	n, eof := source.NextVarUint()

@@ -19,8 +19,9 @@ package cross_chain_manager
 import (
 	"encoding/hex"
 	"fmt"
-	"github.com/polynetwork/poly/native/service/cross_chain_manager/zilliqa"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/consensus_vote"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/neo3legacy"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/zilliqa"
 
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
@@ -72,6 +73,8 @@ func GetChainHandler(router uint64) (scom.ChainHandler, error) {
 		return ont.NewONTHandler(), nil
 	case utils.NEO_ROUTER:
 		return neo.NewNEOHandler(), nil
+	case utils.NEO3_LEGACY_ROUTER:
+		return neo3legacy.NewNeo3Handler(), nil
 	case utils.NEO3_ROUTER:
 		return neo3.NewNeo3Handler(), nil
 	case utils.COSMOS_ROUTER:
