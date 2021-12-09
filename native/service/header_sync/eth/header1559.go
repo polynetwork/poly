@@ -246,6 +246,14 @@ func isLondon(h *Header) bool {
 	return h.BaseFee != nil || h.Number.Uint64() >= config.GetEth1559Height(config.DefConfig.P2PNode.NetworkId)
 }
 
+func isArrowGlacier(h *Header) bool {
+	forkHeight := config.GetEth4345Height(config.DefConfig.P2PNode.NetworkId)
+	if forkHeight == 0 {
+		return false
+	}
+	return h.Number.Uint64() >= forkHeight
+}
+
 // VerifyGaslimit verifies the header gas limit according increase/decrease
 // in relation to the parent gas limit.
 func VerifyGaslimit(parentGasLimit, headerGasLimit uint64) error {
