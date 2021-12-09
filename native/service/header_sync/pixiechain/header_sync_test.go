@@ -83,7 +83,8 @@ type BlockRep struct {
 }
 
 const (
-	pixieChainID uint64 = 666
+	// PixieChain Testnet chainId
+	pixieTestnetChainID uint64 = 666
 
 	// PixieChain Testnet RPC
 	pixieTestnetRPC = "https://http-testnet.chain.pixie.xyz"
@@ -236,7 +237,7 @@ func typeOfError(e error) int {
 }
 
 func getLatestHeight(native *native.NativeService) uint64 {
-	height, err := GetCanonicalHeight(native, pixieChainID)
+	height, err := GetCanonicalHeight(native, pixieTestnetChainID)
 	if err != nil {
 		return 0
 	}
@@ -245,7 +246,7 @@ func getLatestHeight(native *native.NativeService) uint64 {
 }
 
 func getHeaderHashByHeight(native *native.NativeService, height uint64) ethcommon.Hash {
-	hws, err := GetCanonicalHeader(native, pixieChainID, height)
+	hws, err := GetCanonicalHeader(native, pixieTestnetChainID, height)
 	if err != nil {
 		return ethcommon.Hash{}
 	}
@@ -254,7 +255,7 @@ func getHeaderHashByHeight(native *native.NativeService, height uint64) ethcommo
 }
 
 func getHeaderByHash(native *native.NativeService, hash ethcommon.Hash) []byte {
-	hws, err := getHeader(native, hash, pixieChainID)
+	hws, err := getHeader(native, hash, pixieTestnetChainID)
 	if err != nil {
 		return nil
 	}
@@ -320,7 +321,7 @@ func TestSyncGenesisHeader(t *testing.T) {
 	genesisHeaderBytes, _ := json.Marshal(genesisHeader)
 
 	param := new(scom.SyncGenesisHeaderParam)
-	param.ChainID = pixieChainID
+	param.ChainID = pixieTestnetChainID
 	param.GenesisHeader = genesisHeaderBytes
 	sink := common.NewZeroCopySink(nil)
 	param.Serialization(sink)
@@ -350,7 +351,7 @@ func TestSyncGenesisHeaderNoOperator(t *testing.T) {
 	genesisHeaderBytes, _ := json.Marshal(genesisHeader)
 
 	param := new(scom.SyncGenesisHeaderParam)
-	param.ChainID = pixieChainID
+	param.ChainID = pixieTestnetChainID
 	param.GenesisHeader = genesisHeaderBytes
 	sink := common.NewZeroCopySink(nil)
 	param.Serialization(sink)
@@ -382,7 +383,7 @@ func TestSyncGenesisHeaderTwice(t *testing.T) {
 		genesisHeaderBytes, _ := json.Marshal(genesisHeader)
 
 		param := new(scom.SyncGenesisHeaderParam)
-		param.ChainID = pixieChainID
+		param.ChainID = pixieTestnetChainID
 		param.GenesisHeader = genesisHeaderBytes
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
@@ -410,7 +411,7 @@ func TestSyncGenesisHeaderTwice(t *testing.T) {
 		genesisHeaderBytes, _ := json.Marshal(genesisHeader)
 
 		param := new(scom.SyncGenesisHeaderParam)
-		param.ChainID = pixieChainID
+		param.ChainID = pixieTestnetChainID
 		param.GenesisHeader = genesisHeaderBytes
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
@@ -433,7 +434,7 @@ func TestSyncGenesisHeaderTwice(t *testing.T) {
 func TestSyncGenesisHeader_ParamError(t *testing.T) {
 
 	param := new(scom.SyncGenesisHeaderParam)
-	param.ChainID = pixieChainID
+	param.ChainID = pixieTestnetChainID
 	param.GenesisHeader = nil
 	sink := common.NewZeroCopySink(nil)
 	param.Serialization(sink)
@@ -462,7 +463,6 @@ func untilGetBlockHeader(t *testing.T, height uint64) *eth.Header {
 }
 
 func TestSyncBlockHeader(t *testing.T) {
-
 	var (
 		testNative *native.NativeService
 		height     uint64
@@ -475,21 +475,20 @@ func TestSyncBlockHeader(t *testing.T) {
 		testNative, err = NewNative(nil, &types.Transaction{}, nil)
 		// add sidechain info
 		extra := ExtraInfo{
-			// test id 256, main id 128
-			ChainID: big.NewInt(128),
+			ChainID: big.NewInt(int64(pixieTestnetChainID)),
 			Period:  3,
 		}
 		extraBytes, _ := json.Marshal(extra)
 		err = side_chain_manager.PutSideChain(testNative, &side_chain_manager.SideChain{
 			ExtraInfo: extraBytes,
-			ChainId:   pixieChainID,
+			ChainId:   pixieTestnetChainID,
 		})
 		assert.NilError(t, err)
 
-		sideInfo, err := side_chain_manager.GetSideChain(testNative, pixieChainID)
+		sideInfo, err := side_chain_manager.GetSideChain(testNative, pixieTestnetChainID)
 		assert.NilError(t, err)
 		assert.Equal(t, true, bytes.Equal(sideInfo.ExtraInfo, extraBytes))
-		assert.Equal(t, sideInfo.ChainId, pixieChainID)
+		assert.Equal(t, sideInfo.ChainId, pixieTestnetChainID)
 	}
 
 	{
@@ -498,7 +497,7 @@ func TestSyncBlockHeader(t *testing.T) {
 		genesisHeaderBytes, _ := json.Marshal(genesisHeader)
 
 		param := new(scom.SyncGenesisHeaderParam)
-		param.ChainID = pixieChainID
+		param.ChainID = pixieTestnetChainID
 		param.GenesisHeader = genesisHeaderBytes
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
@@ -538,7 +537,7 @@ func TestSyncBlockHeader(t *testing.T) {
 		}
 
 		param := new(scom.SyncBlockHeaderParam)
-		param.ChainID = pixieChainID
+		param.ChainID = pixieTestnetChainID
 		param.Address = acct.Address
 		param.Headers = append(param.Headers, n1Bytes)
 		param.Headers = append(param.Headers, n2Bytes)
@@ -570,7 +569,7 @@ func TestSyncBlockHeader(t *testing.T) {
 	// check find previous validators and verify header process
 	{
 		param := new(scom.SyncBlockHeaderParam)
-		param.ChainID = pixieChainID
+		param.ChainID = pixieTestnetChainID
 		param.Address = acct.Address
 		height = getLatestHeight(testNative)
 
@@ -622,21 +621,20 @@ func TestSyncForkBlockHeader(t *testing.T) {
 		testNative, err = NewNative(nil, &types.Transaction{}, nil)
 		// add sidechain info
 		extra := ExtraInfo{
-			// test id 256, main id 128
-			ChainID: big.NewInt(128),
+			ChainID: big.NewInt(int64(pixieTestnetChainID)),
 			Period:  3,
 		}
 		extraBytes, _ := json.Marshal(extra)
 		err = side_chain_manager.PutSideChain(testNative, &side_chain_manager.SideChain{
 			ExtraInfo: extraBytes,
-			ChainId:   pixieChainID,
+			ChainId:   pixieTestnetChainID,
 		})
 		assert.NilError(t, err)
 
-		sideInfo, err := side_chain_manager.GetSideChain(testNative, pixieChainID)
+		sideInfo, err := side_chain_manager.GetSideChain(testNative, pixieTestnetChainID)
 		assert.NilError(t, err)
 		assert.Equal(t, true, bytes.Equal(sideInfo.ExtraInfo, extraBytes))
-		assert.Equal(t, sideInfo.ChainId, pixieChainID)
+		assert.Equal(t, sideInfo.ChainId, pixieTestnetChainID)
 	}
 
 	{
@@ -645,7 +643,7 @@ func TestSyncForkBlockHeader(t *testing.T) {
 		genesisHeaderBytes, _ := json.Marshal(genesisHeader)
 
 		param := new(scom.SyncGenesisHeaderParam)
-		param.ChainID = pixieChainID
+		param.ChainID = pixieTestnetChainID
 		param.GenesisHeader = genesisHeaderBytes
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
@@ -670,7 +668,7 @@ func TestSyncForkBlockHeader(t *testing.T) {
 	// check find previous validators and verify header process
 	{
 		param := new(scom.SyncBlockHeaderParam)
-		param.ChainID = pixieChainID
+		param.ChainID = pixieTestnetChainID
 		param.Address = acct.Address
 		height = getLatestHeight(testNative)
 
@@ -712,7 +710,7 @@ func TestSyncForkBlockHeader(t *testing.T) {
 	{
 		// first sync forked headers
 		param := new(scom.SyncBlockHeaderParam)
-		param.ChainID = pixieChainID
+		param.ChainID = pixieTestnetChainID
 		param.Address = acct.Address
 		height = getLatestHeight(testNative)
 
