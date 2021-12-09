@@ -46,9 +46,9 @@ func (h *Handler) MakeDepositProposal(service *native.NativeService) (*scom.Make
 		return nil, fmt.Errorf("eth MakeDepositProposal, side_chain_manager.GetSideChain error: %v", err)
 	}
 
-	value, err := verifyFromEthTx(service, params.Proof, params.Extra, params.SourceChainID, params.Height, sideChain)
+	value, err := verifyFromStarcoinTx(service, params.Proof, params.Extra, params.SourceChainID, params.Height, sideChain)
 	if err != nil {
-		return nil, fmt.Errorf("eth MakeDepositProposal, verifyFromEthTx error: %s", err)
+		return nil, fmt.Errorf("eth MakeDepositProposal, verifyFromStarcoinTx error: %s", err)
 	}
 	if err := scom.CheckDoneTx(service, value.CrossChainID, params.SourceChainID); err != nil {
 		return nil, fmt.Errorf("eth MakeDepositProposal, check done transaction error:%s", err)
