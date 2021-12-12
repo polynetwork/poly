@@ -19,9 +19,12 @@ package starcoin
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/pkg/errors"
 	"reflect"
+	"strings"
 
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
@@ -37,18 +40,89 @@ type TransactionInfoProof struct {
 	TransactionInfo stc.TransactionInfo
 	Proof           string `json:"proof"`
 	eventIndex      int    `json:"event_index"`
-	EventWithProof  string `json:"event_with_proof"`
-	StateWithProof  string `json:"state_with_proof"`
+	EventWithProof  string `json:"event"`
+	StateWithProof  string `json:"state"`
 	accessPath      string `json:"access_path"`
 }
 
+type Siblings struct {
+	Sibling []string `json:"siblings"`
+}
+
 type AccumulatorProof struct {
-	siblings []types.HashValue
+	siblings []types.HashValue `json:"siblings"`
+}
+
+type TypeTag_Struct struct {
+	Value StructTag `json:"Struct"`
+}
+
+type StructTag struct {
+	Address    string   `json:"address"`
+	Module     string   `json:"module"`
+	Name       string   `json:"name"`
+	TypeParams []string `json:"type_params"`
+}
+
+type Event struct {
+	Key            string         `json:"key"`
+	SequenceNumber int            `json:"sequence_number"`
+	TypeTag        TypeTag_Struct `json:"type_tag"`
+	EventData      []byte         `json:"event_data"`
+}
+
+type ContractEvent struct {
+	V Event `json:"V0"`
+}
+
+func hexToAccountAddress(addr string) (*types.AccountAddress, error) {
+	accountBytes, err := hexToBytes(addr)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	var addressArray types.AccountAddress
+	copy(addressArray[:], accountBytes[:16])
+	return &addressArray, nil
+}
+
+func (tag *StructTag) toTypesStructTag() (*types.TypeTag__Struct, error) {
+	address, err := hexToAccountAddress(tag.Address)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	structTag := types.StructTag{
+		Address:    *address,
+		Module:     types.Identifier(tag.Module),
+		Name:       types.Identifier(tag.Name),
+		TypeParams: nil, //todo parse typetag[]
+	}
+	return &types.TypeTag__Struct{
+		Value: structTag,
+	}, nil
+}
+
+func (event *ContractEvent) toTypesContractEvent() (*types.ContractEvent__V0, error) {
+	eventKey, err := hexToBytes(event.V.Key)
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	typeTag, err := event.V.TypeTag.Value.toTypesStructTag()
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return &types.ContractEvent__V0{
+		Value: types.ContractEventV0{
+			Key:            eventKey,
+			SequenceNumber: uint64(event.V.SequenceNumber),
+			TypeTag:        typeTag,
+			EventData:      event.V.EventData,
+		},
+	}, nil
 }
 
 type EventWithProof struct {
-	event types.ContractEvent
-	proof AccumulatorProof
+	Event ContractEvent    `json:"event"`
+	Proof AccumulatorProof `json:"proof"`
 }
 
 type Leaf struct {
@@ -77,91 +151,118 @@ var SPARSE_MERKLE_PLACEHOLDER_HASH, _ = types.CreateLiteralHash("SPARSE_MERKLE_P
 func verifyFromStarcoinTx(native *native.NativeService, proof, extra []byte, fromChainID uint64, height uint32, sideChain *cmanager.SideChain) (*scom.MakeTxParam, error) {
 	bestHeader, err := starcoin.GetCurrentHeader(native, fromChainID)
 	if err != nil {
-		return nil, fmt.Errorf("VerifyFromEthProof, get current header fail, error:%s", err)
+		return nil, fmt.Errorf("verifyFromStarcoinTx, get current header fail, error:%s", err)
 	}
 	bestHeight := uint32(bestHeader.Number)
 	if bestHeight < height || bestHeight-height < uint32(sideChain.BlocksToWait-1) {
-		return nil, fmt.Errorf("VerifyFromEthProof, transaction is not confirmed, current height: %d, input height: %d", bestHeight, height)
+		return nil, fmt.Errorf("verifyFromStarcoinTx, transaction is not confirmed, current height: %d, input height: %d", bestHeight, height)
 	}
 
 	blockData, err := starcoin.GetHeaderByHeight(native, uint64(height), fromChainID)
 	if err != nil {
-		return nil, fmt.Errorf("VerifyFromEthProof, get header by height, height:%d, error:%s", height, err)
+		return nil, fmt.Errorf("verifyFromStarcoinTx, get header by height, height:%d, error:%s", height, err)
 	}
 
 	transactionInfoProof := new(TransactionInfoProof)
-	err = json.Unmarshal(proof, transactionInfoProof)
-	if err != nil {
-		return nil, fmt.Errorf("VerifyFromSTCProof, unmarshal proof error:%s", err)
+	if err = json.Unmarshal(proof, transactionInfoProof); err != nil {
+		return nil, fmt.Errorf("verifyFromStarcoinTx, unmarshal proof error:%s", err)
 	}
 
-	_, err = VerifyEventProof(transactionInfoProof, blockData, sideChain.CCMCAddress)
+	eventData, err := VerifyEventProof(transactionInfoProof, blockData.TxnAccumulatorRoot, sideChain.CCMCAddress)
 	if err != nil {
-		return nil, fmt.Errorf("VerifyFromEthProof, verifyMerkleProof error:%v", err)
+		return nil, fmt.Errorf("verifyFromStarcoinTx, verifyMerkleProof error:%v", err)
 	}
 
 	data := common.NewZeroCopySource(extra)
 	txParam := new(scom.MakeTxParam)
 	if err := txParam.Deserialization(data); err != nil {
-		return nil, fmt.Errorf("VerifyFromEthProof, deserialize merkleValue error:%s", err)
+		return nil, fmt.Errorf("verifyFromStarcoinTx, deserialize merkleValue error:%s", err)
+	}
+	if _, err := CheckEventData(eventData, txParam); err != nil {
+		return nil, fmt.Errorf("verifyFromStarcoinTx, check event data error:%x, extra:%x", eventData, extra)
 	}
 	return txParam, nil
 }
 
-func VerifyEventProof(proof *TransactionInfoProof, data *types.BlockHeader, address []byte) (bool, error) {
-	//verify accumulator proof
-	accumulatorProof := new(AccumulatorProof)
-	err := json.Unmarshal([]byte(proof.Proof), accumulatorProof)
+func CheckEventData(data []byte, param *scom.MakeTxParam) (bool, error) {
+	event, err := BcsDeserializeCrossChainEvent(data)
 	if err != nil {
-		return false, fmt.Errorf("VerifyEventProof, accumulator proof unmarshal error:%v", err)
+		return false, fmt.Errorf("CheckEventData, deserialize error:%s", err)
+	}
+	if event.ToChainId == param.ToChainID && bytes.Equal(event.TxId, param.TxHash) && bytes.Equal(event.Sender, param.FromContractAddress) && bytes.Equal(event.ToContract, param.ToContractAddress) {
+		return true, nil
+	}
+	return false, fmt.Errorf("CheckEventData, check error:%v, param: %v", event, param)
+}
+
+func VerifyEventProof(proof *TransactionInfoProof, txnAccumulatorRoot types.HashValue, address []byte) ([]byte, error) {
+	var eventData []byte
+	//verify accumulator proof
+	accumulatorProof, err := toSiblings(proof.Proof)
+	if err != nil {
+		return eventData, fmt.Errorf("VerifyEventProof, accumulator proof unmarshal error:%v", err)
 	}
 
-	transactionHash, _ := types.BcsDeserializeHashValue([]byte(proof.TransactionInfo.TransactionHash))
-	verified, err := verifyAccumulator(*accumulatorProof, data.TxnAccumulatorRoot, transactionHash, proof.TransactionInfo.TransactionIndex)
+	transactionHash, err := toHashValue(proof.TransactionInfo.TransactionHash)
 	if err != nil {
-		return false, fmt.Errorf("VerifyEventProof, accumulator verfied failure:%v", err)
+		return eventData, fmt.Errorf("VerifyEventProof, transaction hash deserialize error:%v", err)
+	}
+	if _, err := verifyAccumulator(*accumulatorProof, txnAccumulatorRoot, transactionHash, proof.TransactionInfo.TransactionIndex); err != nil {
+		return eventData, fmt.Errorf("VerifyEventProof, accumulator verfied failure:%v", err)
 	}
 
 	if len(proof.EventWithProof) > 0 {
 		//verify event proof
-		eventWithProof := new(EventWithProof)
-		err := json.Unmarshal([]byte(proof.StateWithProof), eventWithProof)
-		if err != nil {
-			return false, fmt.Errorf("VerifyEventProof, event with proof unmarshal error:%v", err)
+		var eventWithProof EventWithProof
+		if err := json.Unmarshal([]byte(proof.EventWithProof), &eventWithProof); err != nil {
+			return eventData, fmt.Errorf("VerifyEventProof, event with proof unmarshal error:%v", err)
 		}
-		eventHash, err := eventWithProof.event.CryptoHash()
+		typeEvent, err := eventWithProof.Event.toTypesContractEvent()
 		if err != nil {
-			return false, fmt.Errorf("VerifyEventProof, event hash calculate error:%v", err)
+			return eventData, fmt.Errorf("VerifyEventProof, event to types error:%v", err)
 		}
-		eventRootHash, _ := types.BcsDeserializeHashValue([]byte(proof.TransactionInfo.EventRootHash))
-		_, err = verifyAccumulator(eventWithProof.proof, eventRootHash, *eventHash, proof.eventIndex)
+		eventHash, err := typeEvent.CryptoHash()
 		if err != nil {
-			return false, fmt.Errorf("VerifyEventProof, event proof verfied failure:%v", err)
+			return eventData, fmt.Errorf("VerifyEventProof, event crypto hash error:%v", err)
 		}
+		eventRootHash, err := toHashValue(proof.TransactionInfo.EventRootHash)
+		if err != nil {
+			return eventData, fmt.Errorf("VerifyEventProof, event root hash deserialize error:%v", err)
+		}
+		if _, err = verifyAccumulator(eventWithProof.Proof, eventRootHash, *eventHash, proof.eventIndex); err != nil {
+			return eventData, fmt.Errorf("VerifyEventProof, event proof verfied failure:%v", err)
+		}
+		eventData = typeEvent.Value.EventData
 	}
 	lenAccessPath := len(proof.accessPath)
 	lenStateProof := len(proof.StateWithProof)
 	if lenStateProof < 1 && lenAccessPath > 0 {
-		return false, fmt.Errorf("VerifyEventProof, state_proof is None, cannot verify access_path:%v", proof.accessPath)
+		return eventData, fmt.Errorf("VerifyEventProof, state_proof is None, cannot verify access_path:%v", proof.accessPath)
 	}
 	if lenStateProof > 0 && lenAccessPath > 0 {
 		//verify state proof
 		stateWithProof := new(StateWithProof)
-		err := json.Unmarshal([]byte(proof.StateWithProof), stateWithProof)
-		if err != nil {
-			return false, fmt.Errorf("VerifyEventProof, state with proof unmarshal error:%v", err)
+		if err := json.Unmarshal([]byte(proof.StateWithProof), &stateWithProof); err != nil {
+			return eventData, fmt.Errorf("VerifyEventProof, state with proof unmarshal error:%v", err)
 		}
-		stateRootHash, err := types.BcsDeserializeHashValue([]byte(proof.TransactionInfo.StateRootHash))
+		stateRootHash, err := toHashValue(proof.TransactionInfo.StateRootHash)
 		if err != nil {
-			return false, fmt.Errorf("VerifyEventProof, state root hash deserial error:%v", err)
+			return eventData, fmt.Errorf("VerifyEventProof, state root hash deserial error:%v", err)
 		}
-		accessPath, err := types.BcsDeserializeAccessPath([]byte(proof.accessPath))
+		hexAccessPath, err := hex.DecodeString(proof.accessPath)
 		if err != nil {
-			return false, fmt.Errorf("VerifyEventProof, access path deserial error:%v", err)
+			return eventData, fmt.Errorf("VerifyEventProof, access path hex decode error:%v", err)
 		}
-		return verifyState(*stateWithProof, &stateRootHash, accessPath)
+		accessPath, err := types.BcsDeserializeAccessPath(hexAccessPath)
+		if err != nil {
+			return eventData, fmt.Errorf("VerifyEventProof, access path deserial error:%v", err)
+		}
+		if _, err = verifyState(*stateWithProof, &stateRootHash, accessPath); err != nil {
+			return eventData, fmt.Errorf("VerifyEventProof, verify state error:%v", err)
+		}
+
 	}
-	return verified, nil
+	return eventData, nil
 }
 
 func verifyState(proof StateWithProof, expectedRoot *types.HashValue, path types.AccessPath) (bool, error) {
@@ -175,9 +276,12 @@ func verifyState(proof StateWithProof, expectedRoot *types.HashValue, path types
 		dataPath := path.Field1
 		dataPathIndex, err := getPathIndex(dataPath)
 		if err != nil {
-			return false, fmt.Errorf("verifyState, %v", err)
+			return false, fmt.Errorf("verifyState, get path index err: %v", err)
 		}
-		accountState, _ := types.BcsDeserializeAccountState(proof.proof.accountState)
+		accountState, err := types.BcsDeserializeAccountState(proof.proof.accountState)
+		if err != nil {
+			return false, fmt.Errorf("verifyState, account state deserialize err: %v", err)
+		}
 		if len(accountState.StorageRoots) <= (dataPathIndex + 1) {
 			storageRoot := accountState.StorageRoots[dataPathIndex]
 			if storageRoot == nil && lenResourceBlob > 0 {
@@ -199,8 +303,7 @@ func verifyState(proof StateWithProof, expectedRoot *types.HashValue, path types
 	if err != nil {
 		return false, fmt.Errorf("verifySparseMerkleProof account address key hash err: %v", err)
 	}
-	verifySparseMerkleProof(proof.proof.accountProof, expectedRoot, addrKeyHash, proof.proof.accountState)
-	return true, nil
+	return verifySparseMerkleProof(proof.proof.accountProof, expectedRoot, addrKeyHash, proof.proof.accountState)
 }
 
 func verifySparseMerkleProof(proof SparseMerkleProof, expectedRootHash *types.HashValue, elementKey types.HashValue, blob []byte) (bool, error) {
@@ -217,10 +320,7 @@ func verifySparseMerkleProof(proof SparseMerkleProof, expectedRootHash *types.Ha
 			if !hashValueEqual(elementKey, proof.leaf.requestedKey) {
 				return false, fmt.Errorf("verifySparseMerkleProof, elementKey not equal leaf requestKey: %v, %v", elementKey, proof.leaf.requestedKey)
 			}
-			hash, err := types.BcsDeserializeHashValue(blob)
-			if err != nil {
-				return false, fmt.Errorf("verifySparseMerkleProof, block hash err: %v", err)
-			}
+			hash := types.HashValue(blob)
 			if !hashValueEqual(hash, proof.leaf.accountBlob) {
 				return false, fmt.Errorf("verifySparseMerkleProof, blob hash not equal: %v, %v", hash, proof.leaf.accountBlob)
 			}
@@ -260,10 +360,41 @@ func verifySparseMerkleProof(proof SparseMerkleProof, expectedRootHash *types.Ha
 			hash, _ = types.SparseMerkleInternalNode{LeftChild: *hash, RightChild: sibling}.CryptoHash()
 		}
 	}
+	println(hex.EncodeToString(*expectedRootHash))
 	if !hashValueEqual(*expectedRootHash, *hash) {
 		return false, fmt.Errorf("Root hashes do not match. Actual root hash: %v. Expected root hash: %v.", *hash, *expectedRootHash)
 	}
 	return true, nil
+}
+
+func toSiblings(siblings string) (*AccumulatorProof, error) {
+	var obj Siblings
+	err := json.Unmarshal([]byte(siblings), &obj)
+	if err != nil {
+		return nil, fmt.Errorf("toSiblings error: %v.", err)
+	}
+	size := len(obj.Sibling)
+	var hashes []types.HashValue
+	for i := 0; i < size; i++ {
+		hash, _ := toHashValue(obj.Sibling[i])
+		hashes = append(hashes, hash)
+	}
+	proof := AccumulatorProof{siblings: hashes}
+	return &proof, nil
+}
+
+func hexToBytes(h string) ([]byte, error) {
+	var bs []byte
+	var err error
+	if !strings.HasPrefix(h, "0x") {
+		bs, err = hex.DecodeString(h)
+	} else {
+		bs, err = hex.DecodeString(h[2:])
+	}
+	if err != nil {
+		return nil, errors.WithStack(err)
+	}
+	return bs, nil
 }
 
 func Bytes2Bits(data []byte) []int {
@@ -276,6 +407,14 @@ func Bytes2Bits(data []byte) []int {
 	}
 	fmt.Println(len(dst))
 	return dst
+}
+
+func toHashValue(hash string) (types.HashValue, error) {
+	hashByes, err := hex.DecodeString(strings.Replace(hash, "0x", "", 1))
+	if err != nil {
+		return nil, err
+	}
+	return types.HashValue(hashByes), nil
 }
 
 func hashValueEqual(hash1, hash2 types.HashValue) bool {
@@ -328,14 +467,17 @@ func verifyAccumulator(proof AccumulatorProof, expectedRoot types.HashValue, has
 		return false, fmt.Errorf("verifyAccumulator, Accumulator proof has more than (%d) siblings.", length)
 	}
 	elementIndex := index
-	elementHashBytes, _ := hash.BcsSerialize()
+	elementHashBytes := []byte(hash)
 
 	for i := 0; i < length; i++ {
-		siblingBytes, _ := proof.siblings[i].BcsSerialize()
+		println(elementIndex)
+		println(hex.EncodeToString(elementHashBytes))
+		siblingBytes := []byte(proof.siblings[i])
 		elementHashBytes = internalHash(elementIndex, elementHashBytes, siblingBytes)
 		elementIndex = elementIndex / 2
 	}
-	expectedRootBytes, _ := expectedRoot.BcsSerialize()
+	expectedRootBytes := []byte(expectedRoot)
+	println(hex.EncodeToString(elementHashBytes))
 	if bytes.Equal(expectedRootBytes, elementHashBytes) {
 		return true, nil
 	} else {
