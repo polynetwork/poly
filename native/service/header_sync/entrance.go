@@ -19,6 +19,8 @@ package header_sync
 
 import (
 	"fmt"
+
+	"github.com/polynetwork/poly/native/service/header_sync/pixiechain"
 	"github.com/polynetwork/poly/native/service/header_sync/zilliqa"
 	"github.com/polynetwork/poly/native/service/header_sync/zilliqalegacy"
 
@@ -91,6 +93,8 @@ func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
 		return polygon.NewHeimdallHandler(), nil
 	case utils.POLYGON_BOR_ROUTER:
 		return polygon.NewBorHandler(), nil
+	case utils.PIXIECHAIN_ROUTER:
+		return pixiechain.NewPixieHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported router:%d", router)
 	}
