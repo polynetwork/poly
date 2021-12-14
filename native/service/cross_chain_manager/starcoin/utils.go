@@ -101,27 +101,19 @@ func (tag *StructTag) toTypesStructTag() (*types.TypeTag__Struct, error) {
 	}, nil
 }
 
-func (event *ContractEvent) toTypesContractEvent() (*types.ContractEvent__V0, error) {
-	eventKey, err := hexToBytes(event.V.Key)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	typeTag, err := event.V.TypeTag.Value.toTypesStructTag()
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
+func toTypesContractEvent(event *types.ContractEventV0) *types.ContractEvent__V0 {
 	return &types.ContractEvent__V0{
 		Value: types.ContractEventV0{
-			Key:            eventKey,
-			SequenceNumber: uint64(event.V.SequenceNumber),
-			TypeTag:        typeTag,
-			EventData:      event.V.EventData,
+			Key:            event.Key,
+			SequenceNumber: event.SequenceNumber,
+			TypeTag:        event.TypeTag,
+			EventData:      event.EventData,
 		},
-	}, nil
+	}
 }
 
 type EventWithProof struct {
-	Event ContractEvent    `json:"event"`
+	Event string           `json:"event"`
 	Proof AccumulatorProof `json:"proof"`
 }
 
@@ -217,10 +209,15 @@ func VerifyEventProof(proof *TransactionInfoProof, txnAccumulatorRoot types.Hash
 		if err := json.Unmarshal([]byte(proof.EventWithProof), &eventWithProof); err != nil {
 			return eventData, fmt.Errorf("VerifyEventProof, event with proof unmarshal error:%v", err)
 		}
-		typeEvent, err := eventWithProof.Event.toTypesContractEvent()
+		eventByte, err := hexToBytes(eventWithProof.Event)
+		if err != nil {
+			return eventData, fmt.Errorf("VerifyEventProof, event decode error:%v", err)
+		}
+		typeEventV0, err := stc.EventToContractEventV0(eventByte)
 		if err != nil {
 			return eventData, fmt.Errorf("VerifyEventProof, event to types error:%v", err)
 		}
+		typeEvent := toTypesContractEvent(typeEventV0)
 		eventHash, err := typeEvent.CryptoHash()
 		if err != nil {
 			return eventData, fmt.Errorf("VerifyEventProof, event crypto hash error:%v", err)
