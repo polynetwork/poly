@@ -125,11 +125,14 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 
 	for _, v := range headerParams.Headers {
 		var jsonHeader stc.BlockHeaderWithDifficutyInfo
-		err := json.Unmarshal(v, &jsonHeader)
+		err = json.Unmarshal(v, &jsonHeader)
 		if err != nil {
 			return errors.Errorf("SyncBlockHeader, deserialize header err: %v", err)
 		}
-		var header, _ = jsonHeader.BlockHeader.ToTypesHeader()
+		var header, err = jsonHeader.BlockHeader.ToTypesHeader()
+		if err != nil {
+			return errors.Errorf("SyncBlockHeader, to types header err: %v", err)
+		}
 		headerHash, err := header.GetHash()
 		currentHeight := header.Number
 		timeTarget := jsonHeader.BlockTimeTarget

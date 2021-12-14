@@ -381,6 +381,76 @@ func TestSyncHeader(t *testing.T) {
 	}
 }
 
+const HalleyTwiceHeaders = `
+[{
+		"author":"0xed0f7fcbc522176bf6c8c42f60419718",
+		"author_auth_key":null,
+		"block_accumulator_root":"0xb8a48ea936077e2dd9729f0c20edab2a0fa80d9a9f70122c650f508cac0cb5a3",
+		"block_hash":"0x332e953eae71c328706dd13bf46468fba4b908160766dee255bd7de6db38d348",
+		"body_hash":"0xc01e0329de6d899348a8ef4bd51db56175b3fa0988e57c3dcec8eaf13a164d97",
+		"chain_id":253,
+		"difficulty":"0xc7",
+		"extra": "0x00000000",
+		"gas_used":"0",
+		"nonce":0,
+		"number":"240408",
+		"parent_hash":"0x44db7f290576c412773e3312ee86b561951ab69f02f8232e8f154950df7ae671",
+		"state_root":"0x36426abb5ee6a57d1282cf56d5d56dbd7a96087e6de7a89a1d518df61d507fbc",
+		"timestamp":"1639471449294",
+		"txn_accumulator_root":"0xab9484e70d66c79d0a557fa4a559d7f86be9dcb3db034f7f3594719747378368"
+},
+{
+      "block_hash": "0x0c84999e0d7ff37bc0cd3c7ecb9ef0aa1109946746ebbbe440ed5488c4202aee",
+      "parent_hash": "0x44db7f290576c412773e3312ee86b561951ab69f02f8232e8f154950df7ae671",
+      "timestamp": "1639471449232",
+      "number": "240408",
+      "author": "0xfab981cf1ee57d043be6f4f80b557506",
+      "author_auth_key": null,
+      "txn_accumulator_root": "0xfc6975df3f9423272bbd2d4e0ae780b84a0ec380031d39f639d4ae3063dda4c3",
+      "block_accumulator_root": "0xb8a48ea936077e2dd9729f0c20edab2a0fa80d9a9f70122c650f508cac0cb5a3",
+      "state_root": "0xc0a049ebf7cebc162396d8705e7c4b3ef8181555be6453ab6221d8e2852d067a",
+      "gas_used": "0",
+      "difficulty": "0xc7",
+      "body_hash": "0xc01e0329de6d899348a8ef4bd51db56175b3fa0988e57c3dcec8eaf13a164d97",
+      "chain_id": 253,
+      "nonce": 2352805633,
+      "extra": "0x00000000"
+    },
+    {
+      "block_hash": "0x44db7f290576c412773e3312ee86b561951ab69f02f8232e8f154950df7ae671",
+      "parent_hash": "0xfdaf1afd388dbbe8e1f11d3cea040b7cb97afee64ee0a878dfed0a70986b43d1",
+      "timestamp": "1639471446988",
+      "number": "240407",
+      "author": "0x3809644a7409cca52138ce747c56eaf2",
+      "author_auth_key": null,
+      "txn_accumulator_root": "0xd96c60ea038a484817dce5894d71b1374f6b8cb9323586aa363b34ed6f6e0a7c",
+      "block_accumulator_root": "0xd583ff38720230a3384372316e1b04e8489c5d22c67fc94023ac3174384c44ea",
+      "state_root": "0x5ec2e3485f8e4f60a1e78a1219e867d148e0fd3bd68fd311cb6ebc88bd1e6fdb",
+      "gas_used": "0",
+      "difficulty": "0xc2",
+      "body_hash": "0xc01e0329de6d899348a8ef4bd51db56175b3fa0988e57c3dcec8eaf13a164d97",
+      "chain_id": 253,
+      "nonce": 1662875237,
+      "extra": "0x00000000"
+    },
+    {
+      "block_hash": "0xfdaf1afd388dbbe8e1f11d3cea040b7cb97afee64ee0a878dfed0a70986b43d1",
+      "parent_hash": "0x3cbb453c69830104323af8bff2ed428d38b6f385c30ab8c5448ca5b573095c8b",
+      "timestamp": "1639471443657",
+      "number": "240406",
+      "author": "0x3809644a7409cca52138ce747c56eaf2",
+      "author_auth_key": null,
+      "txn_accumulator_root": "0xd33574fe812fa01020db2bbec8b5ee61d7167e6fc6cd86ea9bd6f87c2db924fe",
+      "block_accumulator_root": "0xce1e4100b9dc2c91289815c964015a50e29c8498d3741e9bf8c060f802c91d15",
+      "state_root": "0xa37e42310fae488f7b6b8f9d151f46e50fd5a39da0f8dd0bf92e100e41e78fad",
+      "gas_used": "0",
+      "difficulty": "0xde",
+      "body_hash": "0xc01e0329de6d899348a8ef4bd51db56175b3fa0988e57c3dcec8eaf13a164d97",
+      "chain_id": 253,
+      "nonce": 2790458158,
+      "extra": "0x00000000"
+    }
+]`
 const HalleyHeaders = `
 [
   {
@@ -893,6 +963,58 @@ func TestSyncHalleyHeader(t *testing.T) {
 		assert.Equal(t, SUCCESS, typeOfError(err))
 	}
 }
+
+func TestSyncHeaderTwice(t *testing.T) {
+	STCHandler := NewSTCHandler()
+	var native *native.NativeService
+	tx := &types.Transaction{
+		SignedAddr: []common.Address{acct.Address},
+	}
+	var jsonHeaders []stc.BlockHeader
+	json.Unmarshal([]byte(HalleyTwiceHeaders), &jsonHeaders)
+
+	{
+		genesisHeader, _ := json.Marshal(jsonHeaders[3])
+		param := new(scom.SyncGenesisHeaderParam)
+		param.ChainID = 1
+		param.GenesisHeader = genesisHeader
+		sink := common.NewZeroCopySink(nil)
+		param.Serialization(sink)
+
+		native = NewNative(sink.Bytes(), tx, nil)
+		err := STCHandler.SyncGenesisHeader(native)
+		assert.Equal(t, SUCCESS, typeOfError(err))
+
+		height := getLatestHeight(native)
+		assert.Equal(t, uint64(240406), height)
+		headerHash := getHeaderHashByHeight(native, 240406)
+		headerFormStore := getHeaderByHash(native, &headerHash)
+		header, _ := stctypes.BcsDeserializeBlockHeader(headerFormStore)
+		newHeader, _ := jsonHeaders[3].ToTypesHeader()
+		assert.Equal(t, header, *newHeader)
+	}
+	{
+		param := new(scom.SyncBlockHeaderParam)
+		param.ChainID = 1
+		param.Address = acct.Address
+		for i := 2; i >= 0; i-- {
+			header, _ := json.Marshal(getWithDifficultyHeader(jsonHeaders[i]))
+			param.Headers = append(param.Headers, header)
+		}
+		sink := common.NewZeroCopySink(nil)
+		param.Serialization(sink)
+
+		native = NewNative(sink.Bytes(), tx, native.GetCacheDB())
+		err := STCHandler.SyncBlockHeader(native)
+		if err != nil {
+			t.Fatal("SyncBlockHeader", err)
+		}
+		assert.Equal(t, SUCCESS, typeOfError(err))
+		height := getLatestHeight(native)
+		assert.Equal(t, uint64(240408), height)
+	}
+}
+
 func TestGetNextTarget(t *testing.T) {
 	type args struct {
 		blocks   []BlockDiffInfo
