@@ -28,6 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/common/log"
 	cstates "github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/native"
@@ -237,6 +238,9 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		err := json.Unmarshal(v, &header)
 		if err != nil {
 			return fmt.Errorf("heco Handler SyncBlockHeader, deserialize header err: %v", err)
+		}
+		if needFix(native) {
+			header.BaseFee = nil
 		}
 		headerHash := header.Hash()
 
@@ -712,6 +716,10 @@ func verifyHeader(native *native.NativeService, header *eth.Header, ctx *Context
 	return verifyCascadingFields(native, header, ctx)
 }
 
+func needFix(native *native.NativeService) bool {
+	return config.NETWORK_ID_TEST_NET == config.DefConfig.P2PNode.NetworkId && native.GetHeight() < 14939298
+}
+
 func verifyCascadingFields(native *native.NativeService, header *eth.Header, ctx *Context) (signer ecommon.Address, err error) {
 
 	number := header.Number.Uint64()
@@ -737,7 +745,7 @@ func verifyCascadingFields(native *native.NativeService, header *eth.Header, ctx
 		return
 	}
 
-	if !is120(header) {
+	if !is120(header) || needFix(native) {
 		// Verify BaseFee not present before EIP-1559 fork.
 		if header.BaseFee != nil {
 			err = fmt.Errorf("invalid baseFee before fork: have %d, want <nil>", header.BaseFee)
