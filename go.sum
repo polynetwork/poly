@@ -727,6 +727,8 @@ github.com/starcoinorg/starcoin-go v0.0.0-20211209071159-39c99ab0299f h1:5HYWdOJ
 github.com/starcoinorg/starcoin-go v0.0.0-20211209071159-39c99ab0299f/go.mod h1:P9XqzWTePMp9MxrXY9ND/diw388Gk3nUHs/QVaAZnzA=
 github.com/starcoinorg/starcoin-go v0.0.0-20211213020224-42e5adc9747d h1:4oJeh784F42HkpnHnqHwLRXqzAVBVfPtTor+8/C7zys=
 github.com/starcoinorg/starcoin-go v0.0.0-20211213020224-42e5adc9747d/go.mod h1:P9XqzWTePMp9MxrXY9ND/diw388Gk3nUHs/QVaAZnzA=
+github.com/starcoinorg/starcoin-go v0.0.0-20211215063442-848d4661f480 h1:dUTGvbI6AIM1HxxwtQrqE/7DjfehasMO2xYdWl7BmAE=
+github.com/starcoinorg/starcoin-go v0.0.0-20211215063442-848d4661f480/go.mod h1:P9XqzWTePMp9MxrXY9ND/diw388Gk3nUHs/QVaAZnzA=
 github.com/status-im/keycard-go v0.0.0-20190316090335-8537d3370df4 h1:Gb2Tyox57NRNuZ2d3rmvB3pcmbu7O1RS3m8WRx7ilrg=
 github.com/status-im/keycard-go v0.0.0-20190316090335-8537d3370df4/go.mod h1:RZLeN1LMWmRsyYjvAu+I6Dm9QmlDaIIt+Y+4Kd7Tp+Q=
 github.com/steakknife/bloomfilter v0.0.0-20180922174646-6819c0d2a570 h1:gIlAHnH1vJb5vwEjIp5kBj/eu99p/bl0Ay2goiPe5xE=

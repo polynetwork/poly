@@ -24,7 +24,6 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 	stc "github.com/starcoinorg/starcoin-go/client"
-	"github.com/starcoinorg/starcoin-go/types"
 	"math/big"
 	"time"
 
@@ -87,11 +86,12 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 		return errors.Errorf("StarcoinHandler SyncGenesisHeader, checkWitness error: %v", err)
 	}
 
-	header, err := getGenesisHeader(native.GetInput())
+	jsonHeaderAndInfo, err := getGenesisHeader(native.GetInput())
 	if err != nil {
 		return fmt.Errorf("StarcoinHandler SyncGenesisHeader: %s", err)
 	}
 
+	header, err := jsonHeaderAndInfo.BlockHeader.ToTypesHeader()
 	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.GENESIS_HEADER), utils.GetUint64Bytes(params.ChainID)))
 	if err != nil {
 		return errors.Errorf("STCHandler GetHeaderByHeight, get blockHashStore error: %v", err)
@@ -100,14 +100,13 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 		return errors.Errorf("STCHandler GetHeaderByHeight, genesis header had been initialized")
 	}
 
-	if err != nil {
-		return errors.WithStack(err)
-	}
-	err = putGenesisBlockHeader(native, header, params.ChainID)
+	err = putGenesisBlockHeader(native, *header, params.ChainID)
 	if err != nil {
 		return fmt.Errorf("STCHandler SyncGenesisHeader, put blockHeader error: %v", err)
 	}
-
+	if err = putGenesisBlockInfo(native, jsonHeaderAndInfo); err != nil {
+		return fmt.Errorf("STCHandler SyncGenesisHeader, put genesis BlockInfo error: %v", err)
+	}
 	return nil
 }
 
@@ -200,13 +199,11 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			}
 		}
 
-		// verfify header
-		err = h.verifyHeader(header)
-		if err != nil {
-			return errors.Errorf("SyncBlockHeader, verify header error: %v, header: %s", err, string(v))
-		}
 		//block header storage
-		hederDifficultySum := new(big.Int).Add(header.GetDiffculty(), parentHeader.GetDiffculty())
+		totalDifficulty, err := getTotalDifficulty(native)
+		if err != nil {
+			return errors.Errorf("SyncGenesisHeader, get total difficulty error: %v, header: %s", err, string(v))
+		}
 		err = putBlockHeader(native, *header, headerParams.ChainID)
 		if err != nil {
 			return errors.Errorf("SyncGenesisHeader, put blockHeader error: %v, header: %s", err, string(v))
@@ -220,37 +217,42 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		if err != nil {
 			return errors.WithStack(err)
 		}
+		currentDifficulty, overflow := uint256.FromBig(currentHeader.GetDiffculty())
+		if overflow {
+			return errors.Errorf("SyncGenesisHeader, get current difficulty overflow, header: %s", string(v))
+		}
 		if bytes.Equal(*currentHeaderHash, header.ParentHash) {
 			appendHeader2Main(native, header.Number, *headerHash, headerParams.ChainID)
 		} else {
 			//
-			if hederDifficultySum.Cmp(currentHeader.GetDiffculty()) > 0 {
+			if totalDifficulty.Cmp(currentDifficulty) > 0 {
 				ReStructChain(native, currentHeader, header, headerParams.ChainID)
 			}
 		}
+		//update total difficulty
+		newTotal, overflow := totalDifficulty.AddOverflow(totalDifficulty, currentDifficulty)
+		if overflow {
+			return errors.Errorf("SyncGenesisHeader, update total difficulty overflow, header: %s", string(v))
+		}
+		updateTotalDifficulty(native, newTotal.Bytes())
 	}
 	return nil
 }
 
-func getGenesisHeader(input []byte) (types.BlockHeader, error) {
+func getGenesisHeader(input []byte) (stc.BlockHeaderAndBlockInfo, error) {
 	params := new(scom.SyncGenesisHeaderParam)
 	if err := params.Deserialization(common.NewZeroCopySource(input)); err != nil {
-		return types.BlockHeader{}, fmt.Errorf("getGenesisHeader, contract params deserialize error: %v", err)
+		return stc.BlockHeaderAndBlockInfo{}, fmt.Errorf("getGenesisHeader, contract params deserialize error: %v", err)
 	}
-	var jsonHeader stc.BlockHeader
-	err := json.Unmarshal(params.GenesisHeader, &jsonHeader)
+	var jsonHeaderAndInfo stc.BlockHeaderAndBlockInfo
+	err := json.Unmarshal(params.GenesisHeader, &jsonHeaderAndInfo)
 	if err != nil {
-		return types.BlockHeader{}, fmt.Errorf("getGenesisHeader, deserialize header err: %v", err)
+		return stc.BlockHeaderAndBlockInfo{}, fmt.Errorf("getGenesisHeader, deserialize header err: %v", err)
 	}
-	header, err := jsonHeader.ToTypesHeader()
-	return *header, err
+	return jsonHeaderAndInfo, err
 }
 
 func (h *Handler) SyncCrossChainMsg(native *native.NativeService) error {
-	return nil
-}
-
-func (h *Handler) verifyHeader(header *types.BlockHeader) error {
 	return nil
 }
 

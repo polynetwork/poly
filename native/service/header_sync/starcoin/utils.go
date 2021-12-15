@@ -36,6 +36,7 @@ type BlockDiffInfo struct {
 }
 
 const allowedFutureBlockTime = 30 * time.Second
+const TOTAL_DIFFICULTY = "totalDifficulty"
 
 func putBlockHeader(native *native.NativeService, blockHeader types.BlockHeader, chainID uint64) error {
 	contract := utils.HeaderSyncContractAddress
@@ -51,6 +52,34 @@ func putBlockHeader(native *native.NativeService, blockHeader types.BlockHeader,
 		states.GenRawStorageItem(storeBytes))
 	scom.NotifyPutHeader(native, chainID, blockHeader.Number, stc.BytesToHexString(*headerHash))
 	return nil
+}
+
+func putGenesisBlockInfo(native *native.NativeService, blockInfo stc.BlockHeaderAndBlockInfo) error {
+	difficulty, err := stc.HexStringToBytes(blockInfo.BlockInfo.TotalDifficulty)
+	if err != nil {
+		return err
+	}
+	updateTotalDifficulty(native, difficulty)
+	return nil
+}
+
+func updateTotalDifficulty(native *native.NativeService, difficulty []byte) {
+	contract := utils.HeaderSyncContractAddress
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(TOTAL_DIFFICULTY)), states.GenRawStorageItem(difficulty))
+}
+
+func getTotalDifficulty(native *native.NativeService) (*uint256.Int, error) {
+	contract := utils.HeaderSyncContractAddress
+	difficulty := new(uint256.Int)
+	rawBytes, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(TOTAL_DIFFICULTY)))
+	if err != nil {
+		return difficulty, err
+	}
+	difficultyBytes, err := states.GetValueFromRawStorageItem(rawBytes)
+	if err != nil {
+		return difficulty, err
+	}
+	return difficulty.SetBytes(difficultyBytes), nil
 }
 
 func putGenesisBlockHeader(native *native.NativeService, blockHeader types.BlockHeader, chainID uint64) error {
