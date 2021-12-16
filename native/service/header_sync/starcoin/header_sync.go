@@ -104,9 +104,15 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 	if err != nil {
 		return fmt.Errorf("STCHandler SyncGenesisHeader, put blockHeader error: %v", err)
 	}
-	if err = putGenesisBlockInfo(native, jsonHeaderAndInfo); err != nil {
-		return fmt.Errorf("STCHandler SyncGenesisHeader, put genesis BlockInfo error: %v", err)
+	blockInfo, err := jsonHeaderAndInfo.BlockInfo.ToTypesBlockInfo()
+	if err != nil {
+		return errors.Errorf("SyncGenesisHeader, block info parse error: %v, header: %v", err, jsonHeaderAndInfo)
 	}
+	err = putBlockInfo(native, *blockInfo, params.ChainID)
+	if err != nil {
+		return errors.Errorf("SyncGenesisHeader, put block info error: %v, header: %v", err, jsonHeaderAndInfo)
+	}
+
 	return nil
 }
 
@@ -123,7 +129,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 	}
 
 	for _, v := range headerParams.Headers {
-		var jsonHeader stc.BlockHeaderWithDifficutyInfo
+		var jsonHeader stc.BlockHeaderWithDifficultyInfo
 		err = json.Unmarshal(v, &jsonHeader)
 		if err != nil {
 			return errors.Errorf("SyncBlockHeader, deserialize header err: %v", err)
@@ -157,13 +163,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		if err != nil {
 			return errors.Errorf("SyncBlockHeader, get the parent block header hash failed. Error:%s, header: %s", err, string(v))
 		}
-		/**
-		this code source refer to https://github.com/ethereum/go-ethereum/blob/master/consensus/ethash/consensus.go
-		verify header need to verify:
-		1. parent hash
-		2. extra size
-		3. current time
-		*/
+
 		//verify whether parent hash validity
 		if !bytes.Equal(*parentHeaderHash, header.ParentHash) {
 			return errors.Errorf("SyncBlockHeader, parent header is not right. Header: %s", string(v))
@@ -200,13 +200,17 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		}
 
 		//block header storage
-		totalDifficulty, err := getTotalDifficulty(native)
-		if err != nil {
-			return errors.Errorf("SyncGenesisHeader, get total difficulty error: %v, header: %s", err, string(v))
-		}
 		err = putBlockHeader(native, *header, headerParams.ChainID)
 		if err != nil {
 			return errors.Errorf("SyncGenesisHeader, put blockHeader error: %v, header: %s", err, string(v))
+		}
+		blockInfo, err := jsonHeader.BlockInfo.ToTypesBlockInfo()
+		if err != nil {
+			return errors.Errorf("SyncBlockHeader, block info parse error: %v, header: %s", err, string(v))
+		}
+		err = putBlockInfo(native, *blockInfo, headerParams.ChainID)
+		if err != nil {
+			return errors.Errorf("SyncBlockHeader, put block info error: %v, header: %s", err, string(v))
 		}
 		// get current header of main
 		currentHeader, err := GetCurrentHeader(native, headerParams.ChainID)
@@ -217,24 +221,26 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		currentDifficulty, overflow := uint256.FromBig(currentHeader.GetDiffculty())
-		if overflow {
-			return errors.Errorf("SyncGenesisHeader, get current difficulty overflow, header: %s", string(v))
-		}
 		if bytes.Equal(*currentHeaderHash, header.ParentHash) {
 			appendHeader2Main(native, header.Number, *headerHash, headerParams.ChainID)
 		} else {
-			//
-			if totalDifficulty.Cmp(currentDifficulty) > 0 {
+			//get current total difficulty
+			blockInfo, err := getBlockInfo(native, *currentHeaderHash, headerParams.ChainID)
+			if err != nil {
+				return errors.Errorf("get block info err:%x  error:%s", currentHeaderHash, err)
+			}
+			currentTotalDifficulty := new(uint256.Int).SetBytes(blockInfo.TotalDifficulty[:])
+			//get fork header parent total difficulty
+			parentBlockInfo, err := getBlockInfo(native, header.ParentHash, headerParams.ChainID)
+			if err != nil {
+				return errors.Errorf("get parent block info err:%x  error:%s", currentHeaderHash, err)
+			}
+			parentTotalDifficulty := new(uint256.Int).SetBytes(parentBlockInfo.TotalDifficulty[:])
+
+			if currentTotalDifficulty.Cmp(parentTotalDifficulty) > 0 {
 				ReStructChain(native, currentHeader, header, headerParams.ChainID)
 			}
 		}
-		//update total difficulty
-		newTotal, overflow := totalDifficulty.AddOverflow(totalDifficulty, currentDifficulty)
-		if overflow {
-			return errors.Errorf("SyncGenesisHeader, update total difficulty overflow, header: %s", string(v))
-		}
-		updateTotalDifficulty(native, newTotal.Bytes())
 	}
 	return nil
 }
