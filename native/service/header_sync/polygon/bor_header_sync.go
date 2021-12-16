@@ -40,6 +40,7 @@ import (
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	scom "github.com/polynetwork/poly/native/service/header_sync/common"
+	"github.com/polynetwork/poly/native/service/header_sync/eth"
 	polygonTypes "github.com/polynetwork/poly/native/service/header_sync/polygon/types"
 	"github.com/polynetwork/poly/native/service/utils"
 	"github.com/tendermint/tendermint/crypto/merkle"
@@ -57,7 +58,7 @@ func NewBorHandler() *BorHandler {
 
 // HeaderWithOptionalSnap ...
 type HeaderWithOptionalSnap struct {
-	Header   types.Header
+	Header   eth.Header
 	Snapshot *Snapshot
 }
 
@@ -202,7 +203,7 @@ type HeaderWithDifficultySum struct {
 }
 
 type HeaderWithOptionalProof struct {
-	Header types.Header
+	Header eth.Header
 	Proof  []byte
 }
 
@@ -225,11 +226,15 @@ func (h *BorHandler) SyncBlockHeader(native *native.NativeService) error {
 
 	ctx := &Context{ExtraInfo: extraInfo, ChainID: headerParams.ChainID, Cdc: polygonTypes.NewCDC()}
 
+	needFix := config.NETWORK_ID_TEST_NET == config.DefConfig.P2PNode.NetworkId && native.GetHeight() <= 20421407+5000
 	for _, v := range headerParams.Headers {
 		var headerWOP HeaderWithOptionalProof
 		err := json.Unmarshal(v, &headerWOP)
 		if err != nil {
 			return fmt.Errorf("bor Handler SyncBlockHeader, deserialize header err: %v", err)
+		}
+		if needFix {
+			headerWOP.Header.BaseFee = nil
 		}
 		headerHash := headerWOP.Header.Hash()
 
@@ -359,7 +364,7 @@ func putCanonicalHeight(native *native.NativeService, chainID uint64, height uin
 		cstates.GenRawStorageItem(utils.GetUint64Bytes(uint64(height))))
 }
 
-func addHeader(native *native.NativeService, header *types.Header, snap *Snapshot, ctx *Context) (err error) {
+func addHeader(native *native.NativeService, header *eth.Header, snap *Snapshot, ctx *Context) (err error) {
 
 	parentHeader, err := getHeader(native, header.ParentHash, ctx.ChainID)
 	if err != nil {
@@ -643,7 +648,7 @@ func validateHeaderExtraField(native *native.NativeService, headerWOP *HeaderWit
 	return
 }
 
-func verifyCascadingFields(native *native.NativeService, header *types.Header, ctx *Context) (snap *Snapshot, err error) {
+func verifyCascadingFields(native *native.NativeService, header *eth.Header, ctx *Context) (snap *Snapshot, err error) {
 
 	number := header.Number.Uint64()
 
@@ -764,7 +769,7 @@ func isSprintStart(number, sprint uint64) bool {
 // for test
 var mockSigner ecommon.Address
 
-func verifySeal(native *native.NativeService, header *types.Header, ctx *Context, parent *HeaderWithDifficultySum, snap *Snapshot) (signer ecommon.Address, err error) {
+func verifySeal(native *native.NativeService, header *eth.Header, ctx *Context, parent *HeaderWithDifficultySum, snap *Snapshot) (signer ecommon.Address, err error) {
 	// Verifying the genesis block is not supported
 	number := header.Number.Uint64()
 	if number == 0 {
@@ -817,7 +822,7 @@ func CalcProducerDelay(number uint64, succession int, ctx *Context) uint64 {
 }
 
 // ecrecover extracts the Ethereum account address from a signed header.
-func ecrecover(header *types.Header) (ecommon.Address, error) {
+func ecrecover(header *eth.Header) (ecommon.Address, error) {
 	// Retrieve the signature from the header extra-data
 	if len(header.Extra) < extraSeal {
 		return ecommon.Address{}, errors.New("extra-data 65 byte signature suffix missing")
@@ -836,14 +841,14 @@ func ecrecover(header *types.Header) (ecommon.Address, error) {
 }
 
 // SealHash returns the hash of a block prior to it being sealed.
-func SealHash(header *types.Header) (hash ecommon.Hash) {
+func SealHash(header *eth.Header) (hash ecommon.Hash) {
 	hasher := sha3.NewLegacyKeccak256()
 	encodeSigHeader(hasher, header)
 	hasher.Sum(hash[:0])
 	return hash
 }
 
-func encodeSigHeader(w io.Writer, header *types.Header) {
+func encodeSigHeader(w io.Writer, header *eth.Header) {
 	err := rlp.Encode(w, []interface{}{
 		header.ParentHash,
 		header.UncleHash,
