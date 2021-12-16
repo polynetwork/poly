@@ -21,11 +21,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math/big"
+	"time"
+
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 	stc "github.com/starcoinorg/starcoin-go/client"
-	"math/big"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -92,13 +93,13 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 	}
 
 	header, err := jsonHeaderAndInfo.BlockHeader.ToTypesHeader()
-	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.GENESIS_HEADER), utils.GetUint64Bytes(params.ChainID)))
-	if err != nil {
-		return errors.Errorf("STCHandler GetHeaderByHeight, get blockHashStore error: %v", err)
-	}
-	if headerStore != nil {
-		return errors.Errorf("STCHandler GetHeaderByHeight, genesis header had been initialized")
-	}
+	// headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.GENESIS_HEADER), utils.GetUint64Bytes(params.ChainID)))
+	// if err != nil {
+	// 	return errors.Errorf("STCHandler GetHeaderByHeight, get blockHashStore error: %v", err)
+	// }
+	// if headerStore != nil {
+	// 	return errors.Errorf("STCHandler GetHeaderByHeight, genesis header had been initialized")
+	// }
 
 	err = putGenesisBlockHeader(native, *header, params.ChainID)
 	if err != nil {
