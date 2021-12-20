@@ -189,28 +189,42 @@ func verifyFromStarcoinTx(native *native.NativeService, proof, extra []byte, fro
 	if err != nil {
 		return nil, fmt.Errorf("verifyFromStarcoinTx, verifyMerkleProof error:%v", err)
 	}
-
-	data := common.NewZeroCopySource(extra)
-	txParam := new(scom.MakeTxParam)
-	if err := txParam.Deserialization(data); err != nil {
-		return nil, fmt.Errorf("verifyFromStarcoinTx, deserialize merkleValue error:%s", err)
-	}
-	if _, err := CheckEventData(eventData, txParam); err != nil {
+	ok, err := CheckCrossChainEventRawData(eventData, extra)
+	if err != nil || !ok {
 		return nil, fmt.Errorf("verifyFromStarcoinTx, check event data error:%x, extra:%x", eventData, extra)
 	}
+	extraSrc := common.NewZeroCopySource(extra)
+	txParam := new(scom.MakeTxParam)
+	if err := txParam.Deserialization(extraSrc); err != nil {
+		return nil, fmt.Errorf("verifyFromStarcoinTx, deserialize merkleValue error:%s", err)
+	}
+	// if _, err := CheckEventData(eventData, txParam); err != nil {
+	// 	return nil, fmt.Errorf("verifyFromStarcoinTx, check event data error:%x, extra:%x", eventData, extra)
+	// }
 	return txParam, nil
 }
 
-func CheckEventData(data []byte, param *scom.MakeTxParam) (bool, error) {
-	event, err := BcsDeserializeCrossChainEvent(data)
+func CheckCrossChainEventRawData(ccEvtData []byte, value []byte) (bool, error) {
+	event, err := BcsDeserializeCrossChainEvent(ccEvtData)
 	if err != nil {
 		return false, fmt.Errorf("CheckEventData, deserialize error:%s", err)
 	}
-	if event.ToChainId == param.ToChainID && bytes.Equal(event.TxId, param.TxHash) && bytes.Equal(event.Sender, param.FromContractAddress) && bytes.Equal(event.ToContract, param.ToContractAddress) {
+	if bytes.Equal(event.RawData, value) {
 		return true, nil
 	}
-	return false, fmt.Errorf("CheckEventData, check error:%v, param: %v", event, param)
+	return false, fmt.Errorf("CheckEventData, check error:%v, param: %v", event, value)
 }
+
+// func CheckEventData(data []byte, param *scom.MakeTxParam) (bool, error) {
+// 	event, err := BcsDeserializeCrossChainEvent(data)
+// 	if err != nil {
+// 		return false, fmt.Errorf("CheckEventData, deserialize error:%s", err)
+// 	}
+// 	if event.ToChainId == param.ToChainID && bytes.Equal(event.TxId, param.TxHash) && bytes.Equal(event.Sender, param.FromContractAddress) && bytes.Equal(event.ToContract, param.ToContractAddress) {
+// 		return true, nil
+// 	}
+// 	return false, fmt.Errorf("CheckEventData, check error:%v, param: %v", event, param)
+// }
 
 func VerifyEventProof(proof *TransactionInfoProof, txnAccumulatorRoot types.HashValue, address []byte) ([]byte, error) {
 	var eventData []byte
@@ -257,7 +271,10 @@ func VerifyEventProof(proof *TransactionInfoProof, txnAccumulatorRoot types.Hash
 		}
 		eventData = typeEvent.Value.EventData
 	}
-	lenAccessPath := len(*proof.AccessPath)
+	lenAccessPath := 0
+	if proof.AccessPath != nil {
+		lenAccessPath = len(*proof.AccessPath)
+	}
 	lenStateProof := len(proof.StateWithProof.State)
 	if lenStateProof < 1 && lenAccessPath > 0 {
 		return eventData, fmt.Errorf("VerifyEventProof, state_proof is None, cannot verify access_path:%v", proof.AccessPath)
