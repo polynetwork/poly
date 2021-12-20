@@ -22,10 +22,11 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/pkg/errors"
 	"reflect"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
@@ -38,12 +39,12 @@ import (
 )
 
 type TransactionInfoProof struct {
-	TransactionInfo stc.TransactionInfo
-	Proof           Siblings           `json:"proof"`
-	EventIndex      int                `json:"event_index"`
-	EventWithProof  EventWithProof     `json:"event_proof"`
-	StateWithProof  StateWithProofJson `json:"state_proof"`
-	AccessPath      string             `json:"access_path"`
+	TransactionInfo stc.TransactionInfo `json:"transaction_info"`
+	Proof           Siblings            `json:"proof"`
+	EventWithProof  EventWithProof      `json:"event_proof"`
+	StateWithProof  StateWithProofJson  `json:"state_proof"`
+	AccessPath      *string             `json:"access_path,omitempty"`
+	EventIndex      *int                `json:"event_index,omitempty"`
 }
 
 type EventWithProof struct {
@@ -157,7 +158,7 @@ type StateWithProof struct {
 
 var SPARSE_MERKLE_PLACEHOLDER_HASH, _ = types.CreateLiteralHash("SPARSE_MERKLE_PLACEHOLDER_HASH")
 
-func verifyFromStarcoinTx(native *native.NativeService, proof, extra []byte, fromChainID uint64, height uint32, sideChain *cmanager.SideChain) (*scom.MakeTxParam, error) {
+func verifyFromStarcoinTx(native *native.NativeService, proof, extra []byte, fromChainID uint64, height uint32, sideChain *cmanager.SideChain, headerOrCrossChainMsg []byte) (*scom.MakeTxParam, error) {
 	bestHeader, err := starcoin.GetCurrentHeader(native, fromChainID)
 	if err != nil {
 		return nil, fmt.Errorf("verifyFromStarcoinTx, get current header fail, error:%s", err)
@@ -176,7 +177,14 @@ func verifyFromStarcoinTx(native *native.NativeService, proof, extra []byte, fro
 	if err = json.Unmarshal(proof, transactionInfoProof); err != nil {
 		return nil, fmt.Errorf("verifyFromStarcoinTx, unmarshal proof error:%s", err)
 	}
-
+	// ////////////////////////////////
+	headerOrMsg := new(StarcoinToPolyHeaderOrCrossChainMsg)
+	if err = json.Unmarshal(headerOrCrossChainMsg, headerOrMsg); err != nil {
+		return nil, fmt.Errorf("verifyFromStarcoinTx, unmarshal headerOrCrossChainMsg error:%s", err)
+	}
+	transactionInfoProof.EventIndex = headerOrMsg.EventIndex
+	transactionInfoProof.AccessPath = headerOrMsg.AccessPath
+	// ///////////////////////////////
 	eventData, err := VerifyEventProof(transactionInfoProof, blockData.TxnAccumulatorRoot, sideChain.CCMCAddress)
 	if err != nil {
 		return nil, fmt.Errorf("verifyFromStarcoinTx, verifyMerkleProof error:%v", err)
@@ -244,12 +252,12 @@ func VerifyEventProof(proof *TransactionInfoProof, txnAccumulatorRoot types.Hash
 		if err != nil {
 			return eventData, fmt.Errorf("VerifyEventProof, event root hash deserialize error:%v", err)
 		}
-		if _, err = verifyAccumulator(*eventProof, eventRootHash, *eventHash, proof.EventIndex); err != nil {
+		if _, err = verifyAccumulator(*eventProof, eventRootHash, *eventHash, *proof.EventIndex); err != nil {
 			return eventData, fmt.Errorf("VerifyEventProof, event proof verfied failure:%v", err)
 		}
 		eventData = typeEvent.Value.EventData
 	}
-	lenAccessPath := len(proof.AccessPath)
+	lenAccessPath := len(*proof.AccessPath)
 	lenStateProof := len(proof.StateWithProof.State)
 	if lenStateProof < 1 && lenAccessPath > 0 {
 		return eventData, fmt.Errorf("VerifyEventProof, state_proof is None, cannot verify access_path:%v", proof.AccessPath)
@@ -264,7 +272,7 @@ func VerifyEventProof(proof *TransactionInfoProof, txnAccumulatorRoot types.Hash
 		if err != nil {
 			return eventData, fmt.Errorf("VerifyEventProof, state root hash deserial error:%v", err)
 		}
-		hexAccessPath, err := hex.DecodeString(proof.AccessPath)
+		hexAccessPath, err := hex.DecodeString(*proof.AccessPath)
 		if err != nil {
 			return eventData, fmt.Errorf("VerifyEventProof, access path hex decode error:%v", err)
 		}
@@ -560,4 +568,9 @@ func parentHash(left, right []byte) []byte {
 	concatData.Write(right)
 	hashData := sha3.Sum256(concatData.Bytes())
 	return hashData[:]
+}
+
+type StarcoinToPolyHeaderOrCrossChainMsg struct {
+	EventIndex *int    `json:"event_index,omitempty"`
+	AccessPath *string `json:"access_path,omitempty"`
 }
