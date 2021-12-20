@@ -36,8 +36,12 @@ func SerializeStringArray(data []string) []byte {
 	return sink.Bytes()
 }
 
-func DeserializeStringArray(data []byte) ([]string, error) {
+func DeserializeStringArray(data []byte, height uint32) ([]string, error) {
+	// check if is testnet and height is 8607191
 	if len(data) == 0 {
+		//if config.DefConfig.P2PNode.NetworkId != config.NETWORK_ID_TEST_NET || height != 8607191 {
+		//	return []string{}, nil
+		//}
 		return []string{}, nil
 	}
 	source := common.NewZeroCopySource(data)
@@ -79,7 +83,7 @@ func putStateValidators(native *native.NativeService, stateValidators []string) 
 	if err != nil {
 		return fmt.Errorf("putStateValidator, get old state validators error: %v", err)
 	}
-	oldSVs, err := DeserializeStringArray(oldSvBytes)
+	oldSVs, err := DeserializeStringArray(oldSvBytes, native.GetHeight())
 	if err != nil {
 		return fmt.Errorf("putStateValidator, convert to string array error: %v", err)
 	}
@@ -112,7 +116,7 @@ func removeStateValidators(native *native.NativeService, stateValidators []strin
 	if err != nil {
 		return fmt.Errorf("removeStateValidator, get old state validators error: %v", err)
 	}
-	oldSVs, err := DeserializeStringArray(oldSvBytes)
+	oldSVs, err := DeserializeStringArray(oldSvBytes, native.GetHeight())
 	if err != nil {
 		return fmt.Errorf("removeStateValidator, convert to string array error: %v", err)
 	}

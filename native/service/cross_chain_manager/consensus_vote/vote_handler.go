@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/native"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
 	"github.com/polynetwork/poly/native/service/utils"
@@ -71,11 +72,13 @@ func (this *VoteHandler) MakeDepositProposal(service *native.NativeService) (*sc
 		if err := txParam.Deserialization(data); err != nil {
 			return nil, fmt.Errorf("vote MakeDepositProposal, deserialize MakeTxParam error:%s", err)
 		}
-		if err := scom.CheckDoneTx(service, txParam.CrossChainID, params.SourceChainID); err != nil {
-			return nil, fmt.Errorf("vote MakeDepositProposal, check done transaction error:%s", err)
-		}
-		if err := scom.PutDoneTx(service, txParam.CrossChainID, params.SourceChainID); err != nil {
-			return nil, fmt.Errorf("vote MakeDepositProposal, PutDoneTx error:%s", err)
+		if config.NETWORK_ID_TEST_NET != config.DefConfig.P2PNode.NetworkId || service.GetHeight() >= 19954185 {
+			if err := scom.CheckDoneTx(service, txParam.CrossChainID, params.SourceChainID); err != nil {
+				return nil, fmt.Errorf("vote MakeDepositProposal, check done transaction error:%s", err)
+			}
+			if err := scom.PutDoneTx(service, txParam.CrossChainID, params.SourceChainID); err != nil {
+				return nil, fmt.Errorf("vote MakeDepositProposal, PutDoneTx error:%s", err)
+			}
 		}
 		return txParam, nil
 	}

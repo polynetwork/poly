@@ -57,7 +57,7 @@ func VerifyCrossChainMsgSig(native *native.NativeService, magic uint32, crossCha
 	if err != nil {
 		return fmt.Errorf("verifyCrossChainMsg, neo3_state_manager.GetCurrentStateValidator error: %v", err)
 	}
-	svStrings, err := neo3_state_manager.DeserializeStringArray(svListBytes)
+	svStrings, err := neo3_state_manager.DeserializeStringArray(svListBytes, native.GetHeight())
 	if err != nil {
 		return fmt.Errorf("verifyCrossChainMsg, neo3_state_manager.DeserializeStringArray error: %v", err)
 	}
