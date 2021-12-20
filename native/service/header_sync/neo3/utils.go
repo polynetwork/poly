@@ -19,6 +19,7 @@ package neo3
 
 import (
 	"fmt"
+
 	"github.com/joeqian10/neo3-gogogo/crypto"
 	"github.com/joeqian10/neo3-gogogo/sc"
 	"github.com/joeqian10/neo3-gogogo/tx"
@@ -57,7 +58,7 @@ func VerifyCrossChainMsgSig(native *native.NativeService, magic uint32, crossCha
 	if err != nil {
 		return fmt.Errorf("verifyCrossChainMsg, neo3_state_manager.GetCurrentStateValidator error: %v", err)
 	}
-	svStrings, err := neo3_state_manager.DeserializeStringArray(svListBytes, native.GetHeight())
+	svStrings, err := neo3_state_manager.DeserializeStringArray(svListBytes)
 	if err != nil {
 		return fmt.Errorf("verifyCrossChainMsg, neo3_state_manager.DeserializeStringArray error: %v", err)
 	}
