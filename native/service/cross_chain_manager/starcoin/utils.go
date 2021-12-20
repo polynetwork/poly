@@ -266,6 +266,9 @@ func VerifyEventProof(proof *TransactionInfoProof, txnAccumulatorRoot types.Hash
 		if err != nil {
 			return eventData, fmt.Errorf("VerifyEventProof, event root hash deserialize error:%v", err)
 		}
+		if proof.EventIndex == nil {
+			return eventData, fmt.Errorf("VerifyEventProof, event index is nil")
+		}
 		if _, err = verifyAccumulator(*eventProof, eventRootHash, *eventHash, *proof.EventIndex); err != nil {
 			return eventData, fmt.Errorf("VerifyEventProof, event proof verfied failure:%v", err)
 		}
