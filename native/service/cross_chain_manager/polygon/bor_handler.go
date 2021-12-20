@@ -24,7 +24,6 @@ import (
 	"math/big"
 
 	ecommon "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/light"
 	"github.com/ethereum/go-ethereum/rlp"
@@ -34,6 +33,7 @@ import (
 	"github.com/polynetwork/poly/native"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
+	"github.com/polynetwork/poly/native/service/header_sync/eth"
 	"github.com/polynetwork/poly/native/service/header_sync/polygon"
 )
 
@@ -146,7 +146,7 @@ type ProofAccount struct {
 	Codehash ecommon.Hash
 }
 
-func verifyMerkleProof(polygonProof *Proof, blockData *types.Header, contractAddr []byte) ([]byte, error) {
+func verifyMerkleProof(polygonProof *Proof, blockData *eth.Header, contractAddr []byte) ([]byte, error) {
 	//1. prepare verify account
 	nodeList := new(light.NodeList)
 
