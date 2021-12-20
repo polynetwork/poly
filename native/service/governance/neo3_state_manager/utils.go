@@ -19,7 +19,6 @@ package neo3_state_manager
 
 import (
 	"fmt"
-
 	"github.com/polynetwork/poly/common"
 	cstates "github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/native"
