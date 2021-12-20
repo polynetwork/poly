@@ -115,7 +115,7 @@ func VerifyCosmosHeader(myHeader *CosmosHeader, info *CosmosEpochSwitchInfo) err
 		if commitSig.Absent() {
 			continue // OK, some precommits can be missing.
 		}
-		_, val := valset.GetByIndex(idx)
+		val := GetValByIndex(myHeader.Valsets, myHeader.Header.Version.Block.Uint64(), idx)
 		// Validate signature.
 		precommitSignBytes := VoteSignBytes(myHeader, idx)
 		if !val.PubKey.VerifyBytes(precommitSignBytes, commitSig.Signature) {
@@ -131,6 +131,17 @@ func VerifyCosmosHeader(myHeader *CosmosHeader, info *CosmosEpochSwitchInfo) err
 	}
 
 	return nil
+}
+
+// GetValByIndex gets the validator by index depending on tendermint version
+func GetValByIndex(vals []*types.Validator, blockVersion uint64, idx int) *types.Validator {
+	// sort order of val set changed on block version 11, tm v0.34:
+	// https://github.com/tendermint/tendermint/commit/25890a66350f09b0d8fd54d8b9e73eb972265946#L34
+	if blockVersion < 11 {
+		_, val := types.NewValidatorSet(vals).GetByIndex(idx)
+		return val
+	}
+	return vals[idx].Copy()
 }
 
 // HashCosmosHeader supports hashing both pre and post stargate tendermint block headers
