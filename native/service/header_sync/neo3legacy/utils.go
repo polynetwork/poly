@@ -19,7 +19,6 @@ package neo3legacy
 
 import (
 	"fmt"
-
 	"github.com/joeqian10/neo3-gogogo-legacy/crypto"
 	"github.com/joeqian10/neo3-gogogo-legacy/sc"
 	"github.com/joeqian10/neo3-gogogo-legacy/tx"
