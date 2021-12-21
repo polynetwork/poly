@@ -185,35 +185,42 @@ func verifyFromStarcoinTx(native *native.NativeService, proof, extra []byte, fro
 	transactionInfoProof.EventIndex = headerOrMsg.EventIndex
 	transactionInfoProof.AccessPath = headerOrMsg.AccessPath
 	// ///////////////////////////////
-	eventData, err := VerifyEventProof(transactionInfoProof, blockData.TxnAccumulatorRoot, sideChain.CCMCAddress)
+	typeEventV0, err := VerifyEventProof(transactionInfoProof, blockData.TxnAccumulatorRoot, sideChain.CCMCAddress)
 	if err != nil {
 		return nil, fmt.Errorf("verifyFromStarcoinTx, verifyMerkleProof error:%v", err)
 	}
-	ok, err := CheckCrossChainEventRawData(eventData, extra)
-	if err != nil || !ok {
-		return nil, fmt.Errorf("verifyFromStarcoinTx, check event data error:%x, extra:%x", eventData, extra)
+	// ///////////////////
+	eventData := typeEventV0.EventData
+	eventRawData, err := GetCrossChainEventRawData(eventData)
+	if err != nil || len(eventRawData) == 0 {
+		return nil, fmt.Errorf("verifyFromStarcoinTx, get event RawData error:%x", eventData)
 	}
-	extraSrc := common.NewZeroCopySource(extra)
+	zcsrc := common.NewZeroCopySource(eventRawData)
 	txParam := new(scom.MakeTxParam)
-	if err := txParam.Deserialization(extraSrc); err != nil {
+	if err := txParam.Deserialization(zcsrc); err != nil {
 		return nil, fmt.Errorf("verifyFromStarcoinTx, deserialize merkleValue error:%s", err)
 	}
-	// if _, err := CheckEventData(eventData, txParam); err != nil {
-	// 	return nil, fmt.Errorf("verifyFromStarcoinTx, check event data error:%x, extra:%x", eventData, extra)
-	// }
 	return txParam, nil
 }
 
-func CheckCrossChainEventRawData(ccEvtData []byte, value []byte) (bool, error) {
+func GetCrossChainEventRawData(ccEvtData []byte) ([]byte, error) {
 	event, err := BcsDeserializeCrossChainEvent(ccEvtData)
 	if err != nil {
-		return false, fmt.Errorf("CheckEventData, deserialize error:%s", err)
+		return nil, fmt.Errorf("CheckEventData, deserialize error:%s", err.Error())
 	}
-	if bytes.Equal(event.RawData, value) {
-		return true, nil
-	}
-	return false, fmt.Errorf("CheckEventData, check error:%v, param: %v", event, value)
+	return event.RawData, nil
 }
+
+// func CheckCrossChainEventRawData(ccEvtData []byte, value []byte) (bool, error) {
+// 	event, err := BcsDeserializeCrossChainEvent(ccEvtData)
+// 	if err != nil {
+// 		return false, fmt.Errorf("CheckEventData, deserialize error:%s", err)
+// 	}
+// 	if bytes.Equal(event.RawData, value) {
+// 		return true, nil
+// 	}
+// 	return false, fmt.Errorf("CheckEventData, check error:%v, param: %v", event, value)
+// }
 
 // func CheckEventData(data []byte, param *scom.MakeTxParam) (bool, error) {
 // 	event, err := BcsDeserializeCrossChainEvent(data)
@@ -226,86 +233,108 @@ func CheckCrossChainEventRawData(ccEvtData []byte, value []byte) (bool, error) {
 // 	return false, fmt.Errorf("CheckEventData, check error:%v, param: %v", event, param)
 // }
 
-func VerifyEventProof(proof *TransactionInfoProof, txnAccumulatorRoot types.HashValue, address []byte) ([]byte, error) {
-	var eventData []byte
+func VerifyEventProof(proof *TransactionInfoProof, txnAccumulatorRoot types.HashValue, address []byte) (*types.ContractEventV0, error) {
+	//var eventData []byte
+	//var eventKey []byte
 	//verify accumulator proof
 	accumulatorProof := toSiblings(proof.Proof)
 	transactionInfo, err := proof.TransactionInfo.ToTypesTransactionInfo()
 	if err != nil {
-		return eventData, fmt.Errorf("VerifyEventProof, to types transaction info err:%v", err)
+		return nil, fmt.Errorf("VerifyEventProof, to types transaction info err:%v", err)
 	}
 	transactionHash, err := transactionInfo.CryptoHash()
 	if err != nil {
-		return eventData, fmt.Errorf("VerifyEventProof, transaction info crypto hash error:%v", err)
+		return nil, fmt.Errorf("VerifyEventProof, transaction info crypto hash error:%v", err)
 	}
 	globalIndex, err := strconv.Atoi(proof.TransactionInfo.TransactionGlobalIndex)
 	if err != nil {
-		return eventData, fmt.Errorf("VerifyEventProof, transaction info global index transfer err:%v", err)
+		return nil, fmt.Errorf("VerifyEventProof, transaction info global index transfer err:%v", err)
 	}
 	if _, err := verifyAccumulator(*accumulatorProof, txnAccumulatorRoot, *transactionHash, globalIndex); err != nil {
-		return eventData, fmt.Errorf("VerifyEventProof, accumulator verfied failure:%v", err)
+		return nil, fmt.Errorf("VerifyEventProof, accumulator verfied failure:%v", err)
 	}
-
+	var typeEventV0 *types.ContractEventV0
 	if len(proof.EventWithProof.Event) > 0 && len(proof.EventWithProof.Proof.Sibling) > 0 {
 		//verify event proof
 		eventProof := toSiblings(proof.EventWithProof.Proof)
 		eventByte, err := hexToBytes(proof.EventWithProof.Event)
 		if err != nil {
-			return eventData, fmt.Errorf("VerifyEventProof, event decode error:%v", err)
+			return nil, fmt.Errorf("VerifyEventProof, event decode error:%v", err)
 		}
-		typeEventV0, err := stc.EventToContractEventV0(eventByte)
+		typeEventV0, err = stc.EventToContractEventV0(eventByte)
 		if err != nil {
-			return eventData, fmt.Errorf("VerifyEventProof, event to types error:%v", err)
+			return nil, fmt.Errorf("VerifyEventProof, event to types.ContractEventV0 error:%v", err)
 		}
 		typeEvent := toTypesContractEvent(typeEventV0)
 		eventHash, err := typeEvent.CryptoHash()
 		if err != nil {
-			return eventData, fmt.Errorf("VerifyEventProof, event crypto hash error:%v", err)
+			return nil, fmt.Errorf("VerifyEventProof, event crypto hash error:%v", err)
 		}
 		eventRootHash, err := toHashValue(proof.TransactionInfo.EventRootHash)
 		if err != nil {
-			return eventData, fmt.Errorf("VerifyEventProof, event root hash deserialize error:%v", err)
+			return nil, fmt.Errorf("VerifyEventProof, event root hash deserialize error:%v", err)
 		}
 		if proof.EventIndex == nil {
-			return eventData, fmt.Errorf("VerifyEventProof, event index is nil")
+			return nil, fmt.Errorf("VerifyEventProof, event index is nil")
 		}
 		if _, err = verifyAccumulator(*eventProof, eventRootHash, *eventHash, *proof.EventIndex); err != nil {
-			return eventData, fmt.Errorf("VerifyEventProof, event proof verfied failure:%v", err)
+			return nil, fmt.Errorf("VerifyEventProof, event proof verfied failure:%v", err)
 		}
-		eventData = typeEvent.Value.EventData
+		//eventData = typeEvent.Value.EventData
+		//eventKey = typeEvent.Value.Key
 	}
+
+	// check event TypeTag:
+	eventTt, err := getEventTypeTagString(typeEventV0.TypeTag)
+	// TypeTag string like this: "0x3809644a7409cca52138ce747c56eaf2::CrossChainManager::CrossChainEvent"
+	if err != nil {
+		return nil, fmt.Errorf("VerifyEventProof, getEventTypeTagString error:%v", err)
+	}
+	if eventTt != string(address) {
+		return nil, fmt.Errorf("VerifyEventProof, event TypeTag error:%s", eventTt)
+	}
+
 	lenAccessPath := 0
 	if proof.AccessPath != nil {
 		lenAccessPath = len(*proof.AccessPath)
 	}
 	lenStateProof := len(proof.StateWithProof.State)
 	if lenStateProof < 1 && lenAccessPath > 0 {
-		return eventData, fmt.Errorf("VerifyEventProof, state_proof is None, cannot verify access_path:%v", proof.AccessPath)
+		return nil, fmt.Errorf("VerifyEventProof, state_proof is None, cannot verify access_path:%v", proof.AccessPath)
 	}
 	if lenStateProof > 0 && lenAccessPath > 0 {
 		//verify state proof
 		stateWithProof, err := toStateProof(proof.StateWithProof)
 		if err != nil {
-			return eventData, fmt.Errorf("VerifyEventProof, state with proof unmarshal error:%v", err)
+			return nil, fmt.Errorf("VerifyEventProof, state with proof unmarshal error:%v", err)
 		}
 		stateRootHash, err := toHashValue(proof.TransactionInfo.StateRootHash)
 		if err != nil {
-			return eventData, fmt.Errorf("VerifyEventProof, state root hash deserial error:%v", err)
+			return nil, fmt.Errorf("VerifyEventProof, state root hash deserial error:%v", err)
 		}
 		hexAccessPath, err := hex.DecodeString(*proof.AccessPath)
 		if err != nil {
-			return eventData, fmt.Errorf("VerifyEventProof, access path hex decode error:%v", err)
+			return nil, fmt.Errorf("VerifyEventProof, access path hex decode error:%v", err)
 		}
 		accessPath, err := types.BcsDeserializeAccessPath(hexAccessPath)
 		if err != nil {
-			return eventData, fmt.Errorf("VerifyEventProof, access path deserial error:%v", err)
+			return nil, fmt.Errorf("VerifyEventProof, access path deserial error:%v", err)
 		}
 		if _, err = verifyState(stateWithProof, &stateRootHash, accessPath); err != nil {
-			return eventData, fmt.Errorf("VerifyEventProof, verify state error:%v", err)
+			return nil, fmt.Errorf("VerifyEventProof, verify state error:%v", err)
 		}
 
 	}
-	return eventData, nil
+	return typeEventV0, nil
+}
+
+func getEventTypeTagString(tt types.TypeTag) (string, error) {
+	switch tt := tt.(type) {
+	case *types.TypeTag__Struct:
+		return "0x" + hex.EncodeToString(tt.Value.Address[:]) + "::" + string(tt.Value.Module) + "::" + string(tt.Value.Name), nil
+	default:
+		return "", fmt.Errorf("unknown TypeTag type")
+	}
 }
 
 func toStateProof(proofJson StateWithProofJson) (StateWithProof, error) {
