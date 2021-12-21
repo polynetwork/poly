@@ -67,8 +67,9 @@ func TestVerifyEventProof(t *testing.T) {
 	}{
 		{"test event proof",
 			args{
-				proof: &proof,
-				data:  txnAccumulatorRoot,
+				proof:   &proof,
+				data:    txnAccumulatorRoot,
+				address: []byte("0x3809644a7409cca52138ce747c56eaf2::CrossChainManager::CrossChainEvent"),
 			},
 			eventData,
 			false,
@@ -202,7 +203,7 @@ func TestUnmarshalTransactionInfoProof(t *testing.T) {
 	proof.EventIndex = &eventIndex
 	// verify event proof
 	txn_accumulator_root, _ := hex.DecodeString("b44a27b6f98fa9b04471e83bd40675381712a451299518cebab7f4ba9f137bd4")
-	typeEventV0, err := VerifyEventProof(proof, types.HashValue(txn_accumulator_root), []byte{})
+	typeEventV0, err := VerifyEventProof(proof, types.HashValue(txn_accumulator_root), []byte("0x3809644a7409cca52138ce747c56eaf2::CrossChainManager::CrossChainEvent"))
 	eventData := typeEventV0.EventData
 	eventKey := typeEventV0.Key
 	if err != nil {
