@@ -19,6 +19,7 @@ package starcoin
 
 import (
 	"fmt"
+
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
@@ -46,7 +47,7 @@ func (h *Handler) MakeDepositProposal(service *native.NativeService) (*scom.Make
 		return nil, fmt.Errorf("eth MakeDepositProposal, side_chain_manager.GetSideChain error: %v", err)
 	}
 
-	value, err := verifyFromStarcoinTx(service, params.Proof, params.Extra, params.SourceChainID, params.Height, sideChain)
+	value, err := verifyFromStarcoinTx(service, params.Proof, params.Extra, params.SourceChainID, params.Height, sideChain, params.HeaderOrCrossChainMsg)
 	if err != nil {
 		return nil, fmt.Errorf("eth MakeDepositProposal, verifyFromStarcoinTx error: %s", err)
 	}
