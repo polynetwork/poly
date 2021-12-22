@@ -67,8 +67,9 @@ func TestVerifyEventProof(t *testing.T) {
 	}{
 		{"test event proof",
 			args{
-				proof: &proof,
-				data:  txnAccumulatorRoot,
+				proof:   &proof,
+				data:    txnAccumulatorRoot,
+				address: []byte("0x3809644a7409cca52138ce747c56eaf2::CrossChainManager::CrossChainEvent"),
 			},
 			eventData,
 			false,
@@ -76,11 +77,12 @@ func TestVerifyEventProof(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := VerifyEventProof(tt.args.proof, tt.args.data, tt.args.address)
+			typeEventV0, err := VerifyEventProof(tt.args.proof, tt.args.data, tt.args.address)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("VerifyEventProof() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+			got := typeEventV0.EventData
 			if !bytes.Equal(got, tt.want) {
 				t.Errorf("VerifyEventProof() got = %v, want %v", got, tt.want)
 			}
@@ -201,10 +203,14 @@ func TestUnmarshalTransactionInfoProof(t *testing.T) {
 	proof.EventIndex = &eventIndex
 	// verify event proof
 	txn_accumulator_root, _ := hex.DecodeString("b44a27b6f98fa9b04471e83bd40675381712a451299518cebab7f4ba9f137bd4")
-	eventData, err := VerifyEventProof(proof, types.HashValue(txn_accumulator_root), []byte{})
+	typeEventV0, err := VerifyEventProof(proof, types.HashValue(txn_accumulator_root), []byte("0x3809644a7409cca52138ce747c56eaf2::CrossChainManager::CrossChainEvent"))
+	eventData := typeEventV0.EventData
+	eventKey := typeEventV0.Key
 	if err != nil {
 		fmt.Println(err)
 		t.FailNow()
 	}
 	fmt.Println(eventData)
+	fmt.Println(eventKey)
+	fmt.Println(typeEventV0.TypeTag)
 }
