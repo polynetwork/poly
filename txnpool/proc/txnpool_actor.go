@@ -79,7 +79,7 @@ type TxActor struct {
 	server *TXPoolServer
 }
 
-func (ta *TxActor) isValidSender(txn *tx.Transaction, permittedAddrMap map[common.Address]bool) (err error) {
+func (ta *TxActor) isValidSender(txn *tx.Transaction) (err error) {
 	lock.RLock()
 	defer lock.RUnlock()
 
@@ -146,7 +146,7 @@ func (ta *TxActor) handleTransaction(sender tc.SenderType, self *actor.PID,
 		return
 	}
 
-	err = ta.isValidSender(txn, permittedAddrMap)
+	err = ta.isValidSender(txn)
 	if err != nil {
 		log.Debugf("handleTransaction: invalid sender for tx %x",
 			txn.Hash())
