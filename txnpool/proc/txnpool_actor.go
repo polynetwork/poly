@@ -126,11 +126,11 @@ func updatePermittedAddrMap() (err error) {
 	if lastTime == 0 || len(permittedAddrMap) == 0 || lastTime < time.Now().Add(-time.Minute).Unix() {
 		lock.Lock()
 		defer lock.Unlock()
-		lastTime = time.Now().Unix()
 		if err = bactor.UpdatePermittedAddrMap(permittedAddrMap); err != nil {
 			log.Debugf("updatePermittedAddrMap failed")
 			return
 		}
+		lastTime = time.Now().Unix()
 	}
 	return
 }
