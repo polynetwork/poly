@@ -22,12 +22,13 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"github.com/polynetwork/poly/cmd/utils"
-	"github.com/urfave/cli"
 	"io"
 	"sort"
 	"strings"
 	"text/template"
+
+	"github.com/polynetwork/poly/cmd/utils"
+	"github.com/urfave/cli"
 )
 
 // AppHelpTemplate is the test template for the default, global app help topic.
@@ -137,7 +138,6 @@ var AppHelpFlagGroups = []flagGroup{
 		Name: "TXPOOL",
 		Flags: []cli.Flag{
 			utils.TxpoolPreExecDisableFlag,
-			utils.DisableSyncVerifyTxFlag,
 			utils.DisableBroadcastNetTxFlag,
 		},
 	},

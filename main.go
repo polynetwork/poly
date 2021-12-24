@@ -43,7 +43,6 @@ import (
 	"github.com/polynetwork/poly/core/genesis"
 	"github.com/polynetwork/poly/core/ledger"
 	"github.com/polynetwork/poly/events"
-	bactor "github.com/polynetwork/poly/http/base/actor"
 	hserver "github.com/polynetwork/poly/http/base/actor"
 	"github.com/polynetwork/poly/http/jsonrpc"
 	"github.com/polynetwork/poly/http/localrpc"
@@ -94,7 +93,6 @@ func setupAPP() *cli.App {
 		utils.MaxTxInBlockFlag,
 		//txpool setting
 		utils.TxpoolPreExecDisableFlag,
-		utils.DisableSyncVerifyTxFlag,
 		utils.DisableBroadcastNetTxFlag,
 		//p2p setting
 		utils.ReservedPeersOnlyFlag,
@@ -268,7 +266,6 @@ func initLedger(ctx *cli.Context) (*ledger.Ledger, error) {
 
 func initTxPool(ctx *cli.Context) (*proc.TXPoolServer, error) {
 	disablePreExec := ctx.GlobalBool(utils.GetFlagName(utils.TxpoolPreExecDisableFlag))
-	bactor.DisableSyncVerifyTx = ctx.GlobalBool(utils.GetFlagName(utils.DisableSyncVerifyTxFlag))
 	disableBroadcastNetTx := ctx.GlobalBool(utils.GetFlagName(utils.DisableBroadcastNetTxFlag))
 	txPoolServer, err := txnpool.StartTxnPoolServer(disablePreExec, disableBroadcastNetTx)
 	if err != nil {

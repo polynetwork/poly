@@ -143,6 +143,10 @@ func (ta *TxActor) handleTransaction(sender tc.SenderType, self *actor.PID,
 	if err != nil {
 		log.Debugf("handleTransaction: UpdatePermittedAddrMap failed for tx %x",
 			txn.Hash())
+		if sender == tc.HttpSender && txResultCh != nil {
+			replyTxResult(txResultCh, txn.Hash(), errors.ErrUnknown,
+				"UpdatePermittedAddrMap failed")
+		}
 		return
 	}
 
@@ -150,6 +154,10 @@ func (ta *TxActor) handleTransaction(sender tc.SenderType, self *actor.PID,
 	if err != nil {
 		log.Debugf("handleTransaction: invalid sender for tx %x",
 			txn.Hash())
+		if sender == tc.HttpSender && txResultCh != nil {
+			replyTxResult(txResultCh, txn.Hash(), errors.ErrUnknown,
+				"invalid sender for tx")
+		}
 		return
 	}
 	ta.server.increaseStats(tc.RcvStats)
