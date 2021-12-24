@@ -80,6 +80,9 @@ type TxActor struct {
 }
 
 func (ta *TxActor) isValidSender(txn *tx.Transaction, permittedAddrMap map[common.Address]bool) (err error) {
+	lock.RLock()
+	defer lock.RUnlock()
+
 	// Get txn's signature addresses
 	addresses, err := txn.GetSignatureAddresses()
 	if err != nil {
@@ -117,7 +120,7 @@ func (ta *TxActor) isValidSender(txn *tx.Transaction, permittedAddrMap map[commo
 
 var permittedAddrMap = make(map[common.Address]bool)
 var lastTime int64
-var lock sync.Mutex
+var lock sync.RWMutex
 
 func updatePermittedAddrMap() (err error) {
 	if lastTime == 0 || len(permittedAddrMap) == 0 || lastTime < time.Now().Add(-time.Minute).Unix() {
