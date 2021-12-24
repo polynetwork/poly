@@ -131,6 +131,10 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 		2. extra size
 		3. current time
 		*/
+		// verify whether current height is parent height plus one
+		if header.Number.Uint64() != parentHeader.Number.Uint64()+1 {
+			return fmt.Errorf("SyncBlockHeader, invalid header height:%d parent height:%d", header.Number.Uint64(), parentHeader.Number.Uint64())
+		}
 		//verify whether parent hash validity
 		if !bytes.Equal(parentHeaderHash.Bytes(), header.ParentHash.Bytes()) {
 			return fmt.Errorf("SyncBlockHeader, parent header is not right. Header: %s", string(v))
