@@ -37,8 +37,8 @@ type BlockDiffInfo struct {
 }
 
 const allowedFutureBlockTime = 30 * time.Second
-const TotalDifficulty = "totalDifficulty"
-const BlockInfo = "blockInfo"
+const KEY_PART_TOTAL_DIFFICULTY = "totalDifficulty"
+const KEY_PART_BLOCK_INFO = "blockInfo"
 
 func putBlockHeader(native *native.NativeService, blockHeader types.BlockHeader, chainID uint64) error {
 	contract := utils.HeaderSyncContractAddress
@@ -62,14 +62,14 @@ func putBlockInfo(native *native.NativeService, blockInfo types.BlockInfo, chain
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(BlockInfo), utils.GetUint64Bytes(chainID), blockInfo.BlockHash),
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(KEY_PART_BLOCK_INFO), utils.GetUint64Bytes(chainID), blockInfo.BlockHash),
 		states.GenRawStorageItem(storeBytes))
 	return nil
 }
 
 func getBlockInfo(native *native.NativeService, blockId types.HashValue, chainID uint64) (types.BlockInfo, error) {
 	contract := utils.HeaderSyncContractAddress
-	infoStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(BlockInfo), utils.GetUint64Bytes(chainID), blockId))
+	infoStore, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(KEY_PART_BLOCK_INFO), utils.GetUint64Bytes(chainID), blockId))
 
 	if infoStore == nil {
 		return types.BlockInfo{}, errors.Errorf("getBlockInfo, not found")
@@ -96,13 +96,13 @@ func putGenesisBlockInfo(native *native.NativeService, blockInfo stc.BlockHeader
 
 func updateTotalDifficulty(native *native.NativeService, difficulty []byte) {
 	contract := utils.HeaderSyncContractAddress
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(TotalDifficulty)), states.GenRawStorageItem(difficulty))
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(KEY_PART_TOTAL_DIFFICULTY)), states.GenRawStorageItem(difficulty))
 }
 
 func getTotalDifficulty(native *native.NativeService) (*uint256.Int, error) {
 	contract := utils.HeaderSyncContractAddress
 	difficulty := new(uint256.Int)
-	rawBytes, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(TotalDifficulty)))
+	rawBytes, err := native.GetCacheDB().Get(utils.ConcatKey(contract, []byte(KEY_PART_TOTAL_DIFFICULTY)))
 	if err != nil {
 		return difficulty, err
 	}

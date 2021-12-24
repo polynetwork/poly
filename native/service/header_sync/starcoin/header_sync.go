@@ -19,6 +19,7 @@ package starcoin
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -27,6 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 	stc "github.com/starcoinorg/starcoin-go/client"
+	"github.com/starcoinorg/starcoin-go/types"
 
 	"github.com/pkg/errors"
 
@@ -176,7 +178,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		if (currentHeight - genesisHeader.Number) >= difficultyWindowU64 {
 			//verify difficulty
 			var expected *big.Int
-			expected, err = difficultyCalculator(native, currentHeight, headerParams.ChainID, uint64(timeTarget), difficultyWindowU64)
+			expected, err = difficultyCalculator(native, header, headerParams.ChainID, uint64(timeTarget), difficultyWindowU64)
 			if err != nil {
 				return errors.Errorf("difficulty calculator error: %v, header: %s", err, string(v))
 			}
@@ -247,16 +249,20 @@ func (h *Handler) SyncCrossChainMsg(native *native.NativeService) error {
 	return nil
 }
 
-func difficultyCalculator(native *native.NativeService, currentHeight uint64, chainId uint64, timeTarget uint64, difficultyWindow uint64) (*big.Int, error) {
+func difficultyCalculator(native *native.NativeService, blockHeader *types.BlockHeader, chainId uint64, timeTarget uint64, difficultyWindow uint64) (*big.Int, error) {
+	var currentHeight uint64 = blockHeader.Number
 	//get last difficulty
 	var lastDifficulties []BlockDiffInfo
+	hash := blockHeader.ParentHash
 	for height := currentHeight - 1; height > currentHeight-difficultyWindow-1; height-- {
-		header, err := GetHeaderByHeight(native, height, chainId)
+		//hdr, err := GetHeaderByHeight(native, height, chainId)
+		hdr, err := GetHeaderByHash(native, hash, chainId)
 		if err != nil {
-			return nil, fmt.Errorf("difficultyCalculator, get header by height errr: %s.", err)
+			return nil, fmt.Errorf("difficultyCalculator, get header error: %s, height: %d, hash: %s", err.Error(), height, hex.EncodeToString(hash))
 		}
-		target := targetToDiff(new(uint256.Int).SetBytes(header.Difficulty[:]))
-		lastDifficulties = append(lastDifficulties, BlockDiffInfo{header.Timestamp, *target})
+		target := targetToDiff(new(uint256.Int).SetBytes(hdr.Difficulty[:]))
+		lastDifficulties = append(lastDifficulties, BlockDiffInfo{hdr.Timestamp, *target})
+		hash = hdr.ParentHash
 	}
 	nextTarget, err := getNextTarget(lastDifficulties, timeTarget)
 	return targetToDiff(&nextTarget).ToBig(), err
