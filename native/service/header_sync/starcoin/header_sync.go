@@ -21,11 +21,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math/big"
+	"time"
+
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 	stc "github.com/starcoinorg/starcoin-go/client"
-	"math/big"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -221,7 +222,6 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 				return errors.Errorf("get parent block info err:%x  error:%s", currentHeaderHash, err)
 			}
 			parentTotalDifficulty := new(uint256.Int).SetBytes(parentBlockInfo.TotalDifficulty[:])
-
 			if currentTotalDifficulty.Cmp(parentTotalDifficulty) > 0 {
 				ReStructChain(native, currentHeader, header, headerParams.ChainID)
 			}

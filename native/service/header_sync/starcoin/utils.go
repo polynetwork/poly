@@ -19,6 +19,8 @@ package starcoin
 
 import (
 	"bytes"
+	"time"
+
 	"github.com/holiman/uint256"
 	"github.com/pkg/errors"
 	"github.com/polynetwork/poly/core/states"
@@ -27,7 +29,6 @@ import (
 	"github.com/polynetwork/poly/native/service/utils"
 	stc "github.com/starcoinorg/starcoin-go/client"
 	"github.com/starcoinorg/starcoin-go/types"
-	"time"
 )
 
 type BlockDiffInfo struct {
@@ -61,7 +62,7 @@ func putBlockInfo(native *native.NativeService, blockInfo types.BlockInfo, chain
 	if err != nil {
 		return errors.WithStack(err)
 	}
-	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(BlockInfo), utils.GetUint64Bytes(chainID), blockInfo.BlockId),
+	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(BlockInfo), utils.GetUint64Bytes(chainID), blockInfo.BlockHash),
 		states.GenRawStorageItem(storeBytes))
 	return nil
 }
