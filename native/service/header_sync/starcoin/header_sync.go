@@ -201,19 +201,20 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			}
 		}
 
+		// //////////////////////////////
+		headerDifficulty := new(uint256.Int).SetBytes(header.BlockHeader.Difficulty[:])
+		blockTotalDifficulty := new(uint256.Int).SetBytes(header.BlockInfo.TotalDifficulty[:])
+		parentTotalDifficulty := new(uint256.Int).SetBytes(parentHeader.BlockInfo.TotalDifficulty[:])
+		if blockTotalDifficulty.Cmp(new(uint256.Int).Add(parentTotalDifficulty, headerDifficulty)) != 0 {
+			return errors.Errorf("SyncBlockHeader, verify difficulty error. blockTotalDifficulty:%d, parentTotalDifficulty:%d, headerDifficulty:%d", blockTotalDifficulty, parentTotalDifficulty, headerDifficulty)
+		}
+		// //////////////////////////////
 		//block header storage
 		err = putBlockHeader(native, header, headerParams.ChainID)
 		if err != nil {
 			return errors.Errorf("SyncGenesisHeader, put blockHeader error: %v, header: %s", err, string(v))
 		}
-		// blockInfo, err := jsonHeader.BlockInfo.ToTypesBlockInfo()
-		// if err != nil {
-		// 	return errors.Errorf("SyncBlockHeader, block info parse error: %v, header: %s", err, string(v))
-		// }
-		// err = putBlockInfo(native, *blockInfo, headerParams.ChainID)
-		// if err != nil {
-		// 	return errors.Errorf("SyncBlockHeader, put block info error: %v, header: %s", err, string(v))
-		// }
+
 		// get current header of main
 		currentHeader, err := GetCurrentHeader(native, headerParams.ChainID)
 		if err != nil {
@@ -223,22 +224,23 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		if err != nil {
 			return errors.WithStack(err)
 		}
+
 		if bytes.Equal(*currentHeaderHash, header.BlockHeader.ParentHash) {
 			appendHeader2Main(native, header.BlockHeader.Number, *headerHash, headerParams.ChainID)
 		} else {
 			//get current total difficulty
 			// blockInfo, err := getBlockInfo(native, *currentHeaderHash, headerParams.ChainID)
 			// if err != nil {
-			// 	return errors.Errorf("get block info err:%x  error:%s", currentHeaderHash, err)
+			// 	return errors.Errorf("get block info error, hash:%x  error:%s", currentHeaderHash, err)
 			// }
 			currentTotalDifficulty := new(uint256.Int).SetBytes(currentHeader.BlockInfo.TotalDifficulty[:])
 			//get fork header parent total difficulty
 			// parentBlockInfo, err := getBlockInfo(native, header.ParentHash, headerParams.ChainID)
 			// if err != nil {
-			// 	return errors.Errorf("get parent block info err:%x  error:%s", currentHeaderHash, err)
+			// 	return errors.Errorf("get parent block info error, hash:%x  error:%s", currentHeaderHash, err)
 			// }
-			parentBlockInfo := parentHeader.BlockInfo
-			parentTotalDifficulty := new(uint256.Int).SetBytes(parentBlockInfo.TotalDifficulty[:])
+			//parentBlockInfo := parentHeader.BlockInfo
+			//parentTotalDifficulty := new(uint256.Int).SetBytes(parentBlockInfo.TotalDifficulty[:])
 			if currentTotalDifficulty.Cmp(parentTotalDifficulty) > 0 {
 				ReStructChain(native, currentHeader, &header, headerParams.ChainID)
 			}
