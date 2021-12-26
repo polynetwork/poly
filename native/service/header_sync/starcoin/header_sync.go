@@ -217,24 +217,19 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			return errors.WithStack(err)
 		}
 
-		// //////////////////////////////
-		headerDifficulty := new(uint256.Int).SetBytes(header.BlockHeader.Difficulty[:])
-		blockTotalDifficulty := new(uint256.Int).SetBytes(header.BlockInfo.TotalDifficulty[:])
-		parentTotalDifficulty := new(uint256.Int).SetBytes(parentHeader.BlockInfo.TotalDifficulty[:])
-		// //////////////////////////////
 		if bytes.Equal(*currentHeaderHash, header.BlockHeader.ParentHash) {
-			if blockTotalDifficulty.Cmp(new(uint256.Int).Add(parentTotalDifficulty, headerDifficulty)) != 0 {
-				return errors.Errorf("SyncBlockHeader, verify difficulty error. blockTotalDifficulty:%d, parentTotalDifficulty:%d, headerDifficulty:%d", blockTotalDifficulty, parentTotalDifficulty, headerDifficulty)
+			if err := verifyTotalDifficulty(&header, parentHeader); err != nil {
+				return err
 			}
 			appendHeader2Main(native, header.BlockHeader.Number, *headerHash, headerParams.ChainID)
 		} else {
-			//get current total difficulty
+			// //get current total difficulty
 			// blockInfo, err := getBlockInfo(native, *currentHeaderHash, headerParams.ChainID)
 			// if err != nil {
 			// 	return errors.Errorf("get block info error, hash:%x  error:%s", currentHeaderHash, err)
 			// }
 			currentTotalDifficulty := new(uint256.Int).SetBytes(currentHeader.BlockInfo.TotalDifficulty[:])
-			//get fork header parent total difficulty
+			// //get fork header parent total difficulty
 			// parentBlockInfo, err := getBlockInfo(native, header.ParentHash, headerParams.ChainID)
 			// if err != nil {
 			// 	return errors.Errorf("get parent block info error, hash:%x  error:%s", currentHeaderHash, err)
@@ -245,6 +240,8 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			// -------- eth handlder: --------
 			// if hederDifficultySum.Cmp(currentDifficultySum) > 0 { ...
 			//
+			headerDifficulty := new(uint256.Int).SetBytes(header.BlockHeader.Difficulty[:])
+			parentTotalDifficulty := new(uint256.Int).SetBytes(parentHeader.BlockInfo.TotalDifficulty[:])
 			if new(uint256.Int).Add(parentTotalDifficulty, headerDifficulty).Cmp(currentTotalDifficulty) > 0 {
 				ReStructChain(native, currentHeader, &header, headerParams.ChainID)
 			}

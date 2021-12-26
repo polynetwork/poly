@@ -268,9 +268,13 @@ func ReStructChain(native *native.NativeService, current, new *types.BlockHeader
 			return errors.WithStack(err)
 		}
 		newHashes = append(newHashes, *newHash)
+		child := new // save for verifying
 		new, err = GetHeaderByHash(native, new.BlockHeader.ParentHash, chainID)
 		if err != nil {
 			return errors.Errorf("ReStructChain GetHeaderByHash hash:%x error:%s", new.BlockHeader.ParentHash, err)
+		}
+		if err := verifyTotalDifficulty(child, new); err != nil {
+			return err
 		}
 		ti--
 	}
@@ -279,11 +283,14 @@ func ReStructChain(native *native.NativeService, current, new *types.BlockHeader
 		if err != nil {
 			return errors.WithStack(err)
 		}
-
 		newHashes = append(newHashes, *newHash)
+		child := new // save for verifying
 		new, err = GetHeaderByHash(native, new.BlockHeader.ParentHash, chainID)
 		if err != nil {
 			return errors.Errorf("ReStructChain GetHeaderByHash hash:%x  error:%s", new.BlockHeader.ParentHash, err)
+		}
+		if err := verifyTotalDifficulty(child, new); err != nil {
+			return err
 		}
 		ti--
 		si--
@@ -300,6 +307,18 @@ func ReStructChain(native *native.NativeService, current, new *types.BlockHeader
 	for i := len(newHashes) - 1; i >= 0; i-- {
 		appendHeader2Main(native, ti, newHashes[i], chainID)
 		ti++
+	}
+	return nil
+}
+
+func verifyTotalDifficulty(header, parentHeader *types.BlockHeaderAndBlockInfo) error {
+	// //////////////////////////////
+	headerDifficulty := new(uint256.Int).SetBytes(header.BlockHeader.Difficulty[:])
+	blockTotalDifficulty := new(uint256.Int).SetBytes(header.BlockInfo.TotalDifficulty[:])
+	parentTotalDifficulty := new(uint256.Int).SetBytes(parentHeader.BlockInfo.TotalDifficulty[:])
+	// //////////////////////////////
+	if blockTotalDifficulty.Cmp(new(uint256.Int).Add(parentTotalDifficulty, headerDifficulty)) != 0 {
+		return errors.Errorf("verifyTotalDifficulty error. blockTotalDifficulty:%d, parentTotalDifficulty:%d, headerDifficulty:%d", blockTotalDifficulty, parentTotalDifficulty, headerDifficulty)
 	}
 	return nil
 }
