@@ -163,7 +163,7 @@ func verifyFromStarcoinTx(native *native.NativeService, proof, extra []byte, fro
 	if err != nil {
 		return nil, fmt.Errorf("verifyFromStarcoinTx, get current header fail, error:%s", err)
 	}
-	bestHeight := uint32(bestHeader.Number)
+	bestHeight := uint32(bestHeader.BlockHeader.Number)
 	if bestHeight < height || bestHeight-height < uint32(sideChain.BlocksToWait-1) {
 		return nil, fmt.Errorf("verifyFromStarcoinTx, transaction is not confirmed, current height: %d, input height: %d", bestHeight, height)
 	}
@@ -185,7 +185,7 @@ func verifyFromStarcoinTx(native *native.NativeService, proof, extra []byte, fro
 	transactionInfoProof.EventIndex = headerOrMsg.EventIndex
 	transactionInfoProof.AccessPath = headerOrMsg.AccessPath
 	// ///////////////////////////////
-	typeEventV0, err := VerifyEventProof(transactionInfoProof, blockData.TxnAccumulatorRoot, sideChain.CCMCAddress)
+	typeEventV0, err := VerifyEventProof(transactionInfoProof, blockData.BlockHeader.TxnAccumulatorRoot, sideChain.CCMCAddress)
 	if err != nil {
 		return nil, fmt.Errorf("verifyFromStarcoinTx, verifyMerkleProof error:%v", err)
 	}
