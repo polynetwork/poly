@@ -152,7 +152,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		if err != nil {
 			return errors.Errorf("SyncBlockHeader, check header exist err: %v", err)
 		}
-		if exist == true {
+		if exist {
 			log.Warnf("SyncBlockHeader, header has exist. Header: %s", string(v))
 			continue
 		}
@@ -201,14 +201,6 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			}
 		}
 
-		// //////////////////////////////
-		headerDifficulty := new(uint256.Int).SetBytes(header.BlockHeader.Difficulty[:])
-		blockTotalDifficulty := new(uint256.Int).SetBytes(header.BlockInfo.TotalDifficulty[:])
-		parentTotalDifficulty := new(uint256.Int).SetBytes(parentHeader.BlockInfo.TotalDifficulty[:])
-		if blockTotalDifficulty.Cmp(new(uint256.Int).Add(parentTotalDifficulty, headerDifficulty)) != 0 {
-			return errors.Errorf("SyncBlockHeader, verify difficulty error. blockTotalDifficulty:%d, parentTotalDifficulty:%d, headerDifficulty:%d", blockTotalDifficulty, parentTotalDifficulty, headerDifficulty)
-		}
-		// //////////////////////////////
 		//block header storage
 		err = putBlockHeader(native, header, headerParams.ChainID)
 		if err != nil {
@@ -225,7 +217,15 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			return errors.WithStack(err)
 		}
 
+		// //////////////////////////////
+		headerDifficulty := new(uint256.Int).SetBytes(header.BlockHeader.Difficulty[:])
+		blockTotalDifficulty := new(uint256.Int).SetBytes(header.BlockInfo.TotalDifficulty[:])
+		parentTotalDifficulty := new(uint256.Int).SetBytes(parentHeader.BlockInfo.TotalDifficulty[:])
+		// //////////////////////////////
 		if bytes.Equal(*currentHeaderHash, header.BlockHeader.ParentHash) {
+			if blockTotalDifficulty.Cmp(new(uint256.Int).Add(parentTotalDifficulty, headerDifficulty)) != 0 {
+				return errors.Errorf("SyncBlockHeader, verify difficulty error. blockTotalDifficulty:%d, parentTotalDifficulty:%d, headerDifficulty:%d", blockTotalDifficulty, parentTotalDifficulty, headerDifficulty)
+			}
 			appendHeader2Main(native, header.BlockHeader.Number, *headerHash, headerParams.ChainID)
 		} else {
 			//get current total difficulty
