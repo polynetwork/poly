@@ -241,7 +241,11 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			// }
 			//parentBlockInfo := parentHeader.BlockInfo
 			//parentTotalDifficulty := new(uint256.Int).SetBytes(parentBlockInfo.TotalDifficulty[:])
-			if currentTotalDifficulty.Cmp(parentTotalDifficulty) > 0 {
+			//
+			// -------- eth handlder: --------
+			// if hederDifficultySum.Cmp(currentDifficultySum) > 0 { ...
+			//
+			if new(uint256.Int).Add(parentTotalDifficulty, headerDifficulty).Cmp(currentTotalDifficulty) > 0 {
 				ReStructChain(native, currentHeader, &header, headerParams.ChainID)
 			}
 		}
