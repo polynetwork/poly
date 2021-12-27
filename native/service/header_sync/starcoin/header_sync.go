@@ -141,7 +141,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			BlockInfo:   *blkInfo,
 		}
 		headerHash, err := header.BlockHeader.GetHash()
-		currentHeight := header.BlockHeader.Number
+		headerHeight := header.BlockHeader.Number
 		timeTarget := jsonHeader.BlockTimeTarget
 		difficultyWindow := jsonHeader.BlockDifficutyWindow
 		if err != nil {
@@ -192,7 +192,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		}
 
 		difficultyWindowU64 := uint64(difficultyWindow)
-		if (currentHeight - genesisHeader.BlockHeader.Number) >= difficultyWindowU64 {
+		if (headerHeight - genesisHeader.BlockHeader.Number) >= difficultyWindowU64 {
 			//verify difficulty
 			var expected *big.Int
 			expected, err = difficultyCalculator(native, &header.BlockHeader, headerParams.ChainID, uint64(timeTarget), difficultyWindowU64)
@@ -224,7 +224,11 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			if err := verifyTotalDifficulty(&header, parentHeader); err != nil {
 				return err
 			}
-			appendHeader2Main(native, header.BlockHeader.Number, *headerHash, headerParams.ChainID)
+			err := appendHeader2Main(native, header.BlockHeader.Number, *headerHash, headerParams.ChainID)
+			_ = err //todo ignore error?
+			// if err != nil {
+			// 	log.Warnf("SyncBlockHeader, appendHeader2Main error:%s", err.Error())
+			// }
 		} else {
 			// //get current total difficulty
 			// blockInfo, err := getBlockInfo(native, *currentHeaderHash, headerParams.ChainID)
@@ -246,7 +250,12 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			headerDifficulty := new(uint256.Int).SetBytes(header.BlockHeader.Difficulty[:])
 			parentTotalDifficulty := new(uint256.Int).SetBytes(parentHeader.BlockInfo.TotalDifficulty[:])
 			if new(uint256.Int).Add(parentTotalDifficulty, headerDifficulty).Cmp(currentTotalDifficulty) > 0 {
-				ReStructChain(native, currentHeader, &header, headerParams.ChainID)
+				err := ReStructChain(native, currentHeader, &header, headerParams.ChainID)
+				_ = err //todo ignore error?
+				// if err != nil {
+				// 	log.Warnf("SyncBlockHeader, ReStructChain error:%s", err.Error())
+				// 	return err
+				// }
 			}
 		}
 	}

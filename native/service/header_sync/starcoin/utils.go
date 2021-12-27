@@ -305,7 +305,11 @@ func ReStructChain(native *native.NativeService, current, new *types.BlockHeader
 	}
 	newHashes = append(newHashes, *newHash)
 	for i := len(newHashes) - 1; i >= 0; i-- {
-		appendHeader2Main(native, ti, newHashes[i], chainID)
+		err := appendHeader2Main(native, ti, newHashes[i], chainID)
+		_ = err //todo ignore error?
+		// if err != nil {
+		// 	return err
+		// }
 		ti++
 	}
 	return nil
