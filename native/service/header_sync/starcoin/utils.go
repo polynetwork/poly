@@ -268,14 +268,14 @@ func ReStructChain(native *native.NativeService, current, new *types.BlockHeader
 			return errors.WithStack(err)
 		}
 		newHashes = append(newHashes, *newHash)
-		child := new // save for verifying
+		//child := new
 		new, err = GetHeaderByHash(native, new.BlockHeader.ParentHash, chainID)
 		if err != nil {
 			return errors.Errorf("ReStructChain GetHeaderByHash hash:%x error:%s", new.BlockHeader.ParentHash, err)
 		}
-		if err := verifyTotalDifficulty(child, new); err != nil {
-			return err
-		}
+		// if err := verifyTotalDifficulty(child, new); err != nil {
+		// 	return err
+		// }
 		ti--
 	}
 	for !bytes.Equal(current.BlockHeader.ParentHash, new.BlockHeader.ParentHash) {
@@ -284,14 +284,14 @@ func ReStructChain(native *native.NativeService, current, new *types.BlockHeader
 			return errors.WithStack(err)
 		}
 		newHashes = append(newHashes, *newHash)
-		child := new // save for verifying
+		//child := new
 		new, err = GetHeaderByHash(native, new.BlockHeader.ParentHash, chainID)
 		if err != nil {
 			return errors.Errorf("ReStructChain GetHeaderByHash hash:%x  error:%s", new.BlockHeader.ParentHash, err)
 		}
-		if err := verifyTotalDifficulty(child, new); err != nil {
-			return err
-		}
+		// if err := verifyTotalDifficulty(child, new); err != nil {
+		// 	return err
+		// }
 		ti--
 		si--
 		current, err = GetHeaderByHeight(native, si, chainID)

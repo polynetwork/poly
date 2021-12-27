@@ -164,6 +164,9 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		if header.BlockHeader.Number != parentHeader.BlockHeader.Number+1 {
 			return errors.Errorf("SyncBlockHeader, the parent block number: %d, header number: %d", parentHeader.BlockHeader.Number, header.BlockHeader.Number)
 		}
+		if err := verifyTotalDifficulty(&header, parentHeader); err != nil {
+			return err
+		}
 		parentHeaderHash, err := parentHeader.BlockHeader.GetHash()
 		if err != nil {
 			return errors.Errorf("SyncBlockHeader, get the parent block header hash failed. Error:%s, header: %s", err, string(v))
@@ -221,9 +224,6 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		}
 
 		if bytes.Equal(*currentHeaderHash, header.BlockHeader.ParentHash) {
-			if err := verifyTotalDifficulty(&header, parentHeader); err != nil {
-				return err
-			}
 			err := appendHeader2Main(native, header.BlockHeader.Number, *headerHash, headerParams.ChainID)
 			_ = err //todo ignore error?
 			// if err != nil {
