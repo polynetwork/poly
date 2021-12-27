@@ -428,7 +428,7 @@ func (this *LedgerStoreImp) verifyHeader(header *types.Header, vbftPeerInfo map[
 	consensusType := strings.ToLower(config.DefConfig.Genesis.ConsensusType)
 	if consensusType == "vbft" {
 		//check bookkeeppers
-		needFix := config.NETWORK_ID_MAIN_NET != config.DefConfig.P2PNode.NetworkId || this.GetCurrentHeaderHeight() <= 7968500
+		needFix := config.NETWORK_ID_MAIN_NET != config.DefConfig.P2PNode.NetworkId || header.Height <= 7972700
 		m := len(vbftPeerInfo) - (len(vbftPeerInfo)-1)/3
 		if needFix {
 			m = len(vbftPeerInfo) - (len(vbftPeerInfo)*6)/7
