@@ -161,6 +161,9 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		if err != nil {
 			return errors.Errorf("SyncBlockHeader, get the parent block failed. Error:%s, header: %s", err, string(v))
 		}
+		if header.BlockHeader.Number != parentHeader.BlockHeader.Number+1 {
+			return errors.Errorf("SyncBlockHeader, the parent block number: %d, header number: %d", parentHeader.BlockHeader.Number, header.BlockHeader.Number)
+		}
 		parentHeaderHash, err := parentHeader.BlockHeader.GetHash()
 		if err != nil {
 			return errors.Errorf("SyncBlockHeader, get the parent block header hash failed. Error:%s, header: %s", err, string(v))

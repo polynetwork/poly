@@ -37,8 +37,8 @@ type BlockDiffInfo struct {
 }
 
 const allowedFutureBlockTime = 30 * time.Second
-const KEY_PART_TOTAL_DIFFICULTY = "totalDifficulty"
 
+//const KEY_PART_TOTAL_DIFFICULTY = "totalDifficulty"
 //const KEY_PART_BLOCK_INFO = "blockInfo"
 
 func putBlockHeader(native *native.NativeService, blockHeader types.BlockHeaderAndBlockInfo, chainID uint64) error {

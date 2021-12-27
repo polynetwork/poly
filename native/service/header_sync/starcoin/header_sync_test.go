@@ -2083,7 +2083,7 @@ func TestSyncHalleyHeader(t *testing.T) {
 	tx := &types.Transaction{
 		SignedAddr: []common.Address{acct.Address},
 	}
-	var jsonHeaders []stc.BlockHeaderAndBlockInfo
+	var jsonHeaders []stc.BlockHeaderWithDifficultyInfo
 	json.Unmarshal([]byte(HalleyHeaders), &jsonHeaders)
 	//var jsonBlockInfos []stc.BlockInfo
 	//json.Unmarshal([]byte(HalleyHeaderInfos), &jsonBlockInfos)
@@ -2114,7 +2114,8 @@ func TestSyncHalleyHeader(t *testing.T) {
 		param.ChainID = 1
 		param.Address = acct.Address
 		for i := len(jsonHeaders) - 1; i >= 0; i-- {
-			header, _ := json.Marshal(getWithDifficultyHeader(jsonHeaders[i].BlockHeader, jsonHeaders[i].BlockInfo))
+			//header, _ := json.Marshal(getWithDifficultyHeader(jsonHeaders[i].BlockHeader, jsonHeaders[i].BlockInfo))
+			header, _ := json.Marshal(jsonHeaders[i])
 			param.Headers = append(param.Headers, header)
 		}
 		sink := common.NewZeroCopySink(nil)
@@ -2287,6 +2288,8 @@ const HalleyHeaders = `
       "state_root": "0xa0f7a539ecaeabe08e47ba2a11e698684f75db18e623cacbd4dd83724bf4a945",
       "txn_accumulator_root": "0x0b4bbaefcb7a509b32ae41681b39ad6e4917e79220aa2883d6b995b7f94b55c0"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0xb6c0a3c14df4133e5ce8b89f7adff3add41e1df10b818da39c8eab54f26225cb",
       "total_difficulty": "0x029bb161",
@@ -2346,6 +2349,8 @@ const HalleyHeaders = `
       "state_root": "0x4b6d85eb6f97758234ac8dbad49d8c7f41864a645c1afbc190a9c7a8fa140a2c",
       "txn_accumulator_root": "0x59d489f529ae157669d48ce63f2af54d3d758bfaf299b1e2a23d991e24d9dd59"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0xf976fea99030c3442508b6deac2596b338d9dc9d3a2bcc886ebed1bcd70b1fce",
       "total_difficulty": "0x029bb0e1",
@@ -2404,6 +2409,8 @@ const HalleyHeaders = `
       "state_root": "0x6d16b2e6b2c48b38da9f3072c06e5063e19fa0e8fbdc3313b338594161c31172",
       "txn_accumulator_root": "0x108c3a2240bca50e818d5cd28b4659468628d02fa8089a8ed6033771d52e9d1b"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0xe9a60ae37dbdd9853127fa4009caa629062db56db7756f41a337302d1cd7b0a0",
       "total_difficulty": "0x029bb062",
@@ -2461,6 +2468,8 @@ const HalleyHeaders = `
       "state_root": "0xd8dea7200f3204147e68810f033d0d2496261cd510244b4056b67fac4fa85258",
       "txn_accumulator_root": "0xd59d7849e84832c3a7e0386f38dcb97ab85d9ddba99a088c8da914756cafa48e"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0xdcac7d9317aebc10b18e011d2050ea768b98c9ea552855c46535a38af165a81e",
       "total_difficulty": "0x029bafe4",
@@ -2521,6 +2530,8 @@ const HalleyHeaders = `
       "state_root": "0x6a80917148af7b1f97fce1476de4529d28b2bbed173646d94d55b5ee8db9d7bb",
       "txn_accumulator_root": "0x58fbffaa10d0753769b36ccf81a708947d44f798d282c5da5a5ab8202e1e5405"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0x87318b8fa9507f4069dac0a090c44bb7c75278a105108d674cdd73b0736249d0",
       "total_difficulty": "0x029baf62",
@@ -2581,6 +2592,8 @@ const HalleyHeaders = `
       "state_root": "0xa53f85a258204d699ef86d4ded28fd0cff49e6c26b1f4753c1994deac40b9943",
       "txn_accumulator_root": "0x3540f761e76af81fbc524c44ba86d38d5b54fadcc4df631ff283dbe123224909"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0x2ea3f9b56cf25516b05ef8c81080a8787f198ea52a3f2d6b8bbc7f7df9484de1",
       "total_difficulty": "0x029baed8",
@@ -2640,6 +2653,8 @@ const HalleyHeaders = `
       "state_root": "0x3742a5b4025bdb6f6730ae0dff448aa893317a1e065383e6f842f1bc5ed6cd55",
       "txn_accumulator_root": "0x059e53fec0fbb8de2d9d88ec6c3c6031afc26cb47b453cf48723cc0d1b316200"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0x7609c99847446eb5adb81cb71066b11d53bdbb1ceb0b010ade23db6ffe9a9761",
       "total_difficulty": "0x029bae22",
@@ -2698,6 +2713,8 @@ const HalleyHeaders = `
       "state_root": "0x9fd0030095e1ac2b3b581fee4db027a0fe24070b42b357f6287f26b9dab8a775",
       "txn_accumulator_root": "0x728ba8be7e4e5f716aa1aa50b69947085cae727f2b1700387f2c30e17a594cc6"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0x6fbbfd5b05417b4d8a4f1f0bf5e78c54a7772389d0de350a873259e60e68d1f4",
       "total_difficulty": "0x029bad62",
@@ -2756,6 +2773,8 @@ const HalleyHeaders = `
       "state_root": "0xeb2f7cd7f95ca2d56c665690959ca45560ebed3a88f37c77733de21bc8a67463",
       "txn_accumulator_root": "0xd40a660232eca511c3720c20046cdd556f821255b45b2acd8958617baa0e78d7"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0x5171747b92d12c774b5a59f2cf4e7ee20a74fbb6c07d6d768a7cf8b2bdfea15b",
       "total_difficulty": "0x029bac95",
@@ -2815,6 +2834,8 @@ const HalleyHeaders = `
       "state_root": "0xf0e1adb4e52af061f38534bfd7b795a0e5d257c90d2ad39620b63916120fa743",
       "txn_accumulator_root": "0x6e8d04ee7c90f0f62cb83f489a990f93203746a04f639961bb6791ba456a55f2"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0xe31fc863649f14038540011ec1a11197e5aea0c0fdd96a6aa2ab776f5b84aa26",
       "total_difficulty": "0x029babd3",
@@ -2873,6 +2894,8 @@ const HalleyHeaders = `
       "state_root": "0x01234b4cc613a66fd955449212eb239b7c4905d5bd02234af1b248fdff245b27",
       "txn_accumulator_root": "0xdcf698ee2d31c0833c5ff32a52ffbb23f1c123711bfb8f4a090486b978ed26c0"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0x2962e0b78133927214142792fad95964efbdc90bec74d16c827044b26f0cdea2",
       "total_difficulty": "0x029bab0c",
@@ -2930,6 +2953,8 @@ const HalleyHeaders = `
       "state_root": "0x4d6c2e3870afcdf53c8756017386a875ef27335da8ab321ad1c0bf48ce4ec6d0",
       "txn_accumulator_root": "0xb7a79864daa4a23c701c2d5cd14dbcbf9c54384fb66f3fe2ebd5714edefb02a6"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0x67fa6612cd950ee17bb54774ccdba721a08894e26d4919b3fcc86a56e78b77a4",
       "total_difficulty": "0x029baa55",
@@ -2988,6 +3013,8 @@ const HalleyHeaders = `
       "state_root": "0xb89eea543f0b7c9be85f9617a6f790884624c5605ad0dde322e0ee6fddfe2afe",
       "txn_accumulator_root": "0x7862d543480cc8e1c6c07f15b773ba0b27171c60f5243da852b394b20da8d4b6"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0x593f7c20d57d4aca9c79d653386074681f2833360c7b8644afcabac7390f85c3",
       "total_difficulty": "0x029ba99f",
@@ -3046,6 +3073,8 @@ const HalleyHeaders = `
       "state_root": "0xd8297e63cfbe4dcfc136e885e82e3f71609557a5d7a9667b10b1efe436a6caf6",
       "txn_accumulator_root": "0x5901464f95d014649d2748228ae05bf0ac9b079f5c5856e309c274e7e78f15fa"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0x192ee812d71deeb75e9e408c09d2d520ecbdd2708b273d1cf91f6d58a688f88f",
       "total_difficulty": "0x029ba8f4",
@@ -3103,6 +3132,8 @@ const HalleyHeaders = `
       "state_root": "0x57492bc896f4e4a2b2a2a4d3d9b7b35d7ab79f823604780e6509a95a6f2a2a37",
       "txn_accumulator_root": "0x30e0f6b0d45997c6c2bda7c4e92bfe18abe7178f43bc303f0952e1e33c59f4d0"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0x9eef8621742f87cd1f7652571d906374f1575a5677e5fc696aa8c671ab9eb988",
       "total_difficulty": "0x029ba852",
@@ -3159,6 +3190,8 @@ const HalleyHeaders = `
       "state_root": "0x238d5d83c99ce0ead518cba907bdc32adeec7916b4e63342c91de8937c3b7ee4",
       "txn_accumulator_root": "0xb1a42aeb8bd66ab01ba215f1260d7f83c5a90febd5cff17a15aa3e02268eccb1"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0xd676f6b003ea710ec530866a986ded318d9d0f6ce94817a69bc1c14960f9bc92",
       "total_difficulty": "0x029ba7bc",
@@ -3215,6 +3248,8 @@ const HalleyHeaders = `
       "state_root": "0x01241b6f942f93022875087395ec2af74404a1d803ab160ef4ab968143471ce5",
       "txn_accumulator_root": "0x8325579b81e5091dbf3ea630caff62e45de82d833e92703df02145ff35fc9f8c"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0x218ccbee42c8cbe110f856127dfe1138d00f4274dc112aeac7f6496e11548e16",
       "total_difficulty": "0x029ba72a",
@@ -3273,6 +3308,8 @@ const HalleyHeaders = `
       "state_root": "0x22c0438f695548805d387516ef7483504e343b7f14b6cb4146c387e9814b443c",
       "txn_accumulator_root": "0xbe505e9d770dbf51f2afe63b9a49edc46c54187d76f309e73097111be10b0ce6"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0x3b1c57e13cd123c17a69f45d5054a8e111cbc0e37063c0db269237194a135aa6",
       "total_difficulty": "0x029ba694",
@@ -3330,6 +3367,8 @@ const HalleyHeaders = `
       "state_root": "0x8e2939f7c948cb159ee0cc5cb3848bb453b54a78772e3172aa6f5604955df916",
       "txn_accumulator_root": "0x867e377f0d61e91750bfaef42a3eafce2388097bf09b7f630478e7c6775871ff"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0x48998783dc3663562d29a32ea8d1da31c1c58668dca4c7aa9bb7d689216c6d03",
       "total_difficulty": "0x029ba606",
@@ -3386,6 +3425,8 @@ const HalleyHeaders = `
       "state_root": "0xcc0dea1701fd02e3c986c858c53bc7db1b15a543d547e3284a37adc938580609",
       "txn_accumulator_root": "0x6d026419d9ffc13a5f4c0b38e27aaabc31dd2c9a14dc7c892f3ca680f2071199"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0x809494e63abe1f88bd853d48d52dfb5c1e55de628946564f40e92fcd26dfac6c",
       "total_difficulty": "0x029ba575",
@@ -3444,6 +3485,8 @@ const HalleyHeaders = `
       "state_root": "0xd9934cc66ee99955d79873ea54f12b89e9d8266ccede5869024fe8fd673d8df1",
       "txn_accumulator_root": "0x44c4519da3b43f4f373ad2c51bda9fc2ab89342b97598ee5b11eaf0e50585bab"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0x24d4c2e622bed8ac215e06736c02df6ddbb9cbed54655ed9daed111dff814f63",
       "total_difficulty": "0x029ba4dd",
@@ -3502,6 +3545,8 @@ const HalleyHeaders = `
       "state_root": "0xbdb0269992111a05b00bfde5209b9687b9a7e570165d75d8b9eef5e8cdc5893d",
       "txn_accumulator_root": "0x656edb693fc28f5936319046e746422e35c19273c8767d1cabf4a4d15c2850e6"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0x5f8484f8865c1d5f51662477fb97450f99d73e45d18d6be6107a3e36296ceb0f",
       "total_difficulty": "0x029ba44d",
@@ -3559,6 +3604,8 @@ const HalleyHeaders = `
       "state_root": "0xeb87d0a72670fb8146507767e5157b58b90a0f7bb52246ae0a49f40bd1171e9d",
       "txn_accumulator_root": "0xcfede1ba91634b2d7519192817611a556f2f4db717d386a9e390504429cdde2e"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0x15a078ecfe7d1d5c5172198cd7a648c6df73d1d90c52da4f7b5dbdb3859c604f",
       "total_difficulty": "0x029ba3ba",
@@ -3615,6 +3662,8 @@ const HalleyHeaders = `
       "state_root": "0x72df7a40acfcf31de353e7b925a024a9794dc96bb307f5d3b39ec6ac99883119",
       "txn_accumulator_root": "0xd18bbe8a06df89786fb0df8b812f84a538f8c8a20485b53edd1e0331faee4489"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0x983d3a2f794e6778b071043cb1fb8cafcd0238dd8a63a8e4ef600a522a30a422",
       "total_difficulty": "0x029ba323",
@@ -3671,6 +3720,8 @@ const HalleyHeaders = `
       "state_root": "0x417c1394ea24c7a3ca1088e514319113dd7ddb2c612209fb53da70a14002c7f8",
       "txn_accumulator_root": "0xcee628a7e1deaae1bc30acb3500929a31c858ab7f38f7bf7538a35a8b89b47cb"
     },
+    "block_time_target": 5000,
+    "block_difficulty_window": 24,
     "block_info": {
       "block_hash": "0x1ca3398b78aa7a59beaab4d9b041f35ab37659592cc8fbe2ad4bf88d9c5f892c",
       "total_difficulty": "0x029ba294",
