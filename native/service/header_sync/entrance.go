@@ -19,17 +19,6 @@ package header_sync
 
 import (
 	"fmt"
-	"github.com/polynetwork/poly/native/service/header_sync/zilliqa"
-	"github.com/polynetwork/poly/native/service/header_sync/zilliqalegacy"
-
-	"github.com/polynetwork/poly/native/service/header_sync/neo"
-	"github.com/polynetwork/poly/native/service/header_sync/neo3"
-	"github.com/polynetwork/poly/native/service/header_sync/neo3legacy"
-
-	"github.com/polynetwork/poly/native/service/header_sync/heco"
-	"github.com/polynetwork/poly/native/service/header_sync/msc"
-	"github.com/polynetwork/poly/native/service/header_sync/okex"
-	"github.com/polynetwork/poly/native/service/header_sync/polygon"
 
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
@@ -39,8 +28,18 @@ import (
 	hscommon "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/header_sync/cosmos"
 	"github.com/polynetwork/poly/native/service/header_sync/eth"
+	"github.com/polynetwork/poly/native/service/header_sync/heco"
+	"github.com/polynetwork/poly/native/service/header_sync/msc"
+	"github.com/polynetwork/poly/native/service/header_sync/neo"
+	"github.com/polynetwork/poly/native/service/header_sync/neo3"
+	"github.com/polynetwork/poly/native/service/header_sync/neo3legacy"
+	"github.com/polynetwork/poly/native/service/header_sync/okex"
 	"github.com/polynetwork/poly/native/service/header_sync/ont"
+	"github.com/polynetwork/poly/native/service/header_sync/pixiechain"
+	"github.com/polynetwork/poly/native/service/header_sync/polygon"
 	"github.com/polynetwork/poly/native/service/header_sync/quorum"
+	"github.com/polynetwork/poly/native/service/header_sync/zilliqa"
+	"github.com/polynetwork/poly/native/service/header_sync/zilliqalegacy"
 	"github.com/polynetwork/poly/native/service/utils"
 )
 
@@ -91,6 +90,8 @@ func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
 		return polygon.NewHeimdallHandler(), nil
 	case utils.POLYGON_BOR_ROUTER:
 		return polygon.NewBorHandler(), nil
+	case utils.PIXIECHAIN_ROUTER:
+		return pixiechain.NewPixieHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported router:%d", router)
 	}
