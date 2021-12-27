@@ -56,4 +56,6 @@ var (
 	POLYGON_HEIMDALL_ROUTER = uint64(15)
 	POLYGON_BOR_ROUTER      = uint64(16)
 	ZILLIQA_ROUTER          = uint64(17)
+	STARCOIN_ROUTER         = uint64(18)
+	PIXIECHAIN_ROUTER       = uint64(19)
 )
