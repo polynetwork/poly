@@ -40,6 +40,11 @@ import (
 	"github.com/polynetwork/poly/native/service/utils"
 )
 
+const (
+	// don't modify this, which trigger relayer rollback to common ancestor.
+	GET_PARENT_BLOCK_FAILED_FORMAT = "SyncBlockHeader, get the parent block failed. Error:%s, header: %s"
+)
+
 var MAXU256 = &big.Int{}
 
 func init() {
@@ -159,7 +164,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		// get pre header
 		parentHeader, err := GetHeaderByHash(native, header.BlockHeader.ParentHash, headerParams.ChainID)
 		if err != nil {
-			return errors.Errorf("SyncBlockHeader, get the parent block failed. Error:%s, header: %s", err, string(v))
+			return errors.Errorf(GET_PARENT_BLOCK_FAILED_FORMAT, err, string(v))
 		}
 		if header.BlockHeader.Number != parentHeader.BlockHeader.Number+1 {
 			return errors.Errorf("SyncBlockHeader, the parent block number: %d, header number: %d", parentHeader.BlockHeader.Number, header.BlockHeader.Number)
