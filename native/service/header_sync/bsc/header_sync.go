@@ -248,6 +248,13 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			log.Warnf("bsc Handler SyncBlockHeader, parent header not exist. Header: %s", string(v))
 			continue
 		}
+		parentHeader, err := getHeader(native, header.ParentHash, ctx.ChainID)
+		if err != nil {
+			return fmt.Errorf("bsc Handler SyncBlockHeader, getHeader failed for parentHeader err: %v", err)
+		}
+		if parentHeader.Header.Number.Uint64()+1 != header.Number.Uint64() {
+			return fmt.Errorf("SyncBlockHeader, invalid header height:%d parent height:%d", header.Number.Uint64(), parentHeader.Header.Number.Uint64())
+		}
 
 		signer, err := verifySignature(native, &header, ctx)
 		if err != nil {
@@ -268,6 +275,10 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		if diffWithLastEpoch <= int64(len(pphv.Validators)/2) {
 			// pphv is in effect
 			inTurnHV = pphv
+
+			if len(header.Extra) > extraVanity+extraSeal {
+				return fmt.Errorf("bsc Handler SyncBlockHeader: can not change epoch continuously")
+			}
 		} else {
 			// phv is in effect
 			inTurnHV = phv
