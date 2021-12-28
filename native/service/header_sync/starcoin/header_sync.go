@@ -19,6 +19,7 @@ package starcoin
 
 import (
 	"bytes"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -27,6 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 	stc "github.com/starcoinorg/starcoin-go/client"
+	"github.com/starcoinorg/starcoin-go/types"
 
 	"github.com/pkg/errors"
 
@@ -36,6 +38,11 @@ import (
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	scom "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/utils"
+)
+
+const (
+	// don't modify this, which trigger relayer rollback to common ancestor.
+	GET_PARENT_BLOCK_FAILED_FORMAT = "SyncBlockHeader, get the parent block failed. Error:%s, header: %s"
 )
 
 var MAXU256 = &big.Int{}
@@ -86,18 +93,24 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 		return errors.Errorf("STCHandler GetHeaderByHeight, genesis header had been initialized")
 	}
 
-	err = putGenesisBlockHeader(native, *header, params.ChainID)
-	if err != nil {
-		return fmt.Errorf("STCHandler SyncGenesisHeader, put blockHeader error: %v", err)
-	}
 	blockInfo, err := jsonHeaderAndInfo.BlockInfo.ToTypesBlockInfo()
 	if err != nil {
 		return errors.Errorf("SyncGenesisHeader, block info parse error: %v, header: %v", err, jsonHeaderAndInfo)
 	}
-	err = putBlockInfo(native, *blockInfo, params.ChainID)
-	if err != nil {
-		return errors.Errorf("SyncGenesisHeader, put block info error: %v, header: %v", err, jsonHeaderAndInfo)
+
+	hdrAndInfo := types.BlockHeaderAndBlockInfo{
+		BlockHeader: *header,
+		BlockInfo:   *blockInfo,
 	}
+	err = putGenesisBlockHeader(native, hdrAndInfo, params.ChainID)
+	if err != nil {
+		return fmt.Errorf("STCHandler SyncGenesisHeader, put blockHeader error: %v", err)
+	}
+
+	// err = putBlockInfo(native, *blockInfo, params.ChainID)
+	// if err != nil {
+	// 	return errors.Errorf("SyncGenesisHeader, put block info error: %v, header: %v", err, jsonHeaderAndInfo)
+	// }
 
 	return nil
 }
@@ -120,12 +133,20 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		if err != nil {
 			return errors.Errorf("SyncBlockHeader, deserialize header err: %v", err)
 		}
-		var header, err = jsonHeader.BlockHeader.ToTypesHeader()
+		hdr, err := jsonHeader.BlockHeader.ToTypesHeader()
 		if err != nil {
-			return errors.Errorf("SyncBlockHeader, to types header err: %v", err)
+			return errors.Errorf("SyncBlockHeader, to types.BlockHeader err: %v", err)
 		}
-		headerHash, err := header.GetHash()
-		currentHeight := header.Number
+		blkInfo, err := jsonHeader.BlockInfo.ToTypesBlockInfo()
+		if err != nil {
+			return errors.Errorf("SyncBlockHeader, to types.BlockInfo err: %v", err)
+		}
+		header := types.BlockHeaderAndBlockInfo{
+			BlockHeader: *hdr,
+			BlockInfo:   *blkInfo,
+		}
+		headerHash, err := header.BlockHeader.GetHash()
+		headerHeight := header.BlockHeader.Number
 		timeTarget := jsonHeader.BlockTimeTarget
 		difficultyWindow := jsonHeader.BlockDifficutyWindow
 		if err != nil {
@@ -136,94 +157,110 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		if err != nil {
 			return errors.Errorf("SyncBlockHeader, check header exist err: %v", err)
 		}
-		if exist == true {
+		if exist {
 			log.Warnf("SyncBlockHeader, header has exist. Header: %s", string(v))
 			continue
 		}
 		// get pre header
-		parentHeader, err := GetHeaderByHash(native, header.ParentHash, headerParams.ChainID)
+		parentHeader, err := GetHeaderByHash(native, header.BlockHeader.ParentHash, headerParams.ChainID)
 		if err != nil {
-			return errors.Errorf("SyncBlockHeader, get the parent block failed. Error:%s, header: %s", err, string(v))
+			return errors.Errorf(GET_PARENT_BLOCK_FAILED_FORMAT, err, string(v))
 		}
-		parentHeaderHash, err := parentHeader.GetHash()
+		if header.BlockHeader.Number != parentHeader.BlockHeader.Number+1 {
+			return errors.Errorf("SyncBlockHeader, the parent block number: %d, header number: %d", parentHeader.BlockHeader.Number, header.BlockHeader.Number)
+		}
+		if err := verifyTotalDifficulty(&header, parentHeader); err != nil {
+			return err
+		}
+		parentHeaderHash, err := parentHeader.BlockHeader.GetHash()
 		if err != nil {
 			return errors.Errorf("SyncBlockHeader, get the parent block header hash failed. Error:%s, header: %s", err, string(v))
 		}
 
 		//verify whether parent hash validity
-		if !bytes.Equal(*parentHeaderHash, header.ParentHash) {
+		if !bytes.Equal(*parentHeaderHash, header.BlockHeader.ParentHash) {
 			return errors.Errorf("SyncBlockHeader, parent header is not right. Header: %s", string(v))
 		}
 		//verify whether extra size validity
-		if uint64(len(header.Extra)) > params.MaximumExtraDataSize {
-			return errors.Errorf("SyncBlockHeader, SyncBlockHeader extra-data too long: %d > %d, header: %s", len(header.Extra), params.MaximumExtraDataSize, string(v))
+		if uint64(len(header.BlockHeader.Extra)) > params.MaximumExtraDataSize {
+			return errors.Errorf("SyncBlockHeader, SyncBlockHeader extra-data too long: %d > %d, header: %s", len(header.BlockHeader.Extra), params.MaximumExtraDataSize, string(v))
 		}
 		//verify current time validity
-		if header.Timestamp > uint64(time.Now().Add(allowedFutureBlockTime).Unix()*1000) {
+		if header.BlockHeader.Timestamp > uint64(time.Now().Add(allowedFutureBlockTime).Unix()*1000) {
 			return errors.Errorf("SyncBlockHeader,  verify header time error: checktime: %d, header: %s", time.Now().Add(allowedFutureBlockTime).Unix(), string(v))
 		}
 		//verify whether current header time and prevent header time validity
-		if header.Timestamp <= parentHeader.Timestamp {
-			return errors.Errorf("SyncBlockHeader, verify header time fail. parent: %d, Header: %s", parentHeader.Timestamp, string(v))
+		if header.BlockHeader.Timestamp <= parentHeader.BlockHeader.Timestamp {
+			return errors.Errorf("SyncBlockHeader, verify header time fail. parent: %d, Header: %s", parentHeader.BlockHeader.Timestamp, string(v))
 		}
 		// Verify that the gas limit is <= 2^63-1
 		cap := uint64(0x7fffffffffffffff)
-		if header.GasUsed > cap {
-			return errors.Errorf("SyncBlockHeader, invalid gasuseed: have %v, max %v, header: %s", header.GasUsed, cap, string(v))
+		if header.BlockHeader.GasUsed > cap {
+			return errors.Errorf("SyncBlockHeader, invalid gasuseed: have %v, max %v, header: %s", header.BlockHeader.GasUsed, cap, string(v))
 		}
 
 		difficultyWindowU64 := uint64(difficultyWindow)
-		if (currentHeight - genesisHeader.Number) >= difficultyWindowU64 {
+		if (headerHeight - genesisHeader.BlockHeader.Number) >= difficultyWindowU64 {
 			//verify difficulty
 			var expected *big.Int
-			expected, err = difficultyCalculator(native, currentHeight, headerParams.ChainID, uint64(timeTarget), difficultyWindowU64)
+			expected, err = difficultyCalculator(native, &header.BlockHeader, headerParams.ChainID, uint64(timeTarget), difficultyWindowU64)
 			if err != nil {
 				return errors.Errorf("difficulty calculator error: %v, header: %s", err, string(v))
 			}
-			if expected.Cmp(header.GetDiffculty()) != 0 {
-				return errors.Errorf("SyncBlockHeader, invalid difficulty: have %v, want %v, header: %s", header.Difficulty, expected, string(v))
+			if expected.Cmp(header.BlockHeader.GetDiffculty()) != 0 {
+				return errors.Errorf("SyncBlockHeader, invalid difficulty: have %v, want %v, header: %s", header.BlockHeader.Difficulty, expected, string(v))
 			}
 		}
 
 		//block header storage
-		err = putBlockHeader(native, *header, headerParams.ChainID)
+		err = putBlockHeader(native, header, headerParams.ChainID)
 		if err != nil {
 			return errors.Errorf("SyncGenesisHeader, put blockHeader error: %v, header: %s", err, string(v))
 		}
-		blockInfo, err := jsonHeader.BlockInfo.ToTypesBlockInfo()
-		if err != nil {
-			return errors.Errorf("SyncBlockHeader, block info parse error: %v, header: %s", err, string(v))
-		}
-		err = putBlockInfo(native, *blockInfo, headerParams.ChainID)
-		if err != nil {
-			return errors.Errorf("SyncBlockHeader, put block info error: %v, header: %s", err, string(v))
-		}
+
 		// get current header of main
 		currentHeader, err := GetCurrentHeader(native, headerParams.ChainID)
 		if err != nil {
 			return errors.Errorf("SyncBlockHeader, get the current block failed. error:%s", err)
 		}
-		currentHeaderHash, err := currentHeader.GetHash()
+		currentHeaderHash, err := currentHeader.BlockHeader.GetHash()
 		if err != nil {
 			return errors.WithStack(err)
 		}
-		if bytes.Equal(*currentHeaderHash, header.ParentHash) {
-			appendHeader2Main(native, header.Number, *headerHash, headerParams.ChainID)
+
+		if bytes.Equal(*currentHeaderHash, header.BlockHeader.ParentHash) {
+			err := appendHeader2Main(native, header.BlockHeader.Number, *headerHash, headerParams.ChainID)
+			_ = err //todo ignore error?
+			// if err != nil {
+			// 	log.Warnf("SyncBlockHeader, appendHeader2Main error:%s", err.Error())
+			// }
 		} else {
-			//get current total difficulty
-			blockInfo, err := getBlockInfo(native, *currentHeaderHash, headerParams.ChainID)
-			if err != nil {
-				return errors.Errorf("get block info err:%x  error:%s", currentHeaderHash, err)
-			}
-			currentTotalDifficulty := new(uint256.Int).SetBytes(blockInfo.TotalDifficulty[:])
-			//get fork header parent total difficulty
-			parentBlockInfo, err := getBlockInfo(native, header.ParentHash, headerParams.ChainID)
-			if err != nil {
-				return errors.Errorf("get parent block info err:%x  error:%s", currentHeaderHash, err)
-			}
-			parentTotalDifficulty := new(uint256.Int).SetBytes(parentBlockInfo.TotalDifficulty[:])
-			if currentTotalDifficulty.Cmp(parentTotalDifficulty) > 0 {
-				ReStructChain(native, currentHeader, header, headerParams.ChainID)
+			// //get current total difficulty
+			// blockInfo, err := getBlockInfo(native, *currentHeaderHash, headerParams.ChainID)
+			// if err != nil {
+			// 	return errors.Errorf("get block info error, hash:%x  error:%s", currentHeaderHash, err)
+			// }
+			currentTotalDifficulty := new(uint256.Int).SetBytes(currentHeader.BlockInfo.TotalDifficulty[:])
+			// //get fork header parent total difficulty
+			// parentBlockInfo, err := getBlockInfo(native, header.ParentHash, headerParams.ChainID)
+			// if err != nil {
+			// 	return errors.Errorf("get parent block info error, hash:%x  error:%s", currentHeaderHash, err)
+			// }
+			//parentBlockInfo := parentHeader.BlockInfo
+			//parentTotalDifficulty := new(uint256.Int).SetBytes(parentBlockInfo.TotalDifficulty[:])
+			//
+			// -------- eth handlder: --------
+			// if hederDifficultySum.Cmp(currentDifficultySum) > 0 { ...
+			//
+			headerDifficulty := new(uint256.Int).SetBytes(header.BlockHeader.Difficulty[:])
+			parentTotalDifficulty := new(uint256.Int).SetBytes(parentHeader.BlockInfo.TotalDifficulty[:])
+			if new(uint256.Int).Add(parentTotalDifficulty, headerDifficulty).Cmp(currentTotalDifficulty) > 0 {
+				err := ReStructChain(native, currentHeader, &header, headerParams.ChainID)
+				_ = err //todo ignore error?
+				// if err != nil {
+				// 	log.Warnf("SyncBlockHeader, ReStructChain error:%s", err.Error())
+				// 	return err
+				// }
 			}
 		}
 	}
@@ -247,16 +284,20 @@ func (h *Handler) SyncCrossChainMsg(native *native.NativeService) error {
 	return nil
 }
 
-func difficultyCalculator(native *native.NativeService, currentHeight uint64, chainId uint64, timeTarget uint64, difficultyWindow uint64) (*big.Int, error) {
+func difficultyCalculator(native *native.NativeService, blockHeader *types.BlockHeader, chainId uint64, timeTarget uint64, difficultyWindow uint64) (*big.Int, error) {
+	var currentHeight uint64 = blockHeader.Number
 	//get last difficulty
 	var lastDifficulties []BlockDiffInfo
+	hash := blockHeader.ParentHash
 	for height := currentHeight - 1; height > currentHeight-difficultyWindow-1; height-- {
-		header, err := GetHeaderByHeight(native, height, chainId)
+		//hdr, err := GetHeaderByHeight(native, height, chainId)
+		hdr, err := GetHeaderByHash(native, hash, chainId)
 		if err != nil {
-			return nil, fmt.Errorf("difficultyCalculator, get header by height errr: %s.", err)
+			return nil, fmt.Errorf("difficultyCalculator, get header error: %s, height: %d, hash: %s", err.Error(), height, hex.EncodeToString(hash))
 		}
-		target := targetToDiff(new(uint256.Int).SetBytes(header.Difficulty[:]))
-		lastDifficulties = append(lastDifficulties, BlockDiffInfo{header.Timestamp, *target})
+		target := targetToDiff(new(uint256.Int).SetBytes(hdr.BlockHeader.Difficulty[:]))
+		lastDifficulties = append(lastDifficulties, BlockDiffInfo{hdr.BlockHeader.Timestamp, *target})
+		hash = hdr.BlockHeader.ParentHash
 	}
 	nextTarget, err := getNextTarget(lastDifficulties, timeTarget)
 	return targetToDiff(&nextTarget).ToBig(), err
