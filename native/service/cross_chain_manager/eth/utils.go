@@ -47,22 +47,19 @@ func verifyFromEthTx(native *native.NativeService, proof, extra []byte, fromChai
 	if bestHeight < height || bestHeight-height < uint32(sideChain.BlocksToWait-1) {
 		return nil, fmt.Errorf("VerifyFromEthProof, transaction is not confirmed, current height: %d, input height: %d", bestHeight, height)
 	}
-
+	//fetch the verified block header data from db
 	blockData, _, err := eth.GetHeaderByHeight(native, uint64(height), fromChainID)
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromEthProof, get header by height, height:%d, error:%s", height, err)
 	}
-
 	ethProof := new(ETHProof)
 	err = json.Unmarshal(proof, ethProof)
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromEthProof, unmarshal proof error:%s", err)
 	}
-
 	if len(ethProof.StorageProofs) != 1 {
 		return nil, fmt.Errorf("VerifyFromEthProof, incorrect proof format")
 	}
-
 	//todo 1. verify the proof with header
 	//determine where the k and v from
 	proofResult, err := VerifyMerkleProof(ethProof, blockData, sideChain.CCMCAddress)
@@ -72,11 +69,9 @@ func verifyFromEthTx(native *native.NativeService, proof, extra []byte, fromChai
 	if proofResult == nil {
 		return nil, fmt.Errorf("VerifyFromEthProof, verifyMerkleProof failed!")
 	}
-
 	if !CheckProofResult(proofResult, extra) {
 		return nil, fmt.Errorf("VerifyFromEthProof, verify proof value hash failed, proof result:%x, extra:%x", proofResult, extra)
 	}
-
 	data := common.NewZeroCopySource(extra)
 	txParam := new(scom.MakeTxParam)
 	if err := txParam.Deserialization(data); err != nil {

@@ -54,7 +54,6 @@ type HeaderWithDifficultySum struct {
 	Header        Header   `json:"header"`
 	DifficultySum *big.Int `json:"difficultySum"`
 }
-
 func putGenesisBlockHeader(native *native.NativeService, blockHeader Header, chainID uint64) error {
 	contract := utils.HeaderSyncContractAddress
 	headerWithDifficultySum := HeaderWithDifficultySum{
@@ -62,17 +61,22 @@ func putGenesisBlockHeader(native *native.NativeService, blockHeader Header, cha
 		DifficultySum: blockHeader.Difficulty,
 	}
 	storeBytes, _ := json.Marshal(&headerWithDifficultySum)
+	//GENESIS_HEADER => the genesis header byte code
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.GENESIS_HEADER), utils.GetUint64Bytes(chainID)),
 		cstates.GenRawStorageItem(storeBytes))
+	//HEADER_INDEX => the mapping of header hash and block header byte code, for querying block header by its hash
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), blockHeader.Hash().Bytes()),
 		cstates.GenRawStorageItem(storeBytes))
+	//CURRENT_HEADER_HEIGHT => current block height of side chain in poly relay chain
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.MAIN_CHAIN), utils.GetUint64Bytes(chainID), utils.GetUint64Bytes(blockHeader.Number.Uint64())),
 		cstates.GenRawStorageItem(blockHeader.Hash().Bytes()))
+	//MAIN_CHAIN => the mapping of block height and block header hash, for querying block header hash by its height
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.CURRENT_HEADER_HEIGHT),
 		utils.GetUint64Bytes(chainID)), cstates.GenRawStorageItem(utils.GetUint64Bytes(blockHeader.Number.Uint64())))
 	scom.NotifyPutHeader(native, chainID, blockHeader.Number.Uint64(), blockHeader.Hash().String())
 	return nil
 }
+//putBlockHeader stores mapping between block header hash and block header to poly with key HEADER_INDEX
 func putBlockHeader(native *native.NativeService, blockHeader Header, difficultySum *big.Int, chainID uint64) error {
 	contract := utils.HeaderSyncContractAddress
 	headerWithDifficultySum := HeaderWithDifficultySum{
@@ -80,11 +84,13 @@ func putBlockHeader(native *native.NativeService, blockHeader Header, difficulty
 		DifficultySum: difficultySum,
 	}
 	storeBytes, _ := json.Marshal(&headerWithDifficultySum)
+	//HEADER_INDEX => the mapping of header hash and block header byte code, for querying block header by its hash
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), blockHeader.Hash().Bytes()),
 		cstates.GenRawStorageItem(storeBytes))
 	scom.NotifyPutHeader(native, chainID, blockHeader.Number.Uint64(), blockHeader.Hash().String())
 	return nil
 }
+//appendHeader2Main stores the mapping between block height and block header hash with key MAIN_CHAIN and update the CURRENT_HEADER_HEIGHT
 func appendHeader2Main(native *native.NativeService, height uint64, txhash common.Hash, chainID uint64) error {
 	contract := utils.HeaderSyncContractAddress
 	native.GetCacheDB().Put(utils.ConcatKey(contract, []byte(scom.MAIN_CHAIN), utils.GetUint64Bytes(chainID), utils.GetUint64Bytes(height)),
@@ -178,6 +184,9 @@ func IsHeaderExist(native *native.NativeService, hash []byte, chainID uint64) (b
 func RestructChain(native *native.NativeService, current, new *Header, chainID uint64) error {
 	si, ti := current.Number.Uint64(), new.Number.Uint64()
 	var err error
+	// new header has lower height
+	//look for this lower height from poly chain, and let it be current
+	//will reconstruct chain from the height of new header
 	if si > ti {
 		current, _, err = GetHeaderByHeight(native, ti, chainID)
 		if err != nil {
@@ -185,28 +194,35 @@ func RestructChain(native *native.NativeService, current, new *Header, chainID u
 		}
 		si = ti
 	}
-	newHashs := make([]common.Hash, 0)
+	newHashs := make([]common.Hash, 0)// a block hash stack
+	//new header has larger height
 	for ti > si {
+		//push header of new fork into stack
 		newHashs = append(newHashs, new.Hash())
+		// make its parent be new
 		new, _, err = GetHeaderByHash(native, new.ParentHash.Bytes(), chainID)
 		if err != nil {
 			return fmt.Errorf("RestructChain GetHeaderByHash hash:%x error:%s", new.ParentHash.Bytes(), err)
 		}
 		ti--
 	}
+	//still exist fork on same height, keep rolling back
 	for current.ParentHash != new.ParentHash {
 		newHashs = append(newHashs, new.Hash())
+		// check if a header has been stored in poly
 		new, _, err = GetHeaderByHash(native, new.ParentHash.Bytes(), chainID)
 		if err != nil {
 			return fmt.Errorf("RestructChain GetHeaderByHash hash:%x  error:%s", new.ParentHash.Bytes(), err)
 		}
 		ti--
 		si--
+
 		current, _, err = GetHeaderByHeight(native, si, chainID)
 		if err != nil {
 			return fmt.Errorf("RestructChain GetHeaderByHeight height:%d error:%s", ti, err)
 		}
 	}
+	//put all headers on poly chain
 	newHashs = append(newHashs, new.Hash())
 	for i := len(newHashs) - 1; i >= 0; i-- {
 		appendHeader2Main(native, ti, newHashs[i], chainID)
