@@ -72,7 +72,7 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 	if err != nil {
 		return fmt.Errorf("bsc Handler SyncGenesisHeader, checkWitness error: %v", err)
 	}
-
+// oneline
 	// can only store once
 	stored, err := isGenesisStored(native, params)
 	if err != nil {
