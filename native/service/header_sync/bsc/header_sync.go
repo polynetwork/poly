@@ -55,13 +55,14 @@ type GenesisHeader struct {
 	PrevValidators []HeightAndValidators
 }
 
-// SyncGenesisHeader ...
+// SyncGenesisHeader synchronize the initial block header of bsc chain to poly relay chain
 func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 	params := new(scom.SyncGenesisHeaderParam)
+	//fetch the initial block header binary code and chain ID from the poly native service data
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return fmt.Errorf("bsc Handler SyncGenesisHeader, contract params deserialize error: %v", err)
 	}
-	// Get current epoch operator
+	// Get current epoch operator of poly chain
 	operatorAddress, err := node_manager.GetCurConOperator(native)
 	if err != nil {
 		return fmt.Errorf("bsc Handler SyncGenesisHeader, get current consensus operator address error: %v", err)
@@ -73,7 +74,7 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 		return fmt.Errorf("bsc Handler SyncGenesisHeader, checkWitness error: %v", err)
 	}
 
-	// can only store once
+	// look for genesis header of bsc chain from poly chain
 	stored, err := isGenesisStored(native, params)
 	if err != nil {
 		return fmt.Errorf("bsc Handler SyncGenesisHeader, isGenesisStored error: %v", err)
@@ -81,24 +82,27 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 	if stored {
 		return fmt.Errorf("bsc Handler SyncGenesisHeader, genesis had been initialized")
 	}
-
+	//this part varies from chain to chain
+	//bsc genesis header that contains PrevValidators
 	var genesis GenesisHeader
+	//assign the parsed json-encoded header data to genesis GenesisHeader
 	err = json.Unmarshal(params.GenesisHeader, &genesis)
 	if err != nil {
 		return fmt.Errorf("bsc Handler SyncGenesisHeader, deserialize GenesisHeader err: %v", err)
 	}
-
+	//check the format validity of extra field
 	signersBytes := len(genesis.Header.Extra) - extraVanity - extraSeal
 	if signersBytes == 0 || signersBytes%ecommon.AddressLength != 0 {
 		return fmt.Errorf("invalid signer list, signersBytes:%d", signersBytes)
 	}
-
 	if len(genesis.PrevValidators) != 1 {
 		return fmt.Errorf("invalid PrevValidators")
 	}
+	//the block height of PrevValidators should be smaller than genesis header
 	if genesis.Header.Number.Cmp(genesis.PrevValidators[0].Height) <= 0 {
 		return fmt.Errorf("invalid height orders")
 	}
+	//parse the address of validators from the extra field
 	validators, err := ParseValidators(genesis.Header.Extra[extraVanity : extraVanity+signersBytes])
 	if err != nil {
 		return
@@ -106,7 +110,7 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 	genesis.PrevValidators = append([]HeightAndValidators{
 		{Height: genesis.Header.Number, Validators: validators},
 	}, genesis.PrevValidators...)
-
+	//store the information of genesis header to poly chain
 	err = storeGenesis(native, params, &genesis)
 	if err != nil {
 		return fmt.Errorf("bsc Handler SyncGenesisHeader, storeGenesis error: %v", err)
@@ -154,26 +158,32 @@ func getGenesis(native *native.NativeService, chainID uint64) (genesisHeader *Ge
 
 	return
 }
-
+//storeGenesis stores several data with corresponding keys for future use
+//GENESIS_HEADER => the genesis header byte code
+//HEADER_INDEX => the mapping of header hash and block header byte code, for querying block header by its hash
+//CURRENT_HEADER_HEIGHT => current block height of side chain in poly relay chain
+//MAIN_CHAIN => the mapping of block height and block header hash, for querying block header hash by its height
 func storeGenesis(native *native.NativeService, params *scom.SyncGenesisHeaderParam, genesisHeader *GenesisHeader) (err error) {
 
 	genesisBytes, err := json.Marshal(genesisHeader)
 	if err != nil {
 		return
 	}
-
+	//store the genesis header binary code with key GENESIS_HEADER
 	native.GetCacheDB().Put(
 		utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.GENESIS_HEADER), utils.GetUint64Bytes(params.ChainID)),
 		cstates.GenRawStorageItem(genesisBytes))
 
 	headerWithSum := &HeaderWithDifficultySum{Header: &genesisHeader.Header, DifficultySum: genesisHeader.Header.Difficulty}
 
+	//store the mapping between header hash and block header byte code with key HEADER_INDEX
 	err = putHeaderWithSum(native, params.ChainID, headerWithSum)
 	if err != nil {
 		return
 	}
-
+	//store the genesisHeader height with key CURRENT_HEADER_HEIGHT
 	putCanonicalHeight(native, params.ChainID, genesisHeader.Header.Number.Uint64())
+	//store the mapping between genesisHeader height and header hash
 	putCanonicalHash(native, params.ChainID, genesisHeader.Header.Number.Uint64(), genesisHeader.Header.Hash())
 
 	scom.NotifyPutHeader(native, params.ChainID, genesisHeader.Header.Number.Uint64(), genesisHeader.Header.Hash().Hex())
@@ -204,13 +214,14 @@ type HeaderWithDifficultySum struct {
 	EpochParentHash *ecommon.Hash `json:"epochParentHash"`
 }
 
-// SyncBlockHeader ...
+// SyncBlockHeader synchronize the consequent block header of bsc chain to poly relay chain
 func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 	headerParams := new(scom.SyncBlockHeaderParam)
+	//fetch the block header binary code and chain ID from the native transaction parameter
 	if err := headerParams.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return fmt.Errorf("bsc Handler SyncBlockHeader, contract params deserialize error: %v", err)
 	}
-
+	//get the registered bsc chain information
 	side, err := side_chain_manager.GetSideChain(native, headerParams.ChainID)
 	if err != nil {
 		return fmt.Errorf("bsc Handler SyncBlockHeader, GetSideChain error: %v", err)
@@ -230,7 +241,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			return fmt.Errorf("bsc Handler SyncBlockHeader, deserialize header err: %v", err)
 		}
 		headerHash := header.Hash()
-
+		//look for header hash from poly chain to make sure this header hasn't been synced
 		exist, err := isHeaderExist(native, headerHash, ctx)
 		if err != nil {
 			return fmt.Errorf("bsc Handler SyncBlockHeader, isHeaderExist headerHash err: %v", err)
@@ -239,7 +250,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			log.Warnf("bsc Handler SyncBlockHeader, header has exist. Header: %s", string(v))
 			continue
 		}
-
+		//make sure the parent block has already been synced
 		parentExist, err := isHeaderExist(native, header.ParentHash, ctx)
 		if err != nil {
 			return fmt.Errorf("bsc Handler SyncBlockHeader, isHeaderExist ParentHash err: %v", err)
@@ -248,7 +259,8 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			log.Warnf("bsc Handler SyncBlockHeader, parent header not exist. Header: %s", string(v))
 			continue
 		}
-
+		//Verify the legitimacy of the block header
+		//This function refers to https://github.com/binance-chain/bsc/blob/master/consensus/parlia/parlia.go#L324-L374
 		signer, err := verifySignature(native, &header, ctx)
 		if err != nil {
 			return fmt.Errorf("bsc Handler SyncBlockHeader, verifySignature err: %v", err)
@@ -302,7 +314,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		if !valid {
 			return fmt.Errorf("bsc Handler SyncBlockHeader, invalid signer")
 		}
-
+		//put verified bsc header into relay chain
 		err = addHeader(native, &header, phv, ctx)
 		if err != nil {
 			return fmt.Errorf("bsc Handler SyncBlockHeader, addHeader err: %v", err)
@@ -657,7 +669,7 @@ var (
 
 	GasLimitBoundDivisor uint64 = 256 // The bound divisor of the gas limit, used in update calculations.
 )
-
+//https://github.com/binance-chain/bsc/blob/master/consensus/parlia/parlia.go#L324-L374
 func verifyHeader(native *native.NativeService, header *types.Header, ctx *Context) (signer ecommon.Address, err error) {
 
 	// Don't waste time checking blocks from the future
