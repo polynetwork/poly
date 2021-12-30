@@ -21,14 +21,19 @@ package proc
 import (
 	"fmt"
 	"reflect"
+	"sync"
+	"time"
 
 	"github.com/ontio/ontology-eventbus/actor"
-
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
+	scommon "github.com/polynetwork/poly/core/store/common"
 	tx "github.com/polynetwork/poly/core/types"
 	"github.com/polynetwork/poly/errors"
 	"github.com/polynetwork/poly/events/message"
+	bactor "github.com/polynetwork/poly/http/base/actor"
+	"github.com/polynetwork/poly/native/service/governance/relayer_manager"
+	"github.com/polynetwork/poly/native/service/utils"
 	tc "github.com/polynetwork/poly/txnpool/common"
 	"github.com/polynetwork/poly/validator/types"
 )
@@ -74,9 +79,87 @@ type TxActor struct {
 	server *TXPoolServer
 }
 
+func (ta *TxActor) isValidSender(txn *tx.Transaction) (err error) {
+	lock.RLock()
+	defer lock.RUnlock()
+
+	// Get txn's signature addresses
+	addresses, err := txn.GetSignatureAddresses()
+	if err != nil {
+		return
+	}
+
+	// flag is set to true, meaning not any address in the signed addresses is permitted.
+	flag := true
+	for _, address := range addresses {
+		key := append([]byte(relayer_manager.RELAYER), address[:]...)
+		value, err := bactor.GetStorageItem(utils.RelayerManagerContractAddress, key)
+		if err != nil {
+			if err != scommon.ErrNotFound {
+				return err
+			}
+		}
+		// Check if address is registreed relayer
+		if len(value) > 0 {
+			// Here means address is registered relayer
+			flag = false
+			break
+		}
+		// Check if address is included in permittedAddrMap, if so, the txn is permitted
+		if val, ok := permittedAddrMap[address]; val && ok {
+			flag = false
+			break
+		}
+	}
+	if flag {
+		// If flag is true, it means any address within addresses is not permitted address to send tx
+		return fmt.Errorf("address is not registered")
+	}
+	return nil
+}
+
+var permittedAddrMap = make(map[common.Address]bool)
+var lastTime int64
+var lock sync.RWMutex
+
+func updatePermittedAddrMap() (err error) {
+	if lastTime == 0 || len(permittedAddrMap) == 0 || lastTime < time.Now().Add(-time.Minute).Unix() {
+		lock.Lock()
+		defer lock.Unlock()
+		if err = bactor.UpdatePermittedAddrMap(permittedAddrMap); err != nil {
+			log.Debugf("updatePermittedAddrMap failed")
+			return
+		}
+		lastTime = time.Now().Unix()
+	}
+	return
+}
+
 // handleTransaction handles a transaction from network and http
 func (ta *TxActor) handleTransaction(sender tc.SenderType, self *actor.PID,
 	txn *tx.Transaction, txResultCh chan *tc.TxResult) {
+
+	err := updatePermittedAddrMap()
+	if err != nil {
+		log.Debugf("handleTransaction: UpdatePermittedAddrMap failed for tx %x",
+			txn.Hash())
+		if sender == tc.HttpSender && txResultCh != nil {
+			replyTxResult(txResultCh, txn.Hash(), errors.ErrUnknown,
+				"UpdatePermittedAddrMap failed")
+		}
+		return
+	}
+
+	err = ta.isValidSender(txn)
+	if err != nil {
+		log.Debugf("handleTransaction: invalid sender for tx %x",
+			txn.Hash())
+		if sender == tc.HttpSender && txResultCh != nil {
+			replyTxResult(txResultCh, txn.Hash(), errors.ErrUnknown,
+				"invalid sender for tx")
+		}
+		return
+	}
 	ta.server.increaseStats(tc.RcvStats)
 	if len(txn.ToArray()) > tc.MAX_TX_SIZE {
 		log.Debugf("handleTransaction: reject a transaction due to size over 1M")

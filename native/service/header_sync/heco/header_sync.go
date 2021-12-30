@@ -273,6 +273,13 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			return fmt.Errorf("heco Handler SyncBlockHeader, getPrevHeightAndValidators err: %v", err)
 		}
 
+		if len(header.Extra) > extraVanity+extraSeal {
+			diffWithLastEpoch := big.NewInt(0).Sub(header.Number, phv.Height).Int64()
+			if diffWithLastEpoch <= int64(len(phv.Validators)/2) {
+				return fmt.Errorf("heco Handler SyncBlockHeader: can not change epoch continuously")
+			}
+		}
+
 		inTurnHV := phv
 
 		if lastSeenHeight > 0 {

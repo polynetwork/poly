@@ -259,6 +259,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			log.Warnf("bsc Handler SyncBlockHeader, parent header not exist. Header: %s", string(v))
 			continue
 		}
+
 		//Verify the legitimacy of the block header
 		//This function refers to https://github.com/binance-chain/bsc/blob/master/consensus/parlia/parlia.go#L324-L374
 		signer, err := verifySignature(native, &header, ctx)
@@ -280,6 +281,10 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		if diffWithLastEpoch <= int64(len(pphv.Validators)/2) {
 			// pphv is in effect
 			inTurnHV = pphv
+
+			if len(header.Extra) > extraVanity+extraSeal {
+				return fmt.Errorf("bsc Handler SyncBlockHeader: can not change epoch continuously")
+			}
 		} else {
 			// phv is in effect
 			inTurnHV = phv

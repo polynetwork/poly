@@ -440,12 +440,6 @@ var (
 		Usage: "Disable preExecute in tx pool",
 	}
 
-	//local PreExecute switcher
-	DisableSyncVerifyTxFlag = cli.BoolFlag{
-		Name:  "disable-sync-verify-tx",
-		Usage: "Disable sync verify transaction in interface",
-	}
-
 	DisableBroadcastNetTxFlag = cli.BoolFlag{
 		Name:  "disable-broadcast-net-tx",
 		Usage: "Disable broadcast tx from network in tx pool",

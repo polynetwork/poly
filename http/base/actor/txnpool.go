@@ -29,11 +29,9 @@ import (
 	"github.com/ontio/ontology-eventbus/actor"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
-	scommon "github.com/polynetwork/poly/core/store/common"
 	"github.com/polynetwork/poly/core/types"
 	polyErrors "github.com/polynetwork/poly/errors"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
-	"github.com/polynetwork/poly/native/service/governance/relayer_manager"
 	"github.com/polynetwork/poly/native/service/utils"
 	nutils "github.com/polynetwork/poly/native/service/utils"
 	tcomn "github.com/polynetwork/poly/txnpool/common"
@@ -41,7 +39,6 @@ import (
 
 var txnPid *actor.PID
 var txnPoolPid *actor.PID
-var DisableSyncVerifyTx = false
 
 func SetTxPid(actr *actor.PID) {
 	txnPid = actr
@@ -52,53 +49,9 @@ func SetTxnPoolPid(actr *actor.PID) {
 
 //append transaction to pool to txpool actor
 func AppendTxToPool(txn *types.Transaction) (polyErrors.ErrCode, string) {
-	// Get txn's signature addresses
-	addresses, err := txn.GetSignatureAddresses()
-	if err != nil {
-		return polyErrors.ErrUnknown, err.Error()
-	}
 
-	permittedAddrMap := make(map[common.Address]bool)
-	// flag is set to true, meaning not any address in the signed addresses is permitted.
-	flag := true
-	for _, address := range addresses {
-		key := append([]byte(relayer_manager.RELAYER), address[:]...)
-		value, err := GetStorageItem(utils.RelayerManagerContractAddress, key)
-		if err != nil {
-			if err != scommon.ErrNotFound {
-				return polyErrors.ErrUnknown, err.Error()
-			}
-		}
-		// Check if address is registreed relayer
-		if value != nil {
-			// Here means address is registered relayer
-			flag = false
-			break
-		}
-		// Check if permittedAddrMap is empty
-		if len(permittedAddrMap) == 0 {
-			// If empty, permittedAddrMap will be updated only one time
-			if err := UpdatePermittedAddrMap(permittedAddrMap); err != nil {
-				return polyErrors.ErrUnknown, err.Error()
-			}
-		}
-		// Check if address is included in permittedAddrMap, if so, the txn is permitted
-		if val, ok := permittedAddrMap[address]; val && ok {
-			flag = false
-			break
-		}
-	}
-	if flag {
-		// If flag is true, it means any address within addresses is not permitted address to send tx
-		return polyErrors.ErrUnknown, "address is not registered"
-	}
-	if DisableSyncVerifyTx {
-		txReq := &tcomn.TxReq{txn, tcomn.HttpSender, nil}
-		txnPid.Tell(txReq)
-		return polyErrors.ErrNoError, ""
-	}
 	//add Pre Execute Contract
-	_, err = PreExecuteContract(txn)
+	_, err := PreExecuteContract(txn)
 	if err != nil {
 		return polyErrors.ErrUnknown, err.Error()
 	}
