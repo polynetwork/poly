@@ -256,14 +256,6 @@ func (h *BorHandler) SyncBlockHeader(native *native.NativeService) error {
 			continue
 		}
 
-		parentHeader, err := getHeader(native, headerWOP.Header.ParentHash, ctx.ChainID)
-		if err != nil {
-			return fmt.Errorf("msc Handler SyncBlockHeader, getHeader failed for parentHeader err: %v", err)
-		}
-		if parentHeader.HeaderWithOptionalSnap.Header.Number.Uint64()+1 != headerWOP.Header.Number.Uint64() {
-			return fmt.Errorf("SyncBlockHeader, invalid header height:%d parent height:%d", headerWOP.Header.Number.Uint64(), parentHeader.HeaderWithOptionalSnap.Header.Number.Uint64())
-		}
-
 		var snap *Snapshot
 		snap, err = verifyHeader(native, &headerWOP, ctx)
 		if err != nil {

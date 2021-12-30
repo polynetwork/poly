@@ -244,14 +244,6 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			continue
 		}
 
-		parentHeader, err := getHeader(native, header.ParentHash, ctx.ChainID)
-		if err != nil {
-			return fmt.Errorf("msc Handler SyncBlockHeader, getHeader failed for parentHeader err: %v", err)
-		}
-		if parentHeader.Header.Number.Uint64()+1 != header.Number.Uint64() {
-			return fmt.Errorf("SyncBlockHeader, invalid header height:%d parent height:%d", header.Number.Uint64(), parentHeader.Header.Number.Uint64())
-		}
-
 		err = verifyHeader(native, &header, ctx)
 		if err != nil {
 			return fmt.Errorf("msc Handler SyncBlockHeader, verifyHeader err: %v", err)

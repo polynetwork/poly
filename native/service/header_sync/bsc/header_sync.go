@@ -260,14 +260,6 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			continue
 		}
 
-		parentHeader, err := getHeader(native, header.ParentHash, ctx.ChainID)
-		if err != nil {
-			return fmt.Errorf("bsc Handler SyncBlockHeader, getHeader failed for parentHeader err: %v", err)
-		}
-		if parentHeader.Header.Number.Uint64()+1 != header.Number.Uint64() {
-			return fmt.Errorf("SyncBlockHeader, invalid header height:%d parent height:%d", header.Number.Uint64(), parentHeader.Header.Number.Uint64())
-		}
-
 		//Verify the legitimacy of the block header
 		//This function refers to https://github.com/binance-chain/bsc/blob/master/consensus/parlia/parlia.go#L324-L374
 		signer, err := verifySignature(native, &header, ctx)
