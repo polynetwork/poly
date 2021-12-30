@@ -14,7 +14,8 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with The poly network .  If not, see <http://www.gnu.org/licenses/>.
  */
-package bsc
+
+package pixiechain
 
 import (
 	"encoding/json"
@@ -25,10 +26,7 @@ import (
 	"time"
 
 	ecommon "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/params"
-	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/log"
 	cstates "github.com/polynetwork/poly/core/states"
@@ -36,73 +34,68 @@ import (
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	scom "github.com/polynetwork/poly/native/service/header_sync/common"
+	"github.com/polynetwork/poly/native/service/header_sync/eth"
+	"github.com/polynetwork/poly/native/service/header_sync/eth/rlp"
 	"github.com/polynetwork/poly/native/service/utils"
 	"golang.org/x/crypto/sha3"
 )
 
-// Handler ...
-type Handler struct {
-}
+// TestFlagNoCheckPixieHeaderSig
+// only for testing purpose to check if Pixie Chain can be normal back after fork happens
+var TestFlagNoCheckPixieHeaderSig bool
 
-// NewHandler ...
-func NewHandler() *Handler {
+// NewPixieHandler ...
+func NewPixieHandler() *Handler {
 	return &Handler{}
 }
 
-// GenesisHeader ...
-type GenesisHeader struct {
-	Header         types.Header
-	PrevValidators []HeightAndValidators
-}
-
-// SyncGenesisHeader synchronize the initial block header of bsc chain to poly relay chain
 func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
-	params := new(scom.SyncGenesisHeaderParam)
-	//fetch the initial block header binary code and chain ID from the poly native service data
-	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
-		return fmt.Errorf("bsc Handler SyncGenesisHeader, contract params deserialize error: %v", err)
+	if native == nil {
+		return fmt.Errorf("pixie handler SyncGenesisHeader, param is nil")
 	}
-	// Get current epoch operator of poly chain
+
+	params := new(scom.SyncGenesisHeaderParam)
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
+		return fmt.Errorf("pixie Handler SyncGenesisHeader, contract params deserialize error: %v", err)
+	}
+	// Get current epoch operator
 	operatorAddress, err := node_manager.GetCurConOperator(native)
 	if err != nil {
-		return fmt.Errorf("bsc Handler SyncGenesisHeader, get current consensus operator address error: %v", err)
+		return fmt.Errorf("pixie Handler SyncGenesisHeader, get current consensus operator address error: %v", err)
 	}
 
-	//check witness
+	// check witness
 	err = utils.ValidateOwner(native, operatorAddress)
 	if err != nil {
-		return fmt.Errorf("bsc Handler SyncGenesisHeader, checkWitness error: %v", err)
+		return fmt.Errorf("pixie Handler SyncGenesisHeader, checkWitness error: %v", err)
 	}
 
-	// look for genesis header of bsc chain from poly chain
+	// can only store once
 	stored, err := isGenesisStored(native, params)
 	if err != nil {
-		return fmt.Errorf("bsc Handler SyncGenesisHeader, isGenesisStored error: %v", err)
+		return fmt.Errorf("pixie Handler SyncGenesisHeader, isGenesisStored error: %v", err)
 	}
 	if stored {
-		return fmt.Errorf("bsc Handler SyncGenesisHeader, genesis had been initialized")
+		return fmt.Errorf("pixie Handler SyncGenesisHeader, genesis had been initialized")
 	}
-	//this part varies from chain to chain
-	//bsc genesis header that contains PrevValidators
+
 	var genesis GenesisHeader
-	//assign the parsed json-encoded header data to genesis GenesisHeader
 	err = json.Unmarshal(params.GenesisHeader, &genesis)
 	if err != nil {
-		return fmt.Errorf("bsc Handler SyncGenesisHeader, deserialize GenesisHeader err: %v", err)
+		return fmt.Errorf("pixie Handler SyncGenesisHeader, deserialize GenesisHeader err: %v", err)
 	}
-	//check the format validity of extra field
+
 	signersBytes := len(genesis.Header.Extra) - extraVanity - extraSeal
 	if signersBytes == 0 || signersBytes%ecommon.AddressLength != 0 {
 		return fmt.Errorf("invalid signer list, signersBytes:%d", signersBytes)
 	}
+
 	if len(genesis.PrevValidators) != 1 {
 		return fmt.Errorf("invalid PrevValidators")
 	}
-	//the block height of PrevValidators should be smaller than genesis header
 	if genesis.Header.Number.Cmp(genesis.PrevValidators[0].Height) <= 0 {
 		return fmt.Errorf("invalid height orders")
 	}
-	//parse the address of validators from the extra field
 	validators, err := ParseValidators(genesis.Header.Extra[extraVanity : extraVanity+signersBytes])
 	if err != nil {
 		return
@@ -110,10 +103,10 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 	genesis.PrevValidators = append([]HeightAndValidators{
 		{Height: genesis.Header.Number, Validators: validators},
 	}, genesis.PrevValidators...)
-	//store the information of genesis header to poly chain
+
 	err = storeGenesis(native, params, &genesis)
 	if err != nil {
-		return fmt.Errorf("bsc Handler SyncGenesisHeader, storeGenesis error: %v", err)
+		return fmt.Errorf("pixie Handler SyncGenesisHeader, storeGenesis error: %v", err)
 	}
 
 	return
@@ -130,7 +123,6 @@ func isGenesisStored(native *native.NativeService, params *scom.SyncGenesisHeade
 }
 
 func getGenesis(native *native.NativeService, chainID uint64) (genesisHeader *GenesisHeader, err error) {
-
 	genesisBytes, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.GENESIS_HEADER), utils.GetUint64Bytes(chainID)))
 	if err != nil {
 		err = fmt.Errorf("getGenesis, GetCacheDB err:%v", err)
@@ -158,150 +150,101 @@ func getGenesis(native *native.NativeService, chainID uint64) (genesisHeader *Ge
 
 	return
 }
-//storeGenesis stores several data with corresponding keys for future use
-//GENESIS_HEADER => the genesis header byte code
-//HEADER_INDEX => the mapping of header hash and block header byte code, for querying block header by its hash
-//CURRENT_HEADER_HEIGHT => current block height of side chain in poly relay chain
-//MAIN_CHAIN => the mapping of block height and block header hash, for querying block header hash by its height
-func storeGenesis(native *native.NativeService, params *scom.SyncGenesisHeaderParam, genesisHeader *GenesisHeader) (err error) {
 
+func storeGenesis(native *native.NativeService, params *scom.SyncGenesisHeaderParam, genesisHeader *GenesisHeader) (err error) {
 	genesisBytes, err := json.Marshal(genesisHeader)
 	if err != nil {
 		return
 	}
-	//store the genesis header binary code with key GENESIS_HEADER
+
 	native.GetCacheDB().Put(
 		utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.GENESIS_HEADER), utils.GetUint64Bytes(params.ChainID)),
 		cstates.GenRawStorageItem(genesisBytes))
 
 	headerWithSum := &HeaderWithDifficultySum{Header: &genesisHeader.Header, DifficultySum: genesisHeader.Header.Difficulty}
 
-	//store the mapping between header hash and block header byte code with key HEADER_INDEX
 	err = putHeaderWithSum(native, params.ChainID, headerWithSum)
 	if err != nil {
 		return
 	}
-	//store the genesisHeader height with key CURRENT_HEADER_HEIGHT
+
 	putCanonicalHeight(native, params.ChainID, genesisHeader.Header.Number.Uint64())
-	//store the mapping between genesisHeader height and header hash
 	putCanonicalHash(native, params.ChainID, genesisHeader.Header.Number.Uint64(), genesisHeader.Header.Hash())
 
 	scom.NotifyPutHeader(native, params.ChainID, genesisHeader.Header.Number.Uint64(), genesisHeader.Header.Hash().Hex())
 	return
 }
 
-// ExtraInfo ...
-type ExtraInfo struct {
-	ChainID *big.Int // for bsc
-}
-
-// Context ...
-type Context struct {
-	ExtraInfo ExtraInfo
-	ChainID   uint64
-}
-
-// HeaderWithChainID ...
-type HeaderWithChainID struct {
-	Header  *HeaderWithDifficultySum
-	ChainID uint64
-}
-
-// HeaderWithDifficultySum ...
-type HeaderWithDifficultySum struct {
-	Header          *types.Header `json:"header"`
-	DifficultySum   *big.Int      `json:"difficultySum"`
-	EpochParentHash *ecommon.Hash `json:"epochParentHash"`
-}
-
-// SyncBlockHeader synchronize the consequent block header of bsc chain to poly relay chain
+// SyncBlockHeader ...
+// Will verify header coming from congress consensus
 func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
-	headerParams := new(scom.SyncBlockHeaderParam)
-	//fetch the block header binary code and chain ID from the native transaction parameter
-	if err := headerParams.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
-		return fmt.Errorf("bsc Handler SyncBlockHeader, contract params deserialize error: %v", err)
+	if native == nil {
+		return fmt.Errorf("pixie handler SyncBlockHeader, param is nil")
 	}
-	//get the registered bsc chain information
+
+	headerParams := new(scom.SyncBlockHeaderParam)
+	if err := headerParams.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
+		return fmt.Errorf("pixie Handler SyncBlockHeader, contract params deserialize error: %v", err)
+	}
+
 	side, err := side_chain_manager.GetSideChain(native, headerParams.ChainID)
 	if err != nil {
-		return fmt.Errorf("bsc Handler SyncBlockHeader, GetSideChain error: %v", err)
+		return fmt.Errorf("pixie Handler SyncBlockHeader, GetSideChain error: %v", err)
+	}
+	if side == nil {
+		return fmt.Errorf("pixie Hander SyncBlockHeader, GetSideChain info nil")
 	}
 	var extraInfo ExtraInfo
 	err = json.Unmarshal(side.ExtraInfo, &extraInfo)
 	if err != nil {
-		return fmt.Errorf("bsc Handler SyncBlockHeader, ExtraInfo Unmarshal error: %v", err)
+		return fmt.Errorf("pixie Handler SyncBlockHeader, ExtraInfo Unmarshal error: %v", err)
 	}
 
 	ctx := &Context{ExtraInfo: extraInfo, ChainID: headerParams.ChainID}
 
 	for _, v := range headerParams.Headers {
-		var header types.Header
+		var header eth.Header
 		err := json.Unmarshal(v, &header)
 		if err != nil {
-			return fmt.Errorf("bsc Handler SyncBlockHeader, deserialize header err: %v", err)
+			return fmt.Errorf("pixie Handler SyncBlockHeader, deserialize header err: %v", err)
 		}
 		headerHash := header.Hash()
-		//look for header hash from poly chain to make sure this header hasn't been synced
+
 		exist, err := isHeaderExist(native, headerHash, ctx)
 		if err != nil {
-			return fmt.Errorf("bsc Handler SyncBlockHeader, isHeaderExist headerHash err: %v", err)
+			return fmt.Errorf("pixie Handler SyncBlockHeader, isHeaderExist headerHash err: %v", err)
 		}
 		if exist {
-			log.Warnf("bsc Handler SyncBlockHeader, header has exist. Header: %s", string(v))
+			log.Warnf("pixie Handler SyncBlockHeader, header has exist. Header: %s", string(v))
 			continue
 		}
-		//make sure the parent block has already been synced
+
 		parentExist, err := isHeaderExist(native, header.ParentHash, ctx)
 		if err != nil {
-			return fmt.Errorf("bsc Handler SyncBlockHeader, isHeaderExist ParentHash err: %v", err)
+			return fmt.Errorf("pixie Handler SyncBlockHeader, isHeaderExist ParentHash err: %v", err)
 		}
 		if !parentExist {
-			log.Warnf("bsc Handler SyncBlockHeader, parent header not exist. Header: %s", string(v))
+			log.Warnf("pixie Handler SyncBlockHeader, parent header not exist. Header: %s", string(v))
 			continue
 		}
 
-		parentHeader, err := getHeader(native, header.ParentHash, ctx.ChainID)
-		if err != nil {
-			return fmt.Errorf("bsc Handler SyncBlockHeader, getHeader failed for parentHeader err: %v", err)
-		}
-		if parentHeader.Header.Number.Uint64()+1 != header.Number.Uint64() {
-			return fmt.Errorf("SyncBlockHeader, invalid header height:%d parent height:%d", header.Number.Uint64(), parentHeader.Header.Number.Uint64())
-		}
-
-		//Verify the legitimacy of the block header
-		//This function refers to https://github.com/binance-chain/bsc/blob/master/consensus/parlia/parlia.go#L324-L374
 		signer, err := verifySignature(native, &header, ctx)
 		if err != nil {
-			return fmt.Errorf("bsc Handler SyncBlockHeader, verifySignature err: %v", err)
+			return fmt.Errorf("pixie Handler SyncBlockHeader, verifySignature err: %v", err)
 		}
 
 		// get prev epochs, also checking recent limit
-		phv, pphv, lastSeenHeight, err := getPrevHeightAndValidators(native, &header, ctx)
+		phv, _, lastSeenHeight, err := getPrevHeightAndValidators(native, &header, ctx)
 		if err != nil {
-			return fmt.Errorf("bsc Handler SyncBlockHeader, getPrevHeightAndValidators err: %v", err)
+			return fmt.Errorf("pixie Handler SyncBlockHeader, getPrevHeightAndValidators err: %v", err)
 		}
 
-		var (
-			inTurnHV *HeightAndValidators
-		)
-
-		diffWithLastEpoch := big.NewInt(0).Sub(header.Number, phv.Height).Int64()
-		if diffWithLastEpoch <= int64(len(pphv.Validators)/2) {
-			// pphv is in effect
-			inTurnHV = pphv
-
-			if len(header.Extra) > extraVanity+extraSeal {
-				return fmt.Errorf("bsc Handler SyncBlockHeader: can not change epoch continuously")
-			}
-		} else {
-			// phv is in effect
-			inTurnHV = phv
-		}
+		inTurnHV := phv
 
 		if lastSeenHeight > 0 {
 			limit := int64(len(inTurnHV.Validators) / 2)
 			if header.Number.Int64() <= lastSeenHeight+limit {
-				return fmt.Errorf("bsc Handler SyncBlockHeader, RecentlySigned, lastSeenHeight:%d currentHeight:%d #V:%d", lastSeenHeight, header.Number.Int64(), len(inTurnHV.Validators))
+				return fmt.Errorf("pixie Handler SyncBlockHeader, RecentlySigned, lastSeenHeight:%d currentHeight:%d #V:%d", lastSeenHeight, header.Number.Int64(), len(inTurnHV.Validators))
 			}
 		}
 
@@ -309,28 +252,29 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		if indexInTurn < 0 {
 			return fmt.Errorf("indexInTurn is negative:%d inTurnHV.Height:%d header.Number:%d", indexInTurn, inTurnHV.Height.Int64(), header.Number.Int64())
 		}
+
 		valid := false
 		for idx, v := range inTurnHV.Validators {
 			if v == signer {
 				valid = true
 				if indexInTurn == idx {
 					if header.Difficulty.Cmp(diffInTurn) != 0 {
-						return fmt.Errorf("invalid difficulty, got %v expect %v index:%v", header.Difficulty.Int64(), diffInTurn.Int64(), int(indexInTurn)%len(inTurnHV.Validators))
+						return fmt.Errorf("invalid difficulty, got %v expect %v index:%v", header.Difficulty.Int64(), diffInTurn.Int64(), indexInTurn%len(inTurnHV.Validators))
 					}
 				} else {
 					if header.Difficulty.Cmp(diffNoTurn) != 0 {
-						return fmt.Errorf("invalid difficulty, got %v expect %v index:%v", header.Difficulty.Int64(), diffNoTurn.Int64(), int(indexInTurn)%len(inTurnHV.Validators))
+						return fmt.Errorf("invalid difficulty, got %v expect %v index:%v", header.Difficulty.Int64(), diffNoTurn.Int64(), indexInTurn%len(inTurnHV.Validators))
 					}
 				}
 			}
 		}
 		if !valid {
-			return fmt.Errorf("bsc Handler SyncBlockHeader, invalid signer")
+			return fmt.Errorf("pixie Handler SyncBlockHeader, invalid signer")
 		}
-		//put verified bsc header into relay chain
+
 		err = addHeader(native, &header, phv, ctx)
 		if err != nil {
-			return fmt.Errorf("bsc Handler SyncBlockHeader, addHeader err: %v", err)
+			return fmt.Errorf("pixie Handler SyncBlockHeader, addHeader err: %v", err)
 		}
 
 		scom.NotifyPutHeader(native, headerParams.ChainID, header.Number.Uint64(), header.Hash().Hex())
@@ -342,13 +286,13 @@ func isHeaderExist(native *native.NativeService, headerHash ecommon.Hash, ctx *C
 	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress,
 		[]byte(scom.HEADER_INDEX), utils.GetUint64Bytes(ctx.ChainID), headerHash.Bytes()))
 	if err != nil {
-		return false, fmt.Errorf("bsc Handler isHeaderExist error: %v", err)
+		return false, fmt.Errorf("pixie Handler isHeaderExist error: %v", err)
 	}
 
 	return headerStore != nil, nil
 }
 
-func verifySignature(native *native.NativeService, header *types.Header, ctx *Context) (signer ecommon.Address, err error) {
+func verifySignature(native *native.NativeService, header *eth.Header, ctx *Context) (signer ecommon.Address, err error) {
 	return verifyHeader(native, header, ctx)
 }
 
@@ -357,13 +301,13 @@ func GetCanonicalHeight(native *native.NativeService, chainID uint64) (height ui
 	heightStore, err := native.GetCacheDB().Get(
 		utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.CURRENT_HEADER_HEIGHT), utils.GetUint64Bytes(chainID)))
 	if err != nil {
-		err = fmt.Errorf("bsc Handler GetCanonicalHeight err:%v", err)
+		err = fmt.Errorf("pixie Handler GetCanonicalHeight err:%v", err)
 		return
 	}
 
 	storeBytes, err := cstates.GetValueFromRawStorageItem(heightStore)
 	if err != nil {
-		err = fmt.Errorf("bsc Handler GetCanonicalHeight, GetValueFromRawStorageItem err:%v", err)
+		err = fmt.Errorf("pixie Handler GetCanonicalHeight, GetValueFromRawStorageItem err:%v", err)
 		return
 	}
 
@@ -402,7 +346,7 @@ func getCanonicalHash(native *native.NativeService, chainID uint64, height uint6
 
 	hashBytes, err := cstates.GetValueFromRawStorageItem(hashBytesStore)
 	if err != nil {
-		err = fmt.Errorf("bsc Handler getCanonicalHash, GetValueFromRawStorageItem err:%v", err)
+		err = fmt.Errorf("pixie Handler getCanonicalHash, GetValueFromRawStorageItem err:%v", err)
 		return
 	}
 
@@ -416,7 +360,6 @@ func putCanonicalHash(native *native.NativeService, chainID uint64, height uint6
 }
 
 func putHeaderWithSum(native *native.NativeService, chainID uint64, headerWithSum *HeaderWithDifficultySum) (err error) {
-
 	headerBytes, err := json.Marshal(headerWithSum)
 	if err != nil {
 		return
@@ -431,11 +374,10 @@ func putHeaderWithSum(native *native.NativeService, chainID uint64, headerWithSu
 func putCanonicalHeight(native *native.NativeService, chainID uint64, height uint64) {
 	native.GetCacheDB().Put(
 		utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.CURRENT_HEADER_HEIGHT), utils.GetUint64Bytes(chainID)),
-		cstates.GenRawStorageItem(utils.GetUint64Bytes(uint64(height))))
+		cstates.GenRawStorageItem(utils.GetUint64Bytes(height)))
 }
 
-func addHeader(native *native.NativeService, header *types.Header, phv *HeightAndValidators, ctx *Context) (err error) {
-
+func addHeader(native *native.NativeService, header *eth.Header, phv *HeightAndValidators, ctx *Context) (err error) {
 	parentHeader, err := getHeader(native, header.ParentHash, ctx.ChainID)
 	if err != nil {
 		return
@@ -519,16 +461,15 @@ type HeightAndValidators struct {
 	Hash       *ecommon.Hash
 }
 
-func getPrevHeightAndValidators(native *native.NativeService, header *types.Header, ctx *Context) (phv, pphv *HeightAndValidators, lastSeenHeight int64, err error) {
-
+func getPrevHeightAndValidators(native *native.NativeService, header *eth.Header, ctx *Context) (phv, pphv *HeightAndValidators, lastSeenHeight int64, err error) {
 	genesis, err := getGenesis(native, ctx.ChainID)
 	if err != nil {
-		err = fmt.Errorf("bsc Handler getGenesis error: %v", err)
+		err = fmt.Errorf("pixie Handler getGenesis error: %v", err)
 		return
 	}
 
 	if genesis == nil {
-		err = fmt.Errorf("bsc Handler genesis not set")
+		err = fmt.Errorf("pixie Handler genesis not set")
 		return
 	}
 
@@ -553,7 +494,7 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 
 	prevHeaderWithSum, err := getHeader(native, header.ParentHash, ctx.ChainID)
 	if err != nil {
-		err = fmt.Errorf("bsc Handler getHeader error: %v", err)
+		err = fmt.Errorf("pixie Handler getHeader error: %v", err)
 		return
 	}
 
@@ -571,7 +512,7 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 				for i := 0; i < maxLimit-1; i++ {
 					prevHeaderWithSum, err := getHeader(native, nextRecentParentHash, ctx.ChainID)
 					if err != nil {
-						err = fmt.Errorf("bsc Handler getHeader error: %v", err)
+						err = fmt.Errorf("pixie Handler getHeader error: %v", err)
 						return
 					}
 					if prevHeaderWithSum.Header.Coinbase == targetCoinbase {
@@ -596,11 +537,10 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 	currentPV := &phv
 
 	for {
-
 		if len(prevHeaderWithSum.Header.Extra) > extraVanity+extraSeal {
 			validators, err = ParseValidators(prevHeaderWithSum.Header.Extra[extraVanity : len(prevHeaderWithSum.Header.Extra)-extraSeal])
 			if err != nil {
-				err = fmt.Errorf("bsc Handler ParseValidators error: %v", err)
+				err = fmt.Errorf("pixie Handler ParseValidators error: %v", err)
 				return
 			}
 			*currentPV = &HeightAndValidators{
@@ -615,7 +555,7 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 			case pphv:
 				return
 			default:
-				err = fmt.Errorf("bug in bsc Handler")
+				err = fmt.Errorf("(prev) invalid currentPV")
 				return
 			}
 		}
@@ -634,7 +574,7 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 			case pphv:
 				pphv = &genesis.PrevValidators[0]
 			default:
-				err = fmt.Errorf("bug in bsc Handler")
+				err = fmt.Errorf("(next) invalid currentPV")
 				return
 			}
 			return
@@ -642,49 +582,34 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 
 		prevHeaderWithSum, err = getHeader(native, nextParentHash, ctx.ChainID)
 		if err != nil {
-			err = fmt.Errorf("bsc Handler getHeader error: %v", err)
+			err = fmt.Errorf("pixie Handler getHeader error: %v", err)
 			return
 		}
-
 	}
 }
 
 func getHeader(native *native.NativeService, hash ecommon.Hash, chainID uint64) (headerWithSum *HeaderWithDifficultySum, err error) {
-
 	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress,
 		[]byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), hash.Bytes()))
 	if err != nil {
-		return nil, fmt.Errorf("bsc Handler getHeader error: %v", err)
+		return nil, fmt.Errorf("pixie Handler getHeader error: %v", err)
 	}
 	if headerStore == nil {
-		return nil, fmt.Errorf("bsc Handler getHeader, can not find any header records")
+		return nil, fmt.Errorf("pixie Handler getHeader, can not find any header records")
 	}
 	storeBytes, err := cstates.GetValueFromRawStorageItem(headerStore)
 	if err != nil {
-		return nil, fmt.Errorf("bsc Handler getHeader, deserialize headerBytes from raw storage item err:%v", err)
+		return nil, fmt.Errorf("pixie Handler getHeader, deserialize headerBytes from raw storage item err:%v", err)
 	}
 	headerWithSum = &HeaderWithDifficultySum{}
 	if err := json.Unmarshal(storeBytes, &headerWithSum); err != nil {
-		return nil, fmt.Errorf("bsc Handler getHeader, deserialize header error: %v", err)
+		return nil, fmt.Errorf("pixie Handler getHeader, deserialize header error: %v", err)
 	}
 
 	return
 }
 
-var (
-	inMemoryHeaders = 400
-	inMemoryGenesis = 40
-	extraVanity     = 32                       // Fixed number of extra-data prefix bytes reserved for signer vanity
-	extraSeal       = crypto.SignatureLength   // Fixed number of extra-data suffix bytes reserved for signer seal
-	uncleHash       = types.CalcUncleHash(nil) // Always Keccak256(RLP([])) as uncles are meaningless outside of PoW.
-	diffInTurn      = big.NewInt(2)            // Block difficulty for in-turn signatures
-	diffNoTurn      = big.NewInt(1)            // Block difficulty for out-of-turn signatures
-
-	GasLimitBoundDivisor uint64 = 256 // The bound divisor of the gas limit, used in update calculations.
-)
-//https://github.com/binance-chain/bsc/blob/master/consensus/parlia/parlia.go#L324-L374
-func verifyHeader(native *native.NativeService, header *types.Header, ctx *Context) (signer ecommon.Address, err error) {
-
+func verifyHeader(native *native.NativeService, header *eth.Header, ctx *Context) (signer ecommon.Address, err error) {
 	// Don't waste time checking blocks from the future
 	if header.Time > uint64(time.Now().Unix()) {
 		err = errors.New("block in the future")
@@ -727,12 +652,17 @@ func verifyHeader(native *native.NativeService, header *types.Header, ctx *Conte
 		return
 	}
 
+	// Verify that the gas limit is <= 2^63-1
+	if header.GasLimit > GasLimitMax {
+		err = fmt.Errorf("invalid gasLimit: have %v, max %v", header.GasLimit, GasLimitMax)
+		return
+	}
+
 	// All basic checks passed, verify cascading fields
 	return verifyCascadingFields(native, header, ctx)
 }
 
-func verifyCascadingFields(native *native.NativeService, header *types.Header, ctx *Context) (signer ecommon.Address, err error) {
-
+func verifyCascadingFields(native *native.NativeService, header *eth.Header, ctx *Context) (signer ecommon.Address, err error) {
 	number := header.Number.Uint64()
 
 	parent, err := getHeader(native, header.ParentHash, ctx.ChainID)
@@ -745,46 +675,39 @@ func verifyCascadingFields(native *native.NativeService, header *types.Header, c
 		return
 	}
 
-	// Verify that the gas limit is <= 2^63-1
-	capacity := uint64(0x7fffffffffffffff)
-	if header.GasLimit > capacity {
-		err = fmt.Errorf("invalid gasLimit: have %v, max %v", header.GasLimit, capacity)
+	if parent.Header.Time+ctx.ExtraInfo.Period > header.Time {
+		err = errors.New("invalid timestamp")
 		return
 	}
+
 	// Verify that the gasUsed is <= gasLimit
 	if header.GasUsed > header.GasLimit {
 		err = fmt.Errorf("invalid gasUsed: have %d, gasLimit %d", header.GasUsed, header.GasLimit)
 		return
 	}
 
-	// Verify that the gas limit remains within allowed bounds
-	diff := int64(parent.Header.GasLimit) - int64(header.GasLimit)
-	if diff < 0 {
-		diff *= -1
+	// PixieChain Will active a hard fork in the future.
+	if header.BaseFee != nil {
+		err = fmt.Errorf("invalid baseFee before fork: have %d, want <nil>", header.BaseFee)
+		return
 	}
-	limit := parent.Header.GasLimit / GasLimitBoundDivisor
-
-	if uint64(diff) >= limit || header.GasLimit < params.MinGasLimit {
-		err = fmt.Errorf("invalid gas limit: have %d, want %d += %d", header.GasLimit, parent.Header.GasLimit, limit)
+	if err = VerifyGaslimit(parent.Header.GasLimit, header.GasLimit); err != nil {
 		return
 	}
 
 	return verifySeal(native, header, ctx)
 }
 
-// for test
-var mockSigner ecommon.Address
-
-func verifySeal(native *native.NativeService, header *types.Header, ctx *Context) (signer ecommon.Address, err error) {
+func verifySeal(native *native.NativeService, header *eth.Header, ctx *Context) (signer ecommon.Address, err error) {
 	// Verifying the genesis block is not supported
 	number := header.Number.Uint64()
 	if number == 0 {
 		err = errors.New("unknown block")
 		return
 	}
-
-	if mockSigner != (ecommon.Address{}) {
-		return mockSigner, nil
+	if TestFlagNoCheckPixieHeaderSig {
+		signer = header.Coinbase
+		return
 	}
 	// Resolve the authorization key and check against validators
 	signer, err = ecrecover(header, ctx.ExtraInfo.ChainID)
@@ -801,7 +724,7 @@ func verifySeal(native *native.NativeService, header *types.Header, ctx *Context
 }
 
 // ecrecover extracts the Ethereum account address from a signed header.
-func ecrecover(header *types.Header, chainID *big.Int) (ecommon.Address, error) {
+func ecrecover(header *eth.Header, chainID *big.Int) (ecommon.Address, error) {
 	// Retrieve the signature from the header extra-data
 	if len(header.Extra) < extraSeal {
 		return ecommon.Address{}, errors.New("extra-data 65 byte signature suffix missing")
@@ -820,16 +743,15 @@ func ecrecover(header *types.Header, chainID *big.Int) (ecommon.Address, error) 
 }
 
 // SealHash returns the hash of a block prior to it being sealed.
-func SealHash(header *types.Header, chainID *big.Int) (hash ecommon.Hash) {
+func SealHash(header *eth.Header, chainID *big.Int) (hash ecommon.Hash) {
 	hasher := sha3.NewLegacyKeccak256()
 	encodeSigHeader(hasher, header, chainID)
 	hasher.Sum(hash[:0])
 	return hash
 }
 
-func encodeSigHeader(w io.Writer, header *types.Header, chainID *big.Int) {
+func encodeSigHeader(w io.Writer, header *eth.Header, chainID *big.Int) {
 	err := rlp.Encode(w, []interface{}{
-		chainID,
 		header.ParentHash,
 		header.UncleHash,
 		header.Coinbase,

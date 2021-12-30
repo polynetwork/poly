@@ -69,17 +69,17 @@ func (this *ETHHandler) SyncGenesisHeader(native *native.NativeService) error {
 		return fmt.Errorf("ETHHandler SyncGenesisHeader, get current consensus operator address error: %v", err)
 	}
 
-	//check witness
+	//check witness, ensure the legitimate of the poly native service data
 	err = utils.ValidateOwner(native, operatorAddress)
 	if err != nil {
 		return fmt.Errorf("ETHHandler SyncGenesisHeader, checkWitness error: %v", err)
 	}
-
+	//parse header data from native service input field
 	header, err := getGenesisHeader(native.GetInput())
 	if err != nil {
 		return fmt.Errorf("ETHHandler SyncGenesisHeader: %s", err)
 	}
-
+	//look for genesis header from relay chain to make sure func SyncGenesisHeader is only called once
 	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.GENESIS_HEADER), utils.GetUint64Bytes(params.ChainID)))
 	if err != nil {
 		return fmt.Errorf("ETHHandler GetHeaderByHeight, get blockHashStore error: %v", err)
@@ -87,8 +87,7 @@ func (this *ETHHandler) SyncGenesisHeader(native *native.NativeService) error {
 	if headerStore != nil {
 		return fmt.Errorf("ETHHandler GetHeaderByHeight, genesis header had been initialized")
 	}
-
-	//block header storage
+	////store the information of genesis header to poly chain
 	err = putGenesisBlockHeader(native, header, params.ChainID)
 	if err != nil {
 		return fmt.Errorf("ETHHandler SyncGenesisHeader, put blockHeader error: %v", err)
@@ -160,6 +159,7 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 		if header.GasUsed > header.GasLimit {
 			return fmt.Errorf("SyncBlockHeader, invalid gasUsed: have %d, gasLimit %d, header: %s", header.GasUsed, header.GasLimit, string(v))
 		}
+		//London hard fork
 		if isLondon(&header) {
 			err = VerifyEip1559Header(parentHeader, &header)
 		} else {
@@ -181,14 +181,14 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 		if expected.Cmp(header.Difficulty) != 0 {
 			return fmt.Errorf("SyncBlockHeader, invalid difficulty: have %v, want %v, header: %s", header.Difficulty, expected, string(v))
 		}
-		// verfify header
+		// verify header
 		err = this.verifyHeader(&header, caches)
 		if err != nil {
 			return fmt.Errorf("SyncBlockHeader, verify header error: %v, header: %s", err, string(v))
 		}
-		//block header storage
-		hederDifficultySum := new(big.Int).Add(header.Difficulty, parentDifficultySum)
-		err = putBlockHeader(native, header, hederDifficultySum, headerParams.ChainID)
+		headerDifficultySum := new(big.Int).Add(header.Difficulty, parentDifficultySum)
+		//block header storage store the mapping between block header hash and header data into poly
+		err = putBlockHeader(native, header, headerDifficultySum, headerParams.ChainID)
 		if err != nil {
 			return fmt.Errorf("SyncGenesisHeader, put blockHeader error: %v, header: %s", err, string(v))
 		}
@@ -197,11 +197,14 @@ func (this *ETHHandler) SyncBlockHeader(native *native.NativeService) error {
 		if err != nil {
 			return fmt.Errorf("SyncBlockHeader, get the current block failed. error:%s", err)
 		}
+		//make sure the block header synchronization is ordered
 		if bytes.Equal(currentHeader.Hash().Bytes(), header.ParentHash.Bytes()) {
+			//if header is just the next one
 			appendHeader2Main(native, header.Number.Uint64(), headerHash, headerParams.ChainID)
 		} else {
-			//
-			if hederDifficultySum.Cmp(currentDifficultySum) > 0 {
+			//The block to be synchronized belongs to another fork and has larger difficulty sum
+			if headerDifficultySum.Cmp(currentDifficultySum) > 0 {
+				// reconstruct the chain following the new fork
 				RestructChain(native, currentHeader, &header, headerParams.ChainID)
 			}
 		}

@@ -789,7 +789,7 @@ func verifySeal(native *native.NativeService, header *eth.Header, ctx *Context, 
 		return mockSigner, nil
 	}
 	// Resolve the authorization key and check against validators
-	signer, err = ecrecover(header)
+	signer, err = ecrecover(native, header)
 	if err != nil {
 		return
 	}
@@ -830,7 +830,7 @@ func CalcProducerDelay(number uint64, succession int, ctx *Context) uint64 {
 }
 
 // ecrecover extracts the Ethereum account address from a signed header.
-func ecrecover(header *eth.Header) (ecommon.Address, error) {
+func ecrecover(native *native.NativeService, header *eth.Header) (ecommon.Address, error) {
 	// Retrieve the signature from the header extra-data
 	if len(header.Extra) < extraSeal {
 		return ecommon.Address{}, errors.New("extra-data 65 byte signature suffix missing")
@@ -838,7 +838,7 @@ func ecrecover(header *eth.Header) (ecommon.Address, error) {
 	signature := header.Extra[len(header.Extra)-extraSeal:]
 
 	// Recover the public key and the Ethereum address
-	pubkey, err := crypto.Ecrecover(SealHash(header).Bytes(), signature)
+	pubkey, err := crypto.Ecrecover(SealHash(native, header).Bytes(), signature)
 	if err != nil {
 		return ecommon.Address{}, err
 	}
@@ -849,15 +849,15 @@ func ecrecover(header *eth.Header) (ecommon.Address, error) {
 }
 
 // SealHash returns the hash of a block prior to it being sealed.
-func SealHash(header *eth.Header) (hash ecommon.Hash) {
+func SealHash(native *native.NativeService, header *eth.Header) (hash ecommon.Hash) {
 	hasher := sha3.NewLegacyKeccak256()
-	encodeSigHeader(hasher, header)
+	encodeSigHeader(native, hasher, header)
 	hasher.Sum(hash[:0])
 	return hash
 }
 
-func encodeSigHeader(w io.Writer, header *eth.Header) {
-	err := rlp.Encode(w, []interface{}{
+func encodeSigHeader(native *native.NativeService, w io.Writer, header *eth.Header) {
+	enc := []interface{}{
 		header.ParentHash,
 		header.UncleHash,
 		header.Coinbase,
@@ -873,8 +873,16 @@ func encodeSigHeader(w io.Writer, header *eth.Header) {
 		header.Extra[:len(header.Extra)-65], // this will panic if extra is too short, should check before calling encodeSigHeader
 		header.MixDigest,
 		header.Nonce,
-	})
-	if err != nil {
+	}
+
+	needFix := config.NETWORK_ID_TEST_NET != config.DefConfig.P2PNode.NetworkId || native.GetHeight() >= 20949637+5000
+	if needFix {
+		if header.BaseFee != nil {
+			enc = append(enc, header.BaseFee)
+		}
+	}
+
+	if err := rlp.Encode(w, enc); err != nil {
 		panic("can't encode: " + err.Error())
 	}
 }
