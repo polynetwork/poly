@@ -39,23 +39,23 @@ func NewHandler() *Handler {
 func (h *Handler) MakeDepositProposal(service *native.NativeService) (*scom.MakeTxParam, error) {
 	params := new(scom.EntranceParam)
 	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
-		return nil, fmt.Errorf("eth MakeDepositProposal, contract params deserialize error: %s", err)
+		return nil, fmt.Errorf("Starcoin MakeDepositProposal, contract params deserialize error: %s", err)
 	}
 
 	sideChain, err := cmanager.GetSideChain(service, params.SourceChainID)
 	if err != nil {
-		return nil, fmt.Errorf("eth MakeDepositProposal, side_chain_manager.GetSideChain error: %v", err)
+		return nil, fmt.Errorf("Starcoin MakeDepositProposal, side_chain_manager.GetSideChain error: %v", err)
 	}
 
 	value, err := verifyFromStarcoinTx(service, params.Proof, params.Extra, params.SourceChainID, params.Height, sideChain, params.HeaderOrCrossChainMsg)
 	if err != nil {
-		return nil, fmt.Errorf("eth MakeDepositProposal, verifyFromStarcoinTx error: %s", err)
+		return nil, fmt.Errorf("Starcoin MakeDepositProposal, verifyFromStarcoinTx error: %s", err)
 	}
 	if err := scom.CheckDoneTx(service, value.CrossChainID, params.SourceChainID); err != nil {
-		return nil, fmt.Errorf("eth MakeDepositProposal, check done transaction error:%s", err)
+		return nil, fmt.Errorf("Starcoin MakeDepositProposal, check done transaction error:%s", err)
 	}
 	if err := scom.PutDoneTx(service, value.CrossChainID, params.SourceChainID); err != nil {
-		return nil, fmt.Errorf("eth MakeDepositProposal, PutDoneTx error:%s", err)
+		return nil, fmt.Errorf("Starcoin MakeDepositProposal, PutDoneTx error:%s", err)
 	}
 	return value, nil
 }

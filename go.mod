@@ -28,7 +28,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/polynetwork/poly-io-test v0.0.0-20200819093740-8cf514b07750
 	github.com/renlulu/gozilliqa-sdklegacy v0.0.0-20210926114807-88a08c5ab803
-	github.com/starcoinorg/starcoin-go v0.0.0-20211224143401-ea2cf2f50cde
+	github.com/starcoinorg/starcoin-go v0.0.0-20211230164419-890ed03b0be4
 	github.com/stretchr/testify v1.7.0
 	github.com/switcheo/tendermint v0.34.14-2
 	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca

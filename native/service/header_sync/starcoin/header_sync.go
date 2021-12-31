@@ -28,6 +28,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 	stc "github.com/starcoinorg/starcoin-go/client"
+	"github.com/starcoinorg/starcoin-go/core/consensus"
 	"github.com/starcoinorg/starcoin-go/types"
 
 	"github.com/pkg/errors"
@@ -207,8 +208,8 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			if err != nil {
 				return errors.Errorf("difficulty calculator error: %v, header: %s", err, string(v))
 			}
-			if expected.Cmp(header.BlockHeader.GetDiffculty()) != 0 {
-				return errors.Errorf("SyncBlockHeader, invalid difficulty: have %v, want %v, header: %s", header.BlockHeader.Difficulty, expected, string(v))
+			if err := verifyHeaderDifficulty(expected, &header.BlockHeader); err != nil {
+				return err
 			}
 		}
 
@@ -263,6 +264,30 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 				// }
 			}
 		}
+	}
+	return nil
+}
+
+func verifyHeaderDifficulty(expected *big.Int, header *types.BlockHeader) error {
+	// if expected.Cmp(header.BlockHeader.GetDiffculty()) != 0 {
+	// 	return errors.Errorf("SyncBlockHeader, invalid difficulty: have %v, want %v, header: %s", header.BlockHeader.Difficulty, expected, string(v))
+	// }
+	e := new(uint256.Int)
+	overflow := e.SetFromBig(expected)
+	if overflow {
+		return errors.Errorf("verifyHeaderDifficulty, SetFromBig overflow: %d", expected)
+	}
+	hd := new(uint256.Int).SetBytes(header.Difficulty[:])
+	hb, err := header.ToHeaderBlob()
+	if err != nil {
+		return errors.Errorf("verifyHeaderDifficulty, header.ToHeaderBlob error: %v", header)
+	}
+	ok, err := consensus.VerifyHeaderDifficulty(*e, *hd, hb, header.Nonce, header.Extra[:])
+	if err != nil {
+		return errors.Errorf("verifyHeaderDifficulty, consensus.VerifyHeaderDifficulty error: %v", header)
+	}
+	if !ok {
+		return errors.Errorf("verifyHeaderDifficulty, consensus.VerifyHeaderDifficulty failed: %v", header)
 	}
 	return nil
 }
