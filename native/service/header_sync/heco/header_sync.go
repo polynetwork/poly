@@ -724,7 +724,7 @@ func verifyHeader(native *native.NativeService, header *eth.Header, ctx *Context
 }
 
 func needFix(native *native.NativeService) bool {
-	return (config.NETWORK_ID_TEST_NET == config.DefConfig.P2PNode.NetworkId && native.GetHeight() < 14939298) || (config.NETWORK_ID_MAIN_NET == config.DefConfig.P2PNode.NetworkId && native.GetHeight() <= 12549875)
+	return (config.NETWORK_ID_TEST_NET == config.DefConfig.P2PNode.NetworkId && native.GetHeight() < 14939298) || (config.NETWORK_ID_MAIN_NET == config.DefConfig.P2PNode.NetworkId && native.GetHeight() <= 12549921)
 }
 
 func verifyCascadingFields(native *native.NativeService, header *eth.Header, ctx *Context) (signer ecommon.Address, err error) {
