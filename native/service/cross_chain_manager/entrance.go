@@ -20,25 +20,27 @@ import (
 	"encoding/hex"
 	"fmt"
 
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/consensus_vote"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/pixiechain"
+
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/zilliqa"
+
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/bsc"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/btc"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
-	"github.com/polynetwork/poly/native/service/cross_chain_manager/consensus_vote"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/cosmos"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/eth"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/heco"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/msc"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/neo"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/neo3"
-	"github.com/polynetwork/poly/native/service/cross_chain_manager/neo3legacy"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/okex"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/ont"
-	"github.com/polynetwork/poly/native/service/cross_chain_manager/pixiechain"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/polygon"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/quorum"
-	"github.com/polynetwork/poly/native/service/cross_chain_manager/zilliqa"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/starcoin"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/zilliqalegacy"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
@@ -74,8 +76,6 @@ func GetChainHandler(router uint64) (scom.ChainHandler, error) {
 		return ont.NewONTHandler(), nil
 	case utils.NEO_ROUTER:
 		return neo.NewNEOHandler(), nil
-	case utils.NEO3_LEGACY_ROUTER:
-		return neo3legacy.NewNeo3Handler(), nil
 	case utils.NEO3_ROUTER:
 		return neo3.NewNeo3Handler(), nil
 	case utils.COSMOS_ROUTER:
@@ -98,6 +98,8 @@ func GetChainHandler(router uint64) (scom.ChainHandler, error) {
 		return polygon.NewHandler(), nil
 	case utils.PIXIECHAIN_ROUTER:
 		return pixiechain.NewPixieHandler(), nil
+	case utils.STARCOIN_ROUTER:
+		return starcoin.NewHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported router:%d", router)
 	}
