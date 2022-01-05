@@ -20,20 +20,21 @@ package ledgerstore
 
 import (
 	"fmt"
-	"github.com/polynetwork/poly/core/payload"
-	"github.com/polynetwork/poly/core/states"
-	"github.com/polynetwork/poly/native"
 	"os"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/polynetwork/poly/core/payload"
+	"github.com/polynetwork/poly/core/states"
+	"github.com/polynetwork/poly/native"
+
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/common/log"
-	"github.com/polynetwork/poly/consensus/vbft/config"
+	vconfig "github.com/polynetwork/poly/consensus/vbft/config"
 	"github.com/polynetwork/poly/core/signature"
 	"github.com/polynetwork/poly/core/store"
 	scom "github.com/polynetwork/poly/core/store/common"
@@ -427,7 +428,11 @@ func (this *LedgerStoreImp) verifyHeader(header *types.Header, vbftPeerInfo map[
 	consensusType := strings.ToLower(config.DefConfig.Genesis.ConsensusType)
 	if consensusType == "vbft" {
 		//check bookkeeppers
+		needFix := config.NETWORK_ID_MAIN_NET != config.DefConfig.P2PNode.NetworkId || this.GetCurrentHeaderHeight() <= 20000000
 		m := len(vbftPeerInfo) - (len(vbftPeerInfo)-1)/3
+		if needFix {
+			m = len(vbftPeerInfo) - (len(vbftPeerInfo)*6)/7
+		}
 		if len(header.Bookkeepers) < m {
 			return vbftPeerInfo, fmt.Errorf("header Bookkeepers %d more than 2/3 len vbftPeerInfo%d", len(header.Bookkeepers), len(vbftPeerInfo))
 		}
