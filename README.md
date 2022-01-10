@@ -26,7 +26,7 @@ Downloading a specific version from the [release section](https://github.com/pol
 
 ### Prerequisites
 
-- [Golang](https://golang.org/doc/install) version 1.14 or later
+- [Golang](https://golang.org/doc/install) version 1.15 or later
 
 ### Build
 
