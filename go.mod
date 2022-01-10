@@ -36,6 +36,7 @@ require (
 	github.com/tendermint/tendermint v0.33.7
 	github.com/urfave/cli v1.22.4
 	github.com/valyala/bytebufferpool v1.0.0
+	github.com/zeebo/assert v1.3.0
 	golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 	golang.org/x/net v0.0.0-20210903162142-ad29c8ab022f
 	gotest.tools v2.2.0+incompatible

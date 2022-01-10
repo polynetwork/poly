@@ -25,6 +25,7 @@ import (
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	"github.com/polynetwork/poly/native/service/governance/relayer_manager"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
+	"github.com/polynetwork/poly/native/service/governance/signature_manager"
 	"github.com/polynetwork/poly/native/service/header_sync"
 	"github.com/polynetwork/poly/native/service/utils"
 )
@@ -36,6 +37,7 @@ func init() {
 	native.Contracts[utils.NodeManagerContractAddress] = node_manager.RegisterNodeManagerContract
 	native.Contracts[utils.RelayerManagerContractAddress] = relayer_manager.RegisterRelayerManagerContract
 	native.Contracts[utils.Neo3StateManagerContractAddress] = neo3_state_manager.RegisterStateValidatorManagerContract
+	native.Contracts[utils.SignatureManagerContractAddress] = signature_manager.RegisterSignatureManagerContract
 
 	config.EXTRA_INFO_HEIGHT_FORK_CHECK = true
 }
