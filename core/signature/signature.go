@@ -58,7 +58,7 @@ func VerifyMultiSignature(data []byte, keys []keypair.PublicKey, m int, sigs [][
 	for _, bookkeeper := range keys {
 		pubkey := vconfig.PubkeyID(bookkeeper)
 		if usedPubKey[pubkey] {
-			return fmt.Errorf("invalid pubkey :%v", pubkey)
+			return fmt.Errorf("duplicate pubkey :%v", pubkey)
 		}
 		usedPubKey[pubkey] = true
 	}
