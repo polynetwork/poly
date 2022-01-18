@@ -23,13 +23,15 @@ import (
 )
 
 type AddSignatureParam struct {
-	Address   common.Address
-	Subject   []byte
-	Signature []byte
+	Address     common.Address
+	SideChainID uint64
+	Subject     []byte
+	Signature   []byte
 }
 
 func (this *AddSignatureParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteVarBytes(this.Address[:])
+	sink.WriteUint64(this.SideChainID)
 	sink.WriteVarBytes(this.Subject)
 	sink.WriteVarBytes(this.Signature)
 }
@@ -44,6 +46,10 @@ func (this *AddSignatureParam) Deserialization(source *common.ZeroCopySource) er
 	if err != nil {
 		return fmt.Errorf("common.AddressParseFromBytes, deserialize address error: %s", err)
 	}
+	sideChainID, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("common.NextUint64, deserialize sideChainID error: %s", err)
+	}
 
 	subject, eof := source.NextVarBytes()
 	if eof {
@@ -56,6 +62,7 @@ func (this *AddSignatureParam) Deserialization(source *common.ZeroCopySource) er
 	}
 
 	this.Address = addr
+	this.SideChainID = sideChainID
 	this.Subject = subject
 	this.Signature = signature
 	return nil
