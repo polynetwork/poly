@@ -20,8 +20,11 @@ package signature
 
 import (
 	"errors"
+	"fmt"
+
 	"github.com/ontio/ontology-crypto/keypair"
 	s "github.com/ontio/ontology-crypto/signature"
+	vconfig "github.com/polynetwork/poly/consensus/vbft/config"
 )
 
 // Sign returns the signature of data using privKey
@@ -50,6 +53,16 @@ func Verify(pubKey keypair.PublicKey, data, signature []byte) error {
 
 // VerifyMultiSignature check whether more than m sigs are signed by the keys
 func VerifyMultiSignature(data []byte, keys []keypair.PublicKey, m int, sigs [][]byte) error {
+	// check duplicate pubkey
+	usedPubKey := make(map[string]bool)
+	for _, bookkeeper := range keys {
+		pubkey := vconfig.PubkeyID(bookkeeper)
+		if usedPubKey[pubkey] {
+			return fmt.Errorf("invalid pubkey :%v", pubkey)
+		}
+		usedPubKey[pubkey] = true
+	}
+
 	n := len(keys)
 
 	if len(sigs) < m {
