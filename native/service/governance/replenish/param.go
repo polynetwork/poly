@@ -23,18 +23,30 @@ import (
 )
 
 type ReplenishTxParam struct {
-	TxHash string
+	TxHashes []string
 }
 
 func (this *ReplenishTxParam) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteString(this.TxHash)
+	sink.WriteVarUint(uint64(len(this.TxHashes)))
+	for _, v := range this.TxHashes {
+		sink.WriteString(v)
+	}
 }
 
 func (this *ReplenishTxParam) Deserialization(source *common.ZeroCopySource) error {
-	txHash, eof := source.NextString()
+	n, eof := source.NextVarUint()
 	if eof {
-		return fmt.Errorf("source.NextString, deserialize tx hash error")
+		return fmt.Errorf("source.NextVarUint, deserialize txhashes length error")
 	}
-	this.TxHash = txHash
+	txHashes := make([]string, 0)
+	for i := 0; uint64(i) < n; i++ {
+		txHash, eof := source.NextString()
+		if eof {
+			return fmt.Errorf("source.NextString, deserialize tx hash error")
+		}
+		txHashes = append(txHashes, txHash)
+	}
+
+	this.TxHashes = txHashes
 	return nil
 }

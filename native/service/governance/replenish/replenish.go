@@ -45,7 +45,7 @@ func ReplenishTx(native *native.NativeService) ([]byte, error) {
 	native.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.ReplenishContractAddress,
-			States:          []interface{}{"ReplenishTx", params.TxHash},
+			States:          []interface{}{"ReplenishTx", params.TxHashes},
 		})
 	return utils.BYTE_TRUE, nil
 }
