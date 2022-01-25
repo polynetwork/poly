@@ -20,6 +20,7 @@ package signature
 
 import (
 	"errors"
+
 	"github.com/ontio/ontology-crypto/keypair"
 	s "github.com/ontio/ontology-crypto/signature"
 )
@@ -50,6 +51,7 @@ func Verify(pubKey keypair.PublicKey, data, signature []byte) error {
 
 // VerifyMultiSignature check whether more than m sigs are signed by the keys
 func VerifyMultiSignature(data []byte, keys []keypair.PublicKey, m int, sigs [][]byte) error {
+
 	n := len(keys)
 
 	if len(sigs) < m {
