@@ -59,7 +59,7 @@ func AddSignature(native *native.NativeService) ([]byte, error) {
 
 	native.AddNotify(
 		&event.NotifyEventInfo{
-			ContractAddress: utils.RelayerManagerContractAddress,
+			ContractAddress: utils.SignatureManagerContractAddress,
 			States:          []interface{}{"AddSignatureQuorum", id, params.Subject, params.SideChainID},
 		})
 	return utils.BYTE_TRUE, nil
