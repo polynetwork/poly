@@ -27,7 +27,7 @@ require (
 	github.com/pborman/uuid v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/polynetwork/poly-io-test v0.0.0-20200819093740-8cf514b07750
-	github.com/renlulu/gozilliqa-sdklegacy v0.0.0-20210926114807-88a08c5ab803
+	github.com/renlulu/gozilliqa-sdklegacy v0.0.0-20220127085552-852a2675dc93
 	github.com/starcoinorg/starcoin-go v0.0.0-20220105024102-530daedc128b
 	github.com/stretchr/testify v1.7.0
 	github.com/switcheo/tendermint v0.34.14-2
