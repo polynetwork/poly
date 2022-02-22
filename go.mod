@@ -44,6 +44,8 @@ require (
 )
 
 replace (
+	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce => github.com/btcsuite/btcutil v1.0.2
 	github.com/ethereum/go-ethereum v1.9.25 => github.com/ethereum/go-ethereum v1.9.15
 	github.com/tendermint/tm-db/064 => github.com/tendermint/tm-db v0.6.4
+	golang.org/x/crypto v0.0.0-20210506145944-38f3c27a63bf => golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 )
