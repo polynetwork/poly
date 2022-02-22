@@ -19,8 +19,8 @@ package harmony
 
 import (
 	"encoding/binary"
-	"math/big"
 	"errors"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
 	bls_core "github.com/harmony-one/bls/ffi/go/bls"
@@ -41,8 +41,8 @@ func verifyHeaderSigs(epoch *Epoch, header *HeaderWithSig) (err error) {
 		return
 	}
 
-	isStaking := epoch.ID >= stakingEpoch
-	qrVerifier, err := quorum.NewVerifier(epoch.Committee, big.NewInt(int64(epoch.ID)), isStaking)
+	isStaking := IsStaking(epoch.EpochID)
+	qrVerifier, err := quorum.NewVerifier(epoch.Committee, big.NewInt(int64(epoch.EpochID)), isStaking)
 	if err != nil {
 		return
 	}
