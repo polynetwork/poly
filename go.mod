@@ -43,4 +43,7 @@ require (
 	gotest.tools v2.2.0+incompatible
 )
 
-replace github.com/tendermint/tm-db/064 => github.com/tendermint/tm-db v0.6.4
+replace (
+	github.com/ethereum/go-ethereum v1.9.25 => github.com/ethereum/go-ethereum v1.9.15
+	github.com/tendermint/tm-db/064 => github.com/tendermint/tm-db v0.6.4
+)
