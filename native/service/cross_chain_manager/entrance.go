@@ -42,6 +42,7 @@ import (
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/quorum"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/starcoin"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/zilliqalegacy"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/harmony"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	"github.com/polynetwork/poly/native/service/utils"
@@ -100,6 +101,8 @@ func GetChainHandler(router uint64) (scom.ChainHandler, error) {
 		return pixiechain.NewPixieHandler(), nil
 	case utils.STARCOIN_ROUTER:
 		return starcoin.NewHandler(), nil
+	case utils.HARMONY_ROUTER:
+		return harmony.NewHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported router:%d", router)
 	}

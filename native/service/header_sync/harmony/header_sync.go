@@ -63,8 +63,7 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 	}
 
 	// Deserialize gensis header
-	header := &HeaderWithSig{}
-	err = json.Unmarshal(params.GenesisHeader, &header)
+	header, err := DecodeHeaderWithSig(params.GenesisHeader)
 	if err != nil {
 		return fmt.Errorf("HarmonyHandler failed to deserialize harmony header, err: %v", err)
 	}
@@ -72,7 +71,7 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 	// Extract shard epoch
 	epoch, err := header.ExtractEpoch()
 	if err != nil {
-		return
+		return fmt.Errorf("HarmonyHandler, failed to extract Epoch from header, err: %v", err)
 	}
 
 	if !IsLastEpochBlock(header.Header.Number()) {
@@ -81,10 +80,15 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 
 	// Store genesis header
 	err = storeGenesisHeader(native, params.ChainID, header)
-	if err != nil { return }
+	if err != nil {
+		return fmt.Errorf("HarmonyHandler failed to store genesis header, err: %v", err)
+	}
 
 	// Store epoch info
 	err = storeEpoch(native, params.ChainID, epoch)
+	if err != nil {
+		return fmt.Errorf("HarmonyHandler failed to store epoch info, err: %v", err)
+	}
 	return
 }
 
@@ -114,11 +118,13 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) (err error) {
 		// Extract shard epoch
 		epoch, err := header.ExtractEpoch()
 		if err != nil {
-			return err
+			return fmt.Errorf("HarmonyHandler, failed to extract Epoch from header, err: %v", err)
 		}
 
-		curEpoch, err := getEpoch(native, params.ChainID)
-		if err != nil { return err }
+		curEpoch, err := GetEpoch(native, params.ChainID)
+		if err != nil {
+			return fmt.Errorf("HarmonyHandler, failed to get current epoch info, err: %v", err)
+		}
 		if curEpoch == nil {
 			return fmt.Errorf("HarmonyHandler failed to get current epoch info, idx %v, err: %v", idx, err)
 		}
@@ -140,7 +146,10 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) (err error) {
 				err, idx, header.Header.Number())
 		}
 
-		storeEpoch(native, params.ChainID, epoch)
+		err = storeEpoch(native, params.ChainID, epoch)
+		if err != nil {
+			return fmt.Errorf("HarmonyHandler, failed to store epoch info, err: %v", err)
+		}
 	}
 
 	return

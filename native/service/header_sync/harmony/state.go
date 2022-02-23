@@ -137,23 +137,43 @@ type HeaderWithSig struct {
 	Bitmap hexutil.Bytes
 }
 
+// Serialize header with sig
+func EncodeHeaderWithSig(hs *HeaderWithSig) (data []byte, err error) {
+	data, err = json.Marshal(hs)
+	if err != nil {
+		err = fmt.Errorf("failed to encode harmony HeaderWithSig, err: %v", err)
+	}
+	return
+}
+
+// Deserialize
+func DecodeHeaderWithSig(data []byte) (hs *HeaderWithSig, err error) {
+	hs = new(HeaderWithSig)
+	err = json.Unmarshal(data, hs)
+	if err != nil {
+		hs = nil
+		err = fmt.Errorf("failed to decode harmony HeaderWithSig, err: %v", err)
+	}
+	return
+}
+
 // Extract shard state for epoch info
 func (hs *HeaderWithSig) ExtractEpoch() (epoch *Epoch, err error) {
 	shardStateBytes := hs.Header.ShardState()
 	if len(shardStateBytes) == 0 {
-		err = fmt.Errorf("%w, HarmonyHandler unexpected empty shard state in header", err)
+		err = fmt.Errorf("%w, unexpected empty shard state in header", err)
 		return
 	}
 
 	shardState, err := shard.DecodeWrapper(shardStateBytes)
 	if err != nil {
-		err = fmt.Errorf("%w, HarmonyHandler failed to decode header shard state", err)
+		err = fmt.Errorf("%w, failed to decode header shard state", err)
 		return
 	}
 
 	committee, err := shardState.FindCommitteeByID(hs.Header.ShardID())
 	if err != nil {
-		err = fmt.Errorf("%w, HarmonyHandler failed to find committee by shard id %v", err, hs.Header.ShardID())
+		err = fmt.Errorf("%w, failed to find committee by shard id %v", err, hs.Header.ShardID())
 		return
 	}
 
@@ -166,7 +186,7 @@ func (hs *HeaderWithSig) ExtractEpoch() (epoch *Epoch, err error) {
 	return
 }
 
-
+// Save epoch info into storage
 func storeEpoch(native *native.NativeService, chainID uint64, epoch *Epoch) (err error) {
 	bytes, err := EncodeEpoch(epoch)
 	if err != nil { return }
@@ -174,10 +194,11 @@ func storeEpoch(native *native.NativeService, chainID uint64, epoch *Epoch) (err
 	return
 }
 
-func getEpoch(native *native.NativeService, chainID uint64) (epoch *Epoch, err error) {
+// Get current harmony epoch
+func GetEpoch(native *native.NativeService, chainID uint64) (epoch *Epoch, err error) {
 	epochBytes, err := native.GetCacheDB().Get(keyForConsensus(chainID))
 	if err != nil {
-		err = fmt.Errorf("%w HarmonyHandler failed to get epoch info", err)
+		err = fmt.Errorf("failed to get epoch info, err: %v", err)
 		return
 	}
 	if epochBytes == nil {
@@ -193,19 +214,21 @@ func getEpoch(native *native.NativeService, chainID uint64) (epoch *Epoch, err e
 	return DecodeEpoch(bytes)
 }
 
+// Save genesis header into storage
 func storeGenesisHeader(native *native.NativeService, chainID uint64, header *HeaderWithSig) (err error) {
 	headerBytes, err := json.Marshal(header)
 	if err != nil {
-		return fmt.Errorf("%w HarmonyHandler failed to marshal header", err)
+		return fmt.Errorf("%w, failed to marshal header", err)
 	}
 	native.GetCacheDB().Put(keyForGenesisHeader(chainID), cstates.GenRawStorageItem(headerBytes))
 	return
 }
 
+// Get genesis header from storage
 func getGenesisHeader(native *native.NativeService, chainID uint64) (header *HeaderWithSig, err error) {
 	headerBytes, err := native.GetCacheDB().Get(keyForGenesisHeader(chainID))
 	if err != nil {
-		err = fmt.Errorf("%w HarmonyHandler failed to get genesis header", err)
+		err = fmt.Errorf("%w, failed to get genesis header", err)
 		return
 	}
 	if headerBytes == nil {
@@ -221,7 +244,7 @@ func getGenesisHeader(native *native.NativeService, chainID uint64) (header *Hea
 	header = &HeaderWithSig{}
 	err = json.Unmarshal(bytes, header)
 	if err != nil {
-		err = fmt.Errorf("%w, HarmonyHandler failed to deserialize harmony header: %x", err, headerBytes)
+		err = fmt.Errorf("%w, failed to deserialize harmony header: %x", err, headerBytes)
 	}
 	return
 }

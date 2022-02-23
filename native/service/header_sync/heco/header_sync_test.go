@@ -781,9 +781,7 @@ func TestSyncForkBlockHeader(t *testing.T) {
 			realHeaderBs, _ := json.Marshal(realheader)
 			assert.Equal(t, true, bytes.Equal(headerBytesFromStore, realHeaderBs))
 		}
-
 	}
-
 }
 
 func copyHeader(h *eth.Header) *eth.Header {
