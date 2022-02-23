@@ -40,19 +40,19 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 	params := new(scom.SyncGenesisHeaderParam)
 	err = params.Deserialization(common.NewZeroCopySource(native.GetInput()))
 	if err != nil {
-		return fmt.Errorf("%w, HarmonyHandler failed to deserialize genesis header params", err)
+		return fmt.Errorf("HarmonyHandler failed to deserialize genesis header params, err: %v", err)
 	}
 
 	// Get current consensus address
 	operator, err := node_manager.GetCurConOperator(native)
 	if err != nil {
-		return fmt.Errorf("%w, HarmonyHandler failed to parse current consensus operator", err)
+		return fmt.Errorf("HarmonyHandler failed to parse current consensus operator, err: %v", err)
 	}
 
 	// Check consensus witness
 	err = utils.ValidateOwner(native, operator)
 	if err != nil {
-		return fmt.Errorf("%w, HarmonyHandler failed to check operator witness", err)
+		return fmt.Errorf("HarmonyHandler failed to check operator witness, err: %v", err)
 	}
 
 	// Check genesis header existence
@@ -66,7 +66,7 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 	header := &HeaderWithSig{}
 	err = json.Unmarshal(params.GenesisHeader, &header)
 	if err != nil {
-		return fmt.Errorf("%w, HarmonyHandler failed to deserialize harmony header", err)
+		return fmt.Errorf("HarmonyHandler failed to deserialize harmony header, err: %v", err)
 	}
 
 	// Extract shard epoch
@@ -108,7 +108,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) (err error) {
 		header := &HeaderWithSig{}
 		err = json.Unmarshal(headerBytes, &header)
 		if err != nil {
-			return fmt.Errorf("%w, HarmonyHandler failed to deserialize harmony header, idx %v", err, idx)
+			return fmt.Errorf("HarmonyHandler failed to deserialize harmony header, idx %v, err: %v", idx, err)
 		}
 
 		// Extract shard epoch
@@ -120,13 +120,13 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) (err error) {
 		curEpoch, err := getEpoch(native, params.ChainID)
 		if err != nil { return err }
 		if curEpoch == nil {
-			return fmt.Errorf("%w, HarmonyHandler failed to get current epoch info, idx %v", err, idx)
+			return fmt.Errorf("HarmonyHandler failed to get current epoch info, idx %v, err: %v", idx, err)
 		}
 
 		err = curEpoch.ValidateNextEpoch(header)
 		if err != nil {
-			return fmt.Errorf("%w, HarmonyHandler failed to validate next epoch, idx %v block %s",
-				err, idx, header.Header.Number())
+			return fmt.Errorf("HarmonyHandler failed to validate next epoch, idx %v block %s, err: %v",
+				idx, header.Header.Number(), err)
 		}
 
 		if !IsLastEpochBlock(header.Header.Number()) {

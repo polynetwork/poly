@@ -18,21 +18,21 @@
 package harmony
 
 import (
-	"fmt"
-	"github.com/harmony-one/harmony/consensus/quorum"
-	"github.com/harmony-one/harmony/crypto/bls"
-	"math/big"
 	"encoding/json"
-
-	scom "github.com/polynetwork/poly/native/service/header_sync/common"
-	"github.com/polynetwork/poly/native/service/utils"
-	cstates "github.com/polynetwork/poly/core/states"
-	"github.com/polynetwork/poly/native"
+	"fmt"
+	"math/big"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/harmony-one/harmony/block"
 	"github.com/harmony-one/harmony/shard"
+	"github.com/harmony-one/harmony/consensus/quorum"
+	"github.com/harmony-one/harmony/crypto/bls"
+
+	cstates "github.com/polynetwork/poly/core/states"
+	"github.com/polynetwork/poly/native"
+	scom "github.com/polynetwork/poly/native/service/header_sync/common"
+	"github.com/polynetwork/poly/native/service/utils"
 )
 
 // Storage Keys
@@ -44,10 +44,12 @@ func keyForConsensus(chainID uint64) []byte {
 	return utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.CONSENSUS_PEER), utils.GetUint64Bytes(chainID))
 }
 
+// Check if harmony staking enabled
 func IsStaking(epoch uint64) (staking bool) {
 	return
 }
 
+// Check if the block is the last one in an epoch
 func IsLastEpochBlock(*big.Int) bool {
 	return false
 }
@@ -60,16 +62,18 @@ type Epoch struct {
 	StartHeight uint64
 }
 
+// Verfiy next epoch
 func (this *Epoch) ValidateNextEpoch(header *HeaderWithSig) (err error){
 	return
 }
 
+// Verify harmony header signature
 func (this *Epoch) VerifyHeaderSig (header *HeaderWithSig) (err error) {
 	isStaking := IsStaking(this.EpochID)
 
 	pubKeys, err := this.Committee.BLSPublicKeys()
 	if err != nil {
-		return fmt.Errorf("Failed to get bls public keys, err: %v", err)
+		return fmt.Errorf("failed to get bls public keys, err: %v", err)
 	}
 
 	sigBytes := bls.SerializedSignature{}
@@ -78,17 +82,17 @@ func (this *Epoch) VerifyHeaderSig (header *HeaderWithSig) (err error) {
 	// Decode bls aggregated sigantures
 	aggSig, mask, err := DecodeSigBitmap(sigBytes, []byte(header.Bitmap), pubKeys)
 	if err != nil {
-		return fmt.Errorf("Failed to decode bls sig bitmap, err: %v", err)
+		return fmt.Errorf("failed to decode bls sig bitmap, err: %v", err)
 	}
 
 	qrVerfier, err := quorum.NewVerifier(this.Committee, big.NewInt(int64(this.EpochID)), isStaking)
 	if err != nil {
-		return fmt.Errorf("Failed to create quorum verifier, err: %v", err)
+		return fmt.Errorf("failed to create quorum verifier, err: %v", err)
 	}
 
 	// Verify consensus signature
 	if !qrVerfier.IsQuorumAchievedByMask(mask) {
-		return fmt.Errorf("Failed to check consensus quorum")
+		return fmt.Errorf("failed to check consensus quorum")
 	}
 
 	payload := ConstructCommitPayload(
@@ -97,7 +101,7 @@ func (this *Epoch) VerifyHeaderSig (header *HeaderWithSig) (err error) {
 
 	// Verify header hash
 	if !aggSig.VerifyHash(mask.AggregatePublic, payload) {
-		return fmt.Errorf("Failed to verify header hash with consensus signature")
+		return fmt.Errorf("failed to verify header hash with consensus signature")
 	}
 
 	return

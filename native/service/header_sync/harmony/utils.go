@@ -20,45 +20,12 @@ package harmony
 import (
 	"encoding/binary"
 	"errors"
-	"math/big"
 
 	"github.com/ethereum/go-ethereum/common"
+
 	bls_core "github.com/harmony-one/bls/ffi/go/bls"
-	"github.com/harmony-one/harmony/consensus/quorum"
 	"github.com/harmony-one/harmony/crypto/bls"
 )
-
-func verifyHeaderSigs(epoch *Epoch, header *HeaderWithSig) (err error) {
-	pubKeys, err := epoch.Committee.BLSPublicKeys()
-	if err != nil {
-		return
-	}
-
-	sigBytes := bls.SerializedSignature{}
-	copy(sigBytes[:], header.Sig)
-	aggSig, mask, err := DecodeSigBitmap(sigBytes, []byte(header.Bitmap), pubKeys)
-	if err != nil {
-		return
-	}
-
-	isStaking := IsStaking(epoch.EpochID)
-	qrVerifier, err := quorum.NewVerifier(epoch.Committee, big.NewInt(int64(epoch.EpochID)), isStaking)
-	if err != nil {
-		return
-	}
-	if !qrVerifier.IsQuorumAchievedByMask(mask) {
-		return errors.New("not enough signature collected")
-	}
-
-	commitPayload := ConstructCommitPayload(
-		isStaking, header.Header.Hash(), header.Header.Number().Uint64(), header.Header.ViewID().Uint64(),
-	)
-	if !aggSig.VerifyHash(mask.AggregatePublic, commitPayload) {
-		return errors.New("Unable to verify aggregated signature for block")
-	}
-
-	return
-}
 
 // DecodeSigBitmap decode and parse the signature, bitmap with the given public keys
 func DecodeSigBitmap(sigBytes bls.SerializedSignature, bitmap []byte, pubKeys []bls.PublicKeyWrapper) (*bls_core.Sign, *bls.Mask, error) {
