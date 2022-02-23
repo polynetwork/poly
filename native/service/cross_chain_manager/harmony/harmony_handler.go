@@ -23,17 +23,17 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/light"
+	ecom "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/ethereum/go-ethereum/light"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
-	ecom "github.com/ethereum/go-ethereum/common"
 
-	"github.com/polynetwork/poly/native/service/header_sync/harmony"
-	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
+	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
-	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
+	"github.com/polynetwork/poly/native/service/header_sync/harmony"
 )
 
 type Handler struct {}
@@ -51,13 +51,7 @@ func (h *Handler) MakeDepositProposal(service *native.NativeService) (txParam *s
 		return
 	}
 
-	sideChain, err := side_chain_manager.GetSideChain(service, params.SourceChainID)
-	if err != nil || sideChain == nil {
-		err = fmt.Errorf("HarmonyHandler failed to get side chain instance, err: %v", err)
-		return
-	}
-
-	txParam, err = h.VerifyDepositProposal(service, params, sideChain)
+	txParam, err = h.VerifyDepositProposal(service, params)
 	if err != nil {
 		err = fmt.Errorf("HarmonyHandler failed to verify deposit proposal, err: %v", err)
 		return
@@ -79,8 +73,7 @@ func (h *Handler) MakeDepositProposal(service *native.NativeService) (txParam *s
 
 // Verify harmony deposit proposal
 func (h *Handler) VerifyDepositProposal(
-	service *native.NativeService, params *scom.EntranceParam,
-	sideChain *side_chain_manager.SideChain) (txParam *scom.MakeTxParam, err error) {
+	service *native.NativeService, params *scom.EntranceParam) (txParam *scom.MakeTxParam, err error) {
 	header, err := harmony.DecodeHeaderWithSig(params.HeaderOrCrossChainMsg)
 	if err != nil {
 		return
@@ -99,8 +92,31 @@ func (h *Handler) VerifyDepositProposal(
 		return
 	}
 
+	sideChain, err := side_chain_manager.GetSideChain(service, params.SourceChainID)
+	if err != nil || sideChain == nil {
+		err = fmt.Errorf("failed to get side chain instance, err: %v", err)
+		return
+	}
+	ctx, err := harmony.DecodeHarmonyContext(sideChain.ExtraInfo)
+	if err != nil {
+		err = fmt.Errorf("failed to decode context, err: %v", err)
+		return
+	}
+	err = ctx.Init()
+	if err != nil {
+		err = fmt.Errorf("failed to get network config and shard schedule: %v", err)
+		return
+	}
+
+	// Verify proof header
+	err = epoch.VerifyHeader(ctx, header.Header)
+	if err !=  nil {
+		err = fmt.Errorf("failed to verify header with current epoch info, err %v", err)
+		return
+	}
+
 	// Verify header with signature
-	err = epoch.VerifyHeaderSig(header)
+	err = epoch.VerifyHeaderSig(ctx, header)
 	if err != nil {
 		err = fmt.Errorf("verify header with signature failed, err: %v", err)
 		return

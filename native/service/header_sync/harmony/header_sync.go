@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
@@ -68,13 +69,27 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 		return fmt.Errorf("HarmonyHandler failed to deserialize harmony header, err: %v", err)
 	}
 
+	// Get side chain instance
+	side, err := side_chain_manager.GetSideChain(native, params.ChainID)
+	if err != nil || side == nil {
+		return fmt.Errorf("HarmonyHandler failed to get side chain err: %v", err)
+	}
+	ctx, err := DecodeHarmonyContext(side.ExtraInfo)
+	if err != nil {
+		return fmt.Errorf("HarmonyHandler failed to decode context, err: %v", err)
+	}
+	err = ctx.Init()
+	if err != nil {
+		return fmt.Errorf("HarmonyHandler failed to get network config and shard schedule: %v", err)
+	}
+
 	// Extract shard epoch
 	epoch, err := header.ExtractEpoch()
 	if err != nil {
 		return fmt.Errorf("HarmonyHandler, failed to extract Epoch from header, err: %v", err)
 	}
 
-	if !IsLastEpochBlock(header.Header.Number()) {
+	if !ctx.IsLastBlock(header.Header.Number().Uint64()) {
 		return fmt.Errorf("HarmonyHandler header block %s is not the last in epoch", header.Header.Number())
 	}
 
@@ -100,16 +115,23 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) (err error) {
 		return fmt.Errorf("%w, HarmonyHandler failed to deserialize headers params", err)
 	}
 
-	/*
+	// Get side chain instance
 	side, err := side_chain_manager.GetSideChain(native, params.ChainID)
 	if err != nil || side == nil {
-		return fmt.Errorf("HarmonyHandler failed to get side chain error: %v", err)
+		return fmt.Errorf("HarmonyHandler failed to get side chain err: %v", err)
 	}
-	 */
+	ctx, err := DecodeHarmonyContext(side.ExtraInfo)
+	if err != nil {
+		return fmt.Errorf("HarmonyHandler failed to decode context, err: %v", err)
+	}
+	err = ctx.Init()
+	if err != nil {
+		return fmt.Errorf("HarmonyHandler failed to get network config and shard schedule: %v", err)
+	}
 
 	for idx, headerBytes := range params.Headers {
 		// Deserialize gensis header
-		header := &HeaderWithSig{}
+		header := new(HeaderWithSig)
 		err = json.Unmarshal(headerBytes, &header)
 		if err != nil {
 			return fmt.Errorf("HarmonyHandler failed to deserialize harmony header, idx %v, err: %v", idx, err)
@@ -129,18 +151,13 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) (err error) {
 			return fmt.Errorf("HarmonyHandler failed to get current epoch info, idx %v, err: %v", idx, err)
 		}
 
-		err = curEpoch.ValidateNextEpoch(header)
+		err = curEpoch.ValidateNextEpoch(ctx, header)
 		if err != nil {
 			return fmt.Errorf("HarmonyHandler failed to validate next epoch, idx %v block %s, err: %v",
 				idx, header.Header.Number(), err)
 		}
 
-		if !IsLastEpochBlock(header.Header.Number()) {
-			return fmt.Errorf("HarmonyHandler header block %s is not the last in epoch, idx %v",
-				header.Header.Number(), idx)
-		}
-
-		err = curEpoch.VerifyHeaderSig(header)
+		err = curEpoch.VerifyHeaderSig(ctx, header)
 		if err != nil {
 			return fmt.Errorf("HarmonyHandler, failed to verify header with signature, err: %v, idx %v block %s",
 				err, idx, header.Header.Number())

@@ -25,9 +25,10 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/harmony-one/harmony/block"
-	"github.com/harmony-one/harmony/shard"
 	"github.com/harmony-one/harmony/consensus/quorum"
 	"github.com/harmony-one/harmony/crypto/bls"
+	"github.com/harmony-one/harmony/shard"
+	"github.com/harmony-one/harmony/consensus"
 
 	cstates "github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/native"
@@ -44,14 +45,37 @@ func keyForConsensus(chainID uint64) []byte {
 	return utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.CONSENSUS_PEER), utils.GetUint64Bytes(chainID))
 }
 
-// Check if harmony staking enabled
-func IsStaking(epoch uint64) (staking bool) {
+// Harmony config context
+type Context struct {
+	NetworkID consensus.WrappedNetworkID
+	schedule quorum.WrappedSchedule
+	networkType quorum.WrappedNetworkType
+	chainConfig *consensus.WrappedChainConfig
+}
+
+func (ctx *Context) Init() (err error){
+	ctx.schedule, ctx.networkType, ctx.chainConfig, err = consensus.GetNetworkConfigAndShardSchedule(ctx.NetworkID)
 	return
 }
 
-// Check if the block is the last one in an epoch
-func IsLastEpochBlock(*big.Int) bool {
-	return false
+// Get last block in epoch
+func (ctx *Context) EpochLastBlock(epoch uint64) uint64 {
+	return ctx.schedule.EpochLastBlock(epoch)
+}
+
+// Check if block is the last one
+func (ctx *Context) IsLastBlock(height uint64) bool {
+	return ctx.schedule.IsLastBlock(height)
+}
+
+// Check if epoch is staking-enabled
+func(ctx *Context) IsStaking(epoch *big.Int) bool {
+	return ctx.chainConfig.IsStaking(epoch)
+}
+
+// Build harmony quorum verifier
+func (ctx *Context) NewVerifier(committee *shard.Committee, epoch *big.Int, isStaking bool) (quorum.Verifier, error) {
+	return quorum.NewVerifierWithConfig(ctx.networkType, ctx.schedule, committee, epoch, isStaking)
 }
 
 // Harmony Epoch
@@ -63,13 +87,37 @@ type Epoch struct {
 }
 
 // Verfiy next epoch
-func (this *Epoch) ValidateNextEpoch(header *HeaderWithSig) (err error){
+func (this *Epoch) ValidateNextEpoch(ctx *Context, header *HeaderWithSig) (err error){
+	err = this.VerifyHeader(ctx, header.Header)
+	if err != nil { return }
+	if header.Header.Number().Uint64() != ctx.EpochLastBlock(this.EpochID) {
+		err = fmt.Errorf("block(%s) to sync should be the latest one in current epoch %v, desired height %v",
+			header.Header.Number(), this.EpochID, ctx.EpochLastBlock(this.EpochID))
+		return
+	}
+	return
+}
+
+// Verify header with current epoch
+func (this *Epoch) VerifyHeader(ctx *Context, header *block.Header) (err error) {
+	if this.EpochID != header.Epoch().Uint64() {
+		err = fmt.Errorf("epoch does not match, current %v, got %v", this.EpochID, header.Epoch().Uint64())
+		return
+	}
+	if this.ShardID != header.ShardID() {
+		err = fmt.Errorf("shard ID does not match, current %v, got %v", this.ShardID, header.ShardID())
+	}
+	height := header.Number().Uint64()
+	if height < this.StartHeight || height > ctx.EpochLastBlock(this.EpochID) {
+		err = fmt.Errorf("header height(%v) is not in range: %v to %v", height, this.StartHeight, ctx.EpochLastBlock(this.EpochID))
+		return
+	}
 	return
 }
 
 // Verify harmony header signature
-func (this *Epoch) VerifyHeaderSig (header *HeaderWithSig) (err error) {
-	isStaking := IsStaking(this.EpochID)
+func (this *Epoch) VerifyHeaderSig (ctx *Context, header *HeaderWithSig) (err error) {
+	isStaking := ctx.IsStaking(big.NewInt(int64(this.EpochID)))
 
 	pubKeys, err := this.Committee.BLSPublicKeys()
 	if err != nil {
@@ -85,7 +133,7 @@ func (this *Epoch) VerifyHeaderSig (header *HeaderWithSig) (err error) {
 		return fmt.Errorf("failed to decode bls sig bitmap, err: %v", err)
 	}
 
-	qrVerfier, err := quorum.NewVerifier(this.Committee, big.NewInt(int64(this.EpochID)), isStaking)
+	qrVerfier, err := ctx.NewVerifier(this.Committee, big.NewInt(int64(this.EpochID)), isStaking)
 	if err != nil {
 		return fmt.Errorf("failed to create quorum verifier, err: %v", err)
 	}
@@ -182,6 +230,16 @@ func (hs *HeaderWithSig) ExtractEpoch() (epoch *Epoch, err error) {
 		ShardID: hs.Header.ShardID(),
 		Committee: committee,
 		StartHeight: hs.Header.Number().Uint64() + 1,
+	}
+	return
+}
+
+// Decode harmony context
+func DecodeHarmonyContext(data []byte) (ctx *Context, err error) {
+	ctx = new(Context)
+	err = json.Unmarshal(data, ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode harmony context, err: %v", err)
 	}
 	return
 }
