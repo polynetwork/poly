@@ -18,13 +18,12 @@
 package harmony
 
 import (
-	"encoding/json"
 	"fmt"
 
-	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
+	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	scom "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/utils"
 )
@@ -58,7 +57,9 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 
 	// Check genesis header existence
 	headerExist, err := getGenesisHeader(native, params.ChainID)
-	if err != nil { return }
+	if err != nil {
+		return fmt.Errorf("HarmonyHandler get genesis header from storage failed, err:%v", err)
+	}
 	if headerExist != nil {
 		return fmt.Errorf("HarmonyHandler genesis header was already set")
 	}
@@ -131,8 +132,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) (err error) {
 
 	for idx, headerBytes := range params.Headers {
 		// Deserialize gensis header
-		header := new(HeaderWithSig)
-		err = json.Unmarshal(headerBytes, &header)
+		header, err := DecodeHeaderWithSig(headerBytes)
 		if err != nil {
 			return fmt.Errorf("HarmonyHandler failed to deserialize harmony header, idx %v, err: %v", idx, err)
 		}

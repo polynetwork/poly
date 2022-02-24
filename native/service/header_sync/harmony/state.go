@@ -72,6 +72,22 @@ func(ctx *Context) IsStaking(epoch *big.Int) bool {
 	return ctx.chainConfig.IsStaking(epoch)
 }
 
+// Verify if an epoch is valid
+func (ctx *Context) VerifyEpoch(epoch *Epoch ) (err error) {
+	epochID := big.NewInt(int64(epoch.EpochID))
+	// Check if epoch is skipped
+	if ctx.schedule.IsSkippedEpoch(epoch.ShardID, epochID) {
+		return fmt.Errorf("skipped epoch %v for shard %v", epoch.EpochID, epoch.ShardID)
+	}
+	// Check committee count
+	desiredSlotsNum := ctx.schedule.InstanceForEpoch(epochID).NumNodesPerShard()
+	if desiredSlotsNum != len(epoch.Committee.Slots) {
+		return fmt.Errorf("committee slots count(%v) does match with desired nodes(%v) per shard",
+			len(epoch.Committee.Slots), desiredSlotsNum)
+	}
+	return
+}
+
 // Build harmony quorum verifier
 func (ctx *Context) NewVerifier(committee *shard.Committee, epoch *big.Int, isStaking bool) (quorum.Verifier, error) {
 	return quorum.NewVerifierWithConfig(ctx.networkType, ctx.schedule, committee, epoch, isStaking)
@@ -225,7 +241,7 @@ func (hs *HeaderWithSig) ExtractEpoch() (epoch *Epoch, err error) {
 	}
 
 	epoch = &Epoch{
-		EpochID: hs.Header.Epoch().Uint64(),
+		EpochID: hs.Header.Epoch().Uint64() + 1,
 		ShardID: hs.Header.ShardID(),
 		Committee: committee,
 		StartHeight: hs.Header.Number().Uint64() + 1,

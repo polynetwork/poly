@@ -107,6 +107,12 @@ func (h *Handler) VerifyDepositProposal(
 		err = fmt.Errorf("failed to get network config and shard schedule: %v", err)
 		return
 	}
+	// Check if current epoch is valid
+	err = ctx.VerifyEpoch(epoch)
+	if err != nil {
+		err = fmt.Errorf("verify epoch failed for err: %v", err)
+		return
+	}
 
 	// Verify proof header
 	err = epoch.VerifyHeader(ctx, header.Header)
