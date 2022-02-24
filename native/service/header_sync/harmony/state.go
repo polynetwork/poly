@@ -28,7 +28,6 @@ import (
 	"github.com/harmony-one/harmony/consensus/quorum"
 	"github.com/harmony-one/harmony/crypto/bls"
 	"github.com/harmony-one/harmony/shard"
-	"github.com/harmony-one/harmony/consensus"
 
 	cstates "github.com/polynetwork/poly/core/states"
 	"github.com/polynetwork/poly/native"
@@ -47,14 +46,14 @@ func keyForConsensus(chainID uint64) []byte {
 
 // Harmony config context
 type Context struct {
-	NetworkID consensus.WrappedNetworkID
-	schedule quorum.WrappedSchedule
-	networkType quorum.WrappedNetworkType
-	chainConfig *consensus.WrappedChainConfig
+	NetworkID quorum.NetworkID
+	schedule quorum.Schedule
+	networkType quorum.NetworkType
+	chainConfig *quorum.ChainConfig
 }
 
 func (ctx *Context) Init() (err error){
-	ctx.schedule, ctx.networkType, ctx.chainConfig, err = consensus.GetNetworkConfigAndShardSchedule(ctx.NetworkID)
+	ctx.schedule, ctx.networkType, ctx.chainConfig, err = quorum.GetNetworkConfigAndShardSchedule(ctx.NetworkID)
 	return
 }
 
