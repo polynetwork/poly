@@ -3,13 +3,13 @@ package harmony
 import (
 	"encoding/hex"
 	"encoding/json"
-	scom "github.com/polynetwork/poly/native/service/header_sync/common"
 	"gotest.tools/assert"
 	"testing"
 
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/account"
 	"github.com/polynetwork/poly/common"
+	scom "github.com/polynetwork/poly/native/service/header_sync/common"
 	vconfig "github.com/polynetwork/poly/consensus/vbft/config"
 	"github.com/polynetwork/poly/core/genesis"
 	"github.com/polynetwork/poly/core/states"
@@ -107,7 +107,7 @@ func TestHeaderSync(t *testing.T) {
 		native, err = NewNative(sink.Bytes(), tx, nil)
 		assert.NilError(t, err)
 		err = handler.SyncGenesisHeader(native)
-		assert.NilError(t, err)
+		assert.Error(t, err, "HarmonyHandler, failed to extract Epoch from header, err: unexpected empty shard state in header")
 	}
 }
 
