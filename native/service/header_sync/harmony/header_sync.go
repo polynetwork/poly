@@ -105,6 +105,12 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 	if err != nil {
 		return fmt.Errorf("HarmonyHandler failed to store epoch info, err: %v", err)
 	}
+
+	// Update state
+	err = updateWithHeader(native, params.ChainID, header.Header)
+	if err != nil {
+		return fmt.Errorf("HarmonyHandler failed to update state, err: %v", err)
+	}
 	return
 }
 
@@ -151,6 +157,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) (err error) {
 			return fmt.Errorf("HarmonyHandler failed to get current epoch info, idx %v, err: %v", idx, err)
 		}
 
+		// Validate next epoch with current epoch
 		err = curEpoch.ValidateNextEpoch(ctx, header)
 		if err != nil {
 			return fmt.Errorf("HarmonyHandler failed to validate next epoch, idx %v block %s, err: %v",
@@ -163,9 +170,16 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) (err error) {
 				err, idx, header.Header.Number())
 		}
 
+		// Save new epoch
 		err = storeEpoch(native, params.ChainID, epoch)
 		if err != nil {
 			return fmt.Errorf("HarmonyHandler, failed to store epoch info, err: %v", err)
+		}
+
+		// Update state
+		err = updateWithHeader(native, params.ChainID, header.Header)
+		if err != nil {
+			return fmt.Errorf("HarmonyHandler failed to update state, err: %v", err)
 		}
 	}
 

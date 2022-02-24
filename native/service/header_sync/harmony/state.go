@@ -44,6 +44,11 @@ func keyForConsensus(chainID uint64) []byte {
 	return utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.CONSENSUS_PEER), utils.GetUint64Bytes(chainID))
 }
 
+func keyForHeaderHeight(chainID uint64) []byte {
+	return utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.CURRENT_HEADER_HEIGHT), utils.GetUint64Bytes(chainID))
+}
+
+
 // Harmony config context
 type Context struct {
 	NetworkID quorum.NetworkID
@@ -319,5 +324,14 @@ func getGenesisHeader(native *native.NativeService, chainID uint64) (header *Hea
 	if err != nil {
 		err = fmt.Errorf("%w, failed to deserialize harmony header: %x", err, headerBytes)
 	}
+	return
+}
+
+// Update state, emit sync header event
+func updateWithHeader(native *native.NativeService, chainID uint64, header *block.Header) (err error){
+	height := header.Number().Uint64()
+	native.GetCacheDB().Put(keyForHeaderHeight(chainID), cstates.GenRawStorageItem(utils.GetUint64Bytes(height)))
+
+	scom.NotifyPutHeader(native, chainID, height, header.Hash().Hex())
 	return
 }
