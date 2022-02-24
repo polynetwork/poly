@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/harmony-one/harmony/block"
 	"github.com/harmony-one/harmony/consensus/quorum"
@@ -201,8 +200,8 @@ func DecodeEpoch(data []byte) (epoch *Epoch, err error) {
 // Harmony Header with Signature
 type HeaderWithSig struct {
 	Header *block.Header
-	Sig hexutil.Bytes
-	Bitmap hexutil.Bytes
+	Sig []byte
+	Bitmap []byte
 }
 
 // Serialize header with sig
@@ -217,7 +216,7 @@ func EncodeHeaderWithSig(hs *HeaderWithSig) (data []byte, err error) {
 // Deserialize
 func DecodeHeaderWithSig(data []byte) (hs *HeaderWithSig, err error) {
 	hs = new(HeaderWithSig)
-	err = json.Unmarshal(data, hs)
+	err = rlp.DecodeBytes(data, hs)
 	if err != nil {
 		hs = nil
 		err = fmt.Errorf("failed to decode harmony HeaderWithSig, err: %v", err)
@@ -229,7 +228,7 @@ func DecodeHeaderWithSig(data []byte) (hs *HeaderWithSig, err error) {
 func (hs *HeaderWithSig) ExtractEpoch() (epoch *Epoch, err error) {
 	shardStateBytes := hs.Header.ShardState()
 	if len(shardStateBytes) == 0 {
-		err = fmt.Errorf("%w, unexpected empty shard state in header", err)
+		err = fmt.Errorf("unexpected empty shard state in header")
 		return
 	}
 
