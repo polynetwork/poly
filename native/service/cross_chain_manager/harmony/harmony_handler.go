@@ -135,7 +135,7 @@ func (h *Handler) VerifyDepositProposal(
 		err = fmt.Errorf("decode eth proof failed, err: %v", err)
 		return
 	}
-	err = VerifyCrossChainProof(params.Extra, proof, header.Header.Root(), sideChain.CCMCAddress)
+	err = VerifyCrossChainProof(crypto.Keccak256(params.Extra), proof, header.Header.Root(), sideChain.CCMCAddress)
 	if err != nil {
 		err = fmt.Errorf("VerifyCrossChainProof failed, err: %v", err)
 		return
