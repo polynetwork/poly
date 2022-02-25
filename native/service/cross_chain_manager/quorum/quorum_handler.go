@@ -26,7 +26,6 @@ import (
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/common"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	"github.com/polynetwork/poly/native/service/header_sync/quorum"
-	_ "github.com/harmony-one/harmony/consensus/quorum"
 )
 
 type QuorumHandler struct{}
