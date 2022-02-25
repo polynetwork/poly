@@ -300,7 +300,7 @@ func GetEpoch(native *native.NativeService, chainID uint64) (epoch *Epoch, err e
 
 // Save genesis header into storage
 func storeGenesisHeader(native *native.NativeService, chainID uint64, header *HeaderWithSig) (err error) {
-	headerBytes, err := json.Marshal(header)
+	headerBytes, err := EncodeHeaderWithSig(header)
 	if err != nil {
 		return fmt.Errorf("%w, failed to marshal header", err)
 	}
@@ -325,8 +325,7 @@ func getGenesisHeader(native *native.NativeService, chainID uint64) (header *Hea
 		return
 	}
 
-	header = &HeaderWithSig{}
-	err = json.Unmarshal(bytes, header)
+	header, err = DecodeHeaderWithSig(bytes)
 	if err != nil {
 		err = fmt.Errorf("%w, failed to deserialize harmony header: %x", err, headerBytes)
 	}

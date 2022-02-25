@@ -44,6 +44,9 @@ func TestDecodeHeaderWithSig(t *testing.T) {
 	assert.NilError(t, err)
 	headerForStateTest, err = DecodeHeaderWithSig(data)
 	assert.NilError(t, err)
+	cp , err := EncodeHeaderWithSig(headerForStateTest)
+	assert.NilError(t, err)
+	assert.DeepEqual(t, data, cp)
 }
 
 func TestEncodeEpoch(t *testing.T) {
