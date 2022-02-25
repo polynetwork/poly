@@ -6,7 +6,7 @@ BUILD_NODE_PAR = -ldflags "-X github.com/polynetwork/poly/common/config.Version=
 TOP:=$(realpath temp)
 export CGO_CFLAGS:=-I$(TOP)/bls/include -I$(TOP)/mcl/include -I/usr/local/opt/openssl/include
 export CGO_LDFLAGS:=-L$(TOP)/bls/lib -L/usr/local/opt/openssl/lib
-export LD_LIBRARY_PATH:=$(TOP)/bls/lib:$(TOP)/mcl/lib:/usr/local/opt/openssl/lib
+export LD_LIBRARY_PATH:=$(TOP)/bls/lib:$(TOP)/mcl/lib:/usr/local/opt/openssl/lib:/usr/local/opt/gmp/lib
 export LIBRARY_PATH:=$(LD_LIBRARY_PATH)
 export DYLD_FALLBACK_LIBRARY_PATH:=$(LD_LIBRARY_PATH)
 export GO111MODULE:=on
@@ -43,7 +43,7 @@ all: poly tools
 
 poly-cross: poly-windows poly-linux poly-darwin
 
-poly-windows deps:
+poly-windows: deps
 	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 $(GC) $(BUILD_NODE_PAR) -o poly-windows-amd64.exe main.go
 
 poly-linux: deps

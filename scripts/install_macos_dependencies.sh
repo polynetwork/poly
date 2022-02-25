@@ -4,16 +4,16 @@ echo "Preparing dependencies for macos"
 
 brew install gmp
 brew install openssl@1.1
-sudo ln -s /opt/homebrew/opt/openssl@1.1/include/openssl /usr/local/include/openssl
+sudo ln -sf /opt/homebrew/opt/openssl@1.1/include/openssl /usr/local/include/openssl
 sudo mkdir -p /usr/local/opt/openssl
-sudo ln -s /opt/homebrew/opt/openssl@1.1/lib /usr/local/opt/openssl/lib
+sudo ln -sf /opt/homebrew/opt/openssl@1.1/lib /usr/local/opt/openssl/lib
 sudo mkdir -p /usr/local/opt/gmp
-sudo ln -s /opt/homebrew/opt/gmp/include /usr/local/include/gmp
-sudo ln -s /opt/homebrew/opt/gmp/lib /usr/local/opt/gmp/lib
+sudo ln -sf /opt/homebrew/opt/gmp/include /usr/local/include/gmp
+sudo ln -sf /opt/homebrew/opt/gmp/lib /usr/local/opt/gmp/lib
 
 # Prepare temp directory
 mkdir -p temp
-pusd temp
+pushd temp
 
 # Prepare harmony dependencies
 git clone --depth=1 https://github.com/harmony-one/bls.git
@@ -37,5 +37,5 @@ make -C $PWD/mcl -j8
 echo "making bls"
 make -C $PWD/bls BLS_SWAP_G=1 -j8
 
-sudo ln -s $PWD/bls/lib/libbls384_256.dylib /usr/local/lib/libbls384_256.dylib
-sudo ln -s $PWD/bls/lib/libmcl.dylib /usr/local/lib/libmcl.dylib
+sudo ln -sf $PWD/bls/lib/libbls384_256.dylib /usr/local/lib/libbls384_256.dylib
+sudo ln -sf $PWD/bls/lib/libmcl.dylib /usr/local/lib/libmcl.dylib

@@ -11,7 +11,7 @@ fi
 
 # Prepare temp directory
 mkdir -p temp
-pusd temp
+pushd temp
 
 # Prepare harmony dependencies
 git clone --depth=1 https://github.com/harmony-one/bls.git
