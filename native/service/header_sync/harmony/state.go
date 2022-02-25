@@ -183,13 +183,8 @@ func EncodeEpoch(epoch *Epoch) (data []byte, err error) {
 }
 
 func DecodeEpoch(data []byte) (epoch *Epoch, err error) {
-	bytes, err := cstates.GetValueFromRawStorageItem(data)
-	if err != nil {
-		err = fmt.Errorf("%w, failed to get harmony epoch value from raw storage item", err)
-		return
-	}
 	epoch = &Epoch{}
-	err = rlp.DecodeBytes(bytes, epoch)
+	err = rlp.DecodeBytes(data, epoch)
 	if err != nil {
 		err = fmt.Errorf("%w, failed to rlp decode harmony epoch", err)
 		epoch = nil
@@ -197,16 +192,23 @@ func DecodeEpoch(data []byte) (epoch *Epoch, err error) {
 	return
 }
 
+type HeaderPayload struct {
+	HeaderRLP []byte
+	Sig []byte
+	Bitmap []byte
+}
+
 // Harmony Header with Signature
 type HeaderWithSig struct {
 	Header *block.Header
+	HeaderRLP []byte
 	Sig []byte
 	Bitmap []byte
 }
 
 // Serialize header with sig
 func EncodeHeaderWithSig(hs *HeaderWithSig) (data []byte, err error) {
-	data, err = json.Marshal(hs)
+	data, err = rlp.EncodeToBytes(&HeaderPayload{hs.HeaderRLP, hs.Sig, hs.Bitmap})
 	if err != nil {
 		err = fmt.Errorf("failed to encode harmony HeaderWithSig, err: %v", err)
 	}
@@ -215,8 +217,13 @@ func EncodeHeaderWithSig(hs *HeaderWithSig) (data []byte, err error) {
 
 // Deserialize
 func DecodeHeaderWithSig(data []byte) (hs *HeaderWithSig, err error) {
-	hs = new(HeaderWithSig)
-	err = rlp.DecodeBytes(data, hs)
+	payload := new(HeaderPayload)
+	err = rlp.DecodeBytes(data, payload)
+	if err == nil {
+		hs = &HeaderWithSig{HeaderRLP: payload.HeaderRLP, Sig: payload.Sig, Bitmap: payload.Bitmap}
+		hs.Header = new(block.Header)
+		err = rlp.DecodeBytes(hs.HeaderRLP, hs.Header)
+	}
 	if err != nil {
 		hs = nil
 		err = fmt.Errorf("failed to decode harmony HeaderWithSig, err: %v", err)
