@@ -14,7 +14,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with The poly network .  If not, see <http://www.gnu.org/licenses/>.
  */
-package heco
+package hsc
 
 import (
 	"bytes"
