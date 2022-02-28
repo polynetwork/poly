@@ -226,7 +226,7 @@ func typeOfError(e error) int {
 }
 
 func getLatestHeight(native *native.NativeService) uint64 {
-	height, err := GetCanonicalHeight(native, hecoChainID)
+	height, err := GetCanonicalHeight(native, hscChainID)
 	if err != nil {
 		return 0
 	}
@@ -235,7 +235,7 @@ func getLatestHeight(native *native.NativeService) uint64 {
 }
 
 func getHeaderHashByHeight(native *native.NativeService, height uint64) ethcommon.Hash {
-	hws, err := GetCanonicalHeader(native, hecoChainID, height)
+	hws, err := GetCanonicalHeader(native, hscChainID, height)
 	if err != nil {
 		return ethcommon.Hash{}
 	}
@@ -244,7 +244,7 @@ func getHeaderHashByHeight(native *native.NativeService, height uint64) ethcommo
 }
 
 func getHeaderByHash(native *native.NativeService, hash ethcommon.Hash) []byte {
-	hws, err := getHeader(native, hash, hecoChainID)
+	hws, err := getHeader(native, hash, hscChainID)
 	if err != nil {
 		return nil
 	}
@@ -253,13 +253,13 @@ func getHeaderByHash(native *native.NativeService, hash ethcommon.Hash) []byte {
 	return headerOnly
 }
 
-const hecoChainID uint64 = 7
-const hecoTestnetRpc = "https://http-testnet.hecochain.com"
+const hscChainID uint64 = 601
+const hscTestnetRpc = "https://http-mainnet.hoosmartchain.com"
 
 func newHecoClient() *HecoClient {
 
 	c := &HecoClient{
-		addr: hecoTestnetRpc,
+		addr: hscTestnetRpc,
 		restClient: &http.Client{
 			Transport: &http.Transport{
 				MaxIdleConnsPerHost:   5,
@@ -314,7 +314,7 @@ func TestSyncGenesisHeader(t *testing.T) {
 	genesisHeaderBytes, _ := json.Marshal(genesisHeader)
 
 	param := new(scom.SyncGenesisHeaderParam)
-	param.ChainID = hecoChainID
+	param.ChainID = hscChainID
 	param.GenesisHeader = genesisHeaderBytes
 	sink := common.NewZeroCopySink(nil)
 	param.Serialization(sink)
@@ -325,7 +325,7 @@ func TestSyncGenesisHeader(t *testing.T) {
 
 	native, err := NewNative(sink.Bytes(), tx, nil)
 	assert.NilError(t, err)
-	handler := NewHecoHandler()
+	handler := NewHscHandler()
 	err = handler.SyncGenesisHeader(native)
 
 	assert.Equal(t, SUCCESS, typeOfError(err), err)
@@ -344,7 +344,7 @@ func TestSyncGenesisHeaderNoOperator(t *testing.T) {
 	genesisHeaderBytes, _ := json.Marshal(genesisHeader)
 
 	param := new(scom.SyncGenesisHeaderParam)
-	param.ChainID = hecoChainID
+	param.ChainID = hscChainID
 	param.GenesisHeader = genesisHeaderBytes
 	sink := common.NewZeroCopySink(nil)
 	param.Serialization(sink)
@@ -353,7 +353,7 @@ func TestSyncGenesisHeaderNoOperator(t *testing.T) {
 
 	native, err := NewNative(sink.Bytes(), tx, nil)
 	assert.NilError(t, err)
-	handler := NewHecoHandler()
+	handler := NewHscHandler()
 	err = handler.SyncGenesisHeader(native)
 
 	assert.Equal(t, OPERATOR_ERROR, typeOfError(err), err)
@@ -376,7 +376,7 @@ func TestSyncGenesisHeaderTwice(t *testing.T) {
 		genesisHeaderBytes, _ := json.Marshal(genesisHeader)
 
 		param := new(scom.SyncGenesisHeaderParam)
-		param.ChainID = hecoChainID
+		param.ChainID = hscChainID
 		param.GenesisHeader = genesisHeaderBytes
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
@@ -387,7 +387,7 @@ func TestSyncGenesisHeaderTwice(t *testing.T) {
 
 		native, err = NewNative(sink.Bytes(), tx, nil)
 		assert.NilError(t, err)
-		handler := NewHecoHandler()
+		handler := NewHscHandler()
 		err = handler.SyncGenesisHeader(native)
 
 		assert.Equal(t, SUCCESS, typeOfError(err), err)
@@ -404,7 +404,7 @@ func TestSyncGenesisHeaderTwice(t *testing.T) {
 		genesisHeaderBytes, _ := json.Marshal(genesisHeader)
 
 		param := new(scom.SyncGenesisHeaderParam)
-		param.ChainID = hecoChainID
+		param.ChainID = hscChainID
 		param.GenesisHeader = genesisHeaderBytes
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
@@ -415,7 +415,7 @@ func TestSyncGenesisHeaderTwice(t *testing.T) {
 
 		native, err = NewNative(sink.Bytes(), tx, native.GetCacheDB())
 		assert.NilError(t, err)
-		handler := NewHecoHandler()
+		handler := NewHscHandler()
 		err = handler.SyncGenesisHeader(native)
 
 		assert.Equal(t, GENESIS_INITIALIZED, typeOfError(err), err)
@@ -427,7 +427,7 @@ func TestSyncGenesisHeaderTwice(t *testing.T) {
 func TestSyncGenesisHeader_ParamError(t *testing.T) {
 
 	param := new(scom.SyncGenesisHeaderParam)
-	param.ChainID = hecoChainID
+	param.ChainID = hscChainID
 	param.GenesisHeader = nil
 	sink := common.NewZeroCopySink(nil)
 	param.Serialization(sink)
@@ -437,7 +437,7 @@ func TestSyncGenesisHeader_ParamError(t *testing.T) {
 	}
 
 	native, _ := NewNative(sink.Bytes(), tx, nil)
-	handler := NewHecoHandler()
+	handler := NewHscHandler()
 	err := handler.SyncGenesisHeader(native)
 	assert.Equal(t, GENESIS_PARAM_ERROR, typeOfError(err), err)
 
@@ -463,7 +463,7 @@ func TestSyncBlockHeader(t *testing.T) {
 		err    error
 	)
 
-	handler := NewHecoHandler()
+	handler := NewHscHandler()
 
 	{
 		native, err = NewNative(nil, &types.Transaction{}, nil)
@@ -476,14 +476,14 @@ func TestSyncBlockHeader(t *testing.T) {
 		extraBytes, _ := json.Marshal(extra)
 		err = side_chain_manager.PutSideChain(native, &side_chain_manager.SideChain{
 			ExtraInfo: extraBytes,
-			ChainId:   hecoChainID,
+			ChainId:   hscChainID,
 		})
 		assert.NilError(t, err)
 
-		sideInfo, err := side_chain_manager.GetSideChain(native, hecoChainID)
+		sideInfo, err := side_chain_manager.GetSideChain(native, hscChainID)
 		assert.NilError(t, err)
 		assert.Equal(t, true, bytes.Equal(sideInfo.ExtraInfo, extraBytes))
-		assert.Equal(t, sideInfo.ChainId, hecoChainID)
+		assert.Equal(t, sideInfo.ChainId, hscChainID)
 	}
 
 	{
@@ -492,7 +492,7 @@ func TestSyncBlockHeader(t *testing.T) {
 		genesisHeaderBytes, _ := json.Marshal(genesisHeader)
 
 		param := new(scom.SyncGenesisHeaderParam)
-		param.ChainID = hecoChainID
+		param.ChainID = hscChainID
 		param.GenesisHeader = genesisHeaderBytes
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
@@ -532,7 +532,7 @@ func TestSyncBlockHeader(t *testing.T) {
 		}
 
 		param := new(scom.SyncBlockHeaderParam)
-		param.ChainID = hecoChainID
+		param.ChainID = hscChainID
 		param.Address = acct.Address
 		param.Headers = append(param.Headers, n1Bytes)
 		param.Headers = append(param.Headers, n2Bytes)
@@ -564,7 +564,7 @@ func TestSyncBlockHeader(t *testing.T) {
 	// check find previous validators and verify header process
 	{
 		param := new(scom.SyncBlockHeaderParam)
-		param.ChainID = hecoChainID
+		param.ChainID = hscChainID
 		param.Address = acct.Address
 		height = getLatestHeight(native)
 
@@ -607,7 +607,7 @@ func TestSyncForkBlockHeader(t *testing.T) {
 		err    error
 	)
 
-	handler := NewHecoHandler()
+	handler := NewHscHandler()
 
 	{
 		native, err = NewNative(nil, &types.Transaction{}, nil)
@@ -620,14 +620,14 @@ func TestSyncForkBlockHeader(t *testing.T) {
 		extraBytes, _ := json.Marshal(extra)
 		err = side_chain_manager.PutSideChain(native, &side_chain_manager.SideChain{
 			ExtraInfo: extraBytes,
-			ChainId:   hecoChainID,
+			ChainId:   hscChainID,
 		})
 		assert.NilError(t, err)
 
-		sideInfo, err := side_chain_manager.GetSideChain(native, hecoChainID)
+		sideInfo, err := side_chain_manager.GetSideChain(native, hscChainID)
 		assert.NilError(t, err)
 		assert.Equal(t, true, bytes.Equal(sideInfo.ExtraInfo, extraBytes))
-		assert.Equal(t, sideInfo.ChainId, hecoChainID)
+		assert.Equal(t, sideInfo.ChainId, hscChainID)
 	}
 
 	{
@@ -636,7 +636,7 @@ func TestSyncForkBlockHeader(t *testing.T) {
 		genesisHeaderBytes, _ := json.Marshal(genesisHeader)
 
 		param := new(scom.SyncGenesisHeaderParam)
-		param.ChainID = hecoChainID
+		param.ChainID = hscChainID
 		param.GenesisHeader = genesisHeaderBytes
 		sink := common.NewZeroCopySink(nil)
 		param.Serialization(sink)
@@ -661,7 +661,7 @@ func TestSyncForkBlockHeader(t *testing.T) {
 	// check find previous validators and verify header process
 	{
 		param := new(scom.SyncBlockHeaderParam)
-		param.ChainID = hecoChainID
+		param.ChainID = hscChainID
 		param.Address = acct.Address
 		height = getLatestHeight(native)
 
@@ -695,12 +695,12 @@ func TestSyncForkBlockHeader(t *testing.T) {
 		}
 	}
 	// check forked chain can come back to normal
-	TestFlagNoCheckHecoHeaderSig = true
+	TestFlagNoCheckHscHeaderSig = true
 
 	{
 		// first sync forked headers
 		param := new(scom.SyncBlockHeaderParam)
-		param.ChainID = hecoChainID
+		param.ChainID = hscChainID
 		param.Address = acct.Address
 		height = getLatestHeight(native)
 

@@ -39,15 +39,15 @@ import (
 	"golang.org/x/crypto/sha3"
 )
 
-// only for testing purpose to check if heco chain can be normal back after fork happens
-var TestFlagNoCheckHecoHeaderSig bool
+// only for testing purpose to check if hsc chain can be normal back after fork happens
+var TestFlagNoCheckHscHeaderSig bool
 
 // Handler ...
 type Handler struct {
 }
 
 // NewHandler ...
-func NewHecoHandler() *Handler {
+func NewHscHandler() *Handler {
 	return &Handler{}
 }
 
@@ -61,33 +61,33 @@ type GenesisHeader struct {
 func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 	params := new(scom.SyncGenesisHeaderParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
-		return fmt.Errorf("heco Handler SyncGenesisHeader, contract params deserialize error: %v", err)
+		return fmt.Errorf("hsc Handler SyncGenesisHeader, contract params deserialize error: %v", err)
 	}
 	// Get current epoch operator
 	operatorAddress, err := node_manager.GetCurConOperator(native)
 	if err != nil {
-		return fmt.Errorf("heco Handler SyncGenesisHeader, get current consensus operator address error: %v", err)
+		return fmt.Errorf("hsc Handler SyncGenesisHeader, get current consensus operator address error: %v", err)
 	}
 
 	//check witness
 	err = utils.ValidateOwner(native, operatorAddress)
 	if err != nil {
-		return fmt.Errorf("heco Handler SyncGenesisHeader, checkWitness error: %v", err)
+		return fmt.Errorf("hsc Handler SyncGenesisHeader, checkWitness error: %v", err)
 	}
 
 	// can only store once
 	stored, err := isGenesisStored(native, params)
 	if err != nil {
-		return fmt.Errorf("heco Handler SyncGenesisHeader, isGenesisStored error: %v", err)
+		return fmt.Errorf("hsc Handler SyncGenesisHeader, isGenesisStored error: %v", err)
 	}
 	if stored {
-		return fmt.Errorf("heco Handler SyncGenesisHeader, genesis had been initialized")
+		return fmt.Errorf("hsc Handler SyncGenesisHeader, genesis had been initialized")
 	}
 
 	var genesis GenesisHeader
 	err = json.Unmarshal(params.GenesisHeader, &genesis)
 	if err != nil {
-		return fmt.Errorf("heco Handler SyncGenesisHeader, deserialize GenesisHeader err: %v", err)
+		return fmt.Errorf("hsc Handler SyncGenesisHeader, deserialize GenesisHeader err: %v", err)
 	}
 
 	signersBytes := len(genesis.Header.Extra) - extraVanity - extraSeal
@@ -111,7 +111,7 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 
 	err = storeGenesis(native, params, &genesis)
 	if err != nil {
-		return fmt.Errorf("heco Handler SyncGenesisHeader, storeGenesis error: %v", err)
+		return fmt.Errorf("hsc Handler SyncGenesisHeader, storeGenesis error: %v", err)
 	}
 
 	return
@@ -184,7 +184,7 @@ func storeGenesis(native *native.NativeService, params *scom.SyncGenesisHeaderPa
 
 // ExtraInfo ...
 type ExtraInfo struct {
-	ChainID *big.Int // chainId of heco chain, testnet: 256, mainnet: 128
+	ChainID *big.Int // chainId of hsc chain, testnet: 256, mainnet: 128
 	Period  uint64
 }
 
@@ -209,24 +209,23 @@ type HeaderWithDifficultySum struct {
 
 // SyncBlockHeader ...
 // Will verify header coming from congress consensus
-// https://github.com/HuobiGroup/huobi-eco-chain/tree/master/consensus/congress
 func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 	headerParams := new(scom.SyncBlockHeaderParam)
 	if err := headerParams.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
-		return fmt.Errorf("heco Handler SyncBlockHeader, contract params deserialize error: %v", err)
+		return fmt.Errorf("hsc Handler SyncBlockHeader, contract params deserialize error: %v", err)
 	}
 
 	side, err := side_chain_manager.GetSideChain(native, headerParams.ChainID)
 	if err != nil {
-		return fmt.Errorf("heco Handler SyncBlockHeader, GetSideChain error: %v", err)
+		return fmt.Errorf("hsc Handler SyncBlockHeader, GetSideChain error: %v", err)
 	}
 	if side == nil {
-		return fmt.Errorf("heco Hander SyncBlockHeader, GetSideChain info nil")
+		return fmt.Errorf("hsc Hander SyncBlockHeader, GetSideChain info nil")
 	}
 	var extraInfo ExtraInfo
 	err = json.Unmarshal(side.ExtraInfo, &extraInfo)
 	if err != nil {
-		return fmt.Errorf("heco Handler SyncBlockHeader, ExtraInfo Unmarshal error: %v", err)
+		return fmt.Errorf("hsc Handler SyncBlockHeader, ExtraInfo Unmarshal error: %v", err)
 	}
 
 	ctx := &Context{ExtraInfo: extraInfo, ChainID: headerParams.ChainID}
@@ -235,43 +234,43 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		var header types.Header
 		err := json.Unmarshal(v, &header)
 		if err != nil {
-			return fmt.Errorf("heco Handler SyncBlockHeader, deserialize header err: %v", err)
+			return fmt.Errorf("hsc Handler SyncBlockHeader, deserialize header err: %v", err)
 		}
 		headerHash := header.Hash()
 
 		exist, err := isHeaderExist(native, headerHash, ctx)
 		if err != nil {
-			return fmt.Errorf("heco Handler SyncBlockHeader, isHeaderExist headerHash err: %v", err)
+			return fmt.Errorf("hsc Handler SyncBlockHeader, isHeaderExist headerHash err: %v", err)
 		}
 		if exist {
-			log.Warnf("heco Handler SyncBlockHeader, header has exist. Header: %s", string(v))
+			log.Warnf("hsc Handler SyncBlockHeader, header has exist. Header: %s", string(v))
 			continue
 		}
 
 		parentExist, err := isHeaderExist(native, header.ParentHash, ctx)
 		if err != nil {
-			return fmt.Errorf("heco Handler SyncBlockHeader, isHeaderExist ParentHash err: %v", err)
+			return fmt.Errorf("hsc Handler SyncBlockHeader, isHeaderExist ParentHash err: %v", err)
 		}
 		if !parentExist {
-			log.Warnf("heco Handler SyncBlockHeader, parent header not exist. Header: %s", string(v))
+			log.Warnf("hsc Handler SyncBlockHeader, parent header not exist. Header: %s", string(v))
 			continue
 		}
 
 		signer, err := verifySignature(native, &header, ctx)
 		if err != nil {
-			return fmt.Errorf("heco Handler SyncBlockHeader, verifySignature err: %v", err)
+			return fmt.Errorf("hsc Handler SyncBlockHeader, verifySignature err: %v", err)
 		}
 
 		// get prev epochs, also checking recent limit
 		phv, _, lastSeenHeight, err := getPrevHeightAndValidators(native, &header, ctx)
 		if err != nil {
-			return fmt.Errorf("heco Handler SyncBlockHeader, getPrevHeightAndValidators err: %v", err)
+			return fmt.Errorf("hsc Handler SyncBlockHeader, getPrevHeightAndValidators err: %v", err)
 		}
 
 		if len(header.Extra) > extraVanity+extraSeal {
 			diffWithLastEpoch := big.NewInt(0).Sub(header.Number, phv.Height).Int64()
 			if diffWithLastEpoch <= int64(len(phv.Validators)/2) {
-				return fmt.Errorf("heco Handler SyncBlockHeader: can not change epoch continuously")
+				return fmt.Errorf("hsc Handler SyncBlockHeader: can not change epoch continuously")
 			}
 		}
 
@@ -280,7 +279,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 		if lastSeenHeight > 0 {
 			limit := int64(len(inTurnHV.Validators) / 2)
 			if header.Number.Int64() <= lastSeenHeight+limit {
-				return fmt.Errorf("heco Handler SyncBlockHeader, RecentlySigned, lastSeenHeight:%d currentHeight:%d #V:%d", lastSeenHeight, header.Number.Int64(), len(inTurnHV.Validators))
+				return fmt.Errorf("hsc Handler SyncBlockHeader, RecentlySigned, lastSeenHeight:%d currentHeight:%d #V:%d", lastSeenHeight, header.Number.Int64(), len(inTurnHV.Validators))
 			}
 		}
 
@@ -305,12 +304,12 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			}
 		}
 		if !valid {
-			return fmt.Errorf("heco Handler SyncBlockHeader, invalid signer")
+			return fmt.Errorf("hsc Handler SyncBlockHeader, invalid signer")
 		}
 
 		err = addHeader(native, &header, phv, ctx)
 		if err != nil {
-			return fmt.Errorf("heco Handler SyncBlockHeader, addHeader err: %v", err)
+			return fmt.Errorf("hsc Handler SyncBlockHeader, addHeader err: %v", err)
 		}
 
 		scom.NotifyPutHeader(native, headerParams.ChainID, header.Number.Uint64(), header.Hash().Hex())
@@ -322,7 +321,7 @@ func isHeaderExist(native *native.NativeService, headerHash ecommon.Hash, ctx *C
 	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress,
 		[]byte(scom.HEADER_INDEX), utils.GetUint64Bytes(ctx.ChainID), headerHash.Bytes()))
 	if err != nil {
-		return false, fmt.Errorf("heco Handler isHeaderExist error: %v", err)
+		return false, fmt.Errorf("hsc Handler isHeaderExist error: %v", err)
 	}
 
 	return headerStore != nil, nil
@@ -337,13 +336,13 @@ func GetCanonicalHeight(native *native.NativeService, chainID uint64) (height ui
 	heightStore, err := native.GetCacheDB().Get(
 		utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.CURRENT_HEADER_HEIGHT), utils.GetUint64Bytes(chainID)))
 	if err != nil {
-		err = fmt.Errorf("heco Handler GetCanonicalHeight err:%v", err)
+		err = fmt.Errorf("hsc Handler GetCanonicalHeight err:%v", err)
 		return
 	}
 
 	storeBytes, err := cstates.GetValueFromRawStorageItem(heightStore)
 	if err != nil {
-		err = fmt.Errorf("heco Handler GetCanonicalHeight, GetValueFromRawStorageItem err:%v", err)
+		err = fmt.Errorf("hsc Handler GetCanonicalHeight, GetValueFromRawStorageItem err:%v", err)
 		return
 	}
 
@@ -382,7 +381,7 @@ func getCanonicalHash(native *native.NativeService, chainID uint64, height uint6
 
 	hashBytes, err := cstates.GetValueFromRawStorageItem(hashBytesStore)
 	if err != nil {
-		err = fmt.Errorf("heco Handler getCanonicalHash, GetValueFromRawStorageItem err:%v", err)
+		err = fmt.Errorf("hsc Handler getCanonicalHash, GetValueFromRawStorageItem err:%v", err)
 		return
 	}
 
@@ -503,12 +502,12 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 
 	genesis, err := getGenesis(native, ctx.ChainID)
 	if err != nil {
-		err = fmt.Errorf("heco Handler getGenesis error: %v", err)
+		err = fmt.Errorf("hsc Handler getGenesis error: %v", err)
 		return
 	}
 
 	if genesis == nil {
-		err = fmt.Errorf("heco Handler genesis not set")
+		err = fmt.Errorf("hsc Handler genesis not set")
 		return
 	}
 
@@ -533,7 +532,7 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 
 	prevHeaderWithSum, err := getHeader(native, header.ParentHash, ctx.ChainID)
 	if err != nil {
-		err = fmt.Errorf("heco Handler getHeader error: %v", err)
+		err = fmt.Errorf("hsc Handler getHeader error: %v", err)
 		return
 	}
 
@@ -551,7 +550,7 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 				for i := 0; i < maxLimit-1; i++ {
 					prevHeaderWithSum, err := getHeader(native, nextRecentParentHash, ctx.ChainID)
 					if err != nil {
-						err = fmt.Errorf("heco Handler getHeader error: %v", err)
+						err = fmt.Errorf("hsc Handler getHeader error: %v", err)
 						return
 					}
 					if prevHeaderWithSum.Header.Coinbase == targetCoinbase {
@@ -580,7 +579,7 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 		if len(prevHeaderWithSum.Header.Extra) > extraVanity+extraSeal {
 			validators, err = ParseValidators(prevHeaderWithSum.Header.Extra[extraVanity : len(prevHeaderWithSum.Header.Extra)-extraSeal])
 			if err != nil {
-				err = fmt.Errorf("heco Handler ParseValidators error: %v", err)
+				err = fmt.Errorf("hsc Handler ParseValidators error: %v", err)
 				return
 			}
 			*currentPV = &HeightAndValidators{
@@ -595,7 +594,7 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 			case pphv:
 				return
 			default:
-				err = fmt.Errorf("bug in heco Handler")
+				err = fmt.Errorf("bug in hsc Handler")
 				return
 			}
 		}
@@ -614,7 +613,7 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 			case pphv:
 				pphv = &genesis.PrevValidators[0]
 			default:
-				err = fmt.Errorf("bug in heco Handler")
+				err = fmt.Errorf("bug in hsc Handler")
 				return
 			}
 			return
@@ -622,7 +621,7 @@ func getPrevHeightAndValidators(native *native.NativeService, header *types.Head
 
 		prevHeaderWithSum, err = getHeader(native, nextParentHash, ctx.ChainID)
 		if err != nil {
-			err = fmt.Errorf("heco Handler getHeader error: %v", err)
+			err = fmt.Errorf("hsc Handler getHeader error: %v", err)
 			return
 		}
 
@@ -634,18 +633,18 @@ func getHeader(native *native.NativeService, hash ecommon.Hash, chainID uint64) 
 	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress,
 		[]byte(scom.HEADER_INDEX), utils.GetUint64Bytes(chainID), hash.Bytes()))
 	if err != nil {
-		return nil, fmt.Errorf("heco Handler getHeader error: %v", err)
+		return nil, fmt.Errorf("hsc Handler getHeader error: %v", err)
 	}
 	if headerStore == nil {
-		return nil, fmt.Errorf("heco Handler getHeader, can not find any header records")
+		return nil, fmt.Errorf("hsc Handler getHeader, can not find any header records")
 	}
 	storeBytes, err := cstates.GetValueFromRawStorageItem(headerStore)
 	if err != nil {
-		return nil, fmt.Errorf("heco Handler getHeader, deserialize headerBytes from raw storage item err:%v", err)
+		return nil, fmt.Errorf("hsc Handler getHeader, deserialize headerBytes from raw storage item err:%v", err)
 	}
 	headerWithSum = &HeaderWithDifficultySum{}
 	if err := json.Unmarshal(storeBytes, &headerWithSum); err != nil {
-		return nil, fmt.Errorf("heco Handler getHeader, deserialize header error: %v", err)
+		return nil, fmt.Errorf("hsc Handler getHeader, deserialize header error: %v", err)
 	}
 
 	return
@@ -753,7 +752,7 @@ func verifySeal(native *native.NativeService, header *types.Header, ctx *Context
 		err = errors.New("unknown block")
 		return
 	}
-	if TestFlagNoCheckHecoHeaderSig {
+	if TestFlagNoCheckHscHeaderSig {
 		signer = header.Coinbase
 		return
 	}
