@@ -64,7 +64,7 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 		return fmt.Errorf("HarmonyHandler genesis header was already set")
 	}
 
-	// Deserialize gensis header
+	// Deserialize genesis header
 	header, err := DecodeHeaderWithSig(params.GenesisHeader)
 	if err != nil {
 		return fmt.Errorf("HarmonyHandler failed to deserialize harmony header, err: %v", err)
