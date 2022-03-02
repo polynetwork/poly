@@ -85,7 +85,7 @@ func (ctx *Context) VerifyEpoch(epoch *Epoch ) (err error) {
 	}
 	// Check committee count
 	desiredSlotsNum := ctx.schedule.InstanceForEpoch(epochID).NumNodesPerShard()
-	if desiredSlotsNum != len(epoch.Committee.Slots) {
+	if desiredSlotsNum != len(epoch.Committee.Slots) && ctx.NetworkID == 0 /*mainnet*/ {
 		return fmt.Errorf("committee slots count(%v) does match with desired nodes(%v) per shard",
 			len(epoch.Committee.Slots), desiredSlotsNum)
 	}
