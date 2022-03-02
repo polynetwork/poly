@@ -1,7 +1,6 @@
 GOFMT=gofmt
 GC=go build
 VERSION := $(shell git describe --always --tags --long)
-BUILD_NODE_PAR = -ldflags "-X github.com/polynetwork/poly/common/config.Version=$(VERSION) -X google.golang.org/protobuf/reflect/protoregistry.conflictPolicy=warn" #-race
 
 TOP:=$(realpath .)/temp
 export CGO_CFLAGS:=-I$(TOP)/bls/include -I$(TOP)/mcl/include -I/usr/local/opt/openssl/include
@@ -16,6 +15,13 @@ DBUILD=docker build
 DRUN=docker run
 DOCKER_NS ?= polynetwork
 DOCKER_TAG=$(ARCH)-$(VERSION)
+
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+	BUILD_NODE_PAR = -ldflags '-w -extldflags "-static -lm" -X github.com/polynetwork/poly/common/config.Version=$(VERSION) -X google.golang.org/protobuf/reflect/protoregistry.conflictPolicy=warn' #-race
+else
+	BUILD_NODE_PAR = -ldflags '-X github.com/polynetwork/poly/common/config.Version=$(VERSION) -X google.golang.org/protobuf/reflect/protoregistry.conflictPolicy=warn' #-race
+endif
 
 SRC_FILES = $(shell git ls-files | grep -e .go$ | grep -v _test.go)
 TOOLS=./tools

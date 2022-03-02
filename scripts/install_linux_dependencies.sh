@@ -33,7 +33,7 @@ export DYLD_FALLBACK_LIBRARY_PATH=$LD_LIBRARY_PATH
 echo "making mcl"
 make -C $PWD/mcl -j8
 echo "making bls"
-make -C $PWD/bls BLS_SWAP_G=1 -j8
+make -C $PWD/bls minimised_static BLS_SWAP_G=1 -j8
 
 
 
