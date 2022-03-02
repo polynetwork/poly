@@ -93,12 +93,12 @@ func NewNative(args []byte, tx *types.Transaction, db *storage.CacheDB) (*native
 	return native.NewNativeService(db, tx, 0, 0, common.Uint256{0}, 0, args, false)
 }
 
-type HecoClient struct {
+type chainClient struct {
 	addr       string
 	restClient *http.Client
 }
 
-func (this *HecoClient) SendRestRequest(data []byte) ([]byte, error) {
+func (this *chainClient) SendRestRequest(data []byte) ([]byte, error) {
 	resp, err := this.restClient.Post(this.addr, "application/json", strings.NewReader(string(data)))
 	if err != nil {
 		return nil, fmt.Errorf("http post request:%s error:%s", data, err)
@@ -124,7 +124,7 @@ type heightRep struct {
 	Id      uint   `json:"id"`
 }
 
-func (this *HecoClient) GetNodeHeight() (uint64, error) {
+func (this *chainClient) GetNodeHeight() (uint64, error) {
 	req := &heightReq{
 		JsonRpc: "2.0",
 		Method:  "eth_blockNumber",
@@ -165,7 +165,7 @@ type BlockRep struct {
 	Id      uint             `json:"id"`
 }
 
-func (this *HecoClient) GetBlockHeader(height uint64) (*ethtypes.Header, error) {
+func (this *chainClient) GetBlockHeader(height uint64) (*ethtypes.Header, error) {
 	params := []interface{}{fmt.Sprintf("0x%x", height), true}
 	req := &BlockReq{
 		JsonRpc: "2.0",
@@ -256,9 +256,9 @@ func getHeaderByHash(native *native.NativeService, hash ethcommon.Hash) []byte {
 const hscChainID uint64 = 601
 const hscTestnetRpc = "https://http-mainnet.hoosmartchain.com"
 
-func newHecoClient() *HecoClient {
+func newChainClient() *chainClient {
 
-	c := &HecoClient{
+	c := &chainClient{
 		addr: hscTestnetRpc,
 		restClient: &http.Client{
 			Transport: &http.Transport{
@@ -275,14 +275,14 @@ func newHecoClient() *HecoClient {
 }
 
 func getBlockHeader(t *testing.T, height uint64) *ethtypes.Header {
-	c := newHecoClient()
+	c := newChainClient()
 	hdr, err := c.GetBlockHeader(height)
 	assert.NilError(t, err)
 	return hdr
 }
 
 func getGenesisHeader(t *testing.T) *GenesisHeader {
-	c := newHecoClient()
+	c := newChainClient()
 	height, err := c.GetNodeHeight()
 	if err != nil {
 		panic(err)
@@ -444,7 +444,7 @@ func TestSyncGenesisHeader_ParamError(t *testing.T) {
 }
 
 func untilGetBlockHeader(t *testing.T, height uint64) *ethtypes.Header {
-	c := newHecoClient()
+	c := newChainClient()
 	for {
 		hdr, err := c.GetBlockHeader(height)
 		if err == nil {
