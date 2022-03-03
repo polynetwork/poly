@@ -21,6 +21,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"github.com/polynetwork/poly/native/service/header_sync/eth"
 	"io/ioutil"
 	"math/big"
 	"net/http"
@@ -32,7 +33,6 @@ import (
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 
 	ethcommon "github.com/ethereum/go-ethereum/common"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/polynetwork/poly/account"
 	"github.com/polynetwork/poly/common"
@@ -160,12 +160,12 @@ type BlockReq struct {
 }
 
 type BlockRep struct {
-	JsonRPC string           `json:"jsonrpc"`
-	Result  *ethtypes.Header `json:"result"`
-	Id      uint             `json:"id"`
+	JsonRPC string      `json:"jsonrpc"`
+	Result  *eth.Header `json:"result"`
+	Id      uint        `json:"id"`
 }
 
-func (this *chainClient) GetBlockHeader(height uint64) (*ethtypes.Header, error) {
+func (this *chainClient) GetBlockHeader(height uint64) (*eth.Header, error) {
 	params := []interface{}{fmt.Sprintf("0x%x", height), true}
 	req := &BlockReq{
 		JsonRpc: "2.0",
@@ -274,7 +274,7 @@ func newChainClient() *chainClient {
 	return c
 }
 
-func getBlockHeader(t *testing.T, height uint64) *ethtypes.Header {
+func getBlockHeader(t *testing.T, height uint64) *eth.Header {
 	c := newChainClient()
 	hdr, err := c.GetBlockHeader(height)
 	assert.NilError(t, err)
@@ -443,7 +443,7 @@ func TestSyncGenesisHeader_ParamError(t *testing.T) {
 
 }
 
-func untilGetBlockHeader(t *testing.T, height uint64) *ethtypes.Header {
+func untilGetBlockHeader(t *testing.T, height uint64) *eth.Header {
 	c := newChainClient()
 	for {
 		hdr, err := c.GetBlockHeader(height)
@@ -524,7 +524,7 @@ func TestSyncBlockHeader(t *testing.T) {
 		n3Bytes, _ := json.Marshal(n3)
 		n4 := untilGetBlockHeader(t, height+4)
 		n4Bytes, _ := json.Marshal(n4)
-		h2h := map[uint64]*ethtypes.Header{
+		h2h := map[uint64]*eth.Header{
 			height + 1: n1,
 			height + 2: n2,
 			height + 3: n3,
@@ -590,7 +590,7 @@ func TestSyncBlockHeader(t *testing.T) {
 		for h := height + 1; h <= height+headerNumber; h++ {
 			headerHash := getHeaderHashByHeight(native, h)
 			headerBs := param.Headers[h-height-1]
-			var oheader ethtypes.Header
+			var oheader eth.Header
 			json.Unmarshal(headerBs, &oheader)
 			assert.Equal(t, true, headerHash == oheader.Hash())
 			headerBytesFromStore := getHeaderByHash(native, headerHash)
@@ -687,7 +687,7 @@ func TestSyncForkBlockHeader(t *testing.T) {
 		for h := height + 1; h <= height+headerNumber; h++ {
 			headerHash := getHeaderHashByHeight(native, h)
 			headerBs := param.Headers[h-height-1]
-			var oheader ethtypes.Header
+			var oheader eth.Header
 			json.Unmarshal(headerBs, &oheader)
 			assert.Equal(t, true, headerHash == oheader.Hash())
 			headerBytesFromStore := getHeaderByHash(native, headerHash)
@@ -705,8 +705,8 @@ func TestSyncForkBlockHeader(t *testing.T) {
 		height = getLatestHeight(native)
 
 		var headerNumber uint64 = 5
-		realHeaders := make([]*ethtypes.Header, 0)
-		forkedHeaders := make([]*ethtypes.Header, 0)
+		realHeaders := make([]*eth.Header, 0)
+		forkedHeaders := make([]*eth.Header, 0)
 		for i := 1; i <= int(headerNumber); i++ {
 			headerI := untilGetBlockHeader(t, height+uint64(i))
 			realHeaders = append(realHeaders, headerI)
@@ -786,7 +786,7 @@ func TestSyncForkBlockHeader(t *testing.T) {
 
 }
 
-func copyHeader(h *ethtypes.Header) *ethtypes.Header {
+func copyHeader(h *eth.Header) *eth.Header {
 	cpy := *h
 	if cpy.Difficulty = new(big.Int); h.Difficulty != nil {
 		cpy.Difficulty.Set(h.Difficulty)

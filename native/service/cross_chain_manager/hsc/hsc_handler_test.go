@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/polynetwork/poly/native/service/header_sync/eth"
 	"github.com/polynetwork/poly/native/service/header_sync/hsc"
 	"io/ioutil"
 	"math/big"
@@ -15,7 +16,6 @@ import (
 	"time"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
-	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ontio/ontology-crypto/keypair"
 	"github.com/ontio/ontology/core/states"
 	"github.com/polynetwork/poly/account"
@@ -238,12 +238,12 @@ type BlockReq struct {
 }
 
 type BlockRep struct {
-	JsonRPC string           `json:"jsonrpc"`
-	Result  *ethtypes.Header `json:"result"`
-	Id      uint             `json:"id"`
+	JsonRPC string      `json:"jsonrpc"`
+	Result  *eth.Header `json:"result"`
+	Id      uint        `json:"id"`
 }
 
-func (this *chainClient) GetBlockHeader(height uint64) (*ethtypes.Header, error) {
+func (this *chainClient) GetBlockHeader(height uint64) (*eth.Header, error) {
 	params := []interface{}{fmt.Sprintf("0x%x", height), true}
 	req := &BlockReq{
 		JsonRpc: "2.0",
@@ -373,7 +373,7 @@ func getLatestHeight(native *native.NativeService) (height uint64) {
 	return
 }
 
-func untilGetBlockHeader(t *testing.T, c *chainClient, height uint64) *ethtypes.Header {
+func untilGetBlockHeader(t *testing.T, c *chainClient, height uint64) *eth.Header {
 	for {
 		hdr, err := c.GetBlockHeader(height)
 		if err == nil {
