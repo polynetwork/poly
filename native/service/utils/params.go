@@ -61,4 +61,5 @@ var (
 	PIXIECHAIN_ROUTER       = uint64(19)
 	HSC_ROUTER              = uint64(20)
 	HARMONY_ROUTER          = uint64(21)
+	BYTOM_ROUTER            = uint64(22)
 )
