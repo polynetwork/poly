@@ -39,6 +39,7 @@ const (
 	QUIT_SIDE_CHAIN             = "quitSideChain"
 	APPROVE_QUIT_SIDE_CHAIN     = "approveQuitSideChain"
 	REGISTER_REDEEM             = "registerRedeem"
+	REGISTER_ASSET_MAP          = "registerAssetMap"
 	SET_BTC_TX_PARAM            = "setBtcTxParam"
 
 	//key prefix
@@ -50,6 +51,8 @@ const (
 	BIND_SIGN_INFO            = "bindSignInfo"
 	BTC_TX_PARAM              = "btcTxParam"
 	REDEEM_SCRIPT             = "redeemScript"
+	ASSET_MAP                 = "assetMap"
+	ASSET_MAP_INDEX           = "assetMapIndex"
 )
 
 //Register methods of node_manager contract
@@ -60,6 +63,7 @@ func RegisterSideChainManagerContract(native *native.NativeService) {
 	native.Register(APPROVE_UPDATE_SIDE_CHAIN, ApproveUpdateSideChain)
 	native.Register(QUIT_SIDE_CHAIN, QuitSideChain)
 	native.Register(APPROVE_QUIT_SIDE_CHAIN, ApproveQuitSideChain)
+	native.Register(REGISTER_ASSET_MAP, RegisterAssetMap)
 
 	native.Register(REGISTER_REDEEM, RegisterRedeem)
 	native.Register(SET_BTC_TX_PARAM, SetBtcTxParam)
@@ -429,5 +433,30 @@ func SetBtcTxParam(native *native.NativeService) ([]byte, error) {
 					params.Detial.FeeRate, params.Detial.MinChange},
 			})
 	}
+	return utils.BYTE_TRUE, nil
+}
+
+func RegisterAssetMap(native *native.NativeService) ([]byte, error) {
+	params := new(RegisterAssetParam)
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterAssetMap, contract params deserialize error: %v", err)
+	}
+
+	//check witness
+	err := utils.ValidateOwner(native, params.OperatorAddress)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterAssetMap, checkWitness error: %v", err)
+	}
+
+	paramStore, err := GetAssetMap(native, params.OperatorAddress[:])
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterAssetMap, GetAssetMap error: %v", err)
+	}
+	for k, v := range params.AssetMap {
+		paramStore.AssetMap[k] = v
+	}
+
+	PutAssetMap(native, paramStore)
+	PutAssetMapIndexes(native, paramStore)
 	return utils.BYTE_TRUE, nil
 }

@@ -351,3 +351,57 @@ func GetBtcRedeemScriptBytes(native *native.NativeService, redeemScriptKey strin
 	}
 	return redeemBytes, nil
 }
+
+func PutAssetMap(native *native.NativeService, param *RegisterAssetParam) {
+	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(ASSET_MAP), param.OperatorAddress[:])
+	sink := common.NewZeroCopySink(nil)
+	param.Serialization(sink)
+	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(sink.Bytes()))
+}
+
+func GetAssetMap(native *native.NativeService, operatorAddress []byte) (*RegisterAssetParam, error) {
+	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(ASSET_MAP), operatorAddress)
+	store, err := native.GetCacheDB().Get(key)
+	if err != nil {
+		return nil, fmt.Errorf("GetAssetMap, get asset map store error: %v", err)
+	}
+	registerAssetParam := &RegisterAssetParam{
+		AssetMap: make(map[uint64]*AssetInfo),
+	}
+	if store != nil {
+		assetMapBytes, err := cstates.GetValueFromRawStorageItem(store)
+		if err != nil {
+			return nil, fmt.Errorf("GetAssetMap, deserialize from raw storage item err:%v", err)
+		}
+		err = registerAssetParam.Deserialization(common.NewZeroCopySource(assetMapBytes))
+		if err != nil {
+			return nil, fmt.Errorf("GetAssetMap, deserialize asset map err:%v", err)
+		}
+	}
+	return registerAssetParam, nil
+}
+
+func PutAssetMapIndexes(native *native.NativeService, param *RegisterAssetParam) {
+	for k, v := range param.AssetMap {
+		chainIDBytes := utils.GetUint64Bytes(k)
+		key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(ASSET_MAP_INDEX), chainIDBytes, v.AssetAddress)
+		native.GetCacheDB().Put(key, cstates.GenRawStorageItem(param.OperatorAddress[:]))
+	}
+}
+
+func GetAssetMapIndex(native *native.NativeService, chainID uint64, assetAddress []byte) ([]byte, error) {
+	chainIDBytes := utils.GetUint64Bytes(chainID)
+	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(ASSET_MAP_INDEX), chainIDBytes, assetAddress)
+	store, err := native.GetCacheDB().Get(key)
+	if err != nil {
+		return nil, fmt.Errorf("GetAssetMapIndex, get asset map index store error: %v", err)
+	}
+	if store == nil {
+		return nil, fmt.Errorf("GetAssetMapIndex, cannot find any record")
+	}
+	r, err := cstates.GetValueFromRawStorageItem(store)
+	if err != nil {
+		return nil, fmt.Errorf("GetAssetMap, deserialize from raw storage item err:%v", err)
+	}
+	return r, nil
+}

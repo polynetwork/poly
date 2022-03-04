@@ -29,7 +29,9 @@ require (
 	github.com/pborman/uuid v1.2.0
 	github.com/pkg/errors v0.9.1
 	github.com/polynetwork/poly-io-test v0.0.0-20200819093740-8cf514b07750
+	github.com/polynetwork/ripple-sdk v0.0.0-20220302063803-a805c11ed715
 	github.com/renlulu/gozilliqa-sdklegacy v0.0.0-20220127085552-852a2675dc93
+	github.com/rubblelabs/ripple v0.0.0-20220222071018-38c1a8b14c18
 	github.com/starcoinorg/starcoin-go v0.0.0-20220105024102-530daedc128b
 	github.com/stretchr/testify v1.7.0
 	github.com/switcheo/tendermint v0.34.14-2
@@ -49,4 +51,8 @@ replace (
 	github.com/harmony-one/harmony v1.10.3-0.20220216090956-7e6b16aec8dc => github.com/devfans/harmony v1.10.3-0.20220304055439-856e256b615f
 	github.com/tendermint/tm-db/064 => github.com/tendermint/tm-db v0.6.4
 	golang.org/x/crypto v0.0.0-20210506145944-38f3c27a63bf => golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
+)
+replace (
+	github.com/polynetwork/ripple-sdk v0.0.0-20220302063803-a805c11ed715 => github.com/siovanus/ripple-sdk v0.0.0-20220302063803-a805c11ed715
+	github.com/tendermint/tm-db/064 => github.com/tendermint/tm-db v0.6.4
 )
