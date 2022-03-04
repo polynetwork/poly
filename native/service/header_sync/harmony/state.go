@@ -81,13 +81,20 @@ func (ctx *Context) VerifyEpoch(epoch *Epoch ) (err error) {
 	epochID := big.NewInt(int64(epoch.EpochID))
 	// Check if epoch is skipped
 	if ctx.schedule.IsSkippedEpoch(epoch.ShardID, epochID) {
-		return fmt.Errorf("skipped epoch %v for shard %v", epoch.EpochID, epoch.ShardID)
+		return fmt.Errorf("skipped epoch %d for shard %d", epoch.EpochID, epoch.ShardID)
 	}
 	// Check committee count
+	/*
 	desiredSlotsNum := ctx.schedule.InstanceForEpoch(epochID).NumNodesPerShard()
-	if desiredSlotsNum != len(epoch.Committee.Slots) && ctx.NetworkID == 0 /*mainnet*/ {
-		return fmt.Errorf("committee slots count(%v) does match with desired nodes(%v) per shard",
+	if desiredSlotsNum != len(epoch.Committee.Slots) {
+		return fmt.Errorf("committee slots count(%d) does match with desired nodes(%d) per shard",
 			len(epoch.Committee.Slots), desiredSlotsNum)
+	}
+	*/
+	minSlots := ctx.schedule.InstanceForEpoch(epochID).NumHarmonyOperatedNodesPerShard()
+	if minSlots > len(epoch.Committee.Slots) {
+		return fmt.Errorf("committee slots count(%d) less than harmony operated nodes(%d) per shard",
+			len(epoch.Committee.Slots), minSlots)
 	}
 	return
 }
