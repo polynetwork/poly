@@ -157,6 +157,13 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) (err error) {
 			return fmt.Errorf("HarmonyHandler failed to get current epoch info, idx %v, err: %v", idx, err)
 		}
 
+		// Valdiate next epoch with context
+		err = ctx.VerifyNextEpoch(int(curEpoch.ShardID), epoch)
+		if err != nil {
+			return fmt.Errorf("HarmonyHandler failed to validate next epoch with context, idx %v block %s, err: %v",
+				idx, header.Header.Number(), err)
+		}
+
 		// Validate next epoch with current epoch
 		err = curEpoch.ValidateNextEpoch(ctx, header)
 		if err != nil {

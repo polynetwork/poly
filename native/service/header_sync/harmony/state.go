@@ -83,18 +83,19 @@ func (ctx *Context) VerifyEpoch(epoch *Epoch ) (err error) {
 	if ctx.schedule.IsSkippedEpoch(epoch.ShardID, epochID) {
 		return fmt.Errorf("skipped epoch %d for shard %d", epoch.EpochID, epoch.ShardID)
 	}
-	// Check committee count
-	/*
-	desiredSlotsNum := ctx.schedule.InstanceForEpoch(epochID).NumNodesPerShard()
-	if desiredSlotsNum != len(epoch.Committee.Slots) {
-		return fmt.Errorf("committee slots count(%d) does match with desired nodes(%d) per shard",
-			len(epoch.Committee.Slots), desiredSlotsNum)
-	}
-	*/
-	minSlots := ctx.schedule.InstanceForEpoch(epochID).NumHarmonyOperatedNodesPerShard()
-	if minSlots > len(epoch.Committee.Slots) {
-		return fmt.Errorf("committee slots count(%d) less than harmony operated nodes(%d) per shard",
-			len(epoch.Committee.Slots), minSlots)
+	return
+}
+
+// Verify new epoch has desired keys in slots
+func (ctx *Context) VerifyNextEpoch(shardID int, epoch *Epoch) (err error) {
+	epochID := big.NewInt(int64(epoch.EpochID))
+	instance := ctx.schedule.InstanceForEpoch(epochID)
+	num, err := quorum.CheckHarmonyAccountsInSlots(instance, shardID, epoch.Committee.Slots)
+	if err != nil { return }
+	maxStakingSlots := shard.ExternalSlotsAvailableForEpoch(epochID)
+	if len(epoch.Committee.Slots) - num > maxStakingSlots {
+		err = fmt.Errorf("stake nodes size(%d) bigger than available %d, current harmony nodes %d",
+			len(epoch.Committee.Slots) - num, maxStakingSlots, num)
 	}
 	return
 }

@@ -214,8 +214,8 @@ github.com/deckarep/golang-set v1.7.1 h1:SCQV0S6gTtp6itiFrTqI+pfmJ4LN85S1YzhDf9r
 github.com/deckarep/golang-set v1.7.1/go.mod h1:93vsz/8Wt4joVM7c2AVqh+YRMiUSc14yDtF28KmMOgQ=
 github.com/decred/dcrd/lru v1.0.0/go.mod h1:mxKOwFd7lFjN2GZYsiz/ecgqR6kkYAl+0pz0tEMk218=
 github.com/desertbit/timer v0.0.0-20180107155436-c41aec40b27f/go.mod h1:xH/i4TFMt8koVQZ6WFms69WAsDWr2XsYL3Hkl7jkoLE=
-github.com/devfans/harmony v1.10.3-0.20220224025255-1358899cbe52 h1:jHMZp1K5iKz+ySftJjU79MCwVlu4cly6ZlHyBY2Ip8Y=
-github.com/devfans/harmony v1.10.3-0.20220224025255-1358899cbe52/go.mod h1:aGiKf9wOE7xJRXye1PGFBu9O9cWhm3PG/1sBcdUYgkU=
+github.com/devfans/harmony v1.10.3-0.20220304055439-856e256b615f h1:hIa09Tsy9HCkTRBDm8YcXR0LX5d24DoD+nmOqKd7UsE=
+github.com/devfans/harmony v1.10.3-0.20220304055439-856e256b615f/go.mod h1:aGiKf9wOE7xJRXye1PGFBu9O9cWhm3PG/1sBcdUYgkU=
 github.com/dgraph-io/badger v1.5.5-0.20190226225317-8115aed38f8f/go.mod h1:VZxzAIRPHRVNRKRo6AXrX9BJegn6il06VMTZVJYCIjQ=
 github.com/dgraph-io/badger v1.6.0-rc1/go.mod h1:zwt7syl517jmP8s94KqSxTlM6IMsdhYy6psNgSztDR4=
 github.com/dgraph-io/badger v1.6.0/go.mod h1:zwt7syl517jmP8s94KqSxTlM6IMsdhYy6psNgSztDR4=
