@@ -18,9 +18,9 @@ DOCKER_TAG=$(ARCH)-$(VERSION)
 
 UNAME_S := $(shell uname -s)
 ifeq ($(UNAME_S),Linux)
-	BUILD_NODE_PAR = -ldflags '-w -extldflags "-static -lm" -X github.com/polynetwork/poly/common/config.Version=$(VERSION) -X google.golang.org/protobuf/reflect/protoregistry.conflictPolicy=warn' #-race
+	BUILD_NODE_PAR = -tags netgo -ldflags '-w -extldflags "-static -lm" -X github.com/polynetwork/poly/common/config.Version=$(VERSION) -X google.golang.org/protobuf/reflect/protoregistry.conflictPolicy=warn' #-race
 else
-	BUILD_NODE_PAR = -ldflags '-X github.com/polynetwork/poly/common/config.Version=$(VERSION) -X google.golang.org/protobuf/reflect/protoregistry.conflictPolicy=warn' #-race
+	BUILD_NODE_PAR = -tags netgo -ldflags '-X github.com/polynetwork/poly/common/config.Version=$(VERSION) -X google.golang.org/protobuf/reflect/protoregistry.conflictPolicy=warn' #-race
 endif
 
 SRC_FILES = $(shell git ls-files | grep -e .go$ | grep -v _test.go)
