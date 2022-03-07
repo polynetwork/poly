@@ -59,5 +59,6 @@ var (
 	ZILLIQA_ROUTER          = uint64(17)
 	STARCOIN_ROUTER         = uint64(18)
 	PIXIECHAIN_ROUTER       = uint64(19)
+	HSC_ROUTER              = uint64(20)
 	HARMONY_ROUTER          = uint64(21)
 )

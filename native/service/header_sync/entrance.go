@@ -19,7 +19,7 @@ package header_sync
 
 import (
 	"fmt"
-
+	"github.com/polynetwork/poly/native/service/header_sync/hsc"
 	"github.com/polynetwork/poly/native/service/header_sync/harmony"
 	"github.com/polynetwork/poly/native/service/header_sync/pixiechain"
 	"github.com/polynetwork/poly/native/service/header_sync/starcoin"
@@ -99,6 +99,8 @@ func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
 		return pixiechain.NewPixieHandler(), nil
 	case utils.STARCOIN_ROUTER:
 		return starcoin.NewSTCHandler(), nil
+	case utils.HSC_ROUTER:
+		return hsc.NewHscHandler(), nil
 	case utils.HARMONY_ROUTER:
 		return harmony.NewHandler(), nil
 	default:
