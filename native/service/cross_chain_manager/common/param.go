@@ -18,6 +18,9 @@ package common
 
 import (
 	"fmt"
+
+	"github.com/ethereum/go-ethereum/accounts/abi"
+	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 )
@@ -105,6 +108,45 @@ func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error 
 	this.Extra = extra
 	this.HeaderOrCrossChainMsg = headerOrCrossChainMsg
 	return nil
+}
+
+type MakeTxParamWithSender struct {
+	Sender ethcommon.Address
+	MakeTxParam
+}
+
+var (
+	addrTy, _  = abi.NewType("address", "", nil)
+	bytesTy, _ = abi.NewType("bytes", "", nil)
+	arguments  = abi.Arguments{
+		{Type: addrTy, Name: "Sender"},
+		{Type: bytesTy, Name: "Value"},
+	}
+)
+
+func (this *MakeTxParamWithSender) Serialization() (data []byte, err error) {
+	sink := common.NewZeroCopySink(nil)
+	this.MakeTxParam.Serialization(sink)
+	data, err = arguments.Pack(this.Sender, sink.Bytes())
+	return
+}
+
+func (this *MakeTxParamWithSender) Deserialization(data []byte) (err error) {
+
+	s := struct {
+		Sender ethcommon.Address
+		Value  []byte
+	}{}
+
+	err = arguments.Unpack(&s, data)
+	if err != nil {
+		return
+	}
+
+	this.Sender = s.Sender
+
+	source := common.NewZeroCopySource(s.Value)
+	return this.MakeTxParam.Deserialization(source)
 }
 
 type MakeTxParam struct {
