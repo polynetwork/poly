@@ -116,9 +116,11 @@ type MakeTxParamWithSender struct {
 }
 
 var (
+	boolTy, _  = abi.NewType("bool", "", nil)
 	addrTy, _  = abi.NewType("address", "", nil)
 	bytesTy, _ = abi.NewType("bytes", "", nil)
 	arguments  = abi.Arguments{
+		{Type: boolTy, Name: "LeafFlag"},
 		{Type: addrTy, Name: "Sender"},
 		{Type: bytesTy, Name: "Value"},
 	}
@@ -127,24 +129,27 @@ var (
 func (this *MakeTxParamWithSender) Serialization() (data []byte, err error) {
 	sink := common.NewZeroCopySink(nil)
 	this.MakeTxParam.Serialization(sink)
-	data, err = arguments.Pack(this.Sender, sink.Bytes())
+	data, err = arguments.Pack(false, this.Sender, sink.Bytes())
 	return
 }
 
 func (this *MakeTxParamWithSender) Deserialization(data []byte) (err error) {
 
 	s := struct {
-		Sender ethcommon.Address
-		Value  []byte
+		LeafFlag bool
+		Sender   ethcommon.Address
+		Value    []byte
 	}{}
 
 	err = arguments.Unpack(&s, data)
 	if err != nil {
 		return
 	}
-
+	if s.LeafFlag {
+		err = fmt.Errorf("invalid LeafFlag")
+		return
+	}
 	this.Sender = s.Sender
-
 	source := common.NewZeroCopySource(s.Value)
 	return this.MakeTxParam.Deserialization(source)
 }
