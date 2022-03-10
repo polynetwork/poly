@@ -22,6 +22,15 @@ import (
 	"github.com/polynetwork/poly/native"
 )
 
+const (
+	IMPORT_OUTER_TRANSFER_NAME = "ImportOuterTransfer"
+	MULTI_SIGN                 = "MultiSign"
+	BLACK_CHAIN                = "BlackChain"
+	WHITE_CHAIN                = "WhiteChain"
+
+	BLACKED_CHAIN = "BlackedChain"
+)
+
 var (
 	KEY_PREFIX_BTC = "btc"
 
@@ -257,3 +266,23 @@ func (this *ToMerkleValue) Deserialization(source *common.ZeroCopySource) error 
 	this.MakeTxParam = makeTxParam
 	return nil
 }
+
+
+type BlackChainParam struct {
+	ChainID uint64
+}
+
+func (this *BlackChainParam) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteVarUint(this.ChainID)
+}
+
+func (this *BlackChainParam) Deserialization(source *common.ZeroCopySource) error {
+	chainID, eof := source.NextVarUint()
+	if eof {
+		return fmt.Errorf("BlackChainParam deserialize chainID error")
+	}
+
+	this.ChainID = chainID
+	return nil
+}
+
