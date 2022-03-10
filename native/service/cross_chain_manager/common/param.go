@@ -27,6 +27,7 @@ import (
 const (
 	IMPORT_OUTER_TRANSFER_NAME = "ImportOuterTransfer"
 	MULTI_SIGN                 = "MultiSign"
+	MULTI_SIGN_RIPPLE          = "MultiSignRipple"
 	BLACK_CHAIN                = "BlackChain"
 	WHITE_CHAIN                = "WhiteChain"
 
@@ -297,7 +298,6 @@ func (this *ToMerkleValue) Deserialization(source *common.ZeroCopySource) error 
 	return nil
 }
 
-
 type BlackChainParam struct {
 	ChainID uint64
 }
@@ -315,4 +315,3 @@ func (this *BlackChainParam) Deserialization(source *common.ZeroCopySource) erro
 	this.ChainID = chainID
 	return nil
 }
-
