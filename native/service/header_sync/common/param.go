@@ -46,6 +46,12 @@ const (
 	POLYGON_SPAN                = "polygonSpan"
 )
 
+const (
+	SYNC_GENESIS_HEADER  = "syncGenesisHeader"
+	SYNC_BLOCK_HEADER    = "syncBlockHeader"
+	SYNC_CROSS_CHAIN_MSG = "syncCrossChainMsg"
+)
+
 type HeaderSyncHandler interface {
 	SyncGenesisHeader(service *native.NativeService) error
 	SyncBlockHeader(service *native.NativeService) error

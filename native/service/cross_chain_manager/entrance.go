@@ -34,6 +34,7 @@ import (
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/cosmos"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/eth"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/harmony"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/heco"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/msc"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/neo"
@@ -44,27 +45,17 @@ import (
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/quorum"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/starcoin"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/zilliqalegacy"
-	"github.com/polynetwork/poly/native/service/cross_chain_manager/harmony"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	"github.com/polynetwork/poly/native/service/utils"
 )
 
-const (
-	IMPORT_OUTER_TRANSFER_NAME = "ImportOuterTransfer"
-	MULTI_SIGN                 = "MultiSign"
-	BLACK_CHAIN                = "BlackChain"
-	WHITE_CHAIN                = "WhiteChain"
-
-	BLACKED_CHAIN = "BlackedChain"
-)
-
 func RegisterCrossChainManagerContract(native *native.NativeService) {
-	native.Register(IMPORT_OUTER_TRANSFER_NAME, ImportExTransfer)
-	native.Register(MULTI_SIGN, MultiSign)
+	native.Register(scom.IMPORT_OUTER_TRANSFER_NAME, ImportExTransfer)
+	native.Register(scom.MULTI_SIGN, MultiSign)
 
-	native.Register(BLACK_CHAIN, BlackChain)
-	native.Register(WHITE_CHAIN, WhiteChain)
+	native.Register(scom.BLACK_CHAIN, BlackChain)
+	native.Register(scom.WHITE_CHAIN, WhiteChain)
 }
 
 func GetChainHandler(router uint64) (scom.ChainHandler, error) {
@@ -121,7 +112,7 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	}
 
 	chainID := params.SourceChainID
-	blacked, err := CheckIfChainBlacked(native, chainID)
+	blacked, err := scom.CheckIfChainBlacked(native, chainID)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, CheckIfChainBlacked error: %v", err)
 	}
@@ -153,7 +144,7 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 
 	//2. make target chain tx
 	targetid := txParam.ToChainID
-	blacked, err = CheckIfChainBlacked(native, targetid)
+	blacked, err = scom.CheckIfChainBlacked(native, targetid)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, CheckIfChainBlacked error: %v", err)
 	}
@@ -225,7 +216,7 @@ func PutRequest(native *native.NativeService, txHash []byte, chainID uint64, req
 }
 
 func BlackChain(native *native.NativeService) ([]byte, error) {
-	params := new(BlackChainParam)
+	params := new(scom.BlackChainParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("BlackChain, contract params deserialize error: %v", err)
 	}
@@ -242,12 +233,12 @@ func BlackChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("BlackChain, checkWitness error: %v", err)
 	}
 
-	PutBlackChain(native, params.ChainID)
+	scom.PutBlackChain(native, params.ChainID)
 	return utils.BYTE_TRUE, nil
 }
 
 func WhiteChain(native *native.NativeService) ([]byte, error) {
-	params := new(BlackChainParam)
+	params := new(scom.BlackChainParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("WhiteChain, contract params deserialize error: %v", err)
 	}
@@ -262,6 +253,6 @@ func WhiteChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("BlackChain, checkWitness error: %v", err)
 	}
 
-	RemoveBlackChain(native, params.ChainID)
+	scom.RemoveBlackChain(native, params.ChainID)
 	return utils.BYTE_TRUE, nil
 }

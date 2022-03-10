@@ -19,14 +19,14 @@ package header_sync
 
 import (
 	"fmt"
-	"github.com/polynetwork/poly/native/service/header_sync/hsc"
-	"github.com/polynetwork/poly/native/service/header_sync/harmony"
-	"github.com/polynetwork/poly/native/service/header_sync/bytom"
 
+	"github.com/polynetwork/poly/native/service/header_sync/hsc"
 	"github.com/polynetwork/poly/native/service/header_sync/pixiechain"
 	"github.com/polynetwork/poly/native/service/header_sync/starcoin"
 	"github.com/polynetwork/poly/native/service/header_sync/zilliqa"
 	"github.com/polynetwork/poly/native/service/header_sync/zilliqalegacy"
+	"github.com/polynetwork/poly/native/service/header_sync/harmony"
+	"github.com/polynetwork/poly/native/service/header_sync/bytom"
 
 	"github.com/polynetwork/poly/native/service/header_sync/neo"
 	"github.com/polynetwork/poly/native/service/header_sync/neo3"
@@ -50,17 +50,13 @@ import (
 	"github.com/polynetwork/poly/native/service/utils"
 )
 
-const (
-	SYNC_GENESIS_HEADER  = "syncGenesisHeader"
-	SYNC_BLOCK_HEADER    = "syncBlockHeader"
-	SYNC_CROSS_CHAIN_MSG = "syncCrossChainMsg"
-)
+
 
 //Register methods of node_manager contract
 func RegisterHeaderSyncContract(native *native.NativeService) {
-	native.Register(SYNC_GENESIS_HEADER, SyncGenesisHeader)
-	native.Register(SYNC_BLOCK_HEADER, SyncBlockHeader)
-	native.Register(SYNC_CROSS_CHAIN_MSG, SyncCrossChainMsg)
+	native.Register(hscommon.SYNC_GENESIS_HEADER, SyncGenesisHeader)
+	native.Register(hscommon.SYNC_BLOCK_HEADER, SyncBlockHeader)
+	native.Register(hscommon.SYNC_CROSS_CHAIN_MSG, SyncCrossChainMsg)
 }
 
 func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
