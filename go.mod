@@ -4,7 +4,7 @@ go 1.14
 
 require (
 	github.com/Zilliqa/gozilliqa-sdk v1.2.1-0.20210927032600-4c733f2cb879
-	github.com/btcsuite/btcd v0.22.0-beta
+	github.com/btcsuite/btcd v0.21.0-beta
 	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce
 	github.com/confio/ics23/go v0.6.6
 	github.com/cosmos/cosmos-sdk v0.39.1
@@ -49,7 +49,8 @@ replace (
 	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce => github.com/btcsuite/btcutil v1.0.2
 	github.com/ethereum/go-ethereum v1.9.25 => github.com/ethereum/go-ethereum v1.9.15
 	github.com/harmony-one/harmony v1.10.3-0.20220216090956-7e6b16aec8dc => github.com/devfans/harmony v1.10.3-0.20220304055439-856e256b615f
-	github.com/polynetwork/ripple-sdk v1.0.0 => github.com/siovanus/ripple-sdk v1.0.0
+	github.com/polynetwork/ripple-sdk v1.0.0 => github.com/siovanus/ripple-sdk v1.0.1-0.20220311082414-84e86a29df1a
+	github.com/rubblelabs/ripple v0.0.0-20220222071018-38c1a8b14c18 => github.com/siovanus/ripple v0.0.0-20220311080636-cbff6a9e07ce
 	github.com/tendermint/tm-db/064 => github.com/tendermint/tm-db v0.6.4
 	golang.org/x/crypto v0.0.0-20210506145944-38f3c27a63bf => golang.org/x/crypto v0.0.0-20210322153248-0c34fe9e7dc2
 )
