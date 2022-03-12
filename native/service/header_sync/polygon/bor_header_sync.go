@@ -630,6 +630,32 @@ func validateHeaderExtraField(native *native.NativeService, headerWOP *HeaderWit
 
 		return validateHeaderExtraFieldWithSpan(native, headerWOP, ctx, span)
 	}
+
+	{
+		var currentSpan *Span
+		currentSpan, err = getSpan(native, ctx)
+		if err == nil {
+			// hotfix for span 4034-3083
+			if currentSpan.ID >= 4033 && currentSpan.ID <= 4082 {
+				nextSpan := &Span{}
+				err = ctx.Cdc.UnmarshalBinaryBare(headerWOP.Proof, nextSpan)
+				if err != nil {
+					err = fmt.Errorf("hotfix, UnmarshalBinaryBare err:%v", err)
+					return
+				}
+				if nextSpan.ID != currentSpan.ID+1 {
+					err = fmt.Errorf("hotfix, invalid nextSpan current:%d next:%d", currentSpan.ID, nextSpan.ID)
+					return
+				}
+				err = putSpan(native, ctx, nextSpan)
+				if err != nil {
+					return
+				}
+			}
+			return
+		}
+	}
+
 	cdc := polygonTypes.NewCDC()
 	var proof CosmosProof
 	if err = cdc.UnmarshalBinaryBare(headerWOP.Proof, &proof); err != nil {
