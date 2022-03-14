@@ -289,9 +289,9 @@ func (this *AssetInfo) Deserialization(source *common.ZeroCopySource) error {
 }
 
 type RippleExtraInfo struct {
-	Fee *big.Int
-	Sequence uint32
-	Quorum uint32
+	Fee       *big.Int
+	Sequence  uint32
+	Quorum    uint32
 	SignerNum uint32
 }
 

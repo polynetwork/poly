@@ -57,7 +57,7 @@ func (this *RippleHandler) MultiSign(service *native.NativeService) error {
 		return fmt.Errorf("MultiSign, get asset map error: %s", err)
 	}
 	assetInfo := assetMap.AssetMap[params.ChainId]
-	var rippleExtraInfo *side_chain_manager.RippleExtraInfo
+	rippleExtraInfo := new(side_chain_manager.RippleExtraInfo)
 	err = rippleExtraInfo.Deserialization(common.NewZeroCopySource(assetInfo.ExtraInfo))
 	if err != nil {
 		return fmt.Errorf("MultiSign, deserialize rippleExtraInfo error")
@@ -131,7 +131,7 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 	}
 
 	assetInfo := assetMap.AssetMap[param.ToChainID]
-	var rippleExtraInfo *side_chain_manager.RippleExtraInfo
+	rippleExtraInfo := new(side_chain_manager.RippleExtraInfo)
 	err = rippleExtraInfo.Deserialization(common.NewZeroCopySource(assetInfo.ExtraInfo))
 	if err != nil {
 		return fmt.Errorf("ripple MakeTransaction, deserialize rippleExtraInfo error")
@@ -139,7 +139,8 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 	//fee = baseFee * quorum * 2
 	fee := new(big.Int).Mul(rippleExtraInfo.Fee, new(big.Int).SetUint64(uint64(rippleExtraInfo.SignerNum)))
 
-	var from, to *data.Account
+	from := new(data.Account)
+	to := new(data.Account)
 	copy(from[:], assetInfo.AssetAddress)
 	copy(to[:], toAddrBytes)
 	txJson, err := types.GenerateMultisignPaymentTxJson(from.String(), to.String(), new(big.Int).SetUint64(amount).String(), fee.String(), rippleExtraInfo.Sequence)
