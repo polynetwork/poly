@@ -116,7 +116,7 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 	if eof {
 		return fmt.Errorf("ripple MakeTransaction, deserialize toAddr error")
 	}
-	amount, eof := source.NextUint64()
+	amount, eof := source.NextString()
 	if eof {
 		return fmt.Errorf("ripple MakeTransaction, deserialize amount error")
 	}
@@ -143,7 +143,7 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 	to := new(data.Account)
 	copy(from[:], assetInfo.AssetAddress)
 	copy(to[:], toAddrBytes)
-	txJson, err := types.GenerateMultisignPaymentTxJson(from.String(), to.String(), new(big.Int).SetUint64(amount).String(), fee.String(), rippleExtraInfo.Sequence)
+	txJson, err := types.GenerateMultisignPaymentTxJson(from.String(), to.String(), amount, fee.String(), rippleExtraInfo.Sequence)
 	if err != nil {
 		return fmt.Errorf("ripple MakeTransaction, GenerateMultisignPaymentTxJson error: %s", err)
 	}
