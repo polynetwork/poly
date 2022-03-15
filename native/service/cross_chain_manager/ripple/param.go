@@ -22,24 +22,6 @@ import (
 	"github.com/polynetwork/poly/common"
 )
 
-type TxJson struct {
-	Account         string
-	Amount          string
-	Destination     string
-	Fee             string
-	Sequence        string
-	SigningPubKey   string
-	TransactionType string
-	hash            string
-	Signers         []*Signer
-}
-
-type Signer struct {
-	Account       string
-	SigningPubKey string
-	TxnSignature  string
-}
-
 type MultiSignParam struct {
 	ChainId      uint64
 	AssetAddress []byte

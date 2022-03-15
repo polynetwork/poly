@@ -71,17 +71,18 @@ func (this *RippleHandler) MultiSign(service *native.NativeService) error {
 		return nil
 	}
 	multisignInfo.SigMap[params.TxJson] = true
-	txJson := &TxJson{
-		Signers: make([]*Signer, rippleExtraInfo.Quorum),
-	}
+	//TODO: what if fake sign is more than quorum
 	if uint32(len(multisignInfo.SigMap)) >= rippleExtraInfo.Quorum {
+		txJson := &types.MultisignPayment{
+			Signers: make([]*types.Signer, rippleExtraInfo.Quorum),
+		}
 		for sig := range multisignInfo.SigMap {
-			txJsonTemp := &TxJson{
-				Signers: make([]*Signer, rippleExtraInfo.Quorum),
+			txJsonTemp := &types.MultisignPayment{
+				Signers: make([]*types.Signer, rippleExtraInfo.Quorum),
 			}
 			err := json.Unmarshal([]byte(sig), txJsonTemp)
 			if err != nil {
-				return fmt.Errorf("MultiSign, unmarshal txjson error")
+				return fmt.Errorf("MultiSign, unmarshal txjson error: %s", err)
 			}
 			txJson.Account = txJsonTemp.Account
 			txJson.Amount = txJsonTemp.Amount
@@ -90,12 +91,11 @@ func (this *RippleHandler) MultiSign(service *native.NativeService) error {
 			txJson.Sequence = txJsonTemp.Sequence
 			txJson.SigningPubKey = txJsonTemp.SigningPubKey
 			txJson.TransactionType = txJsonTemp.TransactionType
-			txJson.hash = txJsonTemp.hash
 			txJson.Signers = append(txJson.Signers, txJsonTemp.Signers...)
 		}
 		txJsonFinal, err := json.Marshal(txJson)
 		if err != nil {
-			return fmt.Errorf("MultiSign, json.Marshal final txJson string error")
+			return fmt.Errorf("MultiSign, json.Marshal final txJson string error: %s", err)
 		}
 		service.AddNotify(
 			&event.NotifyEventInfo{
@@ -154,5 +154,6 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 			States: []interface{}{"rippleTxJson", fromChainID, hex.EncodeToString(param.FromContractAddress),
 				param.ToChainID, hex.EncodeToString(id[:]), txJson},
 		})
+	//TODO: sequence + 1
 	return nil
 }

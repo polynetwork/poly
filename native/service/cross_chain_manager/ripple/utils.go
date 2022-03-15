@@ -34,7 +34,7 @@ func PutMultisignInfo(native *native.NativeService, id []byte, multisignInfo *Mu
 }
 
 func GetMultisignInfo(native *native.NativeService, id []byte) (*MultisignInfo, error) {
-	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(crosscommon.MULTISIGN_INFO), id)
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.MULTISIGN_INFO), id)
 	store, err := native.GetCacheDB().Get(key)
 	if err != nil {
 		return nil, fmt.Errorf("GetMultisignInfo, get multisign info store error: %v", err)
