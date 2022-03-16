@@ -63,6 +63,12 @@ func (this *RippleHandler) MultiSign(service *native.NativeService) error {
 		return fmt.Errorf("MultiSign, deserialize rippleExtraInfo error")
 	}
 
+	// get raw txJsonInfo
+	txJsonInfo, err := GetTxJsonInfo(service, params.Id)
+	if err != nil {
+		return fmt.Errorf("MultiSign, deserialize txJsonInfo error")
+	}
+
 	multisignInfo, err := GetMultisignInfo(service, params.Id)
 	if err != nil {
 		return fmt.Errorf("MultiSign, GetMultisignInfo error")
@@ -76,21 +82,18 @@ func (this *RippleHandler) MultiSign(service *native.NativeService) error {
 		txJson := &types.MultisignPayment{
 			Signers: make([]*types.Signer, rippleExtraInfo.Quorum),
 		}
+		err := json.Unmarshal([]byte(txJsonInfo.TxJson), txJson)
+		if err != nil {
+			return fmt.Errorf("MultiSign, unmarshal raw txjson error: %s", err)
+		}
 		for sig := range multisignInfo.SigMap {
 			txJsonTemp := &types.MultisignPayment{
 				Signers: make([]*types.Signer, rippleExtraInfo.Quorum),
 			}
 			err := json.Unmarshal([]byte(sig), txJsonTemp)
 			if err != nil {
-				return fmt.Errorf("MultiSign, unmarshal txjson error: %s", err)
+				return fmt.Errorf("MultiSign, unmarshal signed txjson error: %s", err)
 			}
-			txJson.Account = txJsonTemp.Account
-			txJson.Amount = txJsonTemp.Amount
-			txJson.Destination = txJsonTemp.Destination
-			txJson.Fee = txJsonTemp.Fee
-			txJson.Sequence = txJsonTemp.Sequence
-			txJson.SigningPubKey = txJsonTemp.SigningPubKey
-			txJson.TransactionType = txJsonTemp.TransactionType
 			txJson.Signers = append(txJson.Signers, txJsonTemp.Signers...)
 		}
 		txJsonFinal, err := json.Marshal(txJson)
@@ -100,7 +103,7 @@ func (this *RippleHandler) MultiSign(service *native.NativeService) error {
 		service.AddNotify(
 			&event.NotifyEventInfo{
 				ContractAddress: utils.CrossChainManagerContractAddress,
-				States:          []interface{}{"multisignedTxJson", params.ChainId, string(txJsonFinal)},
+				States:          []interface{}{"multisignedTxJson", txJsonInfo.FromChainId, params.ChainId, string(txJsonFinal)},
 			})
 		multisignInfo.Status = true
 	}
@@ -154,6 +157,19 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 			States: []interface{}{"rippleTxJson", fromChainID, hex.EncodeToString(param.FromContractAddress),
 				param.ToChainID, hex.EncodeToString(id[:]), txJson},
 		})
-	//TODO: sequence + 1
+
+	//sequence + 1
+	rippleExtraInfo.Sequence = rippleExtraInfo.Sequence + 1
+	sink := common.NewZeroCopySink(nil)
+	rippleExtraInfo.Serialization(sink)
+	assetMap.AssetMap[param.ToChainID].ExtraInfo = sink.Bytes()
+	side_chain_manager.PutAssetMap(service, assetMap)
+
+	//store txJson info
+	txJsonInfo := &TxJsonInfo{
+		TxJson:      txJson,
+		FromChainId: fromChainID,
+	}
+	PutTxJsonInfo(service, id[:], txJsonInfo)
 	return nil
 }

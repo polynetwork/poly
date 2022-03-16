@@ -54,3 +54,30 @@ func GetMultisignInfo(native *native.NativeService, id []byte) (*MultisignInfo, 
 	}
 	return multisignInfo, nil
 }
+
+func PutTxJsonInfo(native *native.NativeService, id []byte, txJsonInfo *TxJsonInfo) {
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.RIPPLE_TX_INFO), id)
+	sink := common.NewZeroCopySink(nil)
+	txJsonInfo.Serialization(sink)
+	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(sink.Bytes()))
+}
+
+func GetTxJsonInfo(native *native.NativeService, id []byte) (*TxJsonInfo, error) {
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.MULTISIGN_INFO), id)
+	store, err := native.GetCacheDB().Get(key)
+	if err != nil {
+		return nil, fmt.Errorf("GetTxJsonInfo, get multisign info store error: %v", err)
+	}
+	txJsonInfo := new(TxJsonInfo)
+	if store != nil {
+		txJsonInfoBytes, err := cstates.GetValueFromRawStorageItem(store)
+		if err != nil {
+			return nil, fmt.Errorf("GetTxJsonInfo, deserialize from raw storage item err:%v", err)
+		}
+		err = txJsonInfo.Deserialization(common.NewZeroCopySource(txJsonInfoBytes))
+		if err != nil {
+			return nil, fmt.Errorf("GetTxJsonInfo, deserialize tx json info err:%v", err)
+		}
+	}
+	return txJsonInfo, nil
+}

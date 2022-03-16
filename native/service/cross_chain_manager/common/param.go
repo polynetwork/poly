@@ -41,6 +41,7 @@ var (
 	REQUEST             = "request"
 	DONE_TX             = "doneTx"
 	MULTISIGN_INFO      = "multisignInfo"
+	RIPPLE_TX_INFO      = "rippleTxInfo"
 
 	NOTIFY_MAKE_PROOF = "makeProof"
 )
