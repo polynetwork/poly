@@ -63,7 +63,7 @@ func PutTxJsonInfo(native *native.NativeService, id []byte, txJsonInfo *TxJsonIn
 }
 
 func GetTxJsonInfo(native *native.NativeService, id []byte) (*TxJsonInfo, error) {
-	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.MULTISIGN_INFO), id)
+	key := utils.ConcatKey(utils.CrossChainManagerContractAddress, []byte(crosscommon.RIPPLE_TX_INFO), id)
 	store, err := native.GetCacheDB().Get(key)
 	if err != nil {
 		return nil, fmt.Errorf("GetTxJsonInfo, get multisign info store error: %v", err)

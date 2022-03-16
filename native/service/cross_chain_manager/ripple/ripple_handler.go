@@ -80,16 +80,14 @@ func (this *RippleHandler) MultiSign(service *native.NativeService) error {
 	//TODO: what if fake sign is more than quorum
 	if uint32(len(multisignInfo.SigMap)) >= rippleExtraInfo.Quorum {
 		txJson := &types.MultisignPayment{
-			Signers: make([]*types.Signer, rippleExtraInfo.Quorum),
+			Signers: make([]*types.Signer, 0),
 		}
 		err := json.Unmarshal([]byte(txJsonInfo.TxJson), txJson)
 		if err != nil {
 			return fmt.Errorf("MultiSign, unmarshal raw txjson error: %s", err)
 		}
 		for sig := range multisignInfo.SigMap {
-			txJsonTemp := &types.MultisignPayment{
-				Signers: make([]*types.Signer, rippleExtraInfo.Quorum),
-			}
+			txJsonTemp := new(types.MultisignPayment)
 			err := json.Unmarshal([]byte(sig), txJsonTemp)
 			if err != nil {
 				return fmt.Errorf("MultiSign, unmarshal signed txjson error: %s", err)
