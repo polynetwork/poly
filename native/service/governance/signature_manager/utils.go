@@ -39,11 +39,6 @@ func CheckSigns(native *native.NativeService, id, sig []byte, address common.Add
 		return false, fmt.Errorf("CheckSigs, getSigInfo error: %v", err)
 	}
 
-	//check sigInfo status
-	if sigInfo.Status {
-		return false, nil
-	}
-
 	//get view
 	view, err := node_manager.GetView(native)
 	if err != nil {
@@ -115,9 +110,10 @@ func CheckSigns(native *native.NativeService, id, sig []byte, address common.Add
 		}
 	}
 	if num >= (2*sum+2)/3 {
+		shouldEmit := !sigInfo.Status
 		sigInfo.Status = true
 		putSigInfo(native, id, sigInfo)
-		return true, nil
+		return shouldEmit, nil
 	} else {
 		return false, nil
 	}
