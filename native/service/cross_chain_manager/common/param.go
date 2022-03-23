@@ -117,7 +117,6 @@ type MakeTxParamWithSender struct {
 // this method is only used in test
 func (this *MakeTxParamWithSender) Serialization() (data []byte, err error) {
 	sink := common.NewZeroCopySink(nil)
-	sink.WriteBool(false)
 	sink.WriteAddress(common.Address(this.Sender))
 	this.MakeTxParam.Serialization(sink)
 	data = sink.Bytes()
@@ -127,15 +126,6 @@ func (this *MakeTxParamWithSender) Serialization() (data []byte, err error) {
 func (this *MakeTxParamWithSender) Deserialization(data []byte) (err error) {
 
 	source := common.NewZeroCopySource(data)
-	leaf, eof := source.NextBool()
-	if eof {
-		err = fmt.Errorf("MakeTxParamWithSender NextBool fail")
-		return
-	}
-	if leaf {
-		err = fmt.Errorf("invalid LeafFlag")
-		return
-	}
 
 	addr, eof := source.NextAddress()
 	if eof {
