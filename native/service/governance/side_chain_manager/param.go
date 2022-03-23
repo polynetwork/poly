@@ -264,63 +264,47 @@ func (this *BtcTxParam) Deserialization(source *common.ZeroCopySource) error {
 	return nil
 }
 
-type AssetInfo struct {
+type RegisterRippleExtraInfoParam struct {
+	ChainId      uint64
 	AssetAddress []byte
-	ExtraInfo    []byte
+	Sequence     uint64
+	Quorum       uint64
+	SignerNum    uint64
+	//TODO: add ripple signer pks
 }
 
-func (this *AssetInfo) Serialization(sink *common.ZeroCopySink) {
+func (this *RegisterRippleExtraInfoParam) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteUint64(this.ChainId)
 	sink.WriteVarBytes(this.AssetAddress)
-	sink.WriteVarBytes(this.ExtraInfo)
+	sink.WriteUint64(this.Sequence)
+	sink.WriteUint64(this.Quorum)
+	sink.WriteUint64(this.SignerNum)
 }
 
-func (this *AssetInfo) Deserialization(source *common.ZeroCopySource) error {
+func (this *RegisterRippleExtraInfoParam) Deserialization(source *common.ZeroCopySource) error {
+	chainId, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("RippleExtraInfo deserialize chain id error")
+	}
 	assetAddress, eof := source.NextVarBytes()
 	if eof {
-		return fmt.Errorf("AssetInfo deserialize assetAddress error")
+		return fmt.Errorf("RippleExtraInfo deserialize assetAddress error")
 	}
-	extraInfo, eof := source.NextVarBytes()
-	if eof {
-		return fmt.Errorf("AssetInfo deserialize extraInfo error")
-	}
-	this.AssetAddress = assetAddress
-	this.ExtraInfo = extraInfo
-	return nil
-}
-
-type RippleExtraInfo struct {
-	Fee       *big.Int
-	Sequence  uint32
-	Quorum    uint32
-	SignerNum uint32
-}
-
-func (this *RippleExtraInfo) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteVarBytes(this.Fee.Bytes())
-	sink.WriteUint32(this.Sequence)
-	sink.WriteUint32(this.Quorum)
-	sink.WriteUint32(this.SignerNum)
-}
-
-func (this *RippleExtraInfo) Deserialization(source *common.ZeroCopySource) error {
-	fee, eof := source.NextVarBytes()
-	if eof {
-		return fmt.Errorf("RippleExtraInfo deserialize fee error")
-	}
-	sequence, eof := source.NextUint32()
+	sequence, eof := source.NextUint64()
 	if eof {
 		return fmt.Errorf("RippleExtraInfo deserialize sequence error")
 	}
-	quorum, eof := source.NextUint32()
+	quorum, eof := source.NextUint64()
 	if eof {
 		return fmt.Errorf("RippleExtraInfo deserialize quorum error")
 	}
-	signerNum, eof := source.NextUint32()
+	signerNum, eof := source.NextUint64()
 	if eof {
 		return fmt.Errorf("RippleExtraInfo deserialize signerNum error")
 	}
 
-	this.Fee = new(big.Int).SetBytes(fee)
+	this.ChainId = chainId
+	this.AssetAddress = assetAddress
 	this.Sequence = sequence
 	this.Quorum = quorum
 	this.SignerNum = signerNum
@@ -329,7 +313,7 @@ func (this *RippleExtraInfo) Deserialization(source *common.ZeroCopySource) erro
 
 type RegisterAssetParam struct {
 	OperatorAddress common.Address
-	AssetMap        map[uint64]*AssetInfo
+	AssetMap        map[uint64][]byte
 }
 
 func (this *RegisterAssetParam) Serialization(sink *common.ZeroCopySink) {
@@ -346,7 +330,7 @@ func (this *RegisterAssetParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteVarUint(uint64(len(this.AssetMap)))
 	for _, key := range keyList {
 		sink.WriteVarUint(key)
-		this.AssetMap[key].Serialization(sink)
+		sink.WriteVarBytes(this.AssetMap[key])
 	}
 }
 
@@ -360,21 +344,52 @@ func (this *RegisterAssetParam) Deserialization(source *common.ZeroCopySource) e
 	if eof {
 		return fmt.Errorf("RegisterAssetParam deserialize length of asset map array error")
 	}
-	assetMap := make(map[uint64]*AssetInfo, l)
+	assetMap := make(map[uint64][]byte, l)
 	for i := uint64(0); i < l; i++ {
 		k, eof := source.NextVarUint()
 		if eof {
 			return fmt.Errorf("RegisterAssetParam deserialize no.%d chainId error", i+1)
 		}
-		assetInfo := new(AssetInfo)
-		err := assetInfo.Deserialization(source)
-		if err != nil {
-			return fmt.Errorf("RegisterAssetParam deserialize no.%d asset info error", i+1)
+		v, eof := source.NextVarBytes()
+		if eof {
+			return fmt.Errorf("RegisterAssetParam deserialize no.%d asset address error", i+1)
 		}
-		assetMap[k] = assetInfo
+		assetMap[k] = v
 	}
 
 	this.OperatorAddress = operatorAddress
 	this.AssetMap = assetMap
+	return nil
+}
+
+type UpdateFeeParam struct {
+	Address common.Address
+	ChainId uint64
+	Fee     *big.Int
+}
+
+func (this *UpdateFeeParam) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteAddress(this.Address)
+	sink.WriteUint64(this.ChainId)
+	sink.WriteVarBytes(this.Fee.Bytes())
+}
+
+func (this *UpdateFeeParam) Deserialization(source *common.ZeroCopySource) error {
+	address, eof := source.NextAddress()
+	if eof {
+		return fmt.Errorf("RippleExtraInfo deserialize address error")
+	}
+	chainId, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("RippleExtraInfo deserialize chain id error")
+	}
+	fee, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("RippleExtraInfo deserialize fee error")
+	}
+
+	this.Address = address
+	this.ChainId = chainId
+	this.Fee = new(big.Int).SetBytes(fee)
 	return nil
 }

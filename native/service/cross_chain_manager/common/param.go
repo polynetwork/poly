@@ -28,6 +28,7 @@ const (
 	IMPORT_OUTER_TRANSFER_NAME = "ImportOuterTransfer"
 	MULTI_SIGN                 = "MultiSign"
 	MULTI_SIGN_RIPPLE          = "MultiSignRipple"
+	RECONSTRUCT_RIPPLE_TX      = "ReconstructRippleTx"
 	BLACK_CHAIN                = "BlackChain"
 	WHITE_CHAIN                = "WhiteChain"
 

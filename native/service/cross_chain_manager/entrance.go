@@ -53,6 +53,7 @@ func RegisterCrossChainManagerContract(native *native.NativeService) {
 	native.Register(scom.IMPORT_OUTER_TRANSFER_NAME, ImportExTransfer)
 	native.Register(scom.MULTI_SIGN, MultiSign)
 	native.Register(scom.MULTI_SIGN_RIPPLE, MultiSignRipple)
+	native.Register(scom.RECONSTRUCT_RIPPLE_TX, ReconstructRippleTx)
 
 	native.Register(scom.BLACK_CHAIN, BlackChain)
 	native.Register(scom.WHITE_CHAIN, WhiteChain)
@@ -204,6 +205,16 @@ func MultiSignRipple(native *native.NativeService) ([]byte, error) {
 
 	//1. multi sign
 	err := handler.MultiSign(native)
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
+	return utils.BYTE_TRUE, nil
+}
+
+func ReconstructRippleTx(native *native.NativeService) ([]byte, error) {
+	handler := ripple.NewRippleHandler()
+
+	err := handler.ReconstructTx(native)
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}

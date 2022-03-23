@@ -23,41 +23,86 @@ import (
 )
 
 type MultiSignParam struct {
-	ChainId      uint64
+	ToChainId    uint64
 	AssetAddress []byte
-
-	Id     []byte
-	TxJson string
+	FromChainId  uint64
+	TxHash       []byte
+	TxJson       string
 }
 
 func (this *MultiSignParam) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteVarUint(this.ChainId)
+	sink.WriteVarUint(this.ToChainId)
 	sink.WriteVarBytes(this.AssetAddress)
-	sink.WriteVarBytes(this.Id)
+	sink.WriteVarUint(this.FromChainId)
+	sink.WriteVarBytes(this.TxHash)
 	sink.WriteString(this.TxJson)
 }
 
 func (this *MultiSignParam) Deserialization(source *common.ZeroCopySource) error {
-	chainId, eof := source.NextVarUint()
+	toChainId, eof := source.NextVarUint()
 	if eof {
-		return fmt.Errorf("MultiSignParam deserialize chainId error")
+		return fmt.Errorf("MultiSignParam deserialize toChainId error")
 	}
 	assetAddress, eof := source.NextVarBytes()
 	if eof {
 		return fmt.Errorf("MultiSignParam deserialize assetAddress error")
 	}
-	id, eof := source.NextVarBytes()
+	fromChainId, eof := source.NextVarUint()
 	if eof {
-		return fmt.Errorf("MultiSignParam deserialize Id error")
+		return fmt.Errorf("MultiSignParam deserialize fromChainId error")
+	}
+	txHash, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("MultiSignParam deserialize tx hash error")
 	}
 	txJson, eof := source.NextString()
 	if eof {
 		return fmt.Errorf("MultiSignParam deserialize txJson error")
 	}
 
-	this.ChainId = chainId
+	this.ToChainId = toChainId
 	this.AssetAddress = assetAddress
-	this.Id = id
+	this.FromChainId = fromChainId
+	this.TxHash = txHash
 	this.TxJson = txJson
+	return nil
+}
+
+type ReconstructTxParam struct {
+	FromChainId  uint64
+	TxHash       []byte
+	ToChainId    uint64
+	AssetAddress []byte
+}
+
+func (this *ReconstructTxParam) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteVarUint(this.FromChainId)
+	sink.WriteVarBytes(this.TxHash)
+	sink.WriteVarUint(this.ToChainId)
+	sink.WriteVarBytes(this.AssetAddress)
+}
+
+func (this *ReconstructTxParam) Deserialization(source *common.ZeroCopySource) error {
+	fromChainId, eof := source.NextVarUint()
+	if eof {
+		return fmt.Errorf("ReconstructTxParam deserialize fromChainId error")
+	}
+	txHash, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("ReconstructTxParam deserialize tx hash error")
+	}
+	toChainId, eof := source.NextVarUint()
+	if eof {
+		return fmt.Errorf("ReconstructTxParam deserialize toChainId error")
+	}
+	assetAddress, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("ReconstructTxParam deserialize assetAddress error")
+	}
+
+	this.FromChainId = fromChainId
+	this.TxHash = txHash
+	this.ToChainId = toChainId
+	this.AssetAddress = assetAddress
 	return nil
 }

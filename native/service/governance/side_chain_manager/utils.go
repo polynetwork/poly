@@ -19,6 +19,7 @@ package side_chain_manager
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/btcsuite/btcd/btcec"
 	"github.com/btcsuite/btcd/chaincfg"
@@ -366,7 +367,7 @@ func GetAssetMap(native *native.NativeService, operatorAddress []byte) (*Registe
 		return nil, fmt.Errorf("GetAssetMap, get asset map store error: %v", err)
 	}
 	registerAssetParam := &RegisterAssetParam{
-		AssetMap: make(map[uint64]*AssetInfo),
+		AssetMap: make(map[uint64][]byte),
 	}
 	if store != nil {
 		assetMapBytes, err := cstates.GetValueFromRawStorageItem(store)
@@ -384,7 +385,7 @@ func GetAssetMap(native *native.NativeService, operatorAddress []byte) (*Registe
 func PutAssetMapIndexes(native *native.NativeService, param *RegisterAssetParam) {
 	for k, v := range param.AssetMap {
 		chainIDBytes := utils.GetUint64Bytes(k)
-		key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(ASSET_MAP_INDEX), chainIDBytes, v.AssetAddress)
+		key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(ASSET_MAP_INDEX), chainIDBytes, v)
 		native.GetCacheDB().Put(key, cstates.GenRawStorageItem(param.OperatorAddress[:]))
 	}
 }
@@ -404,4 +405,96 @@ func GetAssetMapIndex(native *native.NativeService, chainID uint64, assetAddress
 		return nil, fmt.Errorf("GetAssetMap, deserialize from raw storage item err:%v", err)
 	}
 	return r, nil
+}
+
+func PutRippleExtraInfo(native *native.NativeService, param *RegisterRippleExtraInfoParam) {
+	chainIdBytes := utils.GetUint64Bytes(param.ChainId)
+	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(RIPPLE_EXTRA_INFO), chainIdBytes, param.AssetAddress)
+	sink := common.NewZeroCopySink(nil)
+	param.Serialization(sink)
+	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(sink.Bytes()))
+}
+
+func GetRippleExtraInfo(native *native.NativeService, chainId uint64, assetAddress []byte) (*RegisterRippleExtraInfoParam, error) {
+	chainIdBytes := utils.GetUint64Bytes(chainId)
+	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(RIPPLE_EXTRA_INFO), chainIdBytes, assetAddress)
+	store, err := native.GetCacheDB().Get(key)
+	if err != nil {
+		return nil, fmt.Errorf("GetRippleExtraInfo, get asset map store error: %v", err)
+	}
+	registerAssetParam := &RegisterRippleExtraInfoParam{}
+	if store != nil {
+		assetMapBytes, err := cstates.GetValueFromRawStorageItem(store)
+		if err != nil {
+			return nil, fmt.Errorf("GetRippleExtraInfo, deserialize from raw storage item err:%v", err)
+		}
+		err = registerAssetParam.Deserialization(common.NewZeroCopySource(assetMapBytes))
+		if err != nil {
+			return nil, fmt.Errorf("GetRippleExtraInfo, deserialize ripple extra info err:%v", err)
+		}
+	}
+	return registerAssetParam, nil
+}
+
+func PutFee(native *native.NativeService, chainId uint64, fee *Fee) {
+	chainIdBytes := utils.GetUint64Bytes(chainId)
+	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(FEE), chainIdBytes)
+	sink := common.NewZeroCopySink(nil)
+	fee.Serialization(sink)
+	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(sink.Bytes()))
+}
+
+func GetFee(native *native.NativeService, chainID uint64) (*Fee, error) {
+	chainIDBytes := utils.GetUint64Bytes(chainID)
+	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(FEE), chainIDBytes)
+	store, err := native.GetCacheDB().Get(key)
+	if err != nil {
+		return nil, fmt.Errorf("GetFee, get fee info store error: %v", err)
+	}
+	if store == nil {
+		return nil, fmt.Errorf("GetFee, can not find any record")
+	}
+	fee := new(Fee)
+	feeBytes, err := cstates.GetValueFromRawStorageItem(store)
+	if err != nil {
+		return nil, fmt.Errorf("GetFee, deserialize from raw storage item err:%v", err)
+	}
+	err = fee.Deserialization(common.NewZeroCopySource(feeBytes))
+	if err != nil {
+		return nil, fmt.Errorf("GetFee, deserialize fee info err:%v", err)
+	}
+	return fee, nil
+}
+
+func PutFeeInfo(native *native.NativeService, chainId, view uint64, feeInfo *FeeInfo) {
+	chainIdBytes := utils.GetUint64Bytes(chainId)
+	viewBytes := utils.GetUint64Bytes(view)
+	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(FEE_INFO), chainIdBytes, viewBytes)
+	sink := common.NewZeroCopySink(nil)
+	feeInfo.Serialization(sink)
+	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(sink.Bytes()))
+}
+
+func GetFeeInfo(native *native.NativeService, chainID, view uint64) (*FeeInfo, error) {
+	chainIDBytes := utils.GetUint64Bytes(chainID)
+	viewBytes := utils.GetUint64Bytes(view)
+	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(FEE_INFO), chainIDBytes, viewBytes)
+	store, err := native.GetCacheDB().Get(key)
+	if err != nil {
+		return nil, fmt.Errorf("GetFeeInfo, get fee info store error: %v", err)
+	}
+	feeInfo := &FeeInfo{
+		FeeInfo: make(map[common.Address]*big.Int),
+	}
+	if store != nil {
+		feeInfoBytes, err := cstates.GetValueFromRawStorageItem(store)
+		if err != nil {
+			return nil, fmt.Errorf("GetFeeInfo, deserialize from raw storage item err:%v", err)
+		}
+		err = feeInfo.Deserialization(common.NewZeroCopySource(feeInfoBytes))
+		if err != nil {
+			return nil, fmt.Errorf("GetFeeInfo, deserialize fee info err:%v", err)
+		}
+	}
+	return feeInfo, nil
 }

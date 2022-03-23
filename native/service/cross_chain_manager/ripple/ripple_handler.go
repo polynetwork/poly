@@ -18,7 +18,6 @@
 package ripple
 
 import (
-	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -47,29 +46,19 @@ func (this *RippleHandler) MultiSign(service *native.NativeService) error {
 		return fmt.Errorf("MultiSign, contract params deserialize error: %v", err)
 	}
 
-	// get quorum
-	op, err := side_chain_manager.GetAssetMapIndex(service, params.ChainId, params.AssetAddress)
+	// get rippleExtraInfo
+	rippleExtraInfo, err := side_chain_manager.GetRippleExtraInfo(service, params.ToChainId, params.AssetAddress)
 	if err != nil {
-		return fmt.Errorf("MultiSign, get asset map index error: %s", err)
-	}
-	assetMap, err := side_chain_manager.GetAssetMap(service, op)
-	if err != nil {
-		return fmt.Errorf("MultiSign, get asset map error: %s", err)
-	}
-	assetInfo := assetMap.AssetMap[params.ChainId]
-	rippleExtraInfo := new(side_chain_manager.RippleExtraInfo)
-	err = rippleExtraInfo.Deserialization(common.NewZeroCopySource(assetInfo.ExtraInfo))
-	if err != nil {
-		return fmt.Errorf("MultiSign, deserialize rippleExtraInfo error")
+		return fmt.Errorf("MultiSign, side_chain_manager.GetRippleExtraInfo error")
 	}
 
 	// get raw txJsonInfo
-	txJsonInfo, err := GetTxJsonInfo(service, params.Id)
+	txJsonInfo, err := GetTxJsonInfo(service, params.FromChainId, params.TxHash)
 	if err != nil {
 		return fmt.Errorf("MultiSign, deserialize txJsonInfo error")
 	}
 
-	multisignInfo, err := GetMultisignInfo(service, params.Id)
+	multisignInfo, err := GetMultisignInfo(service, txJsonInfo)
 	if err != nil {
 		return fmt.Errorf("MultiSign, GetMultisignInfo error")
 	}
@@ -78,11 +67,11 @@ func (this *RippleHandler) MultiSign(service *native.NativeService) error {
 	}
 	multisignInfo.SigMap[params.TxJson] = true
 	//TODO: what if fake sign is more than quorum
-	if uint32(len(multisignInfo.SigMap)) >= rippleExtraInfo.Quorum {
+	if uint64(len(multisignInfo.SigMap)) >= rippleExtraInfo.Quorum {
 		txJson := &types.MultisignPayment{
 			Signers: make([]*types.Signer, 0),
 		}
-		err := json.Unmarshal([]byte(txJsonInfo.TxJson), txJson)
+		err := json.Unmarshal([]byte(txJsonInfo), txJson)
 		if err != nil {
 			return fmt.Errorf("MultiSign, unmarshal raw txjson error: %s", err)
 		}
@@ -101,11 +90,12 @@ func (this *RippleHandler) MultiSign(service *native.NativeService) error {
 		service.AddNotify(
 			&event.NotifyEventInfo{
 				ContractAddress: utils.CrossChainManagerContractAddress,
-				States:          []interface{}{"multisignedTxJson", txJsonInfo.FromChainId, params.ChainId, string(txJsonFinal)},
+				States: []interface{}{"multisignedTxJson", params.FromChainId, params.ToChainId,
+					hex.EncodeToString(params.TxHash), string(txJsonFinal)},
 			})
 		multisignInfo.Status = true
 	}
-	PutMultisignInfo(service, params.Id, multisignInfo)
+	PutMultisignInfo(service, txJsonInfo, multisignInfo)
 
 	return nil
 }
@@ -122,6 +112,7 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 		return fmt.Errorf("ripple MakeTransaction, deserialize amount error")
 	}
 
+	//get asset map
 	op, err := side_chain_manager.GetAssetMapIndex(service, fromChainID, param.FromContractAddress)
 	if err != nil {
 		return fmt.Errorf("ripple MakeTransaction, get asset map index error: %s", err)
@@ -130,44 +121,92 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 	if err != nil {
 		return fmt.Errorf("ripple MakeTransaction, get asset map error: %s", err)
 	}
+	assetAddress := assetMap.AssetMap[param.ToChainID]
 
-	assetInfo := assetMap.AssetMap[param.ToChainID]
-	rippleExtraInfo := new(side_chain_manager.RippleExtraInfo)
-	err = rippleExtraInfo.Deserialization(common.NewZeroCopySource(assetInfo.ExtraInfo))
+	// get rippleExtraInfo
+	rippleExtraInfo, err := side_chain_manager.GetRippleExtraInfo(service, param.ToChainID, assetAddress)
 	if err != nil {
-		return fmt.Errorf("ripple MakeTransaction, deserialize rippleExtraInfo error")
+		return fmt.Errorf("ripple MakeTransaction, side_chain_manager.GetRippleExtraInfo error")
 	}
-	//fee = baseFee * quorum * 2
-	fee := new(big.Int).Mul(rippleExtraInfo.Fee, new(big.Int).SetUint64(uint64(rippleExtraInfo.SignerNum)))
+
+	//get fee
+	baseFee, err := side_chain_manager.GetFee(service, param.ToChainID)
+	if err != nil {
+		return fmt.Errorf("ripple MakeTransaction, side_chain_manager.GetFee error: %v", err)
+	}
+
+	//fee = baseFee * signerNum
+	fee := new(big.Int).Mul(baseFee.Fee, new(big.Int).SetUint64(rippleExtraInfo.SignerNum))
 
 	from := new(data.Account)
 	to := new(data.Account)
-	copy(from[:], assetInfo.AssetAddress)
+	copy(from[:], assetAddress)
 	copy(to[:], toAddrBytes)
-	txJson, err := types.GenerateMultisignPaymentTxJson(from.String(), to.String(), amount, fee.String(), rippleExtraInfo.Sequence)
+
+	//add memos
+	memo := types.Memo{}
+	memo.Memo.MemoType = "706f6c7968617368" // == "polyhash"
+	polyHash := service.GetTx().Hash()
+	memo.Memo.MemoData = polyHash.ToHexString()
+	memos := []types.Memo{memo}
+	txJson, err := types.GenerateMultisignPaymentTxJson(from.String(), to.String(), amount, fee.String(),
+		uint32(rippleExtraInfo.Sequence), memos)
 	if err != nil {
 		return fmt.Errorf("ripple MakeTransaction, GenerateMultisignPaymentTxJson error: %s", err)
 	}
-	id := sha256.Sum256([]byte(txJson))
 	service.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
-			States: []interface{}{"rippleTxJson", fromChainID, hex.EncodeToString(param.FromContractAddress),
-				param.ToChainID, hex.EncodeToString(id[:]), txJson},
+			States:          []interface{}{"rippleTxJson", fromChainID, param.ToChainID, hex.EncodeToString(param.TxHash), txJson},
 		})
 
 	//sequence + 1
 	rippleExtraInfo.Sequence = rippleExtraInfo.Sequence + 1
-	sink := common.NewZeroCopySink(nil)
-	rippleExtraInfo.Serialization(sink)
-	assetMap.AssetMap[param.ToChainID].ExtraInfo = sink.Bytes()
-	side_chain_manager.PutAssetMap(service, assetMap)
+	side_chain_manager.PutRippleExtraInfo(service, rippleExtraInfo)
 
 	//store txJson info
-	txJsonInfo := &TxJsonInfo{
-		TxJson:      txJson,
-		FromChainId: fromChainID,
+	PutTxJsonInfo(service, fromChainID, param.TxHash, txJson)
+	return nil
+}
+
+func (this *RippleHandler) ReconstructTx(service *native.NativeService) error {
+	params := new(ReconstructTxParam)
+	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
+		return fmt.Errorf("ReconstructTx, contract params deserialize error: %v", err)
 	}
-	PutTxJsonInfo(service, id[:], txJsonInfo)
+
+	//get tx json info
+	txJsonInfo, err := GetTxJsonInfo(service, params.FromChainId, params.TxHash)
+	if err != nil {
+		return fmt.Errorf("ReconstructTx, GetTxJsonInfo error: %v", err)
+	}
+
+	//get fee
+	fee, err := side_chain_manager.GetFee(service, params.ToChainId)
+	if err != nil {
+		return fmt.Errorf("ReconstructTx, side_chain_manager.GetFee error: %v", err)
+	}
+
+	//get ripple extra info
+	rippleExtraInfo, err := side_chain_manager.GetRippleExtraInfo(service, params.ToChainId, params.AssetAddress)
+	if err != nil {
+		return fmt.Errorf("ReconstructTx, side_chain_manager.GetRippleExtraInfo error: %v", err)
+	}
+
+	txJson := new(types.MultisignPayment)
+	err = json.Unmarshal([]byte(txJsonInfo), txJson)
+	if err != nil {
+		return fmt.Errorf("ReconstructTx, json.Unmarshal tx json info error: %v", err)
+	}
+	txJson.Fee = new(big.Int).Mul(fee.Fee, new(big.Int).SetUint64(rippleExtraInfo.SignerNum)).String()
+	txJsonStr, err := json.Marshal(txJson)
+	if err != nil {
+		return fmt.Errorf("ReconstructTx, json.Marshal tx json error: %v", err)
+	}
+	service.AddNotify(
+		&event.NotifyEventInfo{
+			ContractAddress: utils.CrossChainManagerContractAddress,
+			States:          []interface{}{"rippleTxJson", params.FromChainId, params.ToChainId, hex.EncodeToString(params.TxHash), txJsonStr},
+		})
 	return nil
 }

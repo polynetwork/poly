@@ -73,28 +73,3 @@ func (this *MultisignInfo) Deserialization(source *common.ZeroCopySource) error 
 	this.SigMap = sigMap
 	return nil
 }
-
-type TxJsonInfo struct {
-	TxJson string
-	FromChainId uint64
-}
-
-func (this *TxJsonInfo) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteString(this.TxJson)
-	sink.WriteUint64(this.FromChainId)
-}
-
-func (this *TxJsonInfo) Deserialization(source *common.ZeroCopySource) error {
-	txJson, eof := source.NextString()
-	if eof {
-		return fmt.Errorf("TxJsonInfo deserialize txjson error")
-	}
-	fromChainId, eof := source.NextUint64()
-	if eof {
-		return fmt.Errorf("TxJsonInfo deserialize fromChainId error")
-	}
-
-	this.TxJson = txJson
-	this.FromChainId = fromChainId
-	return nil
-}

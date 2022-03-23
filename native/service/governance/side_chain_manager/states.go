@@ -19,6 +19,7 @@ package side_chain_manager
 
 import (
 	"fmt"
+	"math/big"
 	"sort"
 
 	"github.com/polynetwork/poly/common"
@@ -151,5 +152,70 @@ func (this *ContractBinded) Deserialization(source *common.ZeroCopySource) error
 	if eof {
 		return fmt.Errorf("BindContract deserialize version error")
 	}
+	return nil
+}
+
+type Fee struct {
+	View uint64
+	Fee  *big.Int
+}
+
+func (this *Fee) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteUint64(this.View)
+	sink.WriteVarBytes(this.Fee.Bytes())
+}
+
+func (this *Fee) Deserialization(source *common.ZeroCopySource) error {
+	var eof bool
+	view, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("Fee deserialize view error")
+	}
+	fee, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("Fee deserialize fee error")
+	}
+	this.View = view
+	this.Fee = new(big.Int).SetBytes(fee)
+	return nil
+}
+
+type FeeInfo struct {
+	FeeInfo map[common.Address]*big.Int
+}
+
+func (this *FeeInfo) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteVarUint(uint64(len(this.FeeInfo)))
+	var AddressList []common.Address
+	for k := range this.FeeInfo {
+		AddressList = append(AddressList, k)
+	}
+	sort.SliceStable(AddressList, func(i, j int) bool {
+		return AddressList[i].ToHexString() > AddressList[j].ToHexString()
+	})
+	for _, k := range AddressList {
+		sink.WriteAddress(k)
+		sink.WriteVarBytes(this.FeeInfo[k].Bytes())
+	}
+}
+
+func (this *FeeInfo) Deserialization(source *common.ZeroCopySource) error {
+	n, eof := source.NextVarUint()
+	if eof {
+		return fmt.Errorf("FeeInfo deserialize FeeInfo length error")
+	}
+	feeInfo := make(map[common.Address]*big.Int)
+	for i := 0; uint64(i) < n; i++ {
+		k, eof := source.NextAddress()
+		if eof {
+			return fmt.Errorf("FeeInfo deserialize address error")
+		}
+		v, eof := source.NextVarBytes()
+		if eof {
+			return fmt.Errorf("BindSignInfo deserialize fee error")
+		}
+		feeInfo[k] = new(big.Int).SetBytes(v)
+	}
+	this.FeeInfo = feeInfo
 	return nil
 }
