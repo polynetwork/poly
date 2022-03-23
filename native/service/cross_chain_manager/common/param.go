@@ -19,7 +19,6 @@ package common
 import (
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/accounts/abi"
 	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
@@ -115,42 +114,35 @@ type MakeTxParamWithSender struct {
 	MakeTxParam
 }
 
-var (
-	boolTy, _  = abi.NewType("bool", "", nil)
-	addrTy, _  = abi.NewType("address", "", nil)
-	bytesTy, _ = abi.NewType("bytes", "", nil)
-	arguments  = abi.Arguments{
-		{Type: boolTy, Name: "LeafFlag"},
-		{Type: addrTy, Name: "Sender"},
-		{Type: bytesTy, Name: "Value"},
-	}
-)
-
+// this method is only used in test
 func (this *MakeTxParamWithSender) Serialization() (data []byte, err error) {
 	sink := common.NewZeroCopySink(nil)
+	sink.WriteBool(false)
+	sink.WriteAddress(common.Address(this.Sender))
 	this.MakeTxParam.Serialization(sink)
-	data, err = arguments.Pack(false, this.Sender, sink.Bytes())
+	data = sink.Bytes()
 	return
 }
 
 func (this *MakeTxParamWithSender) Deserialization(data []byte) (err error) {
 
-	s := struct {
-		LeafFlag bool
-		Sender   ethcommon.Address
-		Value    []byte
-	}{}
-
-	err = arguments.Unpack(&s, data)
-	if err != nil {
+	source := common.NewZeroCopySource(data)
+	leaf, eof := source.NextBool()
+	if eof {
+		err = fmt.Errorf("MakeTxParamWithSender NextBool fail")
 		return
 	}
-	if s.LeafFlag {
+	if leaf {
 		err = fmt.Errorf("invalid LeafFlag")
 		return
 	}
-	this.Sender = s.Sender
-	source := common.NewZeroCopySource(s.Value)
+
+	addr, eof := source.NextAddress()
+	if eof {
+		err = fmt.Errorf("MakeTxParamWithSender NextAddress fail")
+		return
+	}
+	this.Sender = ethcommon.Address(addr)
 	return this.MakeTxParam.Deserialization(source)
 }
 
