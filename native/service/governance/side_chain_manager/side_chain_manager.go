@@ -62,6 +62,7 @@ const (
 	RIPPLE_EXTRA_INFO         = "rippleExtraInfo"
 	FEE                       = "fee"
 	FEE_INFO                  = "feeInfo"
+	OPERATOR_ADDRESS          = "operatorAddress"
 )
 
 //Register methods of node_manager contract
@@ -459,7 +460,19 @@ func RegisterAssetMap(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterAssetMap, checkWitness error: %v", err)
 	}
 
-	paramStore, err := GetAssetMap(native, params.OperatorAddress[:])
+	operatorAddress, err := GetOperatorAddress(native)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterAssetMap, GetOperatorAddress error: %v", err)
+	}
+	if operatorAddress == common.ADDRESS_EMPTY {
+		PutOperatorAddress(native, params.OperatorAddress)
+	} else {
+		if operatorAddress != params.OperatorAddress {
+			return utils.BYTE_FALSE, fmt.Errorf("RegisterAssetMap,  caller is not operator")
+		}
+	}
+
+	paramStore, err := GetAssetMap(native, params.AssetName)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterAssetMap, GetAssetMap error: %v", err)
 	}
@@ -478,17 +491,13 @@ func RegisterRippleExtraInfo(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRippleExtraInfo, contract params deserialize error: %v", err)
 	}
 
-	op, err := GetAssetMapIndex(native, params.ChainId, params.AssetAddress)
+	operatorAddress, err := GetOperatorAddress(native)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RegisterRippleExtraInfo, get asset map index error: %s", err)
-	}
-	addr, err := common.AddressParseFromBytes(op)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RegisterRippleExtraInfo, get op address error: %s", err)
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterRippleExtraInfo, GetOperatorAddress error: %v", err)
 	}
 
 	//check witness
-	err = utils.ValidateOwner(native, addr)
+	err = utils.ValidateOwner(native, operatorAddress)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterRippleExtraInfo, checkWitness error: %v", err)
 	}

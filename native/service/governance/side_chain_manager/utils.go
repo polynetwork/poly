@@ -354,14 +354,14 @@ func GetBtcRedeemScriptBytes(native *native.NativeService, redeemScriptKey strin
 }
 
 func PutAssetMap(native *native.NativeService, param *RegisterAssetParam) {
-	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(ASSET_MAP), param.OperatorAddress[:])
+	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(ASSET_MAP), []byte(param.AssetName))
 	sink := common.NewZeroCopySink(nil)
 	param.Serialization(sink)
 	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(sink.Bytes()))
 }
 
-func GetAssetMap(native *native.NativeService, operatorAddress []byte) (*RegisterAssetParam, error) {
-	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(ASSET_MAP), operatorAddress)
+func GetAssetMap(native *native.NativeService, assetName string) (*RegisterAssetParam, error) {
+	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(ASSET_MAP), []byte(assetName))
 	store, err := native.GetCacheDB().Get(key)
 	if err != nil {
 		return nil, fmt.Errorf("GetAssetMap, get asset map store error: %v", err)
@@ -386,25 +386,25 @@ func PutAssetMapIndexes(native *native.NativeService, param *RegisterAssetParam)
 	for k, v := range param.AssetMap {
 		chainIDBytes := utils.GetUint64Bytes(k)
 		key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(ASSET_MAP_INDEX), chainIDBytes, v)
-		native.GetCacheDB().Put(key, cstates.GenRawStorageItem(param.OperatorAddress[:]))
+		native.GetCacheDB().Put(key, cstates.GenRawStorageItem([]byte(param.AssetName)))
 	}
 }
 
-func GetAssetMapIndex(native *native.NativeService, chainID uint64, assetAddress []byte) ([]byte, error) {
+func GetAssetName(native *native.NativeService, chainID uint64, assetAddress []byte) (string, error) {
 	chainIDBytes := utils.GetUint64Bytes(chainID)
 	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(ASSET_MAP_INDEX), chainIDBytes, assetAddress)
 	store, err := native.GetCacheDB().Get(key)
 	if err != nil {
-		return nil, fmt.Errorf("GetAssetMapIndex, get asset map index store error: %v", err)
+		return "", fmt.Errorf("GetAssetMapIndex, get asset map index store error: %v", err)
 	}
 	if store == nil {
-		return nil, fmt.Errorf("GetAssetMapIndex, cannot find any record")
+		return "", fmt.Errorf("GetAssetMapIndex, cannot find any record")
 	}
 	r, err := cstates.GetValueFromRawStorageItem(store)
 	if err != nil {
-		return nil, fmt.Errorf("GetAssetMap, deserialize from raw storage item err:%v", err)
+		return "", fmt.Errorf("GetAssetMap, deserialize from raw storage item err:%v", err)
 	}
-	return r, nil
+	return string(r), nil
 }
 
 func PutRippleExtraInfo(native *native.NativeService, param *RegisterRippleExtraInfoParam) {
@@ -497,4 +497,32 @@ func GetFeeInfo(native *native.NativeService, chainID, view uint64) (*FeeInfo, e
 		}
 	}
 	return feeInfo, nil
+}
+
+func PutOperatorAddress(native *native.NativeService, operator common.Address) {
+	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(OPERATOR_ADDRESS))
+	sink := common.NewZeroCopySink(nil)
+	sink.WriteAddress(operator)
+	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(sink.Bytes()))
+}
+
+func GetOperatorAddress(native *native.NativeService) (common.Address, error) {
+	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(OPERATOR_ADDRESS))
+	store, err := native.GetCacheDB().Get(key)
+	if err != nil {
+		return common.ADDRESS_EMPTY, fmt.Errorf("GetOperatorAddress, get operator address store error: %v", err)
+	}
+	operatorAddress := common.ADDRESS_EMPTY
+	if store != nil {
+		operatorAddressBytes, err := cstates.GetValueFromRawStorageItem(store)
+		if err != nil {
+			return common.ADDRESS_EMPTY, fmt.Errorf("GetOperatorAddress, deserialize from raw storage item err:%v", err)
+		}
+		var eof bool
+		operatorAddress, eof = common.NewZeroCopySource(operatorAddressBytes).NextAddress()
+		if eof {
+			return common.ADDRESS_EMPTY, fmt.Errorf("GetOperatorAddress, deserialize operator address error")
+		}
+	}
+	return operatorAddress, nil
 }

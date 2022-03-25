@@ -113,11 +113,11 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 	}
 
 	//get asset map
-	op, err := side_chain_manager.GetAssetMapIndex(service, fromChainID, param.FromContractAddress)
+	assetName, err := side_chain_manager.GetAssetName(service, fromChainID, param.FromContractAddress)
 	if err != nil {
 		return fmt.Errorf("ripple MakeTransaction, get asset map index error: %s", err)
 	}
-	assetMap, err := side_chain_manager.GetAssetMap(service, op)
+	assetMap, err := side_chain_manager.GetAssetMap(service, assetName)
 	if err != nil {
 		return fmt.Errorf("ripple MakeTransaction, get asset map error: %s", err)
 	}

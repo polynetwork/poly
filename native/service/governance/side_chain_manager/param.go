@@ -313,11 +313,13 @@ func (this *RegisterRippleExtraInfoParam) Deserialization(source *common.ZeroCop
 
 type RegisterAssetParam struct {
 	OperatorAddress common.Address
+	AssetName       string
 	AssetMap        map[uint64][]byte
 }
 
 func (this *RegisterAssetParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteAddress(this.OperatorAddress)
+	sink.WriteString(this.AssetName)
 
 	var keyList []uint64
 	for k := range this.AssetMap {
@@ -339,6 +341,10 @@ func (this *RegisterAssetParam) Deserialization(source *common.ZeroCopySource) e
 	if eof {
 		return fmt.Errorf("RegisterAssetParam deserialize operatorAddress error")
 	}
+	assetName, eof := source.NextString()
+	if eof {
+		return fmt.Errorf("RegisterAssetParam deserialize asset name error")
+	}
 
 	l, eof := source.NextVarUint()
 	if eof {
@@ -358,6 +364,7 @@ func (this *RegisterAssetParam) Deserialization(source *common.ZeroCopySource) e
 	}
 
 	this.OperatorAddress = operatorAddress
+	this.AssetName = assetName
 	this.AssetMap = assetMap
 	return nil
 }
