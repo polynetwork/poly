@@ -134,6 +134,9 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 	if err != nil {
 		return fmt.Errorf("ripple MakeTransaction, side_chain_manager.GetFee error: %v", err)
 	}
+	if baseFee.View == 0 {
+		return fmt.Errorf("ripple MakeTransaction, base fee is not initialized")
+	}
 
 	//fee = baseFee * signerNum
 	fee := new(big.Int).Mul(baseFee.Fee, new(big.Int).SetUint64(rippleExtraInfo.SignerNum))
@@ -185,6 +188,9 @@ func (this *RippleHandler) ReconstructTx(service *native.NativeService) error {
 	fee, err := side_chain_manager.GetFee(service, params.ToChainId)
 	if err != nil {
 		return fmt.Errorf("ReconstructTx, side_chain_manager.GetFee error: %v", err)
+	}
+	if fee.View == 0 {
+		return fmt.Errorf("ReconstructTx, base fee is not initialized")
 	}
 
 	//get ripple extra info

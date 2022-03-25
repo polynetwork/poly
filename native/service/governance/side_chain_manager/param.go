@@ -372,12 +372,14 @@ func (this *RegisterAssetParam) Deserialization(source *common.ZeroCopySource) e
 type UpdateFeeParam struct {
 	Address common.Address
 	ChainId uint64
+	View    uint64
 	Fee     *big.Int
 }
 
 func (this *UpdateFeeParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteAddress(this.Address)
 	sink.WriteUint64(this.ChainId)
+	sink.WriteUint64(this.View)
 	sink.WriteVarBytes(this.Fee.Bytes())
 }
 
@@ -390,6 +392,10 @@ func (this *UpdateFeeParam) Deserialization(source *common.ZeroCopySource) error
 	if eof {
 		return fmt.Errorf("RippleExtraInfo deserialize chain id error")
 	}
+	view, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("RippleExtraInfo deserialize view error")
+	}
 	fee, eof := source.NextVarBytes()
 	if eof {
 		return fmt.Errorf("RippleExtraInfo deserialize fee error")
@@ -397,6 +403,7 @@ func (this *UpdateFeeParam) Deserialization(source *common.ZeroCopySource) error
 
 	this.Address = address
 	this.ChainId = chainId
+	this.View = view
 	this.Fee = new(big.Int).SetBytes(fee)
 	return nil
 }

@@ -451,17 +451,16 @@ func GetFee(native *native.NativeService, chainID uint64) (*Fee, error) {
 	if err != nil {
 		return nil, fmt.Errorf("GetFee, get fee info store error: %v", err)
 	}
-	if store == nil {
-		return nil, fmt.Errorf("GetFee, can not find any record")
-	}
 	fee := new(Fee)
-	feeBytes, err := cstates.GetValueFromRawStorageItem(store)
-	if err != nil {
-		return nil, fmt.Errorf("GetFee, deserialize from raw storage item err:%v", err)
-	}
-	err = fee.Deserialization(common.NewZeroCopySource(feeBytes))
-	if err != nil {
-		return nil, fmt.Errorf("GetFee, deserialize fee info err:%v", err)
+	if store != nil {
+		feeBytes, err := cstates.GetValueFromRawStorageItem(store)
+		if err != nil {
+			return nil, fmt.Errorf("GetFee, deserialize from raw storage item err:%v", err)
+		}
+		err = fee.Deserialization(common.NewZeroCopySource(feeBytes))
+		if err != nil {
+			return nil, fmt.Errorf("GetFee, deserialize fee info err:%v", err)
+		}
 	}
 	return fee, nil
 }

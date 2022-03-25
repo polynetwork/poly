@@ -523,6 +523,10 @@ func UpdateFee(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("UpdateFee, GetFee error: %v", err)
 	}
+	if fee.View != params.View {
+		return utils.BYTE_FALSE, fmt.Errorf("UpdateFee, poly view: %d, params view: %d not match",
+			fee.View, params.View)
+	}
 
 	//add fee info
 	feeInfo, err := GetFeeInfo(native, params.ChainId, fee.View)
