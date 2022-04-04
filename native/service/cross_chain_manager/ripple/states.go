@@ -73,3 +73,35 @@ func (this *MultisignInfo) Deserialization(source *common.ZeroCopySource) error 
 	this.SigMap = sigMap
 	return nil
 }
+
+type Signer struct {
+	Account       []byte
+	TxnSignature  []byte
+	SigningPubKey []byte
+}
+
+func (this *Signer) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteVarBytes(this.Account)
+	sink.WriteVarBytes(this.TxnSignature)
+	sink.WriteVarBytes(this.SigningPubKey)
+}
+
+func (this *Signer) Deserialization(source *common.ZeroCopySource) error {
+	account, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("Signer deserialize account error")
+	}
+	txnSignature, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("Signer deserialize txnSignature error")
+	}
+	signingPubKey, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("Signer deserialize signingPubKey error")
+	}
+
+	this.Account = account
+	this.TxnSignature = txnSignature
+	this.SigningPubKey = signingPubKey
+	return nil
+}

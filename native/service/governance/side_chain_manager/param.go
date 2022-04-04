@@ -270,7 +270,7 @@ type RegisterRippleExtraInfoParam struct {
 	Sequence     uint64
 	Quorum       uint64
 	SignerNum    uint64
-	//TODO: add ripple signer pks
+	Pks          [][]byte
 }
 
 func (this *RegisterRippleExtraInfoParam) Serialization(sink *common.ZeroCopySink) {
@@ -279,28 +279,43 @@ func (this *RegisterRippleExtraInfoParam) Serialization(sink *common.ZeroCopySin
 	sink.WriteUint64(this.Sequence)
 	sink.WriteUint64(this.Quorum)
 	sink.WriteUint64(this.SignerNum)
+	sink.WriteVarUint(uint64(len(this.Pks)))
+	for _, v := range this.Pks {
+		sink.WriteVarBytes(v)
+	}
 }
 
 func (this *RegisterRippleExtraInfoParam) Deserialization(source *common.ZeroCopySource) error {
 	chainId, eof := source.NextUint64()
 	if eof {
-		return fmt.Errorf("RippleExtraInfo deserialize chain id error")
+		return fmt.Errorf("RegisterRippleExtraInfoParam deserialize chain id error")
 	}
 	assetAddress, eof := source.NextVarBytes()
 	if eof {
-		return fmt.Errorf("RippleExtraInfo deserialize assetAddress error")
+		return fmt.Errorf("RegisterRippleExtraInfoParam deserialize assetAddress error")
 	}
 	sequence, eof := source.NextUint64()
 	if eof {
-		return fmt.Errorf("RippleExtraInfo deserialize sequence error")
+		return fmt.Errorf("RegisterRippleExtraInfoParam deserialize sequence error")
 	}
 	quorum, eof := source.NextUint64()
 	if eof {
-		return fmt.Errorf("RippleExtraInfo deserialize quorum error")
+		return fmt.Errorf("RegisterRippleExtraInfoParam deserialize quorum error")
 	}
 	signerNum, eof := source.NextUint64()
 	if eof {
-		return fmt.Errorf("RippleExtraInfo deserialize signerNum error")
+		return fmt.Errorf("RegisterRippleExtraInfoParam deserialize signerNum error")
+	}
+	l, eof := source.NextVarUint()
+	if eof {
+		return fmt.Errorf("RegisterRippleExtraInfoParam deserialize length of pk array error")
+	}
+	pks := make([][]byte, l)
+	for i := uint64(0); i < l; i++ {
+		pks[i], eof = source.NextVarBytes()
+		if eof {
+			return fmt.Errorf("RegisterRippleExtraInfoParam deserialize no.%d pk error", i+1)
+		}
 	}
 
 	this.ChainId = chainId
@@ -308,6 +323,7 @@ func (this *RegisterRippleExtraInfoParam) Deserialization(source *common.ZeroCop
 	this.Sequence = sequence
 	this.Quorum = quorum
 	this.SignerNum = signerNum
+	this.Pks = pks
 	return nil
 }
 

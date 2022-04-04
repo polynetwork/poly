@@ -53,50 +53,94 @@ func (this *RippleHandler) MultiSign(service *native.NativeService) error {
 	}
 
 	// get raw txJsonInfo
-	txJsonInfo, err := GetTxJsonInfo(service, params.FromChainId, params.TxHash)
+	raw, err := GetTxJsonInfo(service, params.FromChainId, params.TxHash)
 	if err != nil {
-		return fmt.Errorf("MultiSign, deserialize txJsonInfo error")
+		return fmt.Errorf("MultiSign, get txJsonInfo error")
 	}
 
-	multisignInfo, err := GetMultisignInfo(service, txJsonInfo)
+	// check if aleady done
+	multisignInfo, err := GetMultisignInfo(service, raw)
 	if err != nil {
 		return fmt.Errorf("MultiSign, GetMultisignInfo error")
 	}
 	if multisignInfo.Status {
 		return nil
 	}
-	multisignInfo.SigMap[params.TxJson] = true
-	//TODO: what if fake sign is more than quorum
+
+	// check if signature is valid
+	txJson := new(types.MultisignPayment)
+	err = json.Unmarshal([]byte(params.TxJson), txJson)
+	if err != nil {
+		return fmt.Errorf("MultiSign, unmarshal signed txjson error: %s", err)
+	}
+	for _, s := range txJson.Signers {
+		signerAccount, err := data.NewAccountFromAddress(s.Signer.Account)
+		if err != nil {
+			return fmt.Errorf("MultiSign, data.NewAccountFromAddress error: %s", err)
+		}
+		signerPk, err := hex.DecodeString(s.Signer.SigningPubKey)
+		if err != nil {
+			return fmt.Errorf("MultiSign, hex.DecodeString signer pk error: %s", err)
+		}
+		signature, err := hex.DecodeString(s.Signer.TxnSignature)
+		if err != nil {
+			return fmt.Errorf("MultiSign, hex.DecodeString signature error: %s", err)
+		}
+
+		// TODO:check if valid signer
+
+		//check if valid signature
+		err = types.CheckMultiSign(raw, *signerAccount, signerPk, signature)
+		if err != nil {
+			return fmt.Errorf("MultiSign, types.CheckMultiSign error: %s", err)
+		}
+		signer := &Signer{
+			Account:       signerAccount.Bytes(),
+			TxnSignature:  signature,
+			SigningPubKey: signerPk,
+		}
+		sink := common.NewZeroCopySink(nil)
+		signer.Serialization(sink)
+		multisignInfo.SigMap[hex.EncodeToString(sink.Bytes())] = true
+	}
+
 	if uint64(len(multisignInfo.SigMap)) >= rippleExtraInfo.Quorum {
-		txJson := &types.MultisignPayment{
-			Signers: make([]*types.Signer, 0),
-		}
-		err := json.Unmarshal([]byte(txJsonInfo), txJson)
+		payment, err := types.DeserializeRawMultiSignTx(raw)
 		if err != nil {
-			return fmt.Errorf("MultiSign, unmarshal raw txjson error: %s", err)
+			return fmt.Errorf("MultiSign, types.DeserializeRawMultiSignTx error")
 		}
-		for sig := range multisignInfo.SigMap {
-			txJsonTemp := new(types.MultisignPayment)
-			err := json.Unmarshal([]byte(sig), txJsonTemp)
+		for s := range multisignInfo.SigMap {
+			signerBytes, err := hex.DecodeString(s)
 			if err != nil {
-				return fmt.Errorf("MultiSign, unmarshal signed txjson error: %s", err)
+				return fmt.Errorf("MultiSign, hex.DecodeString signer bytes error")
 			}
-			txJson.Signers = append(txJson.Signers, txJsonTemp.Signers...)
+			signer := new(Signer)
+			err = signer.Deserialization(common.NewZeroCopySource(signerBytes))
+			if err != nil {
+				return fmt.Errorf("MultiSign, deserialization signer bytes error")
+			}
+			sig := data.Signer{}
+			*sig.TxnSignature = signer.TxnSignature
+			copy(sig.SigningPubKey[:], signer.SigningPubKey)
+			acc := data.Account{}
+			copy(acc[:], signer.Account)
+			sig.Account = acc
+			payment.Signers = append(payment.Signers, sig)
 		}
-		txJsonFinal, err := json.Marshal(txJson)
+
+		finalPayment, err := json.Marshal(payment)
 		if err != nil {
-			return fmt.Errorf("MultiSign, json.Marshal final txJson string error: %s", err)
+			return fmt.Errorf("MultiSign, json.Marshal final payment error: %s", err)
 		}
 		service.AddNotify(
 			&event.NotifyEventInfo{
 				ContractAddress: utils.CrossChainManagerContractAddress,
 				States: []interface{}{"multisignedTxJson", params.FromChainId, params.ToChainId,
-					hex.EncodeToString(params.TxHash), string(txJsonFinal)},
+					hex.EncodeToString(params.TxHash), string(finalPayment)},
 			})
 		multisignInfo.Status = true
 	}
-	PutMultisignInfo(service, txJsonInfo, multisignInfo)
-
+	PutMultisignInfo(service, raw, multisignInfo)
 	return nil
 }
 
@@ -107,9 +151,13 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 	if eof {
 		return fmt.Errorf("ripple MakeTransaction, deserialize toAddr error")
 	}
-	amount, eof := source.NextString()
+	amountStr, eof := source.NextString()
 	if eof {
 		return fmt.Errorf("ripple MakeTransaction, deserialize amount error")
+	}
+	amount, err := data.NewAmount(amountStr)
+	if err != nil {
+		return fmt.Errorf("ripple MakeTransaction, data.NewAmount error: %s", err)
 	}
 
 	//get asset map
@@ -139,28 +187,36 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 	}
 
 	//fee = baseFee * signerNum
-	fee := new(big.Int).Mul(baseFee.Fee, new(big.Int).SetUint64(rippleExtraInfo.SignerNum))
+	feeStr := new(big.Int).Mul(baseFee.Fee, new(big.Int).SetUint64(rippleExtraInfo.SignerNum)).String()
+	fee, err := data.NewValue(feeStr, false)
+	if err != nil {
+		return fmt.Errorf("ripple MakeTransaction, data.NewValue fee error: %s", err)
+	}
 
 	from := new(data.Account)
 	to := new(data.Account)
 	copy(from[:], assetAddress)
 	copy(to[:], toAddrBytes)
 
-	//add memos
-	memo := types.Memo{}
-	memo.Memo.MemoType = "706f6c7968617368" // == "polyhash"
 	polyHash := service.GetTx().Hash()
-	memo.Memo.MemoData = polyHash.ToHexString()
-	memos := []types.Memo{memo}
-	txJson, err := types.GenerateMultisignPaymentTxJson(from.String(), to.String(), amount, fee.String(),
-		uint32(rippleExtraInfo.Sequence), memos)
+	//add memos
+	memoType, _ := hex.DecodeString("706f6c7968617368") // == "polyhash"
+	memoData := polyHash.ToArray()
+	memo := data.Memo{}
+	memo.Memo.MemoType = memoType
+	memo.Memo.MemoData = memoData
+	memos := data.Memos{memo}
+
+	payment := types.GeneratePayment(*from, *to, *amount, *fee, uint32(rippleExtraInfo.Sequence), memos)
+	_, raw, err := data.Raw(payment)
 	if err != nil {
-		return fmt.Errorf("ripple MakeTransaction, GenerateMultisignPaymentTxJson error: %s", err)
+		return fmt.Errorf("ripple MakeTransaction, data.Raw error: %s", err)
 	}
 	service.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
-			States:          []interface{}{"rippleTxJson", fromChainID, param.ToChainID, hex.EncodeToString(param.TxHash), txJson},
+			States: []interface{}{"rippleTxJson", fromChainID, param.ToChainID,
+				hex.EncodeToString(param.TxHash), hex.EncodeToString(raw)},
 		})
 
 	//sequence + 1
@@ -168,7 +224,7 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 	side_chain_manager.PutRippleExtraInfo(service, rippleExtraInfo)
 
 	//store txJson info
-	PutTxJsonInfo(service, fromChainID, param.TxHash, txJson)
+	PutTxJsonInfo(service, fromChainID, param.TxHash, hex.EncodeToString(raw))
 	return nil
 }
 
