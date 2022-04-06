@@ -129,6 +129,7 @@ func (this *RippleHandler) MultiSign(service *native.NativeService) error {
 				return fmt.Errorf("MultiSign, deserialization signer bytes error")
 			}
 			sig := data.Signer{}
+			sig.Signer.TxnSignature = new(data.VariableLength)
 			*sig.Signer.TxnSignature = signer.TxnSignature
 			copy(sig.Signer.SigningPubKey[:], signer.SigningPubKey)
 			acc := data.Account{}
