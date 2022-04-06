@@ -87,7 +87,16 @@ func (this *RippleHandler) MultiSign(service *native.NativeService) error {
 			return fmt.Errorf("MultiSign, hex.DecodeString signature error: %s", err)
 		}
 
-		// TODO:check if valid signer
+		// check if valid signer
+		flag := false
+		for _, v := range rippleExtraInfo.Pks {
+			if hex.EncodeToString(v) == s.Signer.SigningPubKey {
+				flag = true
+			}
+		}
+		if !flag {
+			return fmt.Errorf("MultiSign, signer is not multisign account")
+		}
 
 		//check if valid signature
 		err = types.CheckMultiSign(raw, *signerAccount, signerPk, signature)
