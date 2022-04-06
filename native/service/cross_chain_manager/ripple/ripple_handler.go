@@ -90,7 +90,7 @@ func (this *RippleHandler) MultiSign(service *native.NativeService) error {
 		// check if valid signer
 		flag := false
 		for _, v := range rippleExtraInfo.Pks {
-			if hex.EncodeToString(v) == s.Signer.SigningPubKey {
+			if fmt.Sprintf("%X", v) == s.Signer.SigningPubKey {
 				flag = true
 			}
 		}
@@ -129,11 +129,11 @@ func (this *RippleHandler) MultiSign(service *native.NativeService) error {
 				return fmt.Errorf("MultiSign, deserialization signer bytes error")
 			}
 			sig := data.Signer{}
-			*sig.TxnSignature = signer.TxnSignature
-			copy(sig.SigningPubKey[:], signer.SigningPubKey)
+			*sig.Signer.TxnSignature = signer.TxnSignature
+			copy(sig.Signer.SigningPubKey[:], signer.SigningPubKey)
 			acc := data.Account{}
 			copy(acc[:], signer.Account)
-			sig.Account = acc
+			sig.Signer.Account = acc
 			payment.Signers = append(payment.Signers, sig)
 		}
 
