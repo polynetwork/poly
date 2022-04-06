@@ -18,6 +18,8 @@ package common
 
 import (
 	"fmt"
+
+	ethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 )
@@ -114,6 +116,33 @@ func (this *EntranceParam) Deserialization(source *common.ZeroCopySource) error 
 	this.Extra = extra
 	this.HeaderOrCrossChainMsg = headerOrCrossChainMsg
 	return nil
+}
+
+type MakeTxParamWithSender struct {
+	Sender ethcommon.Address
+	MakeTxParam
+}
+
+// this method is only used in test
+func (this *MakeTxParamWithSender) Serialization() (data []byte, err error) {
+	sink := common.NewZeroCopySink(nil)
+	sink.WriteAddress(common.Address(this.Sender))
+	this.MakeTxParam.Serialization(sink)
+	data = sink.Bytes()
+	return
+}
+
+func (this *MakeTxParamWithSender) Deserialization(data []byte) (err error) {
+
+	source := common.NewZeroCopySource(data)
+
+	addr, eof := source.NextAddress()
+	if eof {
+		err = fmt.Errorf("MakeTxParamWithSender NextAddress fail")
+		return
+	}
+	this.Sender = ethcommon.Address(addr)
+	return this.MakeTxParam.Deserialization(source)
 }
 
 type MakeTxParam struct {
