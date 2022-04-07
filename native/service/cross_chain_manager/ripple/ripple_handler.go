@@ -147,7 +147,7 @@ func (this *RippleHandler) MultiSign(service *native.NativeService) error {
 			&event.NotifyEventInfo{
 				ContractAddress: utils.CrossChainManagerContractAddress,
 				States: []interface{}{"multisignedTxJson", params.FromChainId, params.ToChainId,
-					hex.EncodeToString(params.TxHash), string(finalPayment)},
+					hex.EncodeToString(params.TxHash), string(finalPayment), payment.Sequence},
 			})
 		multisignInfo.Status = true
 	}
@@ -217,16 +217,7 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 	copy(from[:], assetAddress)
 	copy(to[:], toAddrBytes)
 
-	polyHash := service.GetTx().Hash()
-	//add memos
-	memoType, _ := hex.DecodeString("706f6c7968617368") // == "polyhash"
-	memoData := polyHash.ToArray()
-	memo := data.Memo{}
-	memo.Memo.MemoType = memoType
-	memo.Memo.MemoData = memoData
-	memos := data.Memos{memo}
-
-	payment := types.GeneratePayment(*from, *to, *amountD, *fee, uint32(rippleExtraInfo.Sequence), memos)
+	payment := types.GeneratePayment(*from, *to, *amountD, *fee, uint32(rippleExtraInfo.Sequence))
 	_, raw, err := data.Raw(payment)
 	if err != nil {
 		return fmt.Errorf("ripple MakeTransaction, data.Raw error: %s", err)
@@ -235,7 +226,7 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
 			States: []interface{}{"rippleTxJson", fromChainID, param.ToChainID,
-				hex.EncodeToString(param.TxHash), hex.EncodeToString(raw)},
+				hex.EncodeToString(param.TxHash), hex.EncodeToString(raw), payment.Sequence},
 		})
 
 	//sequence + 1
@@ -287,7 +278,8 @@ func (this *RippleHandler) ReconstructTx(service *native.NativeService) error {
 	service.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
-			States:          []interface{}{"rippleTxJson", params.FromChainId, params.ToChainId, hex.EncodeToString(params.TxHash), txJsonStr},
+			States:          []interface{}{"rippleTxJson", params.FromChainId, params.ToChainId,
+				hex.EncodeToString(params.TxHash), txJsonStr, txJson.Sequence},
 		})
 	return nil
 }
