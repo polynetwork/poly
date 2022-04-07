@@ -198,12 +198,12 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 	}
 
 	//fee = baseFee * signerNum
-	feeStr := new(big.Int).Mul(baseFee.Fee, new(big.Int).SetUint64(rippleExtraInfo.SignerNum)).String()
-	fee, err := data.NewValue(feeStr, false)
+	fee_temp := new(big.Int).Mul(baseFee.Fee, new(big.Int).SetUint64(rippleExtraInfo.SignerNum))
+	fee, err := data.NewValue(ToStringByPrecise(fee_temp, 6), true)
 	if err != nil {
 		return fmt.Errorf("ripple MakeTransaction, data.NewValue fee error: %s", err)
 	}
-	feeAmount, err := data.NewAmount(feeStr)
+	feeAmount, err := data.NewAmount(fee_temp.String())
 	if err != nil {
 		return fmt.Errorf("ripple MakeTransaction, data.NewAmount fee error: %s", err)
 	}

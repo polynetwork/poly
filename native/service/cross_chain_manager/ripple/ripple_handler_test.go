@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/polynetwork/ripple-sdk/types"
 	"github.com/stretchr/testify/assert"
+	"math/big"
 	"testing"
 )
 
@@ -16,4 +17,10 @@ func TestJsonMarshall(t *testing.T) {
 	for _, s := range payment.Signers {
 		fmt.Println(s.Signer.Account)
 	}
+}
+
+func TestStringPrecise(t *testing.T) {
+	fee_temp := new(big.Int).SetUint64(150)
+	fee := ToStringByPrecise(fee_temp, 6)
+	assert.Equal(t, fee, "0.00015")
 }
