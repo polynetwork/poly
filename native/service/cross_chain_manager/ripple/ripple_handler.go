@@ -203,6 +203,14 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 	if err != nil {
 		return fmt.Errorf("ripple MakeTransaction, data.NewValue fee error: %s", err)
 	}
+	feeAmount, err := data.NewAmount(feeStr)
+	if err != nil {
+		return fmt.Errorf("ripple MakeTransaction, data.NewAmount fee error: %s", err)
+	}
+	amountD, err := amount.Subtract(feeAmount)
+	if err != nil {
+		return fmt.Errorf("ripple MakeTransaction, amount.Subtract fee error: %s", err)
+	}
 
 	from := new(data.Account)
 	to := new(data.Account)
@@ -218,7 +226,7 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 	memo.Memo.MemoData = memoData
 	memos := data.Memos{memo}
 
-	payment := types.GeneratePayment(*from, *to, *amount, *fee, uint32(rippleExtraInfo.Sequence), memos)
+	payment := types.GeneratePayment(*from, *to, *amountD, *fee, uint32(rippleExtraInfo.Sequence), memos)
 	_, raw, err := data.Raw(payment)
 	if err != nil {
 		return fmt.Errorf("ripple MakeTransaction, data.Raw error: %s", err)
