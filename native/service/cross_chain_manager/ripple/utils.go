@@ -81,7 +81,7 @@ func GetTxJsonInfo(native *native.NativeService, fromChainId uint64, txHash []by
 }
 
 func ToStringByPrecise(bigNum *big.Int, precise uint64) string {
-	if bigNum.Cmp(new(big.Int).SetUint64(0)) != -1 {
+	if bigNum.Sign() != -1 {
 		return toStringByPrecise(bigNum, precise)
 	} else {
 		return "-" + toStringByPrecise(new(big.Int).Abs(bigNum), precise)

@@ -92,6 +92,7 @@ func (this *RippleHandler) MultiSign(service *native.NativeService) error {
 		for _, v := range rippleExtraInfo.Pks {
 			if fmt.Sprintf("%X", v) == s.Signer.SigningPubKey {
 				flag = true
+				break
 			}
 		}
 		if !flag {
@@ -180,7 +181,10 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 	if err != nil {
 		return fmt.Errorf("ripple MakeTransaction, get asset map error: %s", err)
 	}
-	assetAddress := assetMap.AssetMap[param.ToChainID]
+	assetAddress, ok := assetMap.AssetMap[param.ToChainID]
+	if !ok {
+		return fmt.Errorf("ripple MakeTransaction, asset map of chain id %d is not registered", param.ToChainID)
+	}
 
 	// get rippleExtraInfo
 	rippleExtraInfo, err := side_chain_manager.GetRippleExtraInfo(service, param.ToChainID, assetAddress)
@@ -278,7 +282,7 @@ func (this *RippleHandler) ReconstructTx(service *native.NativeService) error {
 	service.AddNotify(
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
-			States:          []interface{}{"rippleTxJson", params.FromChainId, params.ToChainId,
+			States: []interface{}{"rippleTxJson", params.FromChainId, params.ToChainId,
 				hex.EncodeToString(params.TxHash), txJsonStr, txJson.Sequence},
 		})
 	return nil

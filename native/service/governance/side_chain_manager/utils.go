@@ -423,15 +423,16 @@ func GetRippleExtraInfo(native *native.NativeService, chainId uint64, assetAddre
 		return nil, fmt.Errorf("GetRippleExtraInfo, get asset map store error: %v", err)
 	}
 	registerAssetParam := &RegisterRippleExtraInfoParam{}
-	if store != nil {
-		assetMapBytes, err := cstates.GetValueFromRawStorageItem(store)
-		if err != nil {
-			return nil, fmt.Errorf("GetRippleExtraInfo, deserialize from raw storage item err:%v", err)
-		}
-		err = registerAssetParam.Deserialization(common.NewZeroCopySource(assetMapBytes))
-		if err != nil {
-			return nil, fmt.Errorf("GetRippleExtraInfo, deserialize ripple extra info err:%v", err)
-		}
+	if store == nil {
+		return nil, fmt.Errorf("GetRippleExtraInfo, can not find any record")
+	}
+	assetMapBytes, err := cstates.GetValueFromRawStorageItem(store)
+	if err != nil {
+		return nil, fmt.Errorf("GetRippleExtraInfo, deserialize from raw storage item err:%v", err)
+	}
+	err = registerAssetParam.Deserialization(common.NewZeroCopySource(assetMapBytes))
+	if err != nil {
+		return nil, fmt.Errorf("GetRippleExtraInfo, deserialize ripple extra info err:%v", err)
 	}
 	return registerAssetParam, nil
 }
