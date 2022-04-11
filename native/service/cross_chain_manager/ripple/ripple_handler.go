@@ -163,28 +163,15 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 	if eof {
 		return fmt.Errorf("ripple MakeTransaction, deserialize toAddr error")
 	}
-	amountStr, eof := source.NextString()
+	amount_temp, eof := source.NextVarUint()
 	if eof {
 		return fmt.Errorf("ripple MakeTransaction, deserialize amount error")
 	}
-	amount, err := data.NewAmount(amountStr)
+	amount, err := data.NewAmount(new(big.Int).SetUint64(amount_temp).String())
 	if err != nil {
 		return fmt.Errorf("ripple MakeTransaction, data.NewAmount error: %s", err)
 	}
-
-	//get asset map
-	assetName, err := side_chain_manager.GetAssetName(service, fromChainID, param.FromContractAddress)
-	if err != nil {
-		return fmt.Errorf("ripple MakeTransaction, get asset map index error: %s", err)
-	}
-	assetMap, err := side_chain_manager.GetAssetMap(service, assetName)
-	if err != nil {
-		return fmt.Errorf("ripple MakeTransaction, get asset map error: %s", err)
-	}
-	assetAddress, ok := assetMap.AssetMap[param.ToChainID]
-	if !ok {
-		return fmt.Errorf("ripple MakeTransaction, asset map of chain id %d is not registered", param.ToChainID)
-	}
+	assetAddress := param.ToContractAddress
 
 	// get rippleExtraInfo
 	rippleExtraInfo, err := side_chain_manager.GetRippleExtraInfo(service, param.ToChainID, assetAddress)
