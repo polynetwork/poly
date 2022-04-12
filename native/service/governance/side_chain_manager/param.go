@@ -264,78 +264,15 @@ func (this *BtcTxParam) Deserialization(source *common.ZeroCopySource) error {
 	return nil
 }
 
-type RegisterRippleExtraInfoParam struct {
-	ChainId      uint64
-	AssetAddress []byte
-	Sequence     uint64
-	Quorum       uint64
-	SignerNum    uint64
-	Pks          [][]byte
-}
-
-func (this *RegisterRippleExtraInfoParam) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteUint64(this.ChainId)
-	sink.WriteVarBytes(this.AssetAddress)
-	sink.WriteUint64(this.Sequence)
-	sink.WriteUint64(this.Quorum)
-	sink.WriteUint64(this.SignerNum)
-	sink.WriteVarUint(uint64(len(this.Pks)))
-	for _, v := range this.Pks {
-		sink.WriteVarBytes(v)
-	}
-}
-
-func (this *RegisterRippleExtraInfoParam) Deserialization(source *common.ZeroCopySource) error {
-	chainId, eof := source.NextUint64()
-	if eof {
-		return fmt.Errorf("RegisterRippleExtraInfoParam deserialize chain id error")
-	}
-	assetAddress, eof := source.NextVarBytes()
-	if eof {
-		return fmt.Errorf("RegisterRippleExtraInfoParam deserialize assetAddress error")
-	}
-	sequence, eof := source.NextUint64()
-	if eof {
-		return fmt.Errorf("RegisterRippleExtraInfoParam deserialize sequence error")
-	}
-	quorum, eof := source.NextUint64()
-	if eof {
-		return fmt.Errorf("RegisterRippleExtraInfoParam deserialize quorum error")
-	}
-	signerNum, eof := source.NextUint64()
-	if eof {
-		return fmt.Errorf("RegisterRippleExtraInfoParam deserialize signerNum error")
-	}
-	l, eof := source.NextVarUint()
-	if eof {
-		return fmt.Errorf("RegisterRippleExtraInfoParam deserialize length of pk array error")
-	}
-	pks := make([][]byte, l)
-	for i := uint64(0); i < l; i++ {
-		pks[i], eof = source.NextVarBytes()
-		if eof {
-			return fmt.Errorf("RegisterRippleExtraInfoParam deserialize no.%d pk error", i+1)
-		}
-	}
-
-	this.ChainId = chainId
-	this.AssetAddress = assetAddress
-	this.Sequence = sequence
-	this.Quorum = quorum
-	this.SignerNum = signerNum
-	this.Pks = pks
-	return nil
-}
-
 type RegisterAssetParam struct {
 	OperatorAddress common.Address
-	AssetName       string
+	ChainId         uint64
 	AssetMap        map[uint64][]byte
 }
 
 func (this *RegisterAssetParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteAddress(this.OperatorAddress)
-	sink.WriteString(this.AssetName)
+	sink.WriteVarUint(this.ChainId)
 
 	var keyList []uint64
 	for k := range this.AssetMap {
@@ -357,9 +294,9 @@ func (this *RegisterAssetParam) Deserialization(source *common.ZeroCopySource) e
 	if eof {
 		return fmt.Errorf("RegisterAssetParam deserialize operatorAddress error")
 	}
-	assetName, eof := source.NextString()
+	chainId, eof := source.NextVarUint()
 	if eof {
-		return fmt.Errorf("RegisterAssetParam deserialize asset name error")
+		return fmt.Errorf("RegisterAssetParam deserialize chainId error")
 	}
 
 	l, eof := source.NextVarUint()
@@ -380,7 +317,7 @@ func (this *RegisterAssetParam) Deserialization(source *common.ZeroCopySource) e
 	}
 
 	this.OperatorAddress = operatorAddress
-	this.AssetName = assetName
+	this.ChainId = chainId
 	this.AssetMap = assetMap
 	return nil
 }

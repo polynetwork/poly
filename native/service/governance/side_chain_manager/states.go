@@ -181,10 +181,12 @@ func (this *Fee) Deserialization(source *common.ZeroCopySource) error {
 }
 
 type FeeInfo struct {
-	FeeInfo map[common.Address]*big.Int
+	StartTime uint32
+	FeeInfo   map[common.Address]*big.Int
 }
 
 func (this *FeeInfo) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteUint32(this.StartTime)
 	sink.WriteVarUint(uint64(len(this.FeeInfo)))
 	var AddressList []common.Address
 	for k := range this.FeeInfo {
@@ -200,6 +202,10 @@ func (this *FeeInfo) Serialization(sink *common.ZeroCopySink) {
 }
 
 func (this *FeeInfo) Deserialization(source *common.ZeroCopySource) error {
+	startTime, eof := source.NextUint32()
+	if eof {
+		return fmt.Errorf("FeeInfo deserialize start time error")
+	}
 	n, eof := source.NextVarUint()
 	if eof {
 		return fmt.Errorf("FeeInfo deserialize FeeInfo length error")
@@ -216,6 +222,70 @@ func (this *FeeInfo) Deserialization(source *common.ZeroCopySource) error {
 		}
 		feeInfo[k] = new(big.Int).SetBytes(v)
 	}
+	this.StartTime = startTime
 	this.FeeInfo = feeInfo
+	return nil
+}
+
+type RippleExtraInfo struct {
+	Operator      common.Address
+	Sequence      uint64
+	Quorum        uint64
+	SignerNum     uint64
+	Pks           [][]byte
+	ReserveAmount *big.Int
+}
+
+func (this *RippleExtraInfo) Serialization(sink *common.ZeroCopySink) {
+	sink.WriteAddress(this.Operator)
+	sink.WriteUint64(this.Sequence)
+	sink.WriteUint64(this.Quorum)
+	sink.WriteUint64(this.SignerNum)
+	sink.WriteVarUint(uint64(len(this.Pks)))
+	for _, v := range this.Pks {
+		sink.WriteVarBytes(v)
+	}
+	sink.WriteVarBytes(this.ReserveAmount.Bytes())
+}
+
+func (this *RippleExtraInfo) Deserialization(source *common.ZeroCopySource) error {
+	operator, eof := source.NextAddress()
+	if eof {
+		return fmt.Errorf("RippleExtraInfoParam deserialize operator error")
+	}
+	sequence, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("RippleExtraInfoParam deserialize sequence error")
+	}
+	quorum, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("RippleExtraInfoParam deserialize quorum error")
+	}
+	signerNum, eof := source.NextUint64()
+	if eof {
+		return fmt.Errorf("RippleExtraInfoParam deserialize signerNum error")
+	}
+	l, eof := source.NextVarUint()
+	if eof {
+		return fmt.Errorf("RippleExtraInfoParam deserialize length of pk array error")
+	}
+	pks := make([][]byte, l)
+	for i := uint64(0); i < l; i++ {
+		pks[i], eof = source.NextVarBytes()
+		if eof {
+			return fmt.Errorf("RippleExtraInfoParam deserialize no.%d pk error", i+1)
+		}
+	}
+	reserveAmount, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("RippleExtraInfoParam deserialize reserveAmount error")
+	}
+
+	this.Operator = operator
+	this.Sequence = sequence
+	this.Quorum = quorum
+	this.SignerNum = signerNum
+	this.Pks = pks
+	this.ReserveAmount = new(big.Int).SetBytes(reserveAmount)
 	return nil
 }

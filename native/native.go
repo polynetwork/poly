@@ -211,6 +211,10 @@ func (this *NativeService) GetHeight() uint32 {
 	return this.height
 }
 
+func (this *NativeService) GetTime() uint32 {
+	return this.time
+}
+
 func (this *NativeService) GetChainID() uint64 {
 	return this.chainID
 }

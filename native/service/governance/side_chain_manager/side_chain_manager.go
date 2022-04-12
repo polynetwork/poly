@@ -44,7 +44,6 @@ const (
 	APPROVE_QUIT_SIDE_CHAIN     = "approveQuitSideChain"
 	REGISTER_REDEEM             = "registerRedeem"
 	REGISTER_ASSET_MAP          = "registerAssetMap"
-	REGISTER_RIPPLE_EXTRA_INFO  = "registerRippleExtraInfo"
 	UPDATE_FEE                  = "updateFee"
 	SET_BTC_TX_PARAM            = "setBtcTxParam"
 
@@ -59,10 +58,10 @@ const (
 	REDEEM_SCRIPT             = "redeemScript"
 	ASSET_MAP                 = "assetMap"
 	ASSET_MAP_INDEX           = "assetMapIndex"
-	RIPPLE_EXTRA_INFO         = "rippleExtraInfo"
 	FEE                       = "fee"
 	FEE_INFO                  = "feeInfo"
-	OPERATOR_ADDRESS          = "operatorAddress"
+
+	UPDATE_FEE_TIMEOUT = 300
 )
 
 //Register methods of node_manager contract
@@ -74,7 +73,6 @@ func RegisterSideChainManagerContract(native *native.NativeService) {
 	native.Register(QUIT_SIDE_CHAIN, QuitSideChain)
 	native.Register(APPROVE_QUIT_SIDE_CHAIN, ApproveQuitSideChain)
 	native.Register(REGISTER_ASSET_MAP, RegisterAssetMap)
-	native.Register(REGISTER_RIPPLE_EXTRA_INFO, RegisterRippleExtraInfo)
 	native.Register(UPDATE_FEE, UpdateFee)
 
 	native.Register(REGISTER_REDEEM, RegisterRedeem)
@@ -460,19 +458,15 @@ func RegisterAssetMap(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterAssetMap, checkWitness error: %v", err)
 	}
 
-	operatorAddress, err := GetOperatorAddress(native)
+	rippleExtraInfo, err := GetRippleExtraInfo(native, params.ChainId)
 	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RegisterAssetMap, GetOperatorAddress error: %v", err)
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterAssetMap, GetRippleExtraInfo error: %v", err)
 	}
-	if operatorAddress == common.ADDRESS_EMPTY {
-		PutOperatorAddress(native, params.OperatorAddress)
-	} else {
-		if operatorAddress != params.OperatorAddress {
-			return utils.BYTE_FALSE, fmt.Errorf("RegisterAssetMap,  caller is not operator")
-		}
+	if rippleExtraInfo.Operator != params.OperatorAddress {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterAssetMap, caller is not operator")
 	}
 
-	paramStore, err := GetAssetMap(native, params.AssetName)
+	paramStore, err := GetAssetMap(native, params.ChainId)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterAssetMap, GetAssetMap error: %v", err)
 	}
@@ -482,27 +476,6 @@ func RegisterAssetMap(native *native.NativeService) ([]byte, error) {
 
 	PutAssetMap(native, paramStore)
 	PutAssetMapIndexes(native, paramStore)
-	return utils.BYTE_TRUE, nil
-}
-
-func RegisterRippleExtraInfo(native *native.NativeService) ([]byte, error) {
-	params := new(RegisterRippleExtraInfoParam)
-	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RegisterRippleExtraInfo, contract params deserialize error: %v", err)
-	}
-
-	operatorAddress, err := GetOperatorAddress(native)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RegisterRippleExtraInfo, GetOperatorAddress error: %v", err)
-	}
-
-	//check witness
-	err = utils.ValidateOwner(native, operatorAddress)
-	if err != nil {
-		return utils.BYTE_FALSE, fmt.Errorf("RegisterRippleExtraInfo, checkWitness error: %v", err)
-	}
-
-	PutRippleExtraInfo(native, params)
 	return utils.BYTE_TRUE, nil
 }
 
@@ -533,6 +506,17 @@ func UpdateFee(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("UpdateFee, GetFeeInfo error: %v", err)
 	}
+	if feeInfo.StartTime == 0 {
+		feeInfo.StartTime = native.GetTime()
+	} else if native.GetTime()-feeInfo.StartTime > UPDATE_FEE_TIMEOUT {
+		// if time out view + 1
+		fee.View = fee.View + 1
+		PutFee(native, params.ChainId, fee)
+		feeInfo = &FeeInfo{
+			StartTime: native.GetTime(),
+			FeeInfo: make(map[common.Address]*big.Int),
+		}
+	}
 	feeInfo.FeeInfo[params.Address] = params.Fee
 	PutFeeInfo(native, params.ChainId, fee.View, feeInfo)
 
@@ -546,7 +530,7 @@ func UpdateFee(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_TRUE, nil
 	}
 	//vote enough
-	feeInfoList := make([]*big.Int, 0)
+	feeInfoList := make([]*big.Int, 0, len(feeInfo.FeeInfo))
 	for _, v := range feeInfo.FeeInfo {
 		feeInfoList = append(feeInfoList, v)
 	}

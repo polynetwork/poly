@@ -47,7 +47,7 @@ func (this *RippleHandler) MultiSign(service *native.NativeService) error {
 	}
 
 	// get rippleExtraInfo
-	rippleExtraInfo, err := side_chain_manager.GetRippleExtraInfo(service, params.ToChainId, params.AssetAddress)
+	rippleExtraInfo, err := side_chain_manager.GetRippleExtraInfo(service, params.ToChainId)
 	if err != nil {
 		return fmt.Errorf("MultiSign, side_chain_manager.GetRippleExtraInfo error")
 	}
@@ -171,13 +171,28 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 	if err != nil {
 		return fmt.Errorf("ripple MakeTransaction, data.NewAmount error: %s", err)
 	}
-	assetAddress := param.ToContractAddress
+
+	//get asset map
+	asset, err := side_chain_manager.GetAsset(service, fromChainID, param.FromContractAddress)
+	if err != nil {
+		return fmt.Errorf("ripple MakeTransaction, get asset map index error: %s", err)
+	}
+	assetMap, err := side_chain_manager.GetAssetMap(service, asset)
+	if err != nil {
+		return fmt.Errorf("ripple MakeTransaction, get asset map error: %s", err)
+	}
+	assetAddress, ok := assetMap.AssetMap[param.ToChainID]
+	if !ok {
+		return fmt.Errorf("ripple MakeTransaction, asset map of chain %d is not registered", param.ToChainID)
+	}
 
 	// get rippleExtraInfo
-	rippleExtraInfo, err := side_chain_manager.GetRippleExtraInfo(service, param.ToChainID, assetAddress)
+	rippleExtraInfo, err := side_chain_manager.GetRippleExtraInfo(service, param.ToChainID)
 	if err != nil {
 		return fmt.Errorf("ripple MakeTransaction, side_chain_manager.GetRippleExtraInfo error")
 	}
+
+	//TODO: amount and address check (20)
 
 	//get fee
 	baseFee, err := side_chain_manager.GetFee(service, param.ToChainID)
@@ -202,6 +217,13 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 	if err != nil {
 		return fmt.Errorf("ripple MakeTransaction, amount.Subtract fee error: %s", err)
 	}
+	reserveAmount, err := data.NewValue(rippleExtraInfo.ReserveAmount.String(), false)
+	if err != nil {
+		return fmt.Errorf("ripple MakeTransaction, side_chain_manager.GetFee error: %v", err)
+	}
+	if amountD.Compare(*reserveAmount) < 0 {
+		return fmt.Errorf("ripple MakeTransaction, amount is less than reserveAmount")
+	}
 
 	from := new(data.Account)
 	to := new(data.Account)
@@ -222,7 +244,10 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 
 	//sequence + 1
 	rippleExtraInfo.Sequence = rippleExtraInfo.Sequence + 1
-	side_chain_manager.PutRippleExtraInfo(service, rippleExtraInfo)
+	err = side_chain_manager.PutRippleExtraInfo(service, param.ToChainID, rippleExtraInfo)
+	if err != nil {
+		return fmt.Errorf("ripple MakeTransaction, side_chain_manager.PutRippleExtraInfo error: %s", err)
+	}
 
 	//store txJson info
 	PutTxJsonInfo(service, fromChainID, param.TxHash, hex.EncodeToString(raw))
@@ -251,7 +276,7 @@ func (this *RippleHandler) ReconstructTx(service *native.NativeService) error {
 	}
 
 	//get ripple extra info
-	rippleExtraInfo, err := side_chain_manager.GetRippleExtraInfo(service, params.ToChainId, params.AssetAddress)
+	rippleExtraInfo, err := side_chain_manager.GetRippleExtraInfo(service, params.ToChainId)
 	if err != nil {
 		return fmt.Errorf("ReconstructTx, side_chain_manager.GetRippleExtraInfo error: %v", err)
 	}

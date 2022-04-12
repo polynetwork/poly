@@ -72,14 +72,12 @@ type ReconstructTxParam struct {
 	FromChainId  uint64
 	TxHash       []byte
 	ToChainId    uint64
-	AssetAddress []byte
 }
 
 func (this *ReconstructTxParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteVarUint(this.FromChainId)
 	sink.WriteVarBytes(this.TxHash)
 	sink.WriteVarUint(this.ToChainId)
-	sink.WriteVarBytes(this.AssetAddress)
 }
 
 func (this *ReconstructTxParam) Deserialization(source *common.ZeroCopySource) error {
@@ -95,14 +93,9 @@ func (this *ReconstructTxParam) Deserialization(source *common.ZeroCopySource) e
 	if eof {
 		return fmt.Errorf("ReconstructTxParam deserialize toChainId error")
 	}
-	assetAddress, eof := source.NextVarBytes()
-	if eof {
-		return fmt.Errorf("ReconstructTxParam deserialize assetAddress error")
-	}
 
 	this.FromChainId = fromChainId
 	this.TxHash = txHash
 	this.ToChainId = toChainId
-	this.AssetAddress = assetAddress
 	return nil
 }
