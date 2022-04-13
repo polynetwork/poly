@@ -353,62 +353,36 @@ func GetBtcRedeemScriptBytes(native *native.NativeService, redeemScriptKey strin
 	return redeemBytes, nil
 }
 
-func PutAssetMap(native *native.NativeService, param *RegisterAssetParam) {
-	chainIDBytes := utils.GetUint64Bytes(param.ChainId)
-	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(ASSET_MAP), chainIDBytes)
+func PutAssetBind(native *native.NativeService, chainId uint64, assetBind *AssetBind) {
+	chainIDBytes := utils.GetUint64Bytes(chainId)
+	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(ASSET_BIND), chainIDBytes)
 	sink := common.NewZeroCopySink(nil)
-	param.Serialization(sink)
+	assetBind.Serialization(sink)
 	native.GetCacheDB().Put(key, cstates.GenRawStorageItem(sink.Bytes()))
 }
 
-func GetAssetMap(native *native.NativeService, chainId uint64) (*RegisterAssetParam, error) {
+func GetAssetBind(native *native.NativeService, chainId uint64) (*AssetBind, error) {
 	chainIDBytes := utils.GetUint64Bytes(chainId)
-	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(ASSET_MAP), chainIDBytes)
+	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(ASSET_BIND), chainIDBytes)
 	store, err := native.GetCacheDB().Get(key)
 	if err != nil {
 		return nil, fmt.Errorf("GetAssetMap, get asset map store error: %v", err)
 	}
-	registerAssetParam := &RegisterAssetParam{
+	assetBind := &AssetBind{
 		AssetMap: make(map[uint64][]byte),
+		LockProxyMap: make(map[uint64][]byte),
 	}
 	if store != nil {
-		assetMapBytes, err := cstates.GetValueFromRawStorageItem(store)
+		assetBindBytes, err := cstates.GetValueFromRawStorageItem(store)
 		if err != nil {
 			return nil, fmt.Errorf("GetAssetMap, deserialize from raw storage item err:%v", err)
 		}
-		err = registerAssetParam.Deserialization(common.NewZeroCopySource(assetMapBytes))
+		err = assetBind.Deserialization(common.NewZeroCopySource(assetBindBytes))
 		if err != nil {
 			return nil, fmt.Errorf("GetAssetMap, deserialize asset map err:%v", err)
 		}
 	}
-	return registerAssetParam, nil
-}
-
-func PutAssetMapIndexes(native *native.NativeService, param *RegisterAssetParam) {
-	chainIDBytes := utils.GetUint64Bytes(param.ChainId)
-	for k, v := range param.AssetMap {
-		kBytes := utils.GetUint64Bytes(k)
-		key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(ASSET_MAP_INDEX), kBytes, v)
-		native.GetCacheDB().Put(key, cstates.GenRawStorageItem(chainIDBytes))
-	}
-}
-
-func GetAsset(native *native.NativeService, chainID uint64, assetAddress []byte) (uint64, error) {
-	chainIDBytes := utils.GetUint64Bytes(chainID)
-	key := utils.ConcatKey(utils.SideChainManagerContractAddress, []byte(ASSET_MAP_INDEX), chainIDBytes, assetAddress)
-	store, err := native.GetCacheDB().Get(key)
-	if err != nil {
-		return 0, fmt.Errorf("GetAssetMapIndex, get asset map index store error: %v", err)
-	}
-	if store == nil {
-		return 0, fmt.Errorf("GetAssetMapIndex, cannot find any record")
-	}
-	r, err := cstates.GetValueFromRawStorageItem(store)
-	if err != nil {
-		return 0, fmt.Errorf("GetAssetMap, deserialize from raw storage item err:%v", err)
-	}
-	asset := utils.GetBytesUint64(r)
-	return asset, nil
+	return assetBind, nil
 }
 
 func PutFee(native *native.NativeService, chainId uint64, fee *Fee) {

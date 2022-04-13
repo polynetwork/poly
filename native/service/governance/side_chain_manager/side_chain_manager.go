@@ -56,8 +56,7 @@ const (
 	BIND_SIGN_INFO            = "bindSignInfo"
 	BTC_TX_PARAM              = "btcTxParam"
 	REDEEM_SCRIPT             = "redeemScript"
-	ASSET_MAP                 = "assetMap"
-	ASSET_MAP_INDEX           = "assetMapIndex"
+	ASSET_BIND                 = "assetBind"
 	FEE                       = "fee"
 	FEE_INFO                  = "feeInfo"
 
@@ -73,6 +72,7 @@ func RegisterSideChainManagerContract(native *native.NativeService) {
 	native.Register(QUIT_SIDE_CHAIN, QuitSideChain)
 	native.Register(APPROVE_QUIT_SIDE_CHAIN, ApproveQuitSideChain)
 	native.Register(REGISTER_ASSET_MAP, RegisterAssetMap)
+	//TODO: register lockproxy
 	native.Register(UPDATE_FEE, UpdateFee)
 
 	native.Register(REGISTER_REDEEM, RegisterRedeem)
@@ -466,16 +466,18 @@ func RegisterAssetMap(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterAssetMap, caller is not operator")
 	}
 
-	paramStore, err := GetAssetMap(native, params.ChainId)
+	assetBind, err := GetAssetBind(native, params.ChainId)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterAssetMap, GetAssetMap error: %v", err)
 	}
 	for k, v := range params.AssetMap {
-		paramStore.AssetMap[k] = v
+		assetBind.AssetMap[k] = v
+	}
+	for k, v := range params.LockProxyMap {
+		assetBind.LockProxyMap[k] = v
 	}
 
-	PutAssetMap(native, paramStore)
-	PutAssetMapIndexes(native, paramStore)
+	PutAssetBind(native, params.ChainId, assetBind)
 	return utils.BYTE_TRUE, nil
 }
 

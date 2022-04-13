@@ -159,11 +159,15 @@ func (this *RippleHandler) MultiSign(service *native.NativeService) error {
 func (this *RippleHandler) MakeTransaction(service *native.NativeService, param *crosscommon.MakeTxParam,
 	fromChainID uint64) error {
 	source := common.NewZeroCopySource(param.Args)
+	assetHash, eof := source.NextVarBytes()
+	if eof {
+		return fmt.Errorf("ripple MakeTransaction, deserialize asset hash error")
+	}
 	toAddrBytes, eof := source.NextVarBytes()
 	if eof {
 		return fmt.Errorf("ripple MakeTransaction, deserialize toAddr error")
 	}
-	amount_temp, eof := source.NextVarUint()
+	amount_temp, eof := source.NextUint64()
 	if eof {
 		return fmt.Errorf("ripple MakeTransaction, deserialize amount error")
 	}
@@ -173,17 +177,24 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 	}
 
 	//get asset map
-	asset, err := side_chain_manager.GetAsset(service, fromChainID, param.FromContractAddress)
-	if err != nil {
-		return fmt.Errorf("ripple MakeTransaction, get asset map index error: %s", err)
-	}
-	assetMap, err := side_chain_manager.GetAssetMap(service, asset)
+	assetBind, err := side_chain_manager.GetAssetBind(service, param.ToChainID)
 	if err != nil {
 		return fmt.Errorf("ripple MakeTransaction, get asset map error: %s", err)
 	}
-	assetAddress, ok := assetMap.AssetMap[param.ToChainID]
+	lockProxyAddress, ok := assetBind.LockProxyMap[param.ToChainID]
+	if !ok {
+		return fmt.Errorf("ripple MakeTransaction, lock proxy map of chain %d is not registered", param.ToChainID)
+	}
+	assetAddress, ok := assetBind.AssetMap[param.ToChainID]
 	if !ok {
 		return fmt.Errorf("ripple MakeTransaction, asset map of chain %d is not registered", param.ToChainID)
+	}
+	if hex.EncodeToString(assetAddress) != hex.EncodeToString(assetHash) ||
+		hex.EncodeToString(assetAddress) != hex.EncodeToString(param.ToContractAddress) ||
+		hex.EncodeToString(assetAddress) != hex.EncodeToString(lockProxyAddress) {
+		return fmt.Errorf("ripple MakeTransaction, asset address is not match, toAssetHash %x, assetAddress %x, "+
+			"toContractAddress: %x, lockProxyAddress: %x",
+			assetHash, assetAddress, param.ToContractAddress, lockProxyAddress)
 	}
 
 	// get rippleExtraInfo
@@ -191,8 +202,6 @@ func (this *RippleHandler) MakeTransaction(service *native.NativeService, param 
 	if err != nil {
 		return fmt.Errorf("ripple MakeTransaction, side_chain_manager.GetRippleExtraInfo error")
 	}
-
-	//TODO: amount and address check (20)
 
 	//get fee
 	baseFee, err := side_chain_manager.GetFee(service, param.ToChainID)

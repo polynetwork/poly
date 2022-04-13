@@ -268,24 +268,39 @@ type RegisterAssetParam struct {
 	OperatorAddress common.Address
 	ChainId         uint64
 	AssetMap        map[uint64][]byte
+	LockProxyMap    map[uint64][]byte
 }
 
 func (this *RegisterAssetParam) Serialization(sink *common.ZeroCopySink) {
 	sink.WriteAddress(this.OperatorAddress)
 	sink.WriteVarUint(this.ChainId)
 
-	var keyList []uint64
+	var assetList []uint64
 	for k := range this.AssetMap {
-		keyList = append(keyList, k)
+		assetList = append(assetList, k)
 	}
-	sort.SliceStable(keyList, func(i, j int) bool {
-		return keyList[i] > keyList[j]
+	sort.SliceStable(assetList, func(i, j int) bool {
+		return assetList[i] > assetList[j]
 	})
 
 	sink.WriteVarUint(uint64(len(this.AssetMap)))
-	for _, key := range keyList {
+	for _, key := range assetList {
 		sink.WriteVarUint(key)
 		sink.WriteVarBytes(this.AssetMap[key])
+	}
+
+	var lockProxyList []uint64
+	for k := range this.LockProxyMap {
+		lockProxyList = append(lockProxyList, k)
+	}
+	sort.SliceStable(lockProxyList, func(i, j int) bool {
+		return lockProxyList[i] > lockProxyList[j]
+	})
+
+	sink.WriteVarUint(uint64(len(this.LockProxyMap)))
+	for _, key := range lockProxyList {
+		sink.WriteVarUint(key)
+		sink.WriteVarBytes(this.LockProxyMap[key])
 	}
 }
 
@@ -316,9 +331,102 @@ func (this *RegisterAssetParam) Deserialization(source *common.ZeroCopySource) e
 		assetMap[k] = v
 	}
 
+	m, eof := source.NextVarUint()
+	if eof {
+		return fmt.Errorf("RegisterAssetParam deserialize length of lock proxy map array error")
+	}
+	lockProxyMap := make(map[uint64][]byte, l)
+	for i := uint64(0); i < m; i++ {
+		k, eof := source.NextVarUint()
+		if eof {
+			return fmt.Errorf("RegisterAssetParam deserialize no.%d chainId error", i+1)
+		}
+		v, eof := source.NextVarBytes()
+		if eof {
+			return fmt.Errorf("RegisterAssetParam deserialize no.%d lock proxy address error", i+1)
+		}
+		lockProxyMap[k] = v
+	}
+
 	this.OperatorAddress = operatorAddress
 	this.ChainId = chainId
 	this.AssetMap = assetMap
+	this.LockProxyMap = lockProxyMap
+	return nil
+}
+
+type AssetBind struct {
+	AssetMap        map[uint64][]byte
+	LockProxyMap    map[uint64][]byte
+}
+
+func (this *AssetBind) Serialization(sink *common.ZeroCopySink) {
+	var assetList []uint64
+	for k := range this.AssetMap {
+		assetList = append(assetList, k)
+	}
+	sort.SliceStable(assetList, func(i, j int) bool {
+		return assetList[i] > assetList[j]
+	})
+
+	sink.WriteVarUint(uint64(len(this.AssetMap)))
+	for _, key := range assetList {
+		sink.WriteVarUint(key)
+		sink.WriteVarBytes(this.AssetMap[key])
+	}
+
+	var lockProxyList []uint64
+	for k := range this.LockProxyMap {
+		lockProxyList = append(lockProxyList, k)
+	}
+	sort.SliceStable(lockProxyList, func(i, j int) bool {
+		return lockProxyList[i] > lockProxyList[j]
+	})
+
+	sink.WriteVarUint(uint64(len(this.LockProxyMap)))
+	for _, key := range lockProxyList {
+		sink.WriteVarUint(key)
+		sink.WriteVarBytes(this.LockProxyMap[key])
+	}
+}
+
+func (this *AssetBind) Deserialization(source *common.ZeroCopySource) error {
+	l, eof := source.NextVarUint()
+	if eof {
+		return fmt.Errorf("RegisterAssetParam deserialize length of asset map array error")
+	}
+	assetMap := make(map[uint64][]byte, l)
+	for i := uint64(0); i < l; i++ {
+		k, eof := source.NextVarUint()
+		if eof {
+			return fmt.Errorf("RegisterAssetParam deserialize no.%d chainId error", i+1)
+		}
+		v, eof := source.NextVarBytes()
+		if eof {
+			return fmt.Errorf("RegisterAssetParam deserialize no.%d asset address error", i+1)
+		}
+		assetMap[k] = v
+	}
+
+	m, eof := source.NextVarUint()
+	if eof {
+		return fmt.Errorf("RegisterAssetParam deserialize length of lock proxy map array error")
+	}
+	lockProxyMap := make(map[uint64][]byte, l)
+	for i := uint64(0); i < m; i++ {
+		k, eof := source.NextVarUint()
+		if eof {
+			return fmt.Errorf("RegisterAssetParam deserialize no.%d chainId error", i+1)
+		}
+		v, eof := source.NextVarBytes()
+		if eof {
+			return fmt.Errorf("RegisterAssetParam deserialize no.%d lock proxy address error", i+1)
+		}
+		lockProxyMap[k] = v
+	}
+
+	this.AssetMap = assetMap
+	this.LockProxyMap = lockProxyMap
 	return nil
 }
 
