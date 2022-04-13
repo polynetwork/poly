@@ -43,7 +43,7 @@ const (
 	QUIT_SIDE_CHAIN             = "quitSideChain"
 	APPROVE_QUIT_SIDE_CHAIN     = "approveQuitSideChain"
 	REGISTER_REDEEM             = "registerRedeem"
-	REGISTER_ASSET_MAP          = "registerAssetMap"
+	REGISTER_ASSET              = "registerAsset"
 	UPDATE_FEE                  = "updateFee"
 	SET_BTC_TX_PARAM            = "setBtcTxParam"
 
@@ -56,7 +56,7 @@ const (
 	BIND_SIGN_INFO            = "bindSignInfo"
 	BTC_TX_PARAM              = "btcTxParam"
 	REDEEM_SCRIPT             = "redeemScript"
-	ASSET_BIND                 = "assetBind"
+	ASSET_BIND                = "assetBind"
 	FEE                       = "fee"
 	FEE_INFO                  = "feeInfo"
 
@@ -71,8 +71,7 @@ func RegisterSideChainManagerContract(native *native.NativeService) {
 	native.Register(APPROVE_UPDATE_SIDE_CHAIN, ApproveUpdateSideChain)
 	native.Register(QUIT_SIDE_CHAIN, QuitSideChain)
 	native.Register(APPROVE_QUIT_SIDE_CHAIN, ApproveQuitSideChain)
-	native.Register(REGISTER_ASSET_MAP, RegisterAssetMap)
-	//TODO: register lockproxy
+	native.Register(REGISTER_ASSET, RegisterAsset)
 	native.Register(UPDATE_FEE, UpdateFee)
 
 	native.Register(REGISTER_REDEEM, RegisterRedeem)
@@ -446,7 +445,7 @@ func SetBtcTxParam(native *native.NativeService) ([]byte, error) {
 	return utils.BYTE_TRUE, nil
 }
 
-func RegisterAssetMap(native *native.NativeService) ([]byte, error) {
+func RegisterAsset(native *native.NativeService) ([]byte, error) {
 	params := new(RegisterAssetParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("RegisterAssetMap, contract params deserialize error: %v", err)
@@ -516,7 +515,7 @@ func UpdateFee(native *native.NativeService) ([]byte, error) {
 		PutFee(native, params.ChainId, fee)
 		feeInfo = &FeeInfo{
 			StartTime: native.GetTime(),
-			FeeInfo: make(map[common.Address]*big.Int),
+			FeeInfo:   make(map[common.Address]*big.Int),
 		}
 	}
 	feeInfo.FeeInfo[params.Address] = params.Fee
