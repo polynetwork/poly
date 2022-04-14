@@ -400,7 +400,9 @@ func GetFee(native *native.NativeService, chainID uint64) (*Fee, error) {
 	if err != nil {
 		return nil, fmt.Errorf("GetFee, get fee info store error: %v", err)
 	}
-	fee := new(Fee)
+	fee := &Fee{
+		Fee: new(big.Int),
+	}
 	if store != nil {
 		feeBytes, err := cstates.GetValueFromRawStorageItem(store)
 		if err != nil {
@@ -451,6 +453,9 @@ func GetRippleExtraInfo(native *native.NativeService, chainId uint64) (*RippleEx
 	sideChainInfo, err := GetSideChain(native, chainId)
 	if err != nil {
 		return nil, fmt.Errorf("GetRippleExtraInfo, GetSideChain error: %v", err)
+	}
+	if sideChainInfo == nil {
+		return nil, fmt.Errorf("GetRippleExtraInfo, side chain info is nil")
 	}
 	rippleExtraInfo := &RippleExtraInfo{
 		Pks: make([][]byte, 0),
