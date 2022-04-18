@@ -108,21 +108,21 @@ func hexToAccountAddress(addr string) (*types.AccountAddress, error) {
 	return &addressArray, nil
 }
 
-func (tag *StructTag) toTypesStructTag() (*types.TypeTag__Struct, error) {
-	address, err := hexToAccountAddress(tag.Address)
-	if err != nil {
-		return nil, errors.WithStack(err)
-	}
-	structTag := types.StructTag{
-		Address:    *address,
-		Module:     types.Identifier(tag.Module),
-		Name:       types.Identifier(tag.Name),
-		TypeParams: nil, //todo parse typetag[]
-	}
-	return &types.TypeTag__Struct{
-		Value: structTag,
-	}, nil
-}
+// func (tag *StructTag) toTypesStructTag() (*types.TypeTag__Struct, error) {
+// 	address, err := hexToAccountAddress(tag.Address)
+// 	if err != nil {
+// 		return nil, errors.WithStack(err)
+// 	}
+// 	structTag := types.StructTag{
+// 		Address:    *address,
+// 		Module:     types.Identifier(tag.Module),
+// 		Name:       types.Identifier(tag.Name),
+// 		TypeParams: nil, //todo parse typetag[]
+// 	}
+// 	return &types.TypeTag__Struct{
+// 		Value: structTag,
+// 	}, nil
+// }
 
 func toTypesContractEvent(event *types.ContractEventV0) *types.ContractEvent__V0 {
 	return &types.ContractEvent__V0{
@@ -445,7 +445,10 @@ func verifySparseMerkleProof(proof SparseMerkleProof, expectedRootHash *types.Ha
 			if hashValueEqual(elementKey, proof.leaf.requestedKey) {
 				return false, fmt.Errorf("verifySparseMerkleProof, Expected non-inclusion proof, but key exists in proof: %v", elementKey)
 			}
-			//todo common_prefix_bits
+			// ------------------------
+			if !(countCommonPrefix(elementKey, proof.leaf.requestedKey) >= len(proof.siblings)) {
+				return false, fmt.Errorf("verifySparseMerkleProof, countCommonPrefix error, elementKey: %v, proof.leaf.requestedKey: %v", elementKey, proof.leaf.requestedKey)
+			}
 		}
 	}
 
@@ -477,6 +480,26 @@ func verifySparseMerkleProof(proof SparseMerkleProof, expectedRootHash *types.Ha
 		return false, fmt.Errorf("Root hashes do not match. Actual root hash: %v. Expected root hash: %v.", *hash, *expectedRootHash)
 	}
 	return true, nil
+}
+
+func countCommonPrefix(data1 []byte, data2 []byte) int {
+	count := 0
+	for i := 0; i < len(data1)*8; i++ {
+		if getBitAtFromMSB(data1, i) == getBitAtFromMSB(data2, i) {
+			count++
+		} else {
+			break
+		}
+	}
+	return count
+}
+
+// getBitAtFromMSB gets the bit at an offset from the most significant bit
+func getBitAtFromMSB(data []byte, position int) int {
+	if int(data[position/8])&(1<<(8-1-uint(position)%8)) > 0 {
+		return 1
+	}
+	return 0
 }
 
 func toSiblings(obj Siblings) *AccumulatorProof {
