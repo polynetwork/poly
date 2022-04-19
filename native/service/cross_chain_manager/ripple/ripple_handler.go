@@ -18,6 +18,7 @@
 package ripple
 
 import (
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -27,6 +28,8 @@ import (
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/event"
 	crosscommon "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
+	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/consensus_vote"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	"github.com/polynetwork/poly/native/service/utils"
 	"github.com/polynetwork/ripple-sdk/types"
@@ -38,6 +41,83 @@ type RippleHandler struct {
 
 func NewRippleHandler() *RippleHandler {
 	return &RippleHandler{}
+}
+
+func (this *RippleHandler) MakeDepositProposal(service *native.NativeService) (*scom.MakeTxParam, error) {
+	params := new(scom.EntranceParam)
+	if err := params.Deserialization(common.NewZeroCopySource(service.GetInput())); err != nil {
+		return nil, fmt.Errorf("vote MakeDepositProposal, contract params deserialize error: %v", err)
+	}
+
+	//check witness
+	address, err := common.AddressParseFromBytes(params.RelayerAddress)
+	if err != nil {
+		return nil, fmt.Errorf("vote MakeDepositProposal, common.AddressParseFromBytes error: %v", err)
+	}
+	err = utils.ValidateOwner(service, address)
+	if err != nil {
+		return nil, fmt.Errorf("vote MakeDepositProposal, checkWitness error: %v", err)
+	}
+
+	//use sourcechainid, height, extra as unique id
+	unique := &scom.EntranceParam{
+		SourceChainID: params.SourceChainID,
+		Height:        params.Height,
+		Extra:         params.Extra,
+	}
+	sink := common.NewZeroCopySink(nil)
+	unique.Serialization(sink)
+	temp := sha256.Sum256(sink.Bytes())
+	id := temp[:]
+
+	ok, err := consensus_vote.CheckVotes(service, id, address)
+	if err != nil {
+		return nil, fmt.Errorf("vote MakeDepositProposal, CheckVotes error: %v", err)
+	}
+	if ok {
+		extra := common.NewZeroCopySource(params.Extra)
+		txParam := new(scom.MakeTxParam)
+		if err := txParam.Deserialization(extra); err != nil {
+			return nil, fmt.Errorf("vote MakeDepositProposal, deserialize MakeTxParam error:%s", err)
+		}
+		if err := scom.CheckDoneTx(service, txParam.CrossChainID, params.SourceChainID); err != nil {
+			return nil, fmt.Errorf("vote MakeDepositProposal, check done transaction error:%s", err)
+		}
+		if err := scom.PutDoneTx(service, txParam.CrossChainID, params.SourceChainID); err != nil {
+			return nil, fmt.Errorf("vote MakeDepositProposal, PutDoneTx error:%s", err)
+		}
+
+		//fulfill to contract address
+		assetBind, err := side_chain_manager.GetAssetBind(service, params.SourceChainID)
+		if err != nil {
+			return nil, fmt.Errorf("vote MakeDepositProposal, side_chain_manager.GetAssetBind error:%s", err)
+		}
+		txParam.ToContractAddress = assetBind.LockProxyMap[txParam.ToChainID]
+
+		//fulfill to asset hash
+		source := common.NewZeroCopySource(txParam.Args)
+		dstAddress, eof := source.NextVarBytes()
+		if eof {
+			return nil, fmt.Errorf("vote MakeDepositProposal, deserilize dst address error:%s", err)
+		}
+		amount, eof := source.NextUint64()
+		if eof {
+			return nil, fmt.Errorf("vote MakeDepositProposal, deserilize amount error:%s", err)
+		}
+		s := common.NewZeroCopySink(nil)
+		s.WriteVarBytes(assetBind.AssetMap[txParam.ToChainID])
+		s.WriteVarBytes(dstAddress)
+		// fulfill 32 bytes with 0
+		t := common.NewZeroCopySink(nil)
+		t.WriteUint64(amount)
+		amountBytes := [32]byte{}
+		copy(amountBytes[:], t.Bytes())
+		s.WriteBytes(amountBytes[:])
+		txParam.Args = s.Bytes()
+
+		return txParam, nil
+	}
+	return nil, nil
 }
 
 func (this *RippleHandler) MultiSign(service *native.NativeService) error {

@@ -101,6 +101,8 @@ func GetChainHandler(router uint64) (scom.ChainHandler, error) {
 		return harmony.NewHandler(), nil
 	case utils.BYTOM_ROUTER:
 		return bytom.NewHandler(), nil
+	case utils.RIPPLE_ROUTER:
+		return ripple.NewRippleHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported router:%d", router)
 	}
@@ -144,7 +146,7 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
-	if txParam == nil && sideChain.Router == utils.VOTE_ROUTER {
+	if txParam == nil && (sideChain.Router == utils.VOTE_ROUTER || sideChain.Router == utils.RIPPLE_ROUTER) {
 		return utils.BYTE_TRUE, nil
 	}
 
@@ -173,9 +175,8 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 		}
 		return utils.BYTE_TRUE, nil
 	}
-	// ripple chain's chain name must be "ripple"
-	// can not use chainId and router here
-	if sideChain.Name == "ripple" {
+
+	if sideChain.Router == utils.RIPPLE_ROUTER {
 		err := ripple.NewRippleHandler().MakeTransaction(native, txParam, chainID)
 		if err != nil {
 			return utils.BYTE_FALSE, err
