@@ -129,19 +129,19 @@ func (this *RippleHandler) MultiSign(service *native.NativeService) error {
 	// get rippleExtraInfo
 	rippleExtraInfo, err := side_chain_manager.GetRippleExtraInfo(service, params.ToChainId)
 	if err != nil {
-		return fmt.Errorf("MultiSign, side_chain_manager.GetRippleExtraInfo error")
+		return fmt.Errorf("MultiSign, side_chain_manager.GetRippleExtraInfo error: %v", err)
 	}
 
 	// get raw txJsonInfo
 	raw, err := GetTxJsonInfo(service, params.FromChainId, params.TxHash)
 	if err != nil {
-		return fmt.Errorf("MultiSign, get txJsonInfo error")
+		return fmt.Errorf("MultiSign, get txJsonInfo error: %v", err)
 	}
 
 	// check if aleady done
 	multisignInfo, err := GetMultisignInfo(service, raw)
 	if err != nil {
-		return fmt.Errorf("MultiSign, GetMultisignInfo error")
+		return fmt.Errorf("MultiSign, GetMultisignInfo error: %v", err)
 	}
 	if multisignInfo.Status {
 		return nil
@@ -350,17 +350,17 @@ func (this *RippleHandler) ReconstructTx(service *native.NativeService) error {
 	}
 
 	//get tx json info
-	txJsonInfo, err := GetTxJsonInfo(service, params.FromChainId, params.TxHash)
+	raw, err := GetTxJsonInfo(service, params.FromChainId, params.TxHash)
 	if err != nil {
 		return fmt.Errorf("ReconstructTx, GetTxJsonInfo error: %v", err)
 	}
 
 	//get fee
-	fee, err := side_chain_manager.GetFee(service, params.ToChainId)
+	baseFee, err := side_chain_manager.GetFee(service, params.ToChainId)
 	if err != nil {
 		return fmt.Errorf("ReconstructTx, side_chain_manager.GetFee error: %v", err)
 	}
-	if fee.View == 0 {
+	if baseFee.View == 0 {
 		return fmt.Errorf("ReconstructTx, base fee is not initialized")
 	}
 
@@ -370,13 +370,20 @@ func (this *RippleHandler) ReconstructTx(service *native.NativeService) error {
 		return fmt.Errorf("ReconstructTx, side_chain_manager.GetRippleExtraInfo error: %v", err)
 	}
 
-	txJson := new(types.MultisignPayment)
-	err = json.Unmarshal([]byte(txJsonInfo), txJson)
+	payment, err := types.DeserializeRawMultiSignTx(raw)
 	if err != nil {
-		return fmt.Errorf("ReconstructTx, json.Unmarshal tx json info error: %v", err)
+		return fmt.Errorf("ReconstructTx, types.DeserializeRawMultiSignTx error")
 	}
-	txJson.Fee = new(big.Int).Mul(fee.Fee, new(big.Int).SetUint64(rippleExtraInfo.SignerNum)).String()
-	txJsonStr, err := json.Marshal(txJson)
+
+	//fee = baseFee * signerNum
+	fee_temp := new(big.Int).Mul(baseFee.Fee, new(big.Int).SetUint64(rippleExtraInfo.SignerNum))
+	fee, err := data.NewValue(ToStringByPrecise(fee_temp, 6), true)
+	if err != nil {
+		return fmt.Errorf("ripple MakeTransaction, data.NewValue fee error: %s", err)
+	}
+
+	payment.Fee = *fee
+	txJsonStr, err := json.Marshal(payment)
 	if err != nil {
 		return fmt.Errorf("ReconstructTx, json.Marshal tx json error: %v", err)
 	}
@@ -384,7 +391,7 @@ func (this *RippleHandler) ReconstructTx(service *native.NativeService) error {
 		&event.NotifyEventInfo{
 			ContractAddress: utils.CrossChainManagerContractAddress,
 			States: []interface{}{"rippleTxJson", params.FromChainId, params.ToChainId,
-				hex.EncodeToString(params.TxHash), txJsonStr, txJson.Sequence},
+				hex.EncodeToString(params.TxHash), txJsonStr, payment.Sequence},
 		})
 	return nil
 }
