@@ -1259,6 +1259,8 @@ github.com/shurcooL/users v0.0.0-20180125191416-49c67e49c537/go.mod h1:QJTqeLYED
 github.com/shurcooL/webdavfs v0.0.0-20170829043945-18c3829fa133/go.mod h1:hKmq5kWdCj2z2KEozexVbfEZIWiTjhE0+UjmZgPqehw=
 github.com/siovanus/ripple v0.0.0-20220406100637-81f6afe283d9 h1:jEBucgOSqVV1PmI9Qp5F8rEouevCjyVLVPy/DDXqFmg=
 github.com/siovanus/ripple v0.0.0-20220406100637-81f6afe283d9/go.mod h1:WfZLVgPZy2X9Xm9BbrVyFeahG2zStj8zHM/krsnARRg=
+github.com/siovanus/ripple-sdk v0.0.0-20220407101337-70eed9e2b0e6 h1:zeo+E38MKGYWIUKdKn3E4E5f1jMnOL4t85CUOpY+Ekk=
+github.com/siovanus/ripple-sdk v0.0.0-20220407101337-70eed9e2b0e6/go.mod h1:M5k8xCDpbtYH+Xlac61sMBYhyo770ZeUc0vrJnIQn/g=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.1/go.mod h1:ni0Sbl8bgC9z8RoU9G6nDWqqs/fq4eDPysMBDgk/93Q=
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=
