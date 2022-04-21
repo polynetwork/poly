@@ -128,6 +128,10 @@ func SyncGenesisHeader(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
+	err = utils.CheckRouterStartBlock(sideChain.Router, native.GetHeight())
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
 
 	err = handler.SyncGenesisHeader(native)
 	if err != nil {
@@ -156,6 +160,10 @@ func SyncBlockHeader(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
+	err = utils.CheckRouterStartBlock(sideChain.Router, native.GetHeight())
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
 
 	err = handler.SyncBlockHeader(native)
 	if err != nil {
@@ -181,6 +189,10 @@ func SyncCrossChainMsg(native *native.NativeService) ([]byte, error) {
 	}
 
 	handler, err := GetChainHandler(sideChain.Router)
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
+	err = utils.CheckRouterStartBlock(sideChain.Router, native.GetHeight())
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
