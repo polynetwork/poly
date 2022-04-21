@@ -20,6 +20,7 @@ package utils
 import (
 	"fmt"
 	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/config"
 )
 
 type BtcNetType int
@@ -72,11 +73,11 @@ func CheckRouterStartBlock(router uint64, block uint32) (err error) {
 	var startBLock uint32
 	switch router {
 	case HARMONY_ROUTER, HSC_ROUTER, BYTOM_ROUTER:
-		startBLock = 18823000
-	default:
-		return
+		if config.DefConfig.P2PNode.NetworkId == config.NETWORK_ID_MAIN_NET {
+			startBLock = 18823000
+		}
 	}
-	if block < startBLock {
+	if startBLock > 0 && block < startBLock {
 		return fmt.Errorf("not a supported router:%d", router)
 	}
 	return
