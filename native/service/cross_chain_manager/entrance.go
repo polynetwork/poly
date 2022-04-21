@@ -133,6 +133,11 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
+	err = utils.CheckRouterStartBlock(sideChain.Router, native.GetHeight())
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
+
 	//1. verify tx
 	txParam, err := handler.MakeDepositProposal(native)
 	if err != nil {
