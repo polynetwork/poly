@@ -27,6 +27,8 @@ import (
 const (
 	IMPORT_OUTER_TRANSFER_NAME = "ImportOuterTransfer"
 	MULTI_SIGN                 = "MultiSign"
+	MULTI_SIGN_RIPPLE          = "MultiSignRipple"
+	RECONSTRUCT_RIPPLE_TX      = "ReconstructRippleTx"
 	BLACK_CHAIN                = "BlackChain"
 	WHITE_CHAIN                = "WhiteChain"
 
@@ -39,6 +41,8 @@ var (
 	KEY_PREFIX_BTC_VOTE = "btcVote"
 	REQUEST             = "request"
 	DONE_TX             = "doneTx"
+	MULTISIGN_INFO      = "multisignInfo"
+	RIPPLE_TX_INFO      = "rippleTxInfo"
 
 	NOTIFY_MAKE_PROOF = "makeProof"
 )
@@ -296,7 +300,6 @@ func (this *ToMerkleValue) Deserialization(source *common.ZeroCopySource) error 
 	return nil
 }
 
-
 type BlackChainParam struct {
 	ChainID uint64
 }
@@ -314,4 +317,3 @@ func (this *BlackChainParam) Deserialization(source *common.ZeroCopySource) erro
 	this.ChainID = chainID
 	return nil
 }
-

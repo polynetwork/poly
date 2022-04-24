@@ -20,37 +20,32 @@ package header_sync
 import (
 	"fmt"
 
-	"github.com/polynetwork/poly/native/service/header_sync/hsc"
-	"github.com/polynetwork/poly/native/service/header_sync/pixiechain"
-	"github.com/polynetwork/poly/native/service/header_sync/starcoin"
-	"github.com/polynetwork/poly/native/service/header_sync/zilliqa"
-	"github.com/polynetwork/poly/native/service/header_sync/zilliqalegacy"
-	"github.com/polynetwork/poly/native/service/header_sync/harmony"
-	"github.com/polynetwork/poly/native/service/header_sync/bytom"
-
-	"github.com/polynetwork/poly/native/service/header_sync/neo"
-	"github.com/polynetwork/poly/native/service/header_sync/neo3"
-	"github.com/polynetwork/poly/native/service/header_sync/neo3legacy"
-
-	"github.com/polynetwork/poly/native/service/header_sync/heco"
-	"github.com/polynetwork/poly/native/service/header_sync/msc"
-	"github.com/polynetwork/poly/native/service/header_sync/okex"
-	"github.com/polynetwork/poly/native/service/header_sync/polygon"
-
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	"github.com/polynetwork/poly/native/service/header_sync/bsc"
 	"github.com/polynetwork/poly/native/service/header_sync/btc"
+	"github.com/polynetwork/poly/native/service/header_sync/bytom"
 	hscommon "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/header_sync/cosmos"
 	"github.com/polynetwork/poly/native/service/header_sync/eth"
+	"github.com/polynetwork/poly/native/service/header_sync/harmony"
+	"github.com/polynetwork/poly/native/service/header_sync/heco"
+	"github.com/polynetwork/poly/native/service/header_sync/hsc"
+	"github.com/polynetwork/poly/native/service/header_sync/msc"
+	"github.com/polynetwork/poly/native/service/header_sync/neo"
+	"github.com/polynetwork/poly/native/service/header_sync/neo3"
+	"github.com/polynetwork/poly/native/service/header_sync/neo3legacy"
+	"github.com/polynetwork/poly/native/service/header_sync/okex"
 	"github.com/polynetwork/poly/native/service/header_sync/ont"
+	"github.com/polynetwork/poly/native/service/header_sync/pixiechain"
+	"github.com/polynetwork/poly/native/service/header_sync/polygon"
 	"github.com/polynetwork/poly/native/service/header_sync/quorum"
+	"github.com/polynetwork/poly/native/service/header_sync/starcoin"
+	"github.com/polynetwork/poly/native/service/header_sync/zilliqa"
+	"github.com/polynetwork/poly/native/service/header_sync/zilliqalegacy"
 	"github.com/polynetwork/poly/native/service/utils"
 )
-
-
 
 //Register methods of node_manager contract
 func RegisterHeaderSyncContract(native *native.NativeService) {

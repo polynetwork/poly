@@ -20,6 +20,10 @@ package side_chain_manager
 import (
 	"encoding/hex"
 	"fmt"
+	"math/big"
+	"sort"
+
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/consensus_vote"
 
 	"github.com/btcsuite/btcd/txscript"
 	"github.com/btcsuite/btcutil"
@@ -39,6 +43,8 @@ const (
 	QUIT_SIDE_CHAIN             = "quitSideChain"
 	APPROVE_QUIT_SIDE_CHAIN     = "approveQuitSideChain"
 	REGISTER_REDEEM             = "registerRedeem"
+	REGISTER_ASSET              = "registerAsset"
+	UPDATE_FEE                  = "updateFee"
 	SET_BTC_TX_PARAM            = "setBtcTxParam"
 
 	//key prefix
@@ -50,6 +56,11 @@ const (
 	BIND_SIGN_INFO            = "bindSignInfo"
 	BTC_TX_PARAM              = "btcTxParam"
 	REDEEM_SCRIPT             = "redeemScript"
+	ASSET_BIND                = "assetBind"
+	FEE                       = "fee"
+	FEE_INFO                  = "feeInfo"
+
+	UPDATE_FEE_TIMEOUT = 300
 )
 
 //Register methods of node_manager contract
@@ -60,6 +71,8 @@ func RegisterSideChainManagerContract(native *native.NativeService) {
 	native.Register(APPROVE_UPDATE_SIDE_CHAIN, ApproveUpdateSideChain)
 	native.Register(QUIT_SIDE_CHAIN, QuitSideChain)
 	native.Register(APPROVE_QUIT_SIDE_CHAIN, ApproveQuitSideChain)
+	native.Register(REGISTER_ASSET, RegisterAsset)
+	native.Register(UPDATE_FEE, UpdateFee)
 
 	native.Register(REGISTER_REDEEM, RegisterRedeem)
 	native.Register(SET_BTC_TX_PARAM, SetBtcTxParam)
@@ -429,5 +442,112 @@ func SetBtcTxParam(native *native.NativeService) ([]byte, error) {
 					params.Detial.FeeRate, params.Detial.MinChange},
 			})
 	}
+	return utils.BYTE_TRUE, nil
+}
+
+func RegisterAsset(native *native.NativeService) ([]byte, error) {
+	params := new(RegisterAssetParam)
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterAssetMap, contract params deserialize error: %v", err)
+	}
+
+	//check witness
+	err := utils.ValidateOwner(native, params.OperatorAddress)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterAssetMap, checkWitness error: %v", err)
+	}
+
+	rippleExtraInfo, err := GetRippleExtraInfo(native, params.ChainId)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterAssetMap, GetRippleExtraInfo error: %v", err)
+	}
+	if rippleExtraInfo.Operator != params.OperatorAddress {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterAssetMap, caller is not operator")
+	}
+
+	assetBind, err := GetAssetBind(native, params.ChainId)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("RegisterAssetMap, GetAssetMap error: %v", err)
+	}
+	for k, v := range params.AssetMap {
+		assetBind.AssetMap[k] = v
+	}
+	for k, v := range params.LockProxyMap {
+		assetBind.LockProxyMap[k] = v
+	}
+
+	PutAssetBind(native, params.ChainId, assetBind)
+	return utils.BYTE_TRUE, nil
+}
+
+func UpdateFee(native *native.NativeService) ([]byte, error) {
+	params := new(UpdateFeeParam)
+	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("UpdateFee, contract params deserialize error: %v", err)
+	}
+
+	//check witness
+	err := utils.ValidateOwner(native, params.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("UpdateFee, checkWitness error: %v", err)
+	}
+
+	//get fee
+	fee, err := GetFee(native, params.ChainId)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("UpdateFee, GetFee error: %v", err)
+	}
+	if fee.View != params.View {
+		return utils.BYTE_FALSE, fmt.Errorf("UpdateFee, poly view: %d, params view: %d not match",
+			fee.View, params.View)
+	}
+
+	//add fee info
+	feeInfo, err := GetFeeInfo(native, params.ChainId, fee.View)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("UpdateFee, GetFeeInfo error: %v", err)
+	}
+	if feeInfo.StartTime == 0 {
+		feeInfo.StartTime = native.GetTime()
+	} else if native.GetTime()-feeInfo.StartTime > UPDATE_FEE_TIMEOUT {
+		// if time out view + 1
+		fee.View = fee.View + 1
+		PutFee(native, params.ChainId, fee)
+		feeInfo = &FeeInfo{
+			StartTime: native.GetTime(),
+			FeeInfo:   make(map[common.Address]*big.Int),
+		}
+	}
+	feeInfo.FeeInfo[params.Address] = params.Fee
+	PutFeeInfo(native, params.ChainId, fee.View, feeInfo)
+
+	//check consensus signs
+	id := append([]byte(UPDATE_FEE), append(utils.GetUint64Bytes(params.ChainId), utils.GetUint64Bytes(fee.View)...)...)
+	ok, err := consensus_vote.CheckVotes(native, id, params.Address)
+	if err != nil {
+		return utils.BYTE_FALSE, fmt.Errorf("UpdateFee, CheckConsensusSigns error: %v", err)
+	}
+	if !ok {
+		return utils.BYTE_TRUE, nil
+	}
+	//vote enough
+	feeInfoList := make([]*big.Int, 0, len(feeInfo.FeeInfo))
+	for _, v := range feeInfo.FeeInfo {
+		feeInfoList = append(feeInfoList, v)
+	}
+	sort.SliceStable(feeInfoList, func(i, j int) bool {
+		return feeInfoList[i].Cmp(feeInfoList[j]) >= 1
+	})
+	l := len(feeInfoList)
+	if l%2 == 0 {
+		//even: (a + b)*5 / 2
+		fee.Fee = new(big.Int).Div(new(big.Int).Mul(new(big.Int).Add(feeInfoList[l/2], feeInfoList[l/2-1]),
+			new(big.Int).SetUint64(5)), new(big.Int).SetUint64(2))
+	} else {
+		//odd：a * 5
+		fee.Fee = new(big.Int).Mul(feeInfoList[(l-1)/2], new(big.Int).SetUint64(5))
+	}
+	fee.View = fee.View + 1
+	PutFee(native, params.ChainId, fee)
 	return utils.BYTE_TRUE, nil
 }

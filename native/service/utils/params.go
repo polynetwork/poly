@@ -66,6 +66,7 @@ var (
 	HSC_ROUTER              = uint64(20)
 	HARMONY_ROUTER          = uint64(21)
 	BYTOM_ROUTER            = uint64(22)
+	RIPPLE_ROUTER           = uint64(23)
 )
 
 //Check router StartBlock to prevent hard forks

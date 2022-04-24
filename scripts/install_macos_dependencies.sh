@@ -28,7 +28,7 @@ popd
 
 export CGO_CFLAGS="-I$PWD/bls/include -I$PWD/mcl/include -I/usr/local/include"
 export CGO_LDFLAGS="-L$PWD/bls/lib -L/usr/local/opt/openssl/lib"
-export LD_LIBRARY_PATH="$PWD/bls/lib:$PWD/mcl/lib:/usr/local/opt/openssl/lib:/usr/local/opt/gmp/lib"
+export LD_LIBRARY_PATH="$PWD/bls/lib:$PWD/mcl/lib:/usr/local/opt/openssl/lib:/usr/local/opt/gmp/lib:/usr/local/lib"
 export LIBRARY_PATH=$LD_LIBRARY_PATH
 export DYLD_FALLBACK_LIBRARY_PATH=$LD_LIBRARY_PATH
 
@@ -38,4 +38,4 @@ echo "making bls"
 make -C $PWD/bls BLS_SWAP_G=1 -j8
 
 sudo ln -sf $PWD/bls/lib/libbls384_256.dylib /usr/local/lib/libbls384_256.dylib
-sudo ln -sf $PWD/bls/lib/libmcl.dylib /usr/local/lib/libmcl.dylib
+sudo ln -sf $PWD/mcl/lib/libmcl.dylib /usr/local/lib/libmcl.dylib
