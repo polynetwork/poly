@@ -92,7 +92,10 @@ func (this *RippleHandler) MakeDepositProposal(service *native.NativeService) (*
 		if err != nil {
 			return nil, fmt.Errorf("vote MakeDepositProposal, side_chain_manager.GetAssetBind error:%s", err)
 		}
-		txParam.ToContractAddress = assetBind.LockProxyMap[txParam.ToChainID]
+		txParam.ToContractAddress, ok = assetBind.LockProxyMap[txParam.ToChainID]
+		if !ok {
+			return nil, fmt.Errorf("vote MakeDepositProposal, assetBind.LockProxyMap of %d not exist", txParam.ToChainID)
+		}
 
 		//fulfill to asset hash
 		source := common.NewZeroCopySource(txParam.Args)
@@ -104,8 +107,12 @@ func (this *RippleHandler) MakeDepositProposal(service *native.NativeService) (*
 		if eof {
 			return nil, fmt.Errorf("vote MakeDepositProposal, deserilize amount error:%s", err)
 		}
+		assetAddress, ok := assetBind.AssetMap[txParam.ToChainID]
+		if !ok {
+			return nil, fmt.Errorf("vote MakeDepositProposal, assetBind.AssetMap of %d not exist", txParam.ToChainID)
+		}
 		s := common.NewZeroCopySink(nil)
-		s.WriteVarBytes(assetBind.AssetMap[txParam.ToChainID])
+		s.WriteVarBytes(assetAddress)
 		s.WriteVarBytes(dstAddress)
 		// fulfill 32 bytes with 0
 		t := common.NewZeroCopySink(nil)
