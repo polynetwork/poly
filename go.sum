@@ -1149,6 +1149,8 @@ github.com/polynetwork/poly-go-sdk v0.0.0-20200722030827-6875b6018b93/go.mod h1:
 github.com/polynetwork/poly-go-sdk v0.0.0-20200730112529-d9c0c7ddf3d8/go.mod h1:a1wMo/VFoUAKX2yVjipvFug6Yu5BPhf/2tP5xywqfIc=
 github.com/polynetwork/poly-io-test v0.0.0-20200819093740-8cf514b07750 h1:deB0JDwuU95U36gnOjBXHGihUenU6/mLK0MSGBb/UxU=
 github.com/polynetwork/poly-io-test v0.0.0-20200819093740-8cf514b07750/go.mod h1:Y/xz9uHdO0HPz0p+x0bZxNuo1ufVcln3dDjmchSUgso=
+github.com/polynetwork/ripple-sdk v0.0.0-20220424031403-3947f2e7636c h1:twa62QhXEDSD7CSbndXyr1PhnYZPSzg2dbq/ERD8+Wc=
+github.com/polynetwork/ripple-sdk v0.0.0-20220424031403-3947f2e7636c/go.mod h1:M5k8xCDpbtYH+Xlac61sMBYhyo770ZeUc0vrJnIQn/g=
 github.com/posener/complete v1.1.1/go.mod h1:em0nMJCgc9GFtwrmVmEMR/ZL6WyhyjMBndrE9hABlRI=
 github.com/prometheus/client_golang v0.8.0/go.mod h1:7SWBe2y4D6OKWSNQJUaRYU/AaXPKyh/dDVn+NZz0KFw=
 github.com/prometheus/client_golang v0.9.1/go.mod h1:7SWBe2y4D6OKWSNQJUaRYU/AaXPKyh/dDVn+NZz0KFw=
@@ -1259,8 +1261,6 @@ github.com/shurcooL/users v0.0.0-20180125191416-49c67e49c537/go.mod h1:QJTqeLYED
 github.com/shurcooL/webdavfs v0.0.0-20170829043945-18c3829fa133/go.mod h1:hKmq5kWdCj2z2KEozexVbfEZIWiTjhE0+UjmZgPqehw=
 github.com/siovanus/ripple v0.0.0-20220406100637-81f6afe283d9 h1:jEBucgOSqVV1PmI9Qp5F8rEouevCjyVLVPy/DDXqFmg=
 github.com/siovanus/ripple v0.0.0-20220406100637-81f6afe283d9/go.mod h1:WfZLVgPZy2X9Xm9BbrVyFeahG2zStj8zHM/krsnARRg=
-github.com/siovanus/ripple-sdk v0.0.0-20220407101337-70eed9e2b0e6 h1:zeo+E38MKGYWIUKdKn3E4E5f1jMnOL4t85CUOpY+Ekk=
-github.com/siovanus/ripple-sdk v0.0.0-20220407101337-70eed9e2b0e6/go.mod h1:M5k8xCDpbtYH+Xlac61sMBYhyo770ZeUc0vrJnIQn/g=
 github.com/sirupsen/logrus v1.2.0/go.mod h1:LxeOpSwHxABJmUn/MG1IvRgCAasNZTLOkJPxbbu5VWo=
 github.com/sirupsen/logrus v1.4.1/go.mod h1:ni0Sbl8bgC9z8RoU9G6nDWqqs/fq4eDPysMBDgk/93Q=
 github.com/sirupsen/logrus v1.4.2/go.mod h1:tLMulIdttU9McNUspp0xgXVQah82FyeX6MwdIuYE2rE=
