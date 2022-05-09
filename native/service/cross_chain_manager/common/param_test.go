@@ -17,35 +17,29 @@
 package common
 
 import (
-	"github.com/polynetwork/poly/common"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	ethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/stretchr/testify/assert"
 )
 
-func TestVoteParam(t *testing.T) {
-	param := VoteParam{
-		Address: "1234",
-		TxHash:  []byte{1, 2, 3},
-	}
+func TestMakeTxParamWithSender(t *testing.T) {
+	txParam := MakeTxParam{TxHash: []byte("hash"),
+		CrossChainID:        []byte("1"),
+		FromContractAddress: []byte("from addr"),
+		ToChainID:           1,
+		ToContractAddress:   []byte("to addr"),
+		Method:              "test",
+		Args:                []byte("args")}
 
-	sink := common.NewZeroCopySink(nil)
-	param.Serialization(sink)
+	value := MakeTxParamWithSender{Sender: ethcommon.HexToAddress("abc"), MakeTxParam: txParam}
+	data, err := value.Serialization()
 
-	var p VoteParam
-	err := p.Deserialization(common.NewZeroCopySource(sink.Bytes()))
-	assert.NoError(t, err)
-}
+	assert.Nil(t, err)
 
-func TestVote(t *testing.T) {
-	m := make(map[string]string, 0)
-	m["123"] = "123"
-	vote := Vote{
-		VoteMap: m,
-	}
-	sink := common.NewZeroCopySink(nil)
-	vote.Serialization(sink)
+	var decoded MakeTxParamWithSender
+	err = decoded.Deserialization(data)
+	assert.Nil(t, err)
 
-	var v Vote
-	err := v.Deserialization(common.NewZeroCopySource(sink.Bytes()))
-	assert.NoError(t, err)
+	assert.Equal(t, value, decoded)
 }

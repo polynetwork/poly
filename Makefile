@@ -1,7 +1,14 @@
 GOFMT=gofmt
 GC=go build
 VERSION := $(shell git describe --always --tags --long)
-BUILD_NODE_PAR = -ldflags "-X github.com/polynetwork/poly/common/config.Version=$(VERSION) -X google.golang.org/protobuf/reflect/protoregistry.conflictPolicy=warn" #-race
+
+TOP:=$(realpath .)/temp
+export CGO_CFLAGS:=-I$(TOP)/bls/include -I$(TOP)/mcl/include -I/usr/local/opt/openssl/include
+export CGO_LDFLAGS:=-L$(TOP)/bls/lib -L/usr/local/opt/openssl/lib
+export LD_LIBRARY_PATH:=$(TOP)/bls/lib:$(TOP)/mcl/lib:/usr/local/opt/openssl/lib:/usr/local/opt/gmp/lib
+export LIBRARY_PATH:=$(LD_LIBRARY_PATH)
+export DYLD_FALLBACK_LIBRARY_PATH:=$(LD_LIBRARY_PATH)
+export GO111MODULE:=on
 
 ARCH=$(shell uname -m)
 DBUILD=docker build
@@ -9,12 +16,22 @@ DRUN=docker run
 DOCKER_NS ?= polynetwork
 DOCKER_TAG=$(ARCH)-$(VERSION)
 
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+	BUILD_NODE_PAR = -tags netgo -ldflags '-w -extldflags "-static -lm" -X github.com/polynetwork/poly/common/config.Version=$(VERSION) -X google.golang.org/protobuf/reflect/protoregistry.conflictPolicy=warn' #-race
+else
+	BUILD_NODE_PAR = -tags netgo -ldflags '-X github.com/polynetwork/poly/common/config.Version=$(VERSION) -X google.golang.org/protobuf/reflect/protoregistry.conflictPolicy=warn' #-race
+endif
+
 SRC_FILES = $(shell git ls-files | grep -e .go$ | grep -v _test.go)
 TOOLS=./tools
 ABI=$(TOOLS)/abi
 NATIVE_ABI_SCRIPT=./cmd/abi/native_abi_script
 
-poly: $(SRC_FILES)
+deps:
+	./scripts/install_dependencies.sh
+
+poly: $(SRC_FILES) deps
 	$(GC)  $(BUILD_NODE_PAR) -o poly main.go
 
 sigsvr: $(SRC_FILES) abi
@@ -32,13 +49,13 @@ all: poly tools
 
 poly-cross: poly-windows poly-linux poly-darwin
 
-poly-windows:
+poly-windows: deps
 	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 $(GC) $(BUILD_NODE_PAR) -o poly-windows-amd64.exe main.go
 
-poly-linux:
+poly-linux: deps
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GC) $(BUILD_NODE_PAR) -o poly-linux-amd64 main.go
 
-poly-darwin:
+poly-darwin: deps
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 $(GC) $(BUILD_NODE_PAR) -o poly-darwin-amd64 main.go
 
 tools-cross: tools-windows tools-linux tools-darwin

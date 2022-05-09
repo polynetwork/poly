@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2021 The poly network Authors
+ * Copyright (C) 2022 The poly network Authors
  * This file is part of The poly network library.
  *
  * The  poly network  is free software: you can redistribute it and/or modify
@@ -15,27 +15,5 @@
  * along with The poly network .  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package cross_chain_manager
+package harmony
 
-import (
-	"fmt"
-	"github.com/polynetwork/poly/common"
-)
-
-type BlackChainParam struct {
-	ChainID uint64
-}
-
-func (this *BlackChainParam) Serialization(sink *common.ZeroCopySink) {
-	sink.WriteVarUint(this.ChainID)
-}
-
-func (this *BlackChainParam) Deserialization(source *common.ZeroCopySource) error {
-	chainID, eof := source.NextVarUint()
-	if eof {
-		return fmt.Errorf("BlackChainParam deserialize chainID error")
-	}
-
-	this.ChainID = chainID
-	return nil
-}

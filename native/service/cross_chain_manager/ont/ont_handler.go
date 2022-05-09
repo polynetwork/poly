@@ -26,6 +26,7 @@ import (
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
+	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	"github.com/polynetwork/poly/native/service/header_sync/ont"
 )
 
@@ -76,7 +77,13 @@ func (this *ONTHandler) MakeDepositProposal(service *native.NativeService) (*sco
 		}
 	}
 
-	value, err := VerifyFromOntTx(params.Proof, crossChainMsg)
+	//get registered side chain information from poly chain
+	sideChain, err := side_chain_manager.GetSideChain(service, params.SourceChainID)
+	if err != nil {
+		return nil, fmt.Errorf("ont MakeDepositProposal, side_chain_manager.GetSideChain error: %v", err)
+	}
+
+	value, err := VerifyFromOntTx(params.Proof, crossChainMsg, sideChain)
 	if err != nil {
 		return nil, fmt.Errorf("ont MakeDepositProposal, VerifyOntTx error: %v", err)
 	}

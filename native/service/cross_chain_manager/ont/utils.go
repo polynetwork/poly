@@ -18,23 +18,42 @@
 package ont
 
 import (
+	"bytes"
 	"fmt"
+
 	otypes "github.com/ontio/ontology/core/types"
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/merkle"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
+	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 )
 
-func VerifyFromOntTx(proof []byte, crossChainMsg *otypes.CrossChainMsg) (*scom.MakeTxParam, error) {
+func VerifyFromOntTx(proof []byte, crossChainMsg *otypes.CrossChainMsg, sideChain *side_chain_manager.SideChain) (*scom.MakeTxParam, error) {
 	v, err := merkle.MerkleProve(proof, crossChainMsg.StatesRoot.ToArray())
 	if err != nil {
 		return nil, fmt.Errorf("VerifyFromOntTx, merkle.MerkleProve verify merkle proof error")
 	}
 
-	s := common.NewZeroCopySource(v)
-	txParam := new(scom.MakeTxParam)
-	if err := txParam.Deserialization(s); err != nil {
-		return nil, fmt.Errorf("VerifyFromOntTx, deserialize merkleValue error:%s", err)
+	if len(sideChain.CCMCAddress) == 0 {
+		// old sideChain for ontology
+		s := common.NewZeroCopySource(v)
+		txParam := new(scom.MakeTxParam)
+		if err := txParam.Deserialization(s); err != nil {
+			return nil, fmt.Errorf("VerifyFromOntTx, deserialize MakeTxParam error:%s", err)
+		}
+		return txParam, nil
 	}
-	return txParam, nil
+
+	// new sideChain for ontology
+	txParam := new(scom.MakeTxParamWithSender)
+	if err := txParam.Deserialization(v); err != nil {
+		return nil, fmt.Errorf("VerifyFromOntTx, deserialize MakeTxParamWithSender error:%s", err)
+	}
+
+	if !bytes.Equal(txParam.Sender[:], sideChain.CCMCAddress) {
+		return nil, fmt.Errorf("VerifyFromOntTx, invalid sender:%s", err)
+	}
+
+	return &txParam.MakeTxParam, nil
+
 }

@@ -17,7 +17,11 @@
 
 package utils
 
-import "github.com/polynetwork/poly/common"
+import (
+	"fmt"
+	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/config"
+)
 
 type BtcNetType int
 
@@ -60,4 +64,23 @@ var (
 	ZILLIQA_ROUTER          = uint64(17)
 	STARCOIN_ROUTER         = uint64(18)
 	PIXIECHAIN_ROUTER       = uint64(19)
+	HSC_ROUTER              = uint64(20)
+	HARMONY_ROUTER          = uint64(21)
+	BYTOM_ROUTER            = uint64(22)
+	RIPPLE_ROUTER           = uint64(23)
 )
+
+//Check router StartBlock to prevent hard forks
+func CheckRouterStartBlock(router uint64, block uint32) (err error) {
+	var startBLock uint32
+	switch router {
+	case HARMONY_ROUTER, HSC_ROUTER, BYTOM_ROUTER:
+		if config.DefConfig.P2PNode.NetworkId == config.NETWORK_ID_MAIN_NET {
+			startBLock = 18823000
+		}
+	}
+	if startBLock > 0 && block < startBLock {
+		return fmt.Errorf("not a supported router:%d", router)
+	}
+	return
+}

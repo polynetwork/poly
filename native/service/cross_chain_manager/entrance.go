@@ -20,48 +20,43 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/polynetwork/poly/native/service/cross_chain_manager/consensus_vote"
-	"github.com/polynetwork/poly/native/service/cross_chain_manager/pixiechain"
-
-	"github.com/polynetwork/poly/native/service/cross_chain_manager/zilliqa"
-
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/bsc"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/btc"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/bytom"
 	scom "github.com/polynetwork/poly/native/service/cross_chain_manager/common"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/consensus_vote"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/cosmos"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/eth"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/harmony"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/heco"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/hsc"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/msc"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/neo"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/neo3"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/okex"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/ont"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/pixiechain"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/polygon"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/quorum"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/ripple"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/starcoin"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/zilliqa"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/zilliqalegacy"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	"github.com/polynetwork/poly/native/service/utils"
 )
 
-const (
-	IMPORT_OUTER_TRANSFER_NAME = "ImportOuterTransfer"
-	MULTI_SIGN                 = "MultiSign"
-	BLACK_CHAIN                = "BlackChain"
-	WHITE_CHAIN                = "WhiteChain"
-
-	BLACKED_CHAIN = "BlackedChain"
-)
-
 func RegisterCrossChainManagerContract(native *native.NativeService) {
-	native.Register(IMPORT_OUTER_TRANSFER_NAME, ImportExTransfer)
-	native.Register(MULTI_SIGN, MultiSign)
+	native.Register(scom.IMPORT_OUTER_TRANSFER_NAME, ImportExTransfer)
+	native.Register(scom.MULTI_SIGN, MultiSign)
+	native.Register(scom.MULTI_SIGN_RIPPLE, MultiSignRipple)
+	native.Register(scom.RECONSTRUCT_RIPPLE_TX, ReconstructRippleTx)
 
-	native.Register(BLACK_CHAIN, BlackChain)
-	native.Register(WHITE_CHAIN, WhiteChain)
+	native.Register(scom.BLACK_CHAIN, BlackChain)
+	native.Register(scom.WHITE_CHAIN, WhiteChain)
 }
 
 func GetChainHandler(router uint64) (scom.ChainHandler, error) {
@@ -100,6 +95,14 @@ func GetChainHandler(router uint64) (scom.ChainHandler, error) {
 		return pixiechain.NewPixieHandler(), nil
 	case utils.STARCOIN_ROUTER:
 		return starcoin.NewHandler(), nil
+	case utils.HSC_ROUTER:
+		return hsc.NewHscHandler(), nil
+	case utils.HARMONY_ROUTER:
+		return harmony.NewHandler(), nil
+	case utils.BYTOM_ROUTER:
+		return bytom.NewHandler(), nil
+	case utils.RIPPLE_ROUTER:
+		return ripple.NewRippleHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported router:%d", router)
 	}
@@ -112,7 +115,7 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	}
 
 	chainID := params.SourceChainID
-	blacked, err := CheckIfChainBlacked(native, chainID)
+	blacked, err := scom.CheckIfChainBlacked(native, chainID)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, CheckIfChainBlacked error: %v", err)
 	}
@@ -133,18 +136,23 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
+	err = utils.CheckRouterStartBlock(sideChain.Router, native.GetHeight())
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
+
 	//1. verify tx
 	txParam, err := handler.MakeDepositProposal(native)
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
-	if txParam == nil && sideChain.Router == utils.VOTE_ROUTER {
+	if txParam == nil && (sideChain.Router == utils.VOTE_ROUTER || sideChain.Router == utils.RIPPLE_ROUTER) {
 		return utils.BYTE_TRUE, nil
 	}
 
 	//2. make target chain tx
 	targetid := txParam.ToChainID
-	blacked, err = CheckIfChainBlacked(native, targetid)
+	blacked, err = scom.CheckIfChainBlacked(native, targetid)
 	if err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("ImportExTransfer, CheckIfChainBlacked error: %v", err)
 	}
@@ -168,6 +176,13 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_TRUE, nil
 	}
 
+	if sideChain.Router == utils.RIPPLE_ROUTER {
+		err := ripple.NewRippleHandler().MakeTransaction(native, txParam, chainID)
+		if err != nil {
+			return utils.BYTE_FALSE, err
+		}
+		return utils.BYTE_TRUE, nil
+	}
 	//NOTE, you need to store the tx in this
 	err = MakeTransaction(native, txParam, chainID)
 	if err != nil {
@@ -178,9 +193,29 @@ func ImportExTransfer(native *native.NativeService) ([]byte, error) {
 
 func MultiSign(native *native.NativeService) ([]byte, error) {
 	handler := btc.NewBTCHandler()
+	//1. multi sign
+	err := handler.MultiSign(native)
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
+	return utils.BYTE_TRUE, nil
+}
+
+func MultiSignRipple(native *native.NativeService) ([]byte, error) {
+	handler := ripple.NewRippleHandler()
 
 	//1. multi sign
 	err := handler.MultiSign(native)
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
+	return utils.BYTE_TRUE, nil
+}
+
+func ReconstructRippleTx(native *native.NativeService) ([]byte, error) {
+	handler := ripple.NewRippleHandler()
+
+	err := handler.ReconstructTx(native)
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
@@ -216,7 +251,7 @@ func PutRequest(native *native.NativeService, txHash []byte, chainID uint64, req
 }
 
 func BlackChain(native *native.NativeService) ([]byte, error) {
-	params := new(BlackChainParam)
+	params := new(scom.BlackChainParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("BlackChain, contract params deserialize error: %v", err)
 	}
@@ -233,12 +268,12 @@ func BlackChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("BlackChain, checkWitness error: %v", err)
 	}
 
-	PutBlackChain(native, params.ChainID)
+	scom.PutBlackChain(native, params.ChainID)
 	return utils.BYTE_TRUE, nil
 }
 
 func WhiteChain(native *native.NativeService) ([]byte, error) {
-	params := new(BlackChainParam)
+	params := new(scom.BlackChainParam)
 	if err := params.Deserialization(common.NewZeroCopySource(native.GetInput())); err != nil {
 		return utils.BYTE_FALSE, fmt.Errorf("WhiteChain, contract params deserialize error: %v", err)
 	}
@@ -253,6 +288,6 @@ func WhiteChain(native *native.NativeService) ([]byte, error) {
 		return utils.BYTE_FALSE, fmt.Errorf("BlackChain, checkWitness error: %v", err)
 	}
 
-	RemoveBlackChain(native, params.ChainID)
+	scom.RemoveBlackChain(native, params.ChainID)
 	return utils.BYTE_TRUE, nil
 }

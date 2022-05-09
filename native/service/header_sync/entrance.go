@@ -20,44 +20,38 @@ package header_sync
 import (
 	"fmt"
 
-	"github.com/polynetwork/poly/native/service/header_sync/pixiechain"
-	"github.com/polynetwork/poly/native/service/header_sync/starcoin"
-	"github.com/polynetwork/poly/native/service/header_sync/zilliqa"
-	"github.com/polynetwork/poly/native/service/header_sync/zilliqalegacy"
-
-	"github.com/polynetwork/poly/native/service/header_sync/neo"
-	"github.com/polynetwork/poly/native/service/header_sync/neo3"
-	"github.com/polynetwork/poly/native/service/header_sync/neo3legacy"
-
-	"github.com/polynetwork/poly/native/service/header_sync/heco"
-	"github.com/polynetwork/poly/native/service/header_sync/msc"
-	"github.com/polynetwork/poly/native/service/header_sync/okex"
-	"github.com/polynetwork/poly/native/service/header_sync/polygon"
-
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/service/governance/side_chain_manager"
 	"github.com/polynetwork/poly/native/service/header_sync/bsc"
 	"github.com/polynetwork/poly/native/service/header_sync/btc"
+	"github.com/polynetwork/poly/native/service/header_sync/bytom"
 	hscommon "github.com/polynetwork/poly/native/service/header_sync/common"
 	"github.com/polynetwork/poly/native/service/header_sync/cosmos"
 	"github.com/polynetwork/poly/native/service/header_sync/eth"
+	"github.com/polynetwork/poly/native/service/header_sync/harmony"
+	"github.com/polynetwork/poly/native/service/header_sync/heco"
+	"github.com/polynetwork/poly/native/service/header_sync/hsc"
+	"github.com/polynetwork/poly/native/service/header_sync/msc"
+	"github.com/polynetwork/poly/native/service/header_sync/neo"
+	"github.com/polynetwork/poly/native/service/header_sync/neo3"
+	"github.com/polynetwork/poly/native/service/header_sync/neo3legacy"
+	"github.com/polynetwork/poly/native/service/header_sync/okex"
 	"github.com/polynetwork/poly/native/service/header_sync/ont"
+	"github.com/polynetwork/poly/native/service/header_sync/pixiechain"
+	"github.com/polynetwork/poly/native/service/header_sync/polygon"
 	"github.com/polynetwork/poly/native/service/header_sync/quorum"
+	"github.com/polynetwork/poly/native/service/header_sync/starcoin"
+	"github.com/polynetwork/poly/native/service/header_sync/zilliqa"
+	"github.com/polynetwork/poly/native/service/header_sync/zilliqalegacy"
 	"github.com/polynetwork/poly/native/service/utils"
-)
-
-const (
-	SYNC_GENESIS_HEADER  = "syncGenesisHeader"
-	SYNC_BLOCK_HEADER    = "syncBlockHeader"
-	SYNC_CROSS_CHAIN_MSG = "syncCrossChainMsg"
 )
 
 //Register methods of node_manager contract
 func RegisterHeaderSyncContract(native *native.NativeService) {
-	native.Register(SYNC_GENESIS_HEADER, SyncGenesisHeader)
-	native.Register(SYNC_BLOCK_HEADER, SyncBlockHeader)
-	native.Register(SYNC_CROSS_CHAIN_MSG, SyncCrossChainMsg)
+	native.Register(hscommon.SYNC_GENESIS_HEADER, SyncGenesisHeader)
+	native.Register(hscommon.SYNC_BLOCK_HEADER, SyncBlockHeader)
+	native.Register(hscommon.SYNC_CROSS_CHAIN_MSG, SyncCrossChainMsg)
 }
 
 func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
@@ -98,6 +92,12 @@ func GetChainHandler(router uint64) (hscommon.HeaderSyncHandler, error) {
 		return pixiechain.NewPixieHandler(), nil
 	case utils.STARCOIN_ROUTER:
 		return starcoin.NewSTCHandler(), nil
+	case utils.HSC_ROUTER:
+		return hsc.NewHscHandler(), nil
+	case utils.HARMONY_ROUTER:
+		return harmony.NewHandler(), nil
+	case utils.BYTOM_ROUTER:
+		return bytom.NewHandler(), nil
 	default:
 		return nil, fmt.Errorf("not a supported router:%d", router)
 	}
@@ -120,6 +120,10 @@ func SyncGenesisHeader(native *native.NativeService) ([]byte, error) {
 	}
 
 	handler, err := GetChainHandler(sideChain.Router)
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
+	err = utils.CheckRouterStartBlock(sideChain.Router, native.GetHeight())
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
@@ -151,6 +155,10 @@ func SyncBlockHeader(native *native.NativeService) ([]byte, error) {
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
+	err = utils.CheckRouterStartBlock(sideChain.Router, native.GetHeight())
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
 
 	err = handler.SyncBlockHeader(native)
 	if err != nil {
@@ -176,6 +184,10 @@ func SyncCrossChainMsg(native *native.NativeService) ([]byte, error) {
 	}
 
 	handler, err := GetChainHandler(sideChain.Router)
+	if err != nil {
+		return utils.BYTE_FALSE, err
+	}
+	err = utils.CheckRouterStartBlock(sideChain.Router, native.GetHeight())
 	if err != nil {
 		return utils.BYTE_FALSE, err
 	}
