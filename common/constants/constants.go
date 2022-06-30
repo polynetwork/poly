@@ -56,3 +56,6 @@ const POLYGON_SNAP_CHAINID_MAINNET = 16
 
 // eth arrow glacier upgrade
 const ETH4345_HEIGHT_MAINNET = 13_773_000
+
+// eth gray glacier upgrade
+const ETH5113_HEIGHT_MAINNET = 15_050_000

@@ -254,6 +254,14 @@ func isArrowGlacier(h *Header) bool {
 	return h.Number.Uint64() >= forkHeight
 }
 
+func isGrayGlacier(h *Header) bool {
+	forkHeight := config.GetEth4345Height(config.DefConfig.P2PNode.NetworkId)
+	if forkHeight == 0 {
+		return false
+	}
+	return h.Number.Uint64() >= forkHeight
+}
+
 // VerifyGaslimit verifies the header gas limit according increase/decrease
 // in relation to the parent gas limit.
 func VerifyGaslimit(parentGasLimit, headerGasLimit uint64) error {
