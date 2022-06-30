@@ -255,7 +255,7 @@ func isArrowGlacier(h *Header) bool {
 }
 
 func isGrayGlacier(h *Header) bool {
-	forkHeight := config.GetEth4345Height(config.DefConfig.P2PNode.NetworkId)
+	forkHeight := config.GetEth5113Height(config.DefConfig.P2PNode.NetworkId)
 	if forkHeight == 0 {
 		return false
 	}
