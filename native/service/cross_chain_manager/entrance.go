@@ -19,6 +19,7 @@ package cross_chain_manager
 import (
 	"encoding/hex"
 	"fmt"
+	"github.com/polynetwork/poly/native/service/cross_chain_manager/chainsql"
 
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/fabric"
 	"github.com/polynetwork/poly/native/service/cross_chain_manager/fisco"
@@ -72,6 +73,8 @@ func GetChainHandler(router uint64) (scom.ChainHandler, error) {
 		return fisco.NewFiscoHandler(), nil
 	case utils.FABRIC_ROUTER:
 		return fabric.NewFabricHandler(), nil
+	case utils.CHAINSQL_ROUTER:
+		return chainsql.NewChainsqlHandler(),nil
 	default:
 		return nil, fmt.Errorf("not a supported router:%d", router)
 	}

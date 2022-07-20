@@ -46,4 +46,5 @@ var (
 	FISCO_ROUTER  = uint64(6)
 	FABRIC_ROUTER = uint64(7)
 	QUORUM_ROUTER = uint64(8)
+	CHAINSQL_ROUTER = uint64(9)
 )
