@@ -280,8 +280,8 @@ func (c defaultConsensus) VerifyHeaderDifficulty(difficulty uint256.Int, headerD
 	return consensus.VerifyHeaderDifficulty(difficulty, headerDifficulty, headerBlob, nonce, extra)
 }
 
-var mainConsensus starcoinConsensus = defaultConsensus{}
-var barnardConsensus starcoinConsensus = consensus.ArgonConsensus{}
+var cryptonightConsensus starcoinConsensus = defaultConsensus{}
+var argonConsensus starcoinConsensus = consensus.ArgonConsensus{}
 
 func verifyHeaderDifficulty(expected *big.Int, header *types.BlockHeader) error {
 	// if expected.Cmp(header.BlockHeader.GetDiffculty()) != 0 {
@@ -300,15 +300,15 @@ func verifyHeaderDifficulty(expected *big.Int, header *types.BlockHeader) error 
 	// //////////////////////////////////////////////////////////////////////////////////////////////
 	chainID := config.GetChainIdByNetId(config.DefConfig.P2PNode.NetworkId)
 	var ok bool
-	if chainID == config.NETWORK_ID_TEST_NET {
-		ok, err = barnardConsensus.VerifyHeaderDifficulty(*e, *hd, hb, header.Nonce, header.Extra[:])
+	if chainID == config.TESTNET_CHAIN_ID && header.Number >= 5061399 {
+		ok, err = argonConsensus.VerifyHeaderDifficulty(*e, *hd, hb, header.Nonce, header.Extra[:])
 		if err != nil {
-			return errors.Errorf("verifyHeaderDifficulty, barnardConsensus.VerifyHeaderDifficulty error: %v", header)
+			return errors.Errorf("verifyHeaderDifficulty, argonConsensus.VerifyHeaderDifficulty error: %v", header)
 		}
 	} else {
-		ok, err = mainConsensus.VerifyHeaderDifficulty(*e, *hd, hb, header.Nonce, header.Extra[:])
+		ok, err = cryptonightConsensus.VerifyHeaderDifficulty(*e, *hd, hb, header.Nonce, header.Extra[:])
 		if err != nil {
-			return errors.Errorf("verifyHeaderDifficulty, mainConsensus.VerifyHeaderDifficulty error: %v", header)
+			return errors.Errorf("verifyHeaderDifficulty, cryptonightConsensus.VerifyHeaderDifficulty error: %v", header)
 		}
 	}
 	// //////////////////////////////////////////////////////////////////////////////////////////////
