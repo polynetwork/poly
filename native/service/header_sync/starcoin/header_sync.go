@@ -34,6 +34,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/polynetwork/poly/common"
+	"github.com/polynetwork/poly/common/config"
 	"github.com/polynetwork/poly/common/log"
 	"github.com/polynetwork/poly/native"
 	"github.com/polynetwork/poly/native/service/governance/node_manager"
@@ -268,6 +269,20 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 	return nil
 }
 
+type starcoinConsensus interface {
+	VerifyHeaderDifficulty(difficulty uint256.Int, headerDifficulty uint256.Int, headerBlob []byte, nonce uint32, extra []byte) (bool, error)
+}
+
+type defaultConsensus struct {
+}
+
+func (c defaultConsensus) VerifyHeaderDifficulty(difficulty uint256.Int, headerDifficulty uint256.Int, headerBlob []byte, nonce uint32, extra []byte) (bool, error) {
+	return consensus.VerifyHeaderDifficulty(difficulty, headerDifficulty, headerBlob, nonce, extra)
+}
+
+var cryptonightConsensus starcoinConsensus = defaultConsensus{}
+var argonConsensus starcoinConsensus = consensus.ArgonConsensus{}
+
 func verifyHeaderDifficulty(expected *big.Int, header *types.BlockHeader) error {
 	// if expected.Cmp(header.BlockHeader.GetDiffculty()) != 0 {
 	// 	return errors.Errorf("SyncBlockHeader, invalid difficulty: have %v, want %v, header: %s", header.BlockHeader.Difficulty, expected, string(v))
@@ -282,10 +297,21 @@ func verifyHeaderDifficulty(expected *big.Int, header *types.BlockHeader) error 
 	if err != nil {
 		return errors.Errorf("verifyHeaderDifficulty, header.ToHeaderBlob error: %v", header)
 	}
-	ok, err := consensus.VerifyHeaderDifficulty(*e, *hd, hb, header.Nonce, header.Extra[:])
-	if err != nil {
-		return errors.Errorf("verifyHeaderDifficulty, consensus.VerifyHeaderDifficulty error: %v", header)
+	// //////////////////////////////////////////////////////////////////////////////////////////////
+	chainID := config.GetChainIdByNetId(config.DefConfig.P2PNode.NetworkId)
+	var ok bool
+	if chainID == config.TESTNET_CHAIN_ID && header.Number >= 5061399 {
+		ok, err = argonConsensus.VerifyHeaderDifficulty(*e, *hd, hb, header.Nonce, header.Extra[:])
+		if err != nil {
+			return errors.Errorf("verifyHeaderDifficulty, argonConsensus.VerifyHeaderDifficulty error: %v", header)
+		}
+	} else {
+		ok, err = cryptonightConsensus.VerifyHeaderDifficulty(*e, *hd, hb, header.Nonce, header.Extra[:])
+		if err != nil {
+			return errors.Errorf("verifyHeaderDifficulty, cryptonightConsensus.VerifyHeaderDifficulty error: %v", header)
+		}
 	}
+	// //////////////////////////////////////////////////////////////////////////////////////////////
 	if !ok {
 		return errors.Errorf("verifyHeaderDifficulty, consensus.VerifyHeaderDifficulty failed: %v", header)
 	}

@@ -22,6 +22,7 @@ require (
 	github.com/joeqian10/neo-gogogo v1.1.0
 	github.com/joeqian10/neo3-gogogo v0.3.8
 	github.com/joeqian10/neo3-gogogo-legacy v1.0.0
+	github.com/matthewhartstonge/argon2 v0.2.1 // indirect
 	github.com/novifinancial/serde-reflection/serde-generate/runtime/golang v0.0.0-20210526181959-1694c58d103e
 	github.com/ontio/ontology v1.11.1-0.20200812075204-26cf1fa5dd47
 	github.com/ontio/ontology-crypto v1.0.9
@@ -32,7 +33,7 @@ require (
 	github.com/polynetwork/ripple-sdk v0.0.0-20220424031403-3947f2e7636c
 	github.com/renlulu/gozilliqa-sdklegacy v0.0.0-20220127085552-852a2675dc93
 	github.com/rubblelabs/ripple v0.0.0-20220222071018-38c1a8b14c18
-	github.com/starcoinorg/starcoin-go v0.0.0-20220105024102-530daedc128b
+	github.com/starcoinorg/starcoin-go v0.0.0-20220721055300-28680a928855
 	github.com/stretchr/testify v1.7.0
 	github.com/switcheo/tendermint v0.34.14-2
 	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca
@@ -41,7 +42,7 @@ require (
 	github.com/urfave/cli v1.22.4
 	github.com/valyala/bytebufferpool v1.0.0
 	github.com/zeebo/assert v1.3.0
-	golang.org/x/crypto v0.0.0-20211117183948-ae814b36b871
+	golang.org/x/crypto v0.0.0-20220214200702-86341886e292
 	golang.org/x/net v0.0.0-20211112202133-69e39bad7dc2
 	gotest.tools v2.2.0+incompatible
 )
