@@ -2344,15 +2344,15 @@ func TestSyncBarnardHeaders(t *testing.T) {
 			param.Headers = append(param.Headers, header)
 		}
 		// ///////////////////////////////////////////////
-		// var jsonHeaders_3 []stc.BlockHeaderWithDifficultyInfo
-		// if err := json.Unmarshal([]byte(barnardHeaders_5061625), &jsonHeaders_3); err != nil {
-		// 	t.FailNow()
-		// }
-		// for j := len(jsonHeaders_3) - 1; j >= 0; j-- {
-		// 	header, _ := json.Marshal(jsonHeaders_3[j])
-		// 	param.Headers = append(param.Headers, header)
-		// }
-		// // cryptonightConsensus.VerifyHeaderDifficulty error. Header.number: 5061625
+		var jsonHeaders_3 []stc.BlockHeaderWithDifficultyInfo
+		if err := json.Unmarshal([]byte(barnardHeaders_5061625), &jsonHeaders_3); err != nil {
+			t.FailNow()
+		}
+		for j := len(jsonHeaders_3) - 1; j >= 0; j-- {
+			header, _ := json.Marshal(jsonHeaders_3[j])
+			param.Headers = append(param.Headers, header)
+		}
+		// cryptonightConsensus.VerifyHeaderDifficulty error. Header.number: 5061625
 		// ///////////////////////////////////////////////
 
 		sink := common.NewZeroCopySink(nil)
