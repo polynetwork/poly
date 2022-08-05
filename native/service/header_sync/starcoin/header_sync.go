@@ -19,9 +19,11 @@ package starcoin
 
 import (
 	"bytes"
+	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/matthewhartstonge/argon2"
 	"math/big"
 	"time"
 
@@ -209,7 +211,7 @@ func (h *Handler) SyncBlockHeader(native *native.NativeService) error {
 			if err != nil {
 				return errors.Errorf("difficulty calculator error: %v, header: %s", err, string(v))
 			}
-			if err := verifyHeaderDifficulty(expected, &header.BlockHeader); err != nil {
+			if err := verifyHeaderDifficulty(native, expected, &header.BlockHeader); err != nil {
 				return err
 			}
 		}
@@ -280,10 +282,76 @@ func (c defaultConsensus) VerifyHeaderDifficulty(difficulty uint256.Int, headerD
 	return consensus.VerifyHeaderDifficulty(difficulty, headerDifficulty, headerBlob, nonce, extra)
 }
 
+type OldArgonConsensus struct {
+}
+
+func (o OldArgonConsensus) VerifyHeaderDifficulty(difficulty uint256.Int, headerDifficulty uint256.Int, headerBlob []byte, nonce uint32, extra []byte) (bool, error) {
+	if difficulty != headerDifficulty {
+		return false, fmt.Errorf("verify header difficulty failure, difficulty: %v, headerDifficulty: %v", difficulty, headerDifficulty)
+	}
+	//calculate_pow_hash
+	powHash, err := o.CalculatePowHash(headerBlob, nonce, extra)
+	if err != nil {
+		return false, err
+	}
+	//hash to u256
+	powValue := new(uint256.Int).SetBytes(powHash)
+	target, err := o.TargetToDiff(&difficulty)
+	if err != nil {
+		return false, err
+	}
+	if powValue.Gt(target) {
+		return false, fmt.Errorf("verify header difficulty failure, powValue: %v, target: %v", powValue, target)
+	}
+	return true, nil
+}
+
+func (o OldArgonConsensus) CalculatePowHash(headBlob []byte, nonce uint32, extra []byte) ([]byte, error) {
+	headerBytes, err := o.SetHeaderNonce(headBlob, nonce, extra)
+	if err != nil {
+		return nil, err
+	}
+	argon := argon2.DefaultConfig()
+	argon.MemoryCost = 1024
+	s, err := argon.Hash(headerBytes, headerBytes)
+
+	if err != nil {
+		return nil, err
+	}
+	return s.Encode(), nil
+}
+
+func (o OldArgonConsensus) SetHeaderNonce(header []byte, nonce uint32, extra []byte) ([]byte, error) {
+	if len(header) != 76 {
+		return nil, fmt.Errorf("set header nonce failure, header: %v", header)
+	}
+	if len(extra) != 4 {
+		return nil, fmt.Errorf("set header nonce failure, extra: %v", extra)
+	}
+	nonceB := make([]byte, 4)
+	binary.LittleEndian.PutUint32(nonceB, nonce)
+	data := bytes.Buffer{}
+	data.Write(header[0:35])
+	data.Write(extra)
+	data.Write(nonceB)
+	data.Write(header[43:])
+	return data.Bytes(), nil
+}
+
+func (o OldArgonConsensus) TargetToDiff(target *uint256.Int) (*uint256.Int, error) {
+	bigint := &big.Int{}
+	diff, overflow := uint256.FromBig(bigint.Div(MAXU256, target.ToBig()))
+	if overflow {
+		return nil, fmt.Errorf("TargetToDiff over flow : target : %d.", target)
+	}
+	return diff, nil
+}
+
 var cryptonightConsensus starcoinConsensus = defaultConsensus{}
+var oldArgonConsensus starcoinConsensus = OldArgonConsensus{}
 var argonConsensus starcoinConsensus = consensus.ArgonConsensus{}
 
-func verifyHeaderDifficulty(expected *big.Int, header *types.BlockHeader) error {
+func verifyHeaderDifficulty(native *native.NativeService, expected *big.Int, header *types.BlockHeader) error {
 	// if expected.Cmp(header.BlockHeader.GetDiffculty()) != 0 {
 	// 	return errors.Errorf("SyncBlockHeader, invalid difficulty: have %v, want %v, header: %s", header.BlockHeader.Difficulty, expected, string(v))
 	// }
@@ -301,8 +369,16 @@ func verifyHeaderDifficulty(expected *big.Int, header *types.BlockHeader) error 
 	chainID := config.GetChainIdByNetId(config.DefConfig.P2PNode.NetworkId)
 	//_ = chainID
 	var ok bool
-	var useArgonConsensus = header.Number >= 5061625 && config.TESTNET_CHAIN_ID == chainID
-	if useArgonConsensus {
+
+	currentBlockHeight := native.GetHeight()
+	var useOldArgonConsensus = header.Number >= 5061625 && currentBlockHeight < 35472330 && config.TESTNET_CHAIN_ID == chainID
+	var useArgonConsensus = header.Number >= 5061625 && currentBlockHeight >= 35472330 && config.TESTNET_CHAIN_ID == chainID
+	if useOldArgonConsensus {
+		ok, err = oldArgonConsensus.VerifyHeaderDifficulty(*e, *hd, hb, header.Nonce, header.Extra[:])
+		if err != nil {
+			return errors.Errorf("verifyHeaderDifficulty, oldArgonConsensus.VerifyHeaderDifficulty error. Header.number: %v, expectedDifficulty: %v, header: %v, error: %v", header.Number, expected, header, err)
+		}
+	} else if useArgonConsensus {
 		ok, err = argonConsensus.VerifyHeaderDifficulty(*e, *hd, hb, header.Nonce, header.Extra[:])
 		if err != nil {
 			return errors.Errorf("verifyHeaderDifficulty, argonConsensus.VerifyHeaderDifficulty error. Header.number: %v, expectedDifficulty: %v, header: %v, error: %v", header.Number, expected, header, err)
