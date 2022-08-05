@@ -33,7 +33,7 @@ require (
 	github.com/polynetwork/ripple-sdk v0.0.0-20220424031403-3947f2e7636c
 	github.com/renlulu/gozilliqa-sdklegacy v0.0.0-20220127085552-852a2675dc93
 	github.com/rubblelabs/ripple v0.0.0-20220222071018-38c1a8b14c18
-	github.com/starcoinorg/starcoin-go v0.0.0-20220721055300-28680a928855
+	github.com/starcoinorg/starcoin-go v0.0.0-20220803022851-4369901a66d0
 	github.com/stretchr/testify v1.7.0
 	github.com/switcheo/tendermint v0.34.14-2
 	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca
