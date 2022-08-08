@@ -433,8 +433,7 @@ func difficultyCalculator(native *native.NativeService, blockHeader *types.Block
 }
 
 func getNextTarget(blocks []BlockDiffInfo, timePlan uint64) (uint256.Int, error) {
-	//todo online to debug level
-	log.Infof("get next target: %v, time plan: %d", blocks, timePlan)
+	log.Debugf("get next target: %v, time plan: %d", blocks, timePlan)
 	nextTarget := uint256.NewInt(0)
 	length := len(blocks)
 	if length < 1 {
