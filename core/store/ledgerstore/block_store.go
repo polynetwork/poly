@@ -23,15 +23,16 @@ import (
 	"encoding/binary"
 	"fmt"
 
+	"io"
+
 	"github.com/polynetwork/poly/common"
 	"github.com/polynetwork/poly/common/serialization"
 	scom "github.com/polynetwork/poly/core/store/common"
 	"github.com/polynetwork/poly/core/store/leveldbstore"
 	"github.com/polynetwork/poly/core/types"
-	"io"
 )
 
-//Block store save the data of block & transaction
+// Block store save the data of block & transaction
 type BlockStore struct {
 	enableCache bool                       //Is enable lru cache
 	dbDir       string                     //The path of store file
@@ -39,7 +40,7 @@ type BlockStore struct {
 	store       *leveldbstore.LevelDBStore //block store handler
 }
 
-//NewBlockStore return the block store instance
+// NewBlockStore return the block store instance
 func NewBlockStore(dbDir string, enableCache bool) (*BlockStore, error) {
 	var cache *BlockCache
 	var err error
@@ -63,12 +64,12 @@ func NewBlockStore(dbDir string, enableCache bool) (*BlockStore, error) {
 	return blockStore, nil
 }
 
-//NewBatch start a commit batch
+// NewBatch start a commit batch
 func (this *BlockStore) NewBatch() {
 	this.store.NewBatch()
 }
 
-//SaveBlock persist block to store
+// SaveBlock persist block to store
 func (this *BlockStore) SaveBlock(block *types.Block) error {
 	if this.enableCache {
 		this.cache.AddBlock(block)
@@ -89,7 +90,7 @@ func (this *BlockStore) SaveBlock(block *types.Block) error {
 	return nil
 }
 
-//ContainBlock return the block specified by block hash save in store
+// ContainBlock return the block specified by block hash save in store
 func (this *BlockStore) ContainBlock(blockHash common.Uint256) (bool, error) {
 	if this.enableCache {
 		if this.cache.ContainBlock(blockHash) {
@@ -107,7 +108,7 @@ func (this *BlockStore) ContainBlock(blockHash common.Uint256) (bool, error) {
 	return true, nil
 }
 
-//GetBlock return block by block hash
+// GetBlock return block by block hash
 func (this *BlockStore) GetBlock(blockHash common.Uint256) (*types.Block, error) {
 	var block *types.Block
 	if this.enableCache {
@@ -165,7 +166,7 @@ func (this *BlockStore) loadHeaderWithTx(blockHash common.Uint256) (*types.Heade
 	return header, txHashes, nil
 }
 
-//SaveHeader persist block header to store
+// SaveHeader persist block header to store
 func (this *BlockStore) SaveHeader(block *types.Block) error {
 	blockHash := block.Hash()
 	key := this.getHeaderKey(blockHash)
@@ -180,7 +181,7 @@ func (this *BlockStore) SaveHeader(block *types.Block) error {
 	return nil
 }
 
-//GetHeader return the header specified by block hash
+// GetHeader return the header specified by block hash
 func (this *BlockStore) GetHeader(blockHash common.Uint256) (*types.Header, error) {
 	if this.enableCache {
 		block := this.cache.GetBlock(blockHash)
@@ -206,7 +207,7 @@ func (this *BlockStore) loadHeader(blockHash common.Uint256) (*types.Header, err
 	return header, nil
 }
 
-//GetCurrentBlock return the current block hash and current block height
+// GetCurrentBlock return the current block hash and current block height
 func (this *BlockStore) GetCurrentBlock() (common.Uint256, uint32, error) {
 	key := this.getCurrentBlockKey()
 	data, err := this.store.Get(key)
@@ -226,7 +227,7 @@ func (this *BlockStore) GetCurrentBlock() (common.Uint256, uint32, error) {
 	return blockHash, height, nil
 }
 
-//SaveCurrentBlock persist the current block height and current block hash to store
+// SaveCurrentBlock persist the current block height and current block hash to store
 func (this *BlockStore) SaveCurrentBlock(height uint32, blockHash common.Uint256) error {
 	key := this.getCurrentBlockKey()
 	value := bytes.NewBuffer(nil)
@@ -236,52 +237,7 @@ func (this *BlockStore) SaveCurrentBlock(height uint32, blockHash common.Uint256
 	return nil
 }
 
-//GetHeaderIndexList return the head index store in header index list
-func (this *BlockStore) GetHeaderIndexList() (map[uint32]common.Uint256, error) {
-	result := make(map[uint32]common.Uint256)
-	iter := this.store.NewIterator([]byte{byte(scom.IX_HEADER_HASH_LIST)})
-	defer iter.Release()
-	for iter.Next() {
-		startCount, err := this.getStartHeightByHeaderIndexKey(iter.Key())
-		if err != nil {
-			return nil, fmt.Errorf("getStartHeightByHeaderIndexKey error %s", err)
-		}
-		reader := bytes.NewReader(iter.Value())
-		count, err := serialization.ReadUint32(reader)
-		if err != nil {
-			return nil, fmt.Errorf("serialization.ReadUint32 count error %s", err)
-		}
-		for i := uint32(0); i < count; i++ {
-			height := startCount + i
-			blockHash := common.Uint256{}
-			err = blockHash.Deserialize(reader)
-			if err != nil {
-				return nil, fmt.Errorf("blockHash.Deserialize error %s", err)
-			}
-			result[height] = blockHash
-		}
-	}
-	if err := iter.Error(); err != nil {
-		return nil, err
-	}
-	return result, nil
-}
-
-//SaveHeaderIndexList persist header index list to store
-func (this *BlockStore) SaveHeaderIndexList(startIndex uint32, indexList []common.Uint256) error {
-	indexKey := this.getHeaderIndexListKey(startIndex)
-	indexSize := uint32(len(indexList))
-	value := bytes.NewBuffer(nil)
-	serialization.WriteUint32(value, indexSize)
-	for _, hash := range indexList {
-		hash.Serialize(value)
-	}
-
-	this.store.BatchPut(indexKey, value.Bytes())
-	return nil
-}
-
-//GetBlockHash return block hash by block height
+// GetBlockHash return block hash by block height
 func (this *BlockStore) GetBlockHash(height uint32) (common.Uint256, error) {
 	key := this.getBlockHashKey(height)
 	value, err := this.store.Get(key)
@@ -295,13 +251,13 @@ func (this *BlockStore) GetBlockHash(height uint32) (common.Uint256, error) {
 	return blockHash, nil
 }
 
-//SaveBlockHash persist block height and block hash to store
+// SaveBlockHash persist block height and block hash to store
 func (this *BlockStore) SaveBlockHash(height uint32, blockHash common.Uint256) {
 	key := this.getBlockHashKey(height)
 	this.store.BatchPut(key, blockHash.ToArray())
 }
 
-//SaveTransaction persist transaction to store
+// SaveTransaction persist transaction to store
 func (this *BlockStore) SaveTransaction(tx *types.Transaction, height uint32) error {
 	if this.enableCache {
 		this.cache.AddTransaction(tx, height)
@@ -323,7 +279,7 @@ func (this *BlockStore) putTransaction(tx *types.Transaction, height uint32) err
 	return nil
 }
 
-//GetTransaction return transaction by transaction hash
+// GetTransaction return transaction by transaction hash
 func (this *BlockStore) GetTransaction(txHash common.Uint256) (*types.Transaction, uint32, error) {
 	if this.enableCache {
 		tx, height := this.cache.GetTransaction(txHash)
@@ -364,7 +320,7 @@ func (this *BlockStore) loadTransaction(txHash common.Uint256) (*types.Transacti
 	return tx, height, nil
 }
 
-//IsContainTransaction return whether the transaction is in store
+// IsContainTransaction return whether the transaction is in store
 func (this *BlockStore) ContainTransaction(txHash common.Uint256) (bool, error) {
 	key := this.getTransactionKey(txHash)
 
@@ -383,7 +339,7 @@ func (this *BlockStore) ContainTransaction(txHash common.Uint256) (bool, error) 
 	return true, nil
 }
 
-//GetVersion return the version of store
+// GetVersion return the version of store
 func (this *BlockStore) GetVersion() (byte, error) {
 	key := this.getVersionKey()
 	value, err := this.store.Get(key)
@@ -394,13 +350,13 @@ func (this *BlockStore) GetVersion() (byte, error) {
 	return reader.ReadByte()
 }
 
-//SaveVersion persist version to store
+// SaveVersion persist version to store
 func (this *BlockStore) SaveVersion(ver byte) error {
 	key := this.getVersionKey()
 	return this.store.Put(key, []byte{ver})
 }
 
-//ClearAll clear all the data of block store
+// ClearAll clear all the data of block store
 func (this *BlockStore) ClearAll() error {
 	this.NewBatch()
 	iter := this.store.NewIterator(nil)
@@ -414,12 +370,12 @@ func (this *BlockStore) ClearAll() error {
 	return this.CommitTo()
 }
 
-//CommitTo commit the batch to store
+// CommitTo commit the batch to store
 func (this *BlockStore) CommitTo() error {
 	return this.store.BatchCommit()
 }
 
-//Close block store
+// Close block store
 func (this *BlockStore) Close() error {
 	return this.store.Close()
 }
@@ -456,20 +412,4 @@ func (this *BlockStore) getBlockMerkleTreeKey() []byte {
 
 func (this *BlockStore) getVersionKey() []byte {
 	return []byte{byte(scom.SYS_VERSION)}
-}
-
-func (this *BlockStore) getHeaderIndexListKey(startHeight uint32) []byte {
-	key := bytes.NewBuffer(nil)
-	key.WriteByte(byte(scom.IX_HEADER_HASH_LIST))
-	serialization.WriteUint32(key, startHeight)
-	return key.Bytes()
-}
-
-func (this *BlockStore) getStartHeightByHeaderIndexKey(key []byte) (uint32, error) {
-	reader := bytes.NewReader(key[1:])
-	height, err := serialization.ReadUint32(reader)
-	if err != nil {
-		return 0, err
-	}
-	return height, nil
 }
