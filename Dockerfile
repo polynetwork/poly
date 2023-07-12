@@ -4,8 +4,8 @@ RUN curl -L https://golang.org/dl/go1.20.linux-`dpkg --print-architecture`.tar.g
 
 WORKDIR /workspace
 
-ARG commit=master
+ARG commit=feat-build
 
 RUN ln -s /usr/local/go/bin/go /usr/bin/go
-RUN git clone https://github.com/polynetwork/poly.git  && \
+RUN git clone https://github.com/devfans/poly.git  && \
     cd poly && git checkout ${commit} && make poly
