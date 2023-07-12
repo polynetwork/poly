@@ -110,4 +110,14 @@ dockerImg: Makefile
 clean:
 	rm -rf *.8 *.o *.out *.6 *exe
 	rm -rf poly poly-* tools docker/payload docker/build
+	docker container rm -f go-poly-temp
+	docker rmi -f go-poly-build
 
+
+build: clean
+	docker build -t go-poly-build .
+	docker container create --name go-poly-temp go-poly-build
+	docker container cp go-poly-temp:/workspace/poly .
+
+always:
+.DELETE_ON_ERROR:
