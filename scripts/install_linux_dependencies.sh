@@ -3,10 +3,10 @@
 echo "Preparing dependencies for linux/ubuntu"
 
 if [ "$(grep -Ei 'debian|buntu|mint' /etc/*release)" ]; then
-   sudo apt update
-   sudo apt install -y libgmp-dev  libssl-dev  make gcc g++
+   apt update
+   apt install -y libgmp-dev  libssl-dev  make gcc g++
 else
-   sudo yum install glibc-static gmp-devel gmp-static openssl-libs openssl-static gcc-c++
+   yum install glibc-static gmp-devel gmp-static openssl-libs openssl-static gcc-c++
 fi
 
 # Prepare temp directory
