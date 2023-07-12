@@ -6,5 +6,6 @@ WORKDIR /workspace
 
 ARG commit=master
 
-RUN PATH="$PATH:/usr/local/go/bin" git clone https://github.com/polynetwork/poly.git  && \
+RUN ln -s /usr/local/go/bin/go /usr/bin/go
+RUN git clone https://github.com/polynetwork/poly.git  && \
     cd poly && git checkout ${commit} && make poly
