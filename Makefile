@@ -115,9 +115,12 @@ clean:
 
 
 build: clean
-	docker build -t go-poly-build .
+	@echo "Building poly binary in container"
+	docker build --no-cache -t go-poly-build .
 	docker container create --name go-poly-temp go-poly-build
-	docker container cp go-poly-temp:/workspace/poly .
+	docker container cp go-poly-temp:/workspace/poly/poly .
+	@echo "Binary MD5:"
+	md5sum poly
 
 always:
 .DELETE_ON_ERROR:
