@@ -1,6 +1,7 @@
 GOFMT=gofmt
 GC=go build
 VERSION := $(shell git describe --always --tags --long)
+COMMIT ?= master
 
 TOP:=$(realpath .)/temp
 export CGO_CFLAGS:=-I$(TOP)/bls/include -I$(TOP)/mcl/include -I/usr/local/opt/openssl/include
@@ -116,7 +117,7 @@ clean:
 
 build: clean
 	@echo "Building poly binary in container"
-	docker build --no-cache -t go-poly-build -f ./docker/Docker.build .
+	docker build --no-cache --build-arg commit=$(COMMIT) -t go-poly-build -f ./docker/Docker.build .
 	docker container create --name go-poly-temp go-poly-build
 	docker container cp go-poly-temp:/workspace/poly/poly .
 	md5sum poly
