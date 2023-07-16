@@ -38,6 +38,18 @@ cd poly
 make all
 ```
 
+Build poly binary with docker
+
+```shell
+git clone https://github.com/polynetwork/poly.git
+cd poly
+make build
+
+# Build with a commit hash or tag
+
+COMMIT=v1.0.0 make build
+```
+
 After building the source code successfully, you should see the executable program `poly`.
 
 ### Build Docker Image

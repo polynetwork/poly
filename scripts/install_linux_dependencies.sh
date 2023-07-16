@@ -3,10 +3,10 @@
 echo "Preparing dependencies for linux/ubuntu"
 
 if [ "$(grep -Ei 'debian|buntu|mint' /etc/*release)" ]; then
-   sudo apt update
-   sudo apt install -y libgmp-dev  libssl-dev  make gcc g++
+   apt update
+   apt install -y libgmp-dev  libssl-dev  make gcc g++
 else
-   sudo yum install glibc-static gmp-devel gmp-static openssl-libs openssl-static gcc-c++
+   yum install glibc-static gmp-devel gmp-static openssl-libs openssl-static gcc-c++
 fi
 
 # Prepare temp directory
@@ -14,12 +14,12 @@ mkdir -p temp
 pushd temp
 
 # Prepare harmony dependencies
-git clone --depth=1 https://github.com/harmony-one/bls.git
+git clone https://github.com/harmony-one/bls.git
 pushd bls
 git checkout 2b7e49894c0f15f5c40cf74046505b7f74946e52
 popd
 
-git clone --depth=1 https://github.com/harmony-one/mcl.git
+git clone https://github.com/harmony-one/mcl.git
 pushd mcl
 git checkout 99e9aa76e84415e753956c618cbc662b2f373df1
 popd
