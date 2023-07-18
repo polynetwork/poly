@@ -1303,6 +1303,11 @@ func (self *Server) processMsgEvent() error {
 					self.fetchProposal(msgBlkNum, pMsg.EndorsedProposer)
 				}
 
+				if err := self.verifyProposalEndorsementMessage(msgBlkNum, pMsg.EndorsedProposer, pMsg.EndorsedBlockHash, pMsg.EndorseForEmpty); err != nil {
+					log.Errorf("failed to verify endorsement msg (%d): %s", msgBlkNum, err)
+					return nil
+				}
+
 				// add endorse to block-pool
 				if err := self.blockPool.newBlockEndorsement(pMsg); err != nil {
 					log.Errorf("failed to add endorsement (%d): %s", msgBlkNum, err)
@@ -1379,6 +1384,12 @@ func (self *Server) processMsgEvent() error {
 				//                      sealProposal(msg.BlockHash)
 				//              else if WaitCommitsTimer has not started:
 				//                      start WaitCommitsTimer
+
+				if err := self.verifyProposalEndorsementMessage(msgBlkNum, pMsg.BlockProposer, pMsg.CommitBlockHash, pMsg.CommitForEmpty); err != nil {
+					log.Errorf("failed to verify commit msg (%d): %s", msgBlkNum, err)
+					return nil
+				}
+
 				if err := self.blockPool.newBlockCommitment(pMsg); err != nil {
 					log.Errorf("failed to add commit msg (%d): %s", msgBlkNum, err)
 					return nil
@@ -1428,6 +1439,19 @@ func (self *Server) processMsgEvent() error {
 		return fmt.Errorf("server %d, processMsgEvent loop quit", self.Index)
 	}
 	return nil
+}
+
+func (self *Server) verifyProposalEndorsementMessage(blockNum uint32, proposer uint32, blockHash common.Uint256, forEmpty bool) (err error) {
+	proposal := self.findBlockProposal(blockNum, proposer, forEmpty)
+	if proposal == nil {
+		return fmt.Errorf("missing relevant proposal, block height %v, hash %s, proposer %v", blockNum, blockHash.ToHexString(), proposal)
+	}
+	proposedBlockHash := proposal.Block.Block.Hash()
+	if !bytes.Equal(proposedBlockHash[:], blockHash[:]) {
+		return fmt.Errorf("unmatched proposal from same proposer, block height %v, hash %s, existing hash %s proposer %v", blockNum,
+			blockHash.ToHexString(), proposedBlockHash, proposal)
+	}
+	return
 }
 
 func (self *Server) actionLoop() {
