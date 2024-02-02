@@ -65,13 +65,13 @@ func (h *Handler) SyncGenesisHeader(native *native.NativeService) (err error) {
 		return fmt.Errorf("ZILHandler SyncGenesisHeader: %s", err)
 	}
 
-	headerStore, err := native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.GENESIS_HEADER), utils.GetUint64Bytes(params.ChainID)))
+	_, err = native.GetCacheDB().Get(utils.ConcatKey(utils.HeaderSyncContractAddress, []byte(scom.GENESIS_HEADER), utils.GetUint64Bytes(params.ChainID)))
 	if err != nil {
 		return fmt.Errorf("ZILHandler GetHeaderByHeight, get blockHashStore error: %v", err)
 	}
-	if headerStore != nil {
-		return fmt.Errorf("ZILHandler GetHeaderByHeight, genesis header had been initialized")
-	}
+	//if headerStore != nil {
+	//	return fmt.Errorf("ZILHandler GetHeaderByHeight, genesis header had been initialized")
+	//}
 	err = putGenesisBlockHeader(native, txBlockAndDsComm, params.ChainID)
 	if err != nil {
 		return fmt.Errorf("ZILHandler SyncGenesisHeader, put blockHeader error: %v", err)
